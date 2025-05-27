@@ -1,0 +1,1747 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <link rel="manifest" href="manifest.json" /> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <title>Placar Vôlei</title>
+  <style>
+    :root {
+      /* Variáveis do Tema Escuro (Padrão) - Afetam a UI geral, não o placar */
+      --bg-color: #1a1a1a;
+      --text-color: #ffffff; /* Cor geral do texto da UI (menu, botões) */
+      --accent-color: #545454;
+      --input-bg-color: #f0f0f0;
+      --input-text-color: #1a1a1a;
+      --menu-bg-color: #333;
+      --menu-hover-bg-color: #555;
+      --list-item-bg: #3a3a3a;
+      --gear-button-bg: #00000075;
+
+      /* Cores para a animação de vitória */
+      --victory-bg-start: #4CAF50; /* Verde vibrante */
+      --victory-bg-end: #8BC34A;   /* Verde mais claro */
+      --victory-text-color: #ffffff;
+      --victory-shadow-color: rgba(0,0,0,0.8);
+      --crown-color: gold; /* Cor da coroa */
+      --star-color: gold; /* Cor da estrela do set */
+
+      /* Cores do modal */
+      --modal-bg: rgba(0, 0, 0, 0.8);
+      --modal-content-bg: #2a2a2a;
+      --modal-text-color: #ffffff;
+      --modal-button-bg: #007bff;
+      --modal-button-hover-bg: #0056b3;
+      --modal-button-text: #ffffff;
+    }
+
+    body.light-theme {
+      /* Variáveis do Tema Claro (Sobrescritas) - Afetam a UI geral, não o placar */
+      --bg-color: #f0f0f0;
+      --text-color: #1a1a1a; /* Cor geral do texto da UI (menu, botões) */
+      --accent-color: #cccccc;
+      --input-bg-color: #ffffff;
+      --input-text-color: #1a1a1a;
+      --menu-bg-color: #eee;
+      --menu-hover-bg-color: #ddd;
+      --list-item-bg: #e0e0e0;
+      --gear-button-bg: #ffffff75;
+
+      /* Cores para a animação de vitória no tema claro */
+      --victory-bg-start: #60B360; /* Verde mais suave */
+      --victory-bg-end: #A0D8A0;   /* Verde pastel */
+      --victory-text-color: #1a1a1a;
+      --victory-shadow-color: rgba(255,255,255,0.8);
+      --crown-color: #DAA520; /* Cor da coroa (Goldenrod) */
+      --star-color: #DAA520; /* Cor da estrela do set (Goldenrod) */
+
+      /* Cores do modal no tema claro */
+      --modal-bg: rgba(255, 255, 255, 0.8);
+      --modal-content-bg: #ffffff;
+      --modal-text-color: #1a1a1a;
+      --modal-button-bg: #4682B4;
+      --modal-button-hover-bg: #32628C;
+      --modal-button-text: #ffffff;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden; /* Garante que não haja barras de rolagem indesejadas */
+      font-family: 'Segoe UI', sans-serif;
+      background-color: var(--bg-color); /* Usa a cor de fundo do tema */
+      color: var(--text-color); /* Usa a cor de texto do tema */
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* Estilos da tela de pontuação (FIXOS, NÃO AFETADOS PELO TEMA) */
+    #pontuacao.section {
+      padding: 0; /* Mantém o padding zero para a tela de pontuação */
+      display: flex; /* Garante que o placar use flexbox para ocupar 100% da altura */
+      flex-direction: column; /* Necessário para que team-section possa flex: 1 */
+      position: absolute; /* Ocupa a tela inteira */
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden; /* Garante que o conteúdo não transborde */
+    }
+
+    .scoreboard {
+      display: flex;
+      flex-direction: column; /* Padrão: Times empilhados verticalmente */
+      height: 100%; /* Ocupa a altura total da seção de pontuação */
+      width: 100%; /* Ocupa a largura total */
+    }
+
+    .team-section {
+      flex: 1; /* Faz com que cada time ocupe metade do espaço disponível */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      touch-action: none; /* Desabilita ações de toque padrão do navegador */
+      transition: none; /* Remove transição de tema para esta seção */
+      position: relative; /* Para posicionar a coroa e confetes dentro */
+    }
+
+    .blue {
+      background-color: #007bff; /* Cor azul fixa */
+    }
+
+    .red {
+      background-color: #dc3545; /* Cor vermelha fixa */
+    }
+
+    .score {
+      font-size: 15rem;
+      font-weight: bold;
+      font-family: 'Courier New', monospace;
+      user-select: none;
+      color: #ffffff; /* Cor do texto da pontuação fixa (branco) */
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.6); /* Sombra do texto da pontuação fixa */
+      transition: none; /* Remove transição de tema para esta seção */
+    }
+
+    .team-name {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      color: #ffffff; /* Cor do texto do nome do time fixa (branco) */
+      transition: none; /* Remove transição de tema para esta seção */
+    }
+
+    /* Estilos para os indicadores de set */
+    .set-indicators {
+      position: absolute;
+      top: 10px; /* Ajuste a posição vertical conforme necessário */
+      display: flex;
+      gap: 5px;
+      z-index: 5; /* Acima do placar, mas abaixo da coroa/confetes */
+    }
+
+    .set-indicators.left {
+      left: 10px;
+    }
+
+    .set-indicators.right {
+      right: 10px;
+    }
+
+    .set-star { /* Novo estilo para a estrela */
+      font-size: 1.5rem; /* Tamanho da estrela */
+      color: var(--star-color); /* Cor da estrela dourada */
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    }
+
+
+    /* Estilos gerais da UI (AFETADOS PELO TEMA) */
+    .btn {
+      background-color: var(--accent-color); /* Usa a cor de destaque do tema */
+      color: var(--text-color); /* Usa a cor de texto do tema */
+      border: none;
+      padding: 0.5rem 1rem;
+      margin: 0.5rem 0;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: bold;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .gear-button {
+      position: fixed;     
+      background-color: var(--gear-button-bg); /* Usa a cor de fundo do botão de engrenagem do tema */
+      border-radius: 0.4rem;
+      border-style: unset;
+      top: 1rem;
+      right: 1rem;
+      width: 2rem;
+      height: 2rem;
+      z-index: 1001;
+      transition: background-color 0.3s ease;
+    }
+
+    .gear-button i {
+      color: var(--text-color); /* Usa a cor de texto do tema */
+      transition: color 0.3s ease;
+    }
+
+    .menu {
+      position: fixed;
+      top: 3.5rem;
+      right: 1rem;
+      background-color: var(--menu-bg-color); /* Usa a cor de fundo do menu do tema */
+      border-radius: 8px;
+      overflow: hidden;
+      display: none;
+      flex-direction: column;
+      z-index: 1002;
+      transition: background-color 0.3s ease;
+    }
+
+    .menu.show {
+      display: flex !important;
+    }
+
+    .menu button {
+      background: none;
+      border: none;
+      color: var(--text-color); /* Usa a cor de texto do tema */
+      padding: 1rem;
+      text-align: left;
+      width: 200px;
+      cursor: pointer;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .menu button:hover {
+      background-color: var(--menu-hover-bg-color); /* Usa a cor de hover do menu do tema */
+    }
+
+    .section {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      overflow-y: auto;
+      padding: 1rem;
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.9); /* Inicia ligeiramente menor */
+      transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out; /* Transição mais suave */
+      z-index: 1;
+    }
+
+    .active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1); /* Desliza para a posição visível */
+      z-index: 2;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 0.5rem;
+      margin: 0.5rem 0;
+      font-size: 1rem;
+      border-radius: 5px;
+      border: none;
+      color: var(--input-text-color); /* Usa a cor de texto do input do tema */
+      background-color: var(--input-bg-color); /* Usa a cor de fundo do input do tema */
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    ul li {
+      background: var(--list-item-bg); /* Usa a cor de fundo do item da lista do tema */
+      padding: 0.5rem;
+      margin-bottom: 0.25rem;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      transition: background-color 0.3s ease;
+    }
+
+    ul li span {
+      flex: 1;
+    }
+
+    .teams {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .start-game-button {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 1.5rem 3rem;
+      font-size: 2rem;
+      z-index: 100; /* Above scoreboard overlay, below modals */
+      background-color: #28a745; /* Green color */
+      color: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.3s ease;
+    }
+
+    .start-game-button:hover {
+      background-color: #218838;
+      transform: translate(-50%, -50%) scale(1.05);
+    }
+
+    .adicionar {
+      display: flex;
+      gap: 1rem;
+    }
+
+    #playerCounter {
+      font-size: 1.5rem;
+      font-weight: bold;
+      text-align: right;
+      margin: 0.5rem 0;
+    }
+
+    /* Estilo do Overlay */
+    .overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+    }
+
+    .overlay.show {
+      display: block;
+    }
+
+    .config-group {
+      margin-bottom: 1rem;
+    }
+
+    .config-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+
+    /* Media query para orientação paisagem (APENAS PLACAR) */
+    @media (orientation: landscape) {
+      .scoreboard {
+        flex-direction: row; /* Times lado a lado em paisagem */
+      }
+
+      .score {
+        font-size: 10rem; /* Pontuação menor em paisagem para caber */
+      }
+
+      .team-name {
+        font-size: 2rem; /* Nome do time menor em paisagem */
+      }
+
+      .set-indicators.left {
+        top: 50%;
+        left: 10px;
+        flex-direction: column;
+        transform: translateY(-50%);
+      }
+      .set-indicators.right {
+        top: 50%;
+        right: 10px;
+        flex-direction: column;
+        transform: translateY(-50%);
+      }
+    }
+
+    /* Media query para telas muito pequenas (ex: celulares antigos) (APENAS PLACAR) */
+    @media (max-width: 480px) {
+      .score {
+        font-size: 15rem; /* Ajusta para telas muito pequenas */
+      }
+    }
+
+    /* Estilos para a animação de vitória */
+    .victory-elements {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none; /* Não interfere com cliques no time */
+      overflow: hidden; /* Garante que os confetes não saiam da tela */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0; /* Escondido por padrão */
+      transition: opacity 0.5s ease-out; /* Transição suave para aparecer/desaparecer */
+      z-index: 10; /* Acima do placar, mas abaixo do menu */
+    }
+
+    .victory-elements.show {
+      opacity: 1;
+    }
+
+    .crown-container {
+      position: absolute;
+      top: 20%; /* Posição acima do nome do time */
+      transform: translateX(-50%);
+      left: 50%;
+      z-index: 20; /* Acima do texto da vitória */
+      opacity: 0;
+      animation: crownAppear 1.5s ease-out forwards; /* Animação de aparição */
+    }
+
+    .crown-icon {
+      font-size: 8rem; /* Tamanho da coroa */
+      color: var(--crown-color); /* Cor da coroa */
+      text-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+    }
+
+    /* Estilos para os confetes */
+    .confetti-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none; /* Não interfere com cliques */
+      overflow: hidden; /* Garante que os confetes não saiam do container */
+    }
+
+    .confetti-piece {
+      position: absolute;
+      background-color: #f00; /* Cor padrão, será sobrescrita por JS */
+      width: 10px;
+      height: 10px;
+      border-radius: 50%; /* Formato de círculo */
+      opacity: 0;
+      animation-fill-mode: forwards;
+    }
+
+    /* Keyframes para as animações */
+    @keyframes scaleIn {
+      from {
+        transform: scale(0.5);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes crownAppear {
+      0% {
+        transform: translate(-50%, -100px) scale(0.5);
+        opacity: 0;
+      }
+      50% {
+        transform: translate(-50%, 20px) scale(1.2);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(-50%, 0) scale(1);
+        opacity: 1;
+      }
+    }
+
+    @keyframes confettiFall {
+      from {
+        transform: translate(0, 0) rotate(0deg);
+        opacity: 1;
+      }
+      to {
+        transform: translate(var(--confetti-end-x), var(--confetti-end-y)) rotate(var(--confetti-rotate-deg));
+        opacity: 0;
+      }
+    }
+
+    /* Novas animações para a pontuação */
+    @keyframes scoreIncreaseAnim {
+      0% { transform: scale(1); color: #ffffff; }
+      50% { transform: scale(1.1); color: #8bc34a; } /* Verde para aumentar */
+      100% { transform: scale(1); color: #ffffff; }
+    }
+
+    @keyframes scoreDecreaseAnim {
+      0% { transform: scale(1); color: #ffffff; }
+      50% { transform: scale(0.9); color: #ff6347; } /* Vermelho tomate para diminuir */
+      100% { transform: scale(1); color: #ffffff; }
+    }
+
+    .score.increase-anim {
+      animation: scoreIncreaseAnim 0.3s ease-out forwards;
+    }
+
+    .score.decrease-anim {
+      animation: scoreDecreaseAnim 0.3s ease-out forwards;
+    }
+
+    /* Estilos base para todos os modais */
+    .game-over-modal, .increase-score-modal, .start-game-modal, .super-victory-modal {
+      display: none; /* Escondido por padrão */
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: var(--modal-bg); /* Fundo semitransparente adaptado ao tema */
+      z-index: 3000; /* Acima de tudo */
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s ease-out;
+    }
+
+    .game-over-modal.show, .increase-score-modal.show, .start-game-modal.show, .super-victory-modal.show {
+      display: flex;
+      opacity: 1;
+    }
+
+    /* Conteúdo do modal base (aplicado a todos os modais) */
+    .modal-content, .increase-score-content, .super-victory-content {
+      background-color: var(--modal-content-bg); /* Fundo do modal adaptado ao tema */
+      padding: clamp(10px, 4vw, 20px); /* Further reduced padding */
+      border-radius: 15px;
+      text-align: center;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      max-width: 90vw; /* Max 90% da largura da viewport */
+      max-height: 90vh; /* Max 90% da altura da viewport */
+      width: clamp(250px, 85vw, 380px); /* Slightly smaller default width */
+      transform: translateY(-20px); /* Pequeno efeito de entrada */
+      opacity: 0;
+      animation: modalPopIn 0.4s ease-out forwards;
+      color: var(--modal-text-color); /* Cor do texto do modal adaptada ao tema */
+      display: flex; /* Para flexbox interno */
+      flex-direction: column; /* Conteúdo em coluna */
+      justify-content: center; /* Centraliza verticalmente */
+      align-items: center; /* Centraliza horizontalmente */
+      overflow-y: auto; /* Adiciona rolagem se o conteúdo exceder a altura */
+      gap: 10px; /* Reduced gap */
+    }
+
+    /* Estilos específicos para o modal de Iniciar Nova Partida (start-game-content) */
+    .start-game-content {
+        background-color: var(--modal-content-bg);
+        padding: clamp(15px, 5vw, 30px); /* Adjusted padding */
+        border-radius: 15px;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        max-width: 95vw;
+        max-height: 95vh;
+        width: clamp(280px, 90vw, 450px); /* Adjusted width */
+        transform: translateY(-20px);
+        opacity: 0;
+        animation: modalPopIn 0.4s ease-out forwards;
+        color: var(--modal-text-color);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        overflow-y: auto;
+        gap: 15px; /* Adjusted gap */
+    }
+
+    .modal-content h3, .increase-score-content h3, .super-victory-content h3, .start-game-content h3 {
+      font-size: clamp(1.6rem, 5.5vw, 2.2rem); /* Further reduced font size */
+      margin-bottom: 0;
+    }
+
+    .modal-content p, .increase-score-content p, .super-victory-content p, .start-game-content p {
+      font-size: clamp(0.9rem, 3vw, 1.3rem); /* Further reduced font size */
+      margin-bottom: 0;
+    }
+
+    .modal-buttons {
+      display: flex;
+      flex-direction: column; /* Padrão em coluna para mobile */
+      gap: 8px; /* Reduced gap */
+      width: 100%;
+      justify-content: space-evenly;
+      flex-wrap: wrap;
+    }
+
+    .modal-buttons button {
+      background-color: var(--modal-button-bg);
+      color: var(--modal-button-text);
+      border: none;
+      padding: 10px 18px; /* Reduced padding */
+      border-radius: 10px;
+      font-size: clamp(0.9rem, 3vw, 1.1rem); /* Reduced font size */
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      flex: 1;
+      min-width: 90px; /* Reduced min-width */
+    }
+
+    .modal-buttons button:hover {
+      background-color: var(--modal-button-hover-bg);
+    }
+
+    /* Estilos específicos para os inputs dos modais */
+    .increase-score-content input[type="number"],
+    .start-game-content input[type="number"] {
+      width: 100%;
+      margin-bottom: 0;
+      text-align: center;
+      font-size: clamp(1.3rem, 4.5vw, 1.8rem); /* Reduced font size */
+      padding: 6px; /* Reduced padding */
+    }
+
+    .start-game-content .input-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 48%; /* Para ficarem lado a lado */
+      gap: 5px; /* Espaçamento entre label e input */
+    }
+
+    .start-game-content .input-row {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      gap: 10px; /* Espaçamento entre os grupos de input */
+    }
+
+    .start-game-content label {
+      display: block;
+      margin-bottom: 0;
+      font-size: clamp(0.8rem, 2.8vw, 1rem); /* Further reduced font size */
+      text-align: center;
+    }
+
+    /* Overlay para a tela de pontuação quando o jogo não está iniciado */
+    .scoreboard-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      z-index: 50;
+      display: block;
+      opacity: 1;
+      transition: opacity 0.5s ease-in-out;
+    }
+
+    .scoreboard-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Estilos para o modal de Super Vitória */
+    .super-victory-modal {
+      background: linear-gradient(45deg, #FFD700, #FFA500, #FF4500);
+      animation: gradientAnimation 5s ease infinite alternate;
+      color: #fff;
+      text-shadow: 3px 3px 6px rgba(0,0,0,0.6);
+      font-weight: bold;
+      z-index: 4000;
+    }
+
+    .super-victory-content {
+      background-color: rgba(0,0,0,0.7);
+      color: #fff;
+      padding: clamp(20px, 7vw, 40px); /* Reduced padding */
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      animation: modalPopIn 0.5s ease-out forwards;
+      max-width: 90vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      gap: 15px; /* Reduced gap */
+    }
+
+    .super-victory-content h3 {
+      font-size: clamp(2.2rem, 7vw, 3.5rem); /* Reduced font size */
+      margin-bottom: 0;
+      text-transform: uppercase;
+      letter-spacing: clamp(1px, 0.8vw, 4px); /* Reduced letter-spacing */
+    }
+
+    .super-victory-content p {
+      font-size: clamp(1.2rem, 4vw, 2rem); /* Reduced font size */
+      margin-bottom: 0;
+    }
+
+    @keyframes gradientAnimation {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 100% 50%; }
+    }
+
+    /* Animação para o modal */
+    @keyframes modalPopIn {
+      from {
+        transform: translateY(-50px) scale(0.8);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+    }
+
+    /* Adaptação para orientação paisagem - Botões do modal em linha */
+    @media (orientation: landscape) {
+      .modal-buttons {
+        flex-direction: row;
+      }
+      .start-game-content .input-row {
+        flex-direction: row; /* Mantém lado a lado em paisagem */
+      }
+      .start-game-content > div {
+        flex-direction: column; /* Label acima do input */
+      }
+      .start-game-content .modal-buttons {
+        flex-basis: 100%;
+        flex-direction: row;
+        justify-content: space-evenly;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <button class="gear-button" onclick="toggleMenu()">
+    <i class="fa-solid fa-bars"></i>
+  </button>
+
+  <div class="overlay" id="menuOverlay"></div>
+  <div class="menu" id="gearMenu">
+    <button onclick="navigateTo('pontuacao')"><i class="fa-solid fa-chart-column" style="margin-right: 0.5rem;"></i>Pontuação</button>
+    <button onclick="navigateTo('jogadores')"><i class="fa-solid fa-users" style="margin-right: 0.5rem;"></i>Jogadores</button>
+    <button onclick="navigateTo('times')"><i class="fa-solid fa-shuffle" style="margin-right: 0.5rem;"></i>Times</button>
+    <button onclick="navigateTo('configuracoes')"><i class="fa-solid fa-gear" style="margin-right: 0.5rem;"></i>Configurações</button>
+    <button onclick="confirmReset()"><i class="fa-solid fa-rotate-right" style="margin-right: 0.5rem;"></i>Reiniciar Partida</button>
+  </div>
+
+  <div id="pontuacao" class="section active">
+    <div class="scoreboard-overlay" id="scoreboardOverlay"></div>
+    <div class="scoreboard">
+      <div class="team-section blue" id="sectionA">
+        <div class="victory-elements">
+          <div class="crown-container">
+            <i class="fa-solid fa-crown crown-icon"></i>
+          </div>
+          <div class="confetti-container"></div>
+        </div>
+        <div class="set-indicators left" id="setIndicatorA"></div>
+        <div class="team-name" id="teamNameA">Time A</div>
+        <div class="score" id="scoreA">0</div>
+      </div>
+      <div class="team-section red" id="sectionB">
+        <div class="victory-elements">
+          <div class="crown-container">
+            <i class="fa-solid fa-crown crown-icon"></i>
+          </div>
+          <div class="confetti-container"></div>
+        </div>
+        <div class="set-indicators right" id="setIndicatorB"></div>
+        <div class="team-name" id="teamNameB">Time B</div>
+        <div class="score" id="scoreB">0</div>
+      </div>
+    </div>
+    <button class="btn start-game-button" id="startGameButton" onclick="showStartGameModal()">Iniciar Partida</button>
+  </div>
+
+  <div id="jogadores" class="section">
+    <h2>Jogadores</h2>
+    <span class="adicionar">
+      <input type="text" id="playerName" placeholder="Nome do jogador" />
+      <button class="btn" onclick="addPlayer()">Adicionar</button>
+    </span>
+    <span style="display:flex;flex-direction: row-reverse;justify-content: space-between;">
+          <div id="playerCounter">0/0</div>
+
+      <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+        <button class="btn" id="toggleSelectAllButton" onclick="toggleSelectAllPlayers()">Alternar Seleção</button>
+      </div>
+    </span>
+
+
+    <ul id="playerList"></ul>
+  </div>
+
+  <div id="times" class="section">
+    <h2>Gerar Times</h2>
+    <label>Jogadores por time:</label>
+    <span class="adicionar">
+      <input type="number" id="playersPerTeam" min="1" value="4" />
+      <button class="btn" onclick="generateCustomTeams()">Gerar</button>
+    </span>    
+    <div class="teams" id="teamsContainer"></div>
+  </div>
+
+  <div id="configuracoes" class="section">
+    <h2>Configurações</h2>
+    <div class="config-group">
+      <label for="winningScore">Pontos para Vencer (Set):</label>
+      <input type="number" id="winningScore" min="1" value="15" onchange="saveSettings()">
+    </div>
+    <div class="config-group">
+      <label for="setsToWinConfig">Número de Sets para Vencer a Partida (0 para ilimitado):</label>
+      <input type="number" id="setsToWinConfig" min="0" value="1" onchange="saveSettings()">
+    </div>
+    <div class="config-group">
+      <label for="editTeamNameA">Nome do Time A:</label>
+      <input type="text" id="editTeamNameA" value="Time A" onchange="saveTeamNames()">
+    </div>
+    <div class="config-group">
+      <label for="editTeamNameB">Nome do Time B:</label>
+      <input type="text" id="editTeamNameB" value="Time B" onchange="saveTeamNames()">
+    </div>
+    <div class="config-group">
+      <label for="themeSelect">Tema:</label>
+      <select id="themeSelect" onchange="setTheme(this.value)">
+        <option value="dark">Escuro</option>
+        <option value="light">Claro</option>
+      </select>
+    </div>
+    <div class="config-group">
+      <label for="vibrationEnabled">Vibração ao Pontuar:</label>
+      <input type="checkbox" id="vibrationEnabled" onchange="saveSettings()">
+    </div>
+  </div>
+
+  <div id="gameOverModal" class="game-over-modal">
+    <div class="modal-content">
+      <h3 id="modalWinningTeamName"></h3>
+      <p id="modalMessage"></p>
+      <div class="modal-buttons">
+        <button onclick="startNewGame()">Novo Jogo</button>
+        <button id="newSetButton" onclick="startNewSet()">Novo Set</button>
+        <button onclick="increaseWinningScoreModal()">Continuar partida</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="increaseScoreModal" class="increase-score-modal">
+    <div class="increase-score-content">
+      <h3>Aumentar Pontuação</h3>
+      <p>Defina o novo valor para a pontuação de vitória do set:</p>
+      <input type="number" id="newWinningScoreInput" min="1" value="15">
+      <div class="modal-buttons">
+        <button onclick="confirmIncreaseWinningScore()">Confirmar</button>
+        <button onclick="hideIncreaseScoreModal()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="startGameModal" class="start-game-modal">
+    <div class="start-game-content">
+      <h3>Iniciar Nova Partida</h3>
+      <p>Defina as configurações para a partida:</p>
+      <div class="input-row">
+        <div class="input-group">
+          <label for="initialWinningScore">Pontos por set:</label>
+          <input type="number" id="initialWinningScore" min="1" value="15">
+        </div>
+        <div class="input-group">
+          <label for="initialNumberOfSets">Número de sets:</label>
+          <input type="number" id="initialNumberOfSets" min="0" value="0">
+        </div>
+      </div>
+      <div class="modal-buttons">
+        <button onclick="confirmStartGame()">Iniciar Partida</button>
+        <button onclick="hideStartGameModal()" style="background-color: #dc3545; --modal-button-hover-bg: #c82333;">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="superVictoryModal" class="super-victory-modal">
+    <div class="super-victory-content">
+      <h3 id="superVictoryTeamName"></h3>
+      <p>VENCEU A PARTIDA!</p>
+      <div class="confetti-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
+    </div>
+  </div>
+
+  <script>
+    // Variáveis globais para armazenar o estado do jogo e configurações
+    let players = JSON.parse(localStorage.getItem('players') || '[]'); // Lista de jogadores
+    let checkedState = JSON.parse(localStorage.getItem('checkedPlayers') || '{}'); // Estado de seleção dos jogadores
+    let scoreA = 0, scoreB = 0; // Pontuações dos times A e B
+    let setsA = 0, setsB = 0; // Sets ganhos pelos times
+    let gameEnded = false; // Flag para controlar se um set terminou
+    let gameStarted = false; // Flag para controlar se a partida foi iniciada
+    let lastWinningTeam = null; // Armazena o ID do último time vencedor ('A' ou 'B')
+
+    let winningScore = parseInt(localStorage.getItem('winningScore') || '15'); // Pontuação para vencer o set, carregada do localStorage
+    let setsToWin = parseInt(localStorage.getItem('setsToWin') || '1'); // Número de sets para vencer a partida (0 para ilimitado) - carregado do localStorage
+    let teamNameA = localStorage.getItem('teamNameA') || 'Time A'; // Nome do Time A, carregado do localStorage
+    let teamNameB = localStorage.getItem('teamNameB') || 'Time B'; // Nome do Time B, carregado do localStorage
+    let currentTheme = localStorage.getItem('theme') || 'dark'; // Tema atual, carregado do localStorage
+    let vibrationEnabled = JSON.parse(localStorage.getItem('vibrationEnabled') || 'true'); // Vibração ativada por padrão
+
+    /**
+     * Alterna a visibilidade do menu de configurações e do overlay.
+     */
+    function toggleMenu() {
+      const menu = document.getElementById("gearMenu");
+      const overlay = document.getElementById("menuOverlay");
+      menu.classList.toggle("show");
+      overlay.classList.toggle("show");
+
+      // Adiciona ou remove o listener para fechar o menu ao clicar fora
+      if (menu.classList.contains("show")) {
+        document.addEventListener('click', closeMenuOnOutsideClick);
+      } else {
+        document.removeEventListener('click', closeMenuOnOutsideClick);
+      }
+    }
+
+    /**
+     * Fecha o menu de configurações se o clique ocorrer fora do menu ou do botão de engrenagem.
+     * @param {Event} e - O evento de clique.
+     */
+    function closeMenuOnOutsideClick(e) {
+      const menu = document.getElementById("gearMenu");
+      const button = document.querySelector(".gear-button");
+      // Verifica se o clique não foi no menu, no botão ou no overlay
+      if (!menu.contains(e.target) && !button.contains(e.target)) {
+        // Apenas fecha se o menu estiver realmente aberto
+        if (menu.classList.contains("show")) {
+            menu.classList.remove("show");
+            document.getElementById("menuOverlay").classList.remove("show");
+            document.removeEventListener('click', closeMenuOnOutsideClick);
+        }
+      }
+    }
+
+    /**
+     * Navega para a seção especificada pelo ID.
+     * @param {string} id - O ID da seção para navegar.
+     */
+    function navigateTo(id) {
+      showSection(id);
+      document.getElementById("gearMenu").classList.remove("show");
+      document.getElementById("menuOverlay").classList.remove("show");
+    }
+
+    /**
+     * Mostra a seção com o ID especificado e esconde as outras.
+     * @param {string} id - O ID da seção a ser mostrada.
+     */
+    function showSection(id) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    /**
+     * Salva o estado de seleção dos jogadores no localStorage.
+     */
+    function saveCheckedState() {
+      localStorage.setItem('checkedPlayers', JSON.stringify(checkedState));
+    }
+
+    /**
+     * Adiciona um novo jogador à lista.
+     */
+    function addPlayer() {
+      const input = document.getElementById("playerName");
+      const name = input.value.trim();
+      if (name && !players.includes(name)) {
+        players.push(name);
+        checkedState[name] = true; // Marca o novo jogador como selecionado por padrão
+        input.value = "";
+        updatePlayerList(); // Atualiza a exibição da lista de jogadores
+        localStorage.setItem('players', JSON.stringify(players)); // Salva a lista de jogadores
+        saveCheckedState(); // Salva o estado de seleção
+      } else if (players.includes(name)) {
+        alert("Este nome já está na lista."); // Alerta se o nome já existe
+      }
+    }
+
+    /**
+     * Atualiza a exibição da lista de jogadores e o contador.
+     */
+    function updatePlayerList() {
+      players.sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' })); // Ordena os jogadores
+      const list = document.getElementById("playerList");
+      list.innerHTML = ""; // Limpa a lista atual
+      players.forEach((p, i) => {
+        const li = document.createElement("li");
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = checkedState[p] !== false; // Define o estado do checkbox
+        checkbox.style.marginRight = '0.5rem';
+        checkbox.style.width = '1rem';
+        checkbox.onchange = () => {
+          checkedState[p] = checkbox.checked; // Atualiza o estado de seleção
+          saveCheckedState();
+          updatePlayerCounter(); // Atualiza o contador de jogadores
+          updateToggleSelectAllButtonText(); // Atualiza o texto do botão de alternância
+        };
+
+        const span = document.createElement("span");
+        span.textContent = p; // Nome do jogador
+
+        const btn = document.createElement("button");
+        btn.textContent = "Remover";
+        btn.className = "btn";
+        btn.onclick = () => {
+          if (confirm("Tem certeza que deseja remover este jogador?")) { // Confirmação de remoção
+            players.splice(i, 1); // Remove o jogador da lista
+            delete checkedState[p]; // Remove o estado de seleção do jogador
+            updatePlayerList();
+            localStorage.setItem('players', JSON.stringify(players));
+            saveCheckedState();
+          }
+        };
+
+        li.appendChild(checkbox);
+        li.appendChild(span);
+        li.appendChild(btn);
+        list.appendChild(li);
+      });
+
+      updatePlayerCounter(); // Atualiza o contador após a lista ser renderizada
+      updateToggleSelectAllButtonText(); // Atualiza o texto do botão de alternância após a lista ser renderizada
+    }
+
+    /**
+     * Atualiza o contador de jogadores selecionados/total.
+     */
+    function updatePlayerCounter() {
+      const selected = players.filter(p => checkedState[p] !== false).length; // Conta jogadores selecionados
+      const total = players.length; // Total de jogadores
+      document.getElementById("playerCounter").textContent = `${selected}/${total}`;
+    }
+
+    /**
+     * Alterna a seleção de todos os jogadores (seleciona todos se nenhum/alguns estiverem selecionados, desmarca todos se todos estiverem selecionados).
+     */
+    function toggleSelectAllPlayers() {
+      const allSelected = players.every(p => checkedState[p] !== false);
+      let confirmationMessage;
+      let action;
+
+      if (allSelected) {
+        confirmationMessage = "Tem certeza que deseja desmarcar todos os jogadores?";
+        action = false; // Desmarcar todos
+      } else {
+        confirmationMessage = "Tem certeza que deseja selecionar todos os jogadores?";
+        action = true; // Selecionar todos
+      }
+
+      if (confirm(confirmationMessage)) {
+        players.forEach(p => checkedState[p] = action);
+        saveCheckedState();
+        updatePlayerList();
+      }
+    }
+
+    /**
+     * Atualiza o texto do botão de alternância de seleção de jogadores.
+     */
+    function updateToggleSelectAllButtonText() {
+      const toggleButton = document.getElementById('toggleSelectAllButton');
+      if (toggleButton) {
+        const allSelected = players.every(p => checkedState[p] !== false);
+        if (allSelected && players.length > 0) {
+          toggleButton.textContent = "Desselecionar Todos";
+        } else {
+          toggleButton.textContent = "Selecionar Todos";
+        }
+      }
+    }
+
+    /**
+     * Confirma e reinicia a pontuação do jogo.
+     */
+    function confirmReset() {
+      if (confirm("Tem certeza que deseja reiniciar a pontuação? Isso irá zerar os pontos e sets de ambos os times.")) {
+        resetGame();
+        // Fecha o menu após reiniciar, se estiver aberto
+        document.getElementById("gearMenu").classList.remove("show");
+        document.getElementById("menuOverlay").classList.remove("show");
+        // Se o modal de iniciar partida estiver aberto, feche-o também
+        hideStartGameModal();
+      }
+    }
+
+    /**
+     * Reinicia as pontuações dos times para zero.
+     */
+    function resetGame() {
+      scoreA = 0;
+      scoreB = 0;
+      setsA = 0; // Zera os sets também
+      setsB = 0; // Zera os sets também
+      gameEnded = false; // Permite pontuar novamente
+      gameStarted = false; // Jogo não está mais iniciado
+      lastWinningTeam = null; // Reseta o último time vencedor
+      document.getElementById("scoreA").textContent = 0;
+      document.getElementById("scoreB").textContent = 0;
+      updateSetsDisplay(); // Atualiza a exibição dos sets
+      // Removido: document.getElementById('startGameButton').style.display = 'block';
+      // Removido: document.getElementById('scoreboardOverlay').classList.remove('hidden');
+    }
+
+    /**
+     * Embaralha um array em ordem aleatória (Fisher-Yates shuffle).
+     */
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    /**
+     * Gera times personalizados com base nos jogadores selecionados e no número de jogadores por time.
+     */
+    function generateCustomTeams() {
+      const container = document.getElementById("teamsContainer");
+      container.innerHTML = ""; // Limpa o container de times
+
+      const perTeam = parseInt(document.getElementById("playersPerTeam").value);
+      if (isNaN(perTeam) || perTeam <= 0) {
+        alert("Informe um número válido de jogadores por time.");
+        return;
+      }
+
+      const selectedPlayers = players.filter(p => checkedState[p] !== false); // Filtra apenas jogadores selecionados
+
+      if (selectedPlayers.length < 2) {
+        alert("Selecione pelo menos dois jogadores.");
+        return;
+      }
+
+      shuffle(selectedPlayers); // Embaralha os jogadores selecionados
+      const totalTeams = Math.ceil(selectedPlayers.length / perTeam); // Calcula o número total de times
+
+      // Cria e exibe os times
+      for (let i = 0; i < totalTeams; i++) {
+        const teamPlayers = selectedPlayers.slice(i * perTeam, (i + 1) * perTeam);
+        const teamDiv = document.createElement("div");
+        teamDiv.innerHTML = `<h3>Time ${i + 1}</h3><ul>${teamPlayers.map(p => `<li>${p}</li>`).join('')}</ul>`;
+        container.appendChild(teamDiv);
+      }
+    }
+
+    /**
+     * Configura a funcionalidade de deslizar para diminuir a pontuação em uma seção.
+     * @param {string} id - O ID da seção do time.
+     * @param {string} team - O identificador do time ('A' ou 'B').
+     */
+    function setupSwipeToDecrease(id, team) {
+      const el = document.getElementById(id);
+      let startY = null;
+
+      el.addEventListener('touchstart', e => {
+        if (e.touches.length === 1) {
+          startY = e.touches[0].clientY; // Posição Y inicial do toque
+        }
+      });
+
+      el.addEventListener('touchend', e => {
+        if (startY !== null && e.changedTouches.length === 1) {
+          const endY = e.changedTouches[0].clientY; // Posição Y final do toque
+          // Se o deslize foi para baixo (endY - startY > 30px)
+          if (endY - startY > 30) {
+            changeScore(team, -1); // Diminui a pontuação
+          }
+          startY = null; // Reseta a posição inicial
+        }
+      });
+    }
+
+    /**
+     * Aciona a vibração do dispositivo, se ativada nas configurações e suportada pelo navegador.
+     */
+    function triggerVibration() {
+      if (vibrationEnabled && navigator.vibrate) {
+        console.log('Vibration triggered!');
+        navigator.vibrate(100); // Vibra por 100ms
+      } else {
+        console.log('Vibration not enabled or not supported.');
+      }
+    }
+
+    /**
+     * Altera a pontuação de um time.
+     * @param {string} team - O identificador do time ('A' ou 'B').
+     * @param {number} delta - O valor a ser adicionado (positivo para aumentar, negativo para diminuir).
+     */
+    function changeScore(team, delta) {
+      if (!gameStarted && delta > 0) { // Impede adicionar pontos se o jogo não foi iniciado
+        return;
+      }
+      // Se o set terminou, impede qualquer alteração de pontuação (aumento ou diminuição)
+      if (gameEnded) {
+        return;
+      }
+
+      const scoreElement = document.getElementById('score' + team);
+      // Remove classes de animação existentes para garantir que a animação possa ser reativada
+      scoreElement.classList.remove('increase-anim', 'decrease-anim');
+      // Força um reflow para reiniciar a animação
+      void scoreElement.offsetWidth; 
+
+      if (team === 'A') {
+        scoreA = Math.max(0, scoreA + delta); // Garante que a pontuação não seja negativa
+        scoreElement.textContent = scoreA;
+      } else {
+        scoreB = Math.max(0, scoreB + delta);
+        scoreElement.textContent = scoreB;
+      }
+
+      // Adiciona a classe de animação apropriada e vibra
+      if (delta > 0) {
+        scoreElement.classList.add('increase-anim');
+        triggerVibration();
+      } else if (delta < 0) {
+        scoreElement.classList.add('decrease-anim');
+        triggerVibration();
+      }
+
+      checkWinCondition(); // Verifica se a condição de vitória foi atingida
+    }
+
+    /**
+     * Verifica se algum time atingiu a condição de vitória do set.
+     */
+    function checkWinCondition() {
+      if (gameEnded) return; // Se o set já terminou, não verifica novamente
+
+      let winner = null;
+      if (scoreA >= winningScore && scoreA - scoreB >= 2) {
+        winner = 'A';
+      } else if (scoreB >= winningScore && scoreB - scoreA >= 2) {
+        winner = 'B';
+      }
+
+      if (winner) {
+        gameEnded = true; // Bloqueia a pontuação
+        lastWinningTeam = winner;
+        showVictoryAnimation(winner, winner === 'A' ? teamNameA : teamNameB);
+
+        // Após a animação, verifica se a partida foi vencida ou apenas o set
+        setTimeout(() => {
+          let currentSetsA = setsA;
+          let currentSetsB = setsB;
+          if (winner === 'A') {
+            currentSetsA++;
+          } else {
+            currentSetsB++;
+          }
+
+          if (setsToWin > 0 && (currentSetsA >= setsToWin || currentSetsB >= setsToWin)) {
+            // A partida inteira foi vencida
+            showSuperVictoryAnimation(winner === 'A' ? teamNameA : teamNameB);
+          } else {
+            // Apenas um set foi vencido, a partida continua
+            showGameOverModal(winner === 'A' ? teamNameA : teamNameB, 'set_won');
+          }
+        }, 3000); // Após 3 segundos (duração da animação de vitória normal)
+      }
+    }
+
+    /**
+     * Exibe a animação de vitória para o time vencedor na própria tela de pontuação.
+     * @param {string} teamId - O ID do time vencedor ('A' ou 'B').
+     * @param {string} winningTeamName - O nome do time vencedor.
+     */
+    function showVictoryAnimation(teamId, winningTeamName) {
+      const teamSection = document.getElementById('section' + teamId);
+      const victoryElements = teamSection.querySelector('.victory-elements');
+      const crownContainer = victoryElements.querySelector('.crown-container');
+      const confettiContainer = victoryElements.querySelector('.confetti-container');
+
+      // Limpa confetes anteriores
+      confettiContainer.innerHTML = '';
+
+      // Mostra os elementos de vitória
+      victoryElements.classList.add('show');
+
+      // Reseta e inicia a animação da coroa
+      crownContainer.style.opacity = 0;
+      crownContainer.style.animation = 'none';
+      void crownContainer.offsetWidth; // Trigger reflow
+      crownContainer.style.animation = 'crownAppear 1.5s ease-out forwards'; // Duração da animação da coroa
+
+      // Cria e anima os confetes
+      const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f', '#ffa500']; // Cores vibrantes para confetes
+      for (let i = 0; i < 100; i++) { // 100 peças de confete
+        const confetti = document.createElement('div');
+        confetti.classList.add('confetti-piece');
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.width = `${Math.random() * 10 + 5}px`; // Tamanho aleatório de 5 a 15px
+        confetti.style.height = confetti.style.width;
+        
+        // Posição inicial no centro da seção do time
+        const startX = teamSection.offsetWidth / 2;
+        const startY = teamSection.offsetHeight / 2;
+        confetti.style.left = `${startX}px`;
+        confetti.style.top = `${startY}px`;
+
+        // Propriedades aleatórias para a animação
+        const endX = (Math.random() - 0.5) * teamSection.offsetWidth * 1.5; // Espalha horizontalmente
+        const endY = (Math.random() - 0.5) * teamSection.offsetHeight * 1.5; // Espalha verticalmente
+        const rotateDeg = Math.random() * 720; // Rotação aleatória
+        const duration = Math.random() * 1.5 + 1.5; // Duração de 1.5 a 3 segundos
+        const delay = Math.random() * 0.5; // Pequeno atraso para efeito de explosão
+
+        confetti.style.setProperty('--confetti-end-x', `${endX}px`);
+        confetti.style.setProperty('--confetti-end-y', `${endY}px`);
+        confetti.style.setProperty('--confetti-rotate-deg', `${rotateDeg}deg`);
+        confetti.style.animation = `confettiFall ${duration}s ease-out ${delay}s forwards`;
+        confetti.style.opacity = 1; // Garante que comece visível
+
+        confettiContainer.appendChild(confetti);
+
+        confetti.addEventListener('animationend', () => {
+          confetti.remove();
+        });
+      }
+
+      // Esconde os elementos de vitória após 3 segundos e mostra o modal de fim de jogo
+      setTimeout(() => {
+        victoryElements.classList.remove('show');
+        // O modal é mostrado dentro de checkWinCondition agora
+      }, 3000);
+    }
+
+    /**
+     * Exibe o modal de fim de jogo.
+     * @param {string} winningTeamName - O nome do time vencedor.
+     * @param {string} gameStatus - 'set_won' se apenas o set foi vencido, 'game_won' se a partida foi vencida.
+     */
+    function showGameOverModal(winningTeamName, gameStatus) {
+      const modal = document.getElementById('gameOverModal');
+      const modalWinningTeamName = document.getElementById('modalWinningTeamName');
+      const modalMessage = document.getElementById('modalMessage');
+      const newSetButton = document.getElementById('newSetButton');
+
+      modalWinningTeamName.textContent = winningTeamName;
+      if (gameStatus === 'game_won') {
+        modalMessage.textContent = 'Venceu a Partida!';
+        newSetButton.style.display = 'none'; // Oculta "Novo Set" se a partida terminou
+      } else { // 'set_won'
+        modalMessage.textContent = 'Venceu o Set!';
+        newSetButton.style.display = 'block'; // Mostra "Novo Set" se a partida continua
+      }
+      modal.classList.add('show');
+    }
+
+    /**
+     * Esconde o modal de fim de jogo.
+     */
+    function hideGameOverModal() {
+      document.getElementById('gameOverModal').classList.remove('show');
+    }
+
+    /**
+     * Exibe o modal para aumentar a pontuação de vitória.
+     */
+    function increaseWinningScoreModal() {
+      hideGameOverModal(); // Esconde o modal de fim de jogo primeiro
+      document.getElementById('increaseScoreModal').classList.add('show');
+      document.getElementById('newWinningScoreInput').value = winningScore + 5; // Sugere +5 por padrão
+    }
+
+    /**
+     * Esconde o modal para aumentar a pontuação de vitória.
+     */
+    function hideIncreaseScoreModal() {
+      document.getElementById('increaseScoreModal').classList.remove('show');
+    }
+
+    /**
+     * Confirma o aumento da pontuação de vitória.
+     */
+    function confirmIncreaseWinningScore() {
+      const newScore = parseInt(document.getElementById('newWinningScoreInput').value);
+      if (isNaN(newScore) || newScore <= 0) {
+        alert("Por favor, insira um número de pontos válido.");
+        return;
+      }
+      if (newScore <= winningScore) {
+        alert(`A nova pontuação (${newScore}) deve ser maior que a pontuação atual (${winningScore}).`);
+        return;
+      }
+
+      winningScore = newScore;
+      localStorage.setItem('winningScore', winningScore.toString());
+      document.getElementById('winningScore').value = winningScore; // Atualiza o campo nas configurações
+      alert(`Pontuação para vencer aumentada para ${winningScore}!`);
+      hideIncreaseScoreModal();
+      gameEnded = false; // Permite continuar o jogo com a nova pontuação
+    }
+
+    /**
+     * Exibe o modal para iniciar uma nova partida.
+     */
+    function showStartGameModal() {
+      document.getElementById('startGameModal').classList.add('show');
+      document.getElementById('initialWinningScore').value = winningScore; // Preenche com a última pontuação de set
+      document.getElementById('initialNumberOfSets').value = setsToWin; // Preenche com o último número de sets
+      document.getElementById('startGameButton').style.display = 'none'; // Oculta o botão de iniciar
+    }
+
+    /**
+     * Esconde o modal para iniciar uma nova partida.
+     */
+    function hideStartGameModal() {
+      document.getElementById('startGameModal').classList.remove('show');
+      document.getElementById('startGameButton').style.display = 'block'; // Mostra o botão de iniciar novamente
+    }
+
+    /**
+     * Confirma as configurações e inicia uma nova partida.
+     */
+    function confirmStartGame() {
+      const newWinningScore = parseInt(document.getElementById('initialWinningScore').value);
+      const newSetsToWin = parseInt(document.getElementById('initialNumberOfSets').value);
+
+      if (isNaN(newWinningScore) || newWinningScore <= 0) {
+        alert("Por favor, insira um valor válido para 'Pontos por set'.");
+        return;
+      }
+      if (isNaN(newSetsToWin) || newSetsToWin < 0) {
+        alert("Por favor, insira um valor válido para 'Número de sets'.");
+        return;
+      }
+
+      winningScore = newWinningScore;
+      setsToWin = newSetsToWin;
+      localStorage.setItem('winningScore', winningScore.toString()); // Salva a pontuação do set
+      localStorage.setItem('setsToWin', setsToWin.toString()); // Salva o número de sets para vencer
+
+      // Atualiza os campos nas configurações para refletir os novos valores
+      document.getElementById('winningScore').value = winningScore;
+      document.getElementById('setsToWinConfig').value = setsToWin;
+
+      hideStartGameModal();
+      resetGame(); // Reseta pontuações, sets, e gameEnded/gameStarted flags
+      gameStarted = true; // Define que o jogo foi iniciado
+      document.getElementById('startGameButton').style.display = 'none'; // Garante que o botão permaneça oculto
+      document.getElementById('scoreboardOverlay').classList.add('hidden'); // Oculta o overlay escuro
+    }
+
+
+    /**
+     * Inicia um novo jogo (reseta pontuações e sets).
+     */
+    function startNewGame() {
+      hideGameOverModal();
+      resetGame(); // Reseta tudo (pontos, sets, flags)
+      showStartGameModal(); // Abre o modal para configurar uma nova partida
+    }
+
+    /**
+     * Inicia um novo set (reseta apenas as pontuações atuais e incrementa o set do vencedor).
+     */
+    function startNewSet() {
+      hideGameOverModal();
+      if (lastWinningTeam === 'A') {
+        setsA++;
+      } else if (lastWinningTeam === 'B') {
+        setsB++;
+      }
+      scoreA = 0; // Reseta apenas os pontos para o novo set
+      scoreB = 0;
+      gameEnded = false; // Permite pontuar novamente
+      document.getElementById("scoreA").textContent = 0;
+      document.getElementById("scoreB").textContent = 0;
+      updateSetsDisplay(); // Atualiza a exibição dos sets
+      alert('Novo Set Iniciado!');
+    }
+
+    /**
+     * Exibe a animação de super vitória quando a partida é vencida.
+     * @param {string} winningTeamName - O nome do time vencedor da partida.
+     */
+    function showSuperVictoryAnimation(winningTeamName) {
+      const superVictoryModal = document.getElementById('superVictoryModal');
+      const superVictoryTeamName = document.getElementById('superVictoryTeamName');
+      const confettiContainer = superVictoryModal.querySelector('.confetti-container');
+
+      superVictoryTeamName.textContent = winningTeamName;
+      superVictoryModal.classList.add('show');
+
+      // Limpa confetes anteriores
+      confettiContainer.innerHTML = '';
+
+      // Cria e anima muitos confetes para a super vitória
+      const colors = ['#FFD700', '#FFA500', '#FF4500', '#FFFFFF', '#007bff', '#dc3545']; // Cores mais festivas
+      for (let i = 0; i < 200; i++) { // Mais confetes
+        const confetti = document.createElement('div');
+        confetti.classList.add('confetti-piece');
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.width = `${Math.random() * 15 + 8}px`; // Confetes maiores
+        confetti.style.height = confetti.style.width;
+        
+        // Posição inicial aleatória no topo da tela
+        const startX = Math.random() * window.innerWidth;
+        const startY = -Math.random() * window.innerHeight; // Começa acima da tela
+        confetti.style.left = `${startX}px`;
+        confetti.style.top = `${startY}px`;
+
+        // Propriedades aleatórias para a animação
+        const endX = (Math.random() - 0.5) * window.innerWidth * 2; // Espalha mais horizontalmente
+        const endY = window.innerHeight + Math.random() * window.innerHeight; // Cai para baixo da tela
+        const rotateDeg = Math.random() * 1080; // Mais rotação
+        const duration = Math.random() * 2 + 3; // Duração de 3 a 5 segundos
+        const delay = Math.random() * 1; // Pequeno atraso para efeito de chuva
+
+        confetti.style.setProperty('--confetti-end-x', `${endX}px`);
+        confetti.style.setProperty('--confetti-end-y', `${endY}px`);
+        confetti.style.setProperty('--confetti-rotate-deg', `${rotateDeg}deg`);
+        confetti.style.animation = `confettiFall ${duration}s ease-out ${delay}s forwards`;
+        confetti.style.opacity = 1;
+
+        confettiContainer.appendChild(confetti);
+
+        confetti.addEventListener('animationend', () => {
+          confetti.remove();
+        });
+      }
+
+      // Esconde o modal de super vitória após um tempo e então mostra o modal de fim de jogo
+      setTimeout(() => {
+        superVictoryModal.classList.remove('show');
+        showGameOverModal(winningTeamName, 'game_won'); // Chama o modal de fim de jogo com status de partida vencida
+      }, 5000); // Animação de super vitória dura 5 segundos
+    }
+
+
+    /**
+     * Atualiza a exibição das estrelas de set para cada time.
+     */
+    function updateSetsDisplay() {
+      const setIndicatorA = document.getElementById('setIndicatorA');
+      const setIndicatorB = document.getElementById('setIndicatorB');
+      setIndicatorA.innerHTML = ''; // Limpa indicadores existentes
+      setIndicatorB.innerHTML = '';
+
+      for (let i = 0; i < setsA; i++) {
+        const star = document.createElement('i');
+        star.classList.add('fa-solid', 'fa-star', 'set-star');
+        setIndicatorA.appendChild(star);
+      }
+      for (let i = 0; i < setsB; i++) {
+        const star = document.createElement('i');
+        star.classList.add('fa-solid', 'fa-star', 'set-star');
+        setIndicatorB.appendChild(star);
+      }
+    }
+
+    /**
+     * Salva as configurações de pontos para vencer e sets no localStorage.
+     */
+    function saveSettings() {
+      winningScore = parseInt(document.getElementById('winningScore').value);
+      setsToWin = parseInt(document.getElementById('setsToWinConfig').value); // Obtém o valor do novo input
+      vibrationEnabled = document.getElementById('vibrationEnabled').checked; // Obtém o valor do checkbox de vibração
+
+      if (isNaN(winningScore) || winningScore <= 0) {
+        winningScore = 15; // Valor padrão se a entrada for inválida
+        document.getElementById('winningScore').value = 15;
+      }
+      if (isNaN(setsToWin) || setsToWin < 0) { // Validação para setsToWin
+        setsToWin = 1; // Valor padrão se a entrada for inválida
+        document.getElementById('setsToWinConfig').value = 1;
+      }
+
+      localStorage.setItem('winningScore', winningScore.toString());
+      localStorage.setItem('setsToWin', setsToWin.toString()); // Salva o número de sets para vencer
+      localStorage.setItem('vibrationEnabled', JSON.stringify(vibrationEnabled)); // Salva o estado da vibração
+      // alert('Configurações salvas!'); // Removido para não alertar em cada mudança
+    }
+
+    /**
+     * Salva os nomes dos times no localStorage e atualiza a exibição.
+     */
+    function saveTeamNames() {
+      teamNameA = document.getElementById('editTeamNameA').value.trim();
+      teamNameB = document.getElementById('editTeamNameB').value.trim();
+
+      // Define nomes padrão se os campos estiverem vazios
+      if (teamNameA === '') teamNameA = 'Time A';
+      if (teamNameB === '') teamNameB = 'Time B';
+
+      localStorage.setItem('teamNameA', teamNameA);
+      localStorage.setItem('teamNameB', teamNameB);
+
+      document.getElementById('teamNameA').textContent = teamNameA;
+      document.getElementById('teamNameB').textContent = teamNameB;
+      // alert('Nomes dos times salvos!'); // Removido para não alertar em cada mudança
+    }
+
+    /**
+     * Define o tema do aplicativo (claro ou escuro).
+     * @param {string} themeName - O nome do tema ('dark' ou 'light').
+     * @param {boolean} save - Se o tema deve ser salvo no localStorage (true por padrão).
+     */
+    function setTheme(themeName, save = true) {
+      if (themeName === 'light') {
+        document.body.classList.add('light-theme');
+      } else {
+        document.body.classList.remove('light-theme');
+      }
+      currentTheme = themeName;
+      if (save) {
+        localStorage.setItem('theme', themeName);
+        alert('Tema alterado para ' + (themeName === 'dark' ? 'Escuro' : 'Claro') + '!');
+      }
+    }
+
+    /**
+     * Carrega as configurações (pontos para vencer, nomes dos times e tema) do localStorage
+     * e as aplica aos elementos da interface.
+     */
+    function loadSettings() {
+      winningScore = parseInt(localStorage.getItem('winningScore') || '15');
+      setsToWin = parseInt(localStorage.getItem('setsToWin') || '1'); // Carrega setsToWin
+      vibrationEnabled = JSON.parse(localStorage.getItem('vibrationEnabled') || 'true'); // Carrega o estado da vibração
+      
+      document.getElementById('winningScore').value = winningScore;
+      document.getElementById('setsToWinConfig').value = setsToWin; // Aplica setsToWin ao input
+      document.getElementById('editTeamNameA').value = teamNameA;
+      document.getElementById('editTeamNameB').value = teamNameB;
+      document.getElementById('teamNameA').textContent = teamNameA;
+      document.getElementById('teamNameB').textContent = teamNameB;
+      document.getElementById('vibrationEnabled').checked = vibrationEnabled; // Aplica o estado da vibração ao checkbox
+
+      // Carrega a configuração do tema e a aplica
+      currentTheme = localStorage.getItem('theme') || 'dark';
+      document.getElementById('themeSelect').value = currentTheme;
+      setTheme(currentTheme, false); // Aplica o tema sem exibir o alerta ao carregar
+    }
+
+    /**
+     * Configura a funcionalidade de deslize horizontal para navegar entre as seções.
+     */
+    function setupSwipeBetweenSections() {
+      let touchStartX = null;
+      document.body.addEventListener('touchstart', e => {
+        // Ignorar o swipe se o menu estiver aberto ou um modal estiver ativo
+        if (document.getElementById("gearMenu").classList.contains("show") ||
+            document.getElementById("gameOverModal").classList.contains("show") ||
+            document.getElementById("increaseScoreModal").classList.contains("show") ||
+            document.getElementById("startGameModal").classList.contains("show") ||
+            document.getElementById("superVictoryModal").classList.contains("show")) { // Adicionado o modal de super vitória
+            touchStartX = null; // Impede o swipe
+            return;
+        }
+        touchStartX = e.touches[0].clientX; // Posição X inicial do toque
+      });
+      document.body.addEventListener('touchend', e => {
+        if (touchStartX === null) return; // Sai se não houve toque inicial
+        const touchEndX = e.changedTouches[0].clientX; // Posição X final do toque
+        const dx = touchStartX - touchEndX; // Diferença no eixo X
+        const threshold = 50; // Limiar para considerar um deslize
+        const sections = ['pontuacao', 'jogadores', 'times', 'configuracoes']; // IDs das seções
+        const currentIndex = sections.findIndex(id => document.getElementById(id).classList.contains('active')); // Seção atual
+        let nextIndex = currentIndex;
+        
+        // Determina a próxima seção com base na direção do deslize
+        if (dx > threshold) { // Deslize para a esquerda (próxima seção)
+          nextIndex = (currentIndex + 1) % sections.length;
+        } else if (dx < -threshold) { // Deslize para a direita (seção anterior)
+          nextIndex = (currentIndex - 1 + sections.length) % sections.length;
+        }
+        showSection(sections[nextIndex]); // Mostra a próxima seção
+        touchStartX = null; // Reseta a posição inicial
+      });
+    }
+
+    // Executa quando a janela é totalmente carregada
+    window.onload = () => {
+      // Registra o Service Worker para funcionalidade PWA
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./service-worker.js')
+          .then(() => console.log('Service Worker registrado com sucesso'))
+          .catch(error => console.error('Erro ao registrar Service Worker:', error));
+      }
+
+      loadSettings(); // Carrega as configurações salvas (incluindo o tema)
+      updatePlayerList(); // Atualiza a lista de jogadores
+      updateSetsDisplay(); // Garante que os sets sejam exibidos ao carregar
+
+      setupSwipeToDecrease('sectionA', 'A'); // Configura deslize para diminuir pontuação Time A
+      setupSwipeToDecrease('sectionB', 'B'); // Configura deslize para diminuir pontuação Time B
+      setupSwipeBetweenSections(); // Configura deslize para navegar entre seções
+
+      // Adiciona listeners de clique para aumentar a pontuação
+      document.getElementById('sectionA').addEventListener('click', () => changeScore('A', 1));
+      document.getElementById('sectionB').addEventListener('click', () => changeScore('B', 1));
+
+      // Ao carregar, o jogo não está iniciado, então o overlay deve estar visível
+      document.getElementById('scoreboardOverlay').classList.remove('hidden');
+      document.getElementById('startGameButton').style.display = 'block';
+      gameStarted = false; // Garante que o estado seja correto ao carregar
+    }
+  // Executa quando a janela é totalmente carregada
+window.onload = () => {
+  // Registra o Service Worker para funcionalidade PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./service-worker.js')
+      .then(() => console.log('Service Worker registrado com sucesso'))
+      .catch(error => console.error('Erro ao registrar Service Worker:', error));
+  }
+
+  loadSettings();
+  updatePlayerList();
+  updateSetsDisplay();
+
+  setupSwipeToDecrease('sectionA', 'A');
+  setupSwipeToDecrease('sectionB', 'B');
+  setupSwipeBetweenSections();
+
+  document.getElementById('sectionA').addEventListener('click', () => changeScore('A', 1));
+  document.getElementById('sectionB').addEventListener('click', () => changeScore('B', 1));
+
+  document.getElementById('scoreboardOverlay').classList.remove('hidden');
+  document.getElementById('startGameButton').style.display = 'block';
+  gameStarted = false;
+}
+</script>
+</body>
+</html>
