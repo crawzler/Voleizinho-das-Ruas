@@ -3,65 +3,78 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <link rel="manifest" href="manifest.json" /> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <title>Placar Vôlei</title>
   <style>
     :root {
-      /* Variáveis do Tema Escuro (Padrão) - Afetam a UI geral, não o placar */
       --bg-color: #1a1a1a;
-      --text-color: #ffffff; /* Cor geral do texto da UI (menu, botões) */
+      --text-color: #ffffff;
       --accent-color: #545454;
       --input-bg-color: #f0f0f0;
       --input-text-color: #1a1a1a;
       --menu-bg-color: #333;
       --menu-hover-bg-color: #555;
       --list-item-bg: #3a3a3a;
-      --gear-button-bg: #00000075;
+      --gear-button-bg: rgba(0, 0, 0, 0.6);
+      --neutral-hover-bg: rgba(51, 51, 51, 0.8);
 
-      /* Cores para a animação de vitória */
-      --victory-bg-start: #4CAF50; /* Verde vibrante */
-      --victory-bg-end: #8BC34A;   /* Verde mais claro */
+      --victory-bg-start: #4CAF50;
+      --victory-bg-end: #8BC34A;
       --victory-text-color: #ffffff;
       --victory-shadow-color: rgba(0,0,0,0.8);
-      --crown-color: gold; /* Cor da coroa */
-      --star-color: gold; /* Cor da estrela do set */
+      --crown-color: gold;
+      --star-color: gold;
 
-      /* Cores do modal */
       --modal-bg: rgba(0, 0, 0, 0.8);
       --modal-content-bg: #2a2a2a;
       --modal-text-color: #ffffff;
       --modal-button-bg: #007bff;
       --modal-button-hover-bg: #0056b3;
       --modal-button-text: #ffffff;
+
+      --card-bg-color: #2c2c2c;
+      --card-border-color: #666;
+      --collapsible-header-bg: #444;
+      --collapsible-header-hover-bg: #555;
+      --setting-item-bg: #3a3a3a;
+      --setting-section-bg: #222222;
+      --setting-item-border: rgba(255, 255, 255, 0.1);
     }
 
     body.light-theme {
-      /* Variáveis do Tema Claro (Sobrescritas) - Afetam a UI geral, não o placar */
       --bg-color: #f0f0f0;
-      --text-color: #1a1a1a; /* Cor geral do texto da UI (menu, botões) */
+      --text-color: #1a1a1a;
       --accent-color: #cccccc;
       --input-bg-color: #ffffff;
       --input-text-color: #1a1a1a;
       --menu-bg-color: #eee;
       --menu-hover-bg-color: #ddd;
       --list-item-bg: #e0e0e0;
-      --gear-button-bg: #ffffff75;
+      --gear-button-bg: rgba(255, 255, 255, 0.6);
+      --neutral-hover-bg: rgba(204, 204, 204, 0.8);
 
-      /* Cores para a animação de vitória no tema claro */
-      --victory-bg-start: #60B360; /* Verde mais suave */
-      --victory-bg-end: #A0D8A0;   /* Verde pastel */
+      --victory-bg-start: #60B360;
+      --victory-bg-end: #A0D8A0;
       --victory-text-color: #1a1a1a;
       --victory-shadow-color: rgba(255,255,255,0.8);
-      --crown-color: #DAA520; /* Cor da coroa (Goldenrod) */
-      --star-color: #DAA520; /* Cor da estrela do set (Goldenrod) */
+      --crown-color: #DAA520;
+      --star-color: #DAA520;
 
-      /* Cores do modal no tema claro */
       --modal-bg: rgba(255, 255, 255, 0.8);
       --modal-content-bg: #ffffff;
       --modal-text-color: #1a1a1a;
       --modal-button-bg: #4682B4;
       --modal-button-hover-bg: #32628C;
       --modal-button-text: #ffffff;
+
+      --card-bg-color: #f8f8f8;
+      --card-border-color: #aaa;
+      --collapsible-header-bg: #ddd;
+      --collapsible-header-hover-bg: #ccc;
+      --setting-item-bg: #e0e0e0;
+      --setting-section-bg: #f0f0f0;
+      --setting-item-border: rgba(0, 0, 0, 0.1);
     }
 
     * {
@@ -73,51 +86,43 @@
     html, body {
       height: 100%;
       width: 100%;
-      overflow: hidden; /* Garante que não haja barras de rolagem indesejadas */
+      overflow: hidden;
       font-family: 'Segoe UI', sans-serif;
-      background-color: var(--bg-color); /* Usa a cor de fundo do tema */
-      color: var(--text-color); /* Usa a cor de texto do tema */
+      background-color: var(--bg-color);
+      color: var(--text-color);
       transition: background-color 0.3s ease, color 0.3s ease;
     }
 
-    /* Estilos da tela de pontuação (FIXOS, NÃO AFETADOS PELO TEMA) */
     #pontuacao.section {
-      padding: 0; /* Mantém o padding zero para a tela de pontuação */
-      display: flex; /* Garante que o placar use flexbox para ocupar 100% da altura */
-      flex-direction: column; /* Necessário para que team-section possa flex: 1 */
-      position: absolute; /* Ocupa a tela inteira */
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      overflow: hidden; /* Garante que o conteúdo não transborde */
+      overflow: hidden;
     }
 
     .scoreboard {
       display: flex;
-      flex-direction: column; /* Padrão: Times empilhados verticalmente */
-      height: 100%; /* Ocupa a altura total da seção de pontuação */
-      width: 100%; /* Ocupa a largura total */
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
     }
 
     .team-section {
-      flex: 1; /* Faz com que cada time ocupe metade do espaço disponível */
+      flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      padding-top: 20px;
       text-align: center;
-      touch-action: none; /* Desabilita ações de toque padrão do navegador */
-      transition: none; /* Remove transição de tema para esta seção */
-      position: relative; /* Para posicionar a coroa e confetes dentro */
-    }
-
-    .blue {
-      background-color: #007bff; /* Cor azul fixa */
-    }
-
-    .red {
-      background-color: #dc3545; /* Cor vermelha fixa */
+      touch-action: none;
+      transition: none;
+      position: relative;
     }
 
     .score {
@@ -125,25 +130,25 @@
       font-weight: bold;
       font-family: 'Courier New', monospace;
       user-select: none;
-      color: #ffffff; /* Cor do texto da pontuação fixa (branco) */
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.6); /* Sombra do texto da pontuação fixa */
-      transition: none; /* Remove transição de tema para esta seção */
+      color: #ffffff;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+      transition: none;
+      margin-bottom: 5px;
     }
 
     .team-name {
       font-size: 2rem;
       margin-bottom: 0.5rem;
-      color: #ffffff; /* Cor do texto do nome do time fixa (branco) */
-      transition: none; /* Remove transição de tema para esta seção */
+      color: #ffffff;
+      transition: none;
     }
 
-    /* Estilos para os indicadores de set */
     .set-indicators {
       position: absolute;
-      top: 10px; /* Ajuste a posição vertical conforme necessário */
+      top: 10px;
       display: flex;
       gap: 5px;
-      z-index: 5; /* Acima do placar, mas abaixo da coroa/confetes */
+      z-index: 5;
     }
 
     .set-indicators.left {
@@ -154,17 +159,64 @@
       right: 10px;
     }
 
-    .set-star { /* Novo estilo para a estrela */
-      font-size: 1.5rem; /* Tamanho da estrela */
-      color: var(--star-color); /* Cor da estrela dourada */
+    .set-star {
+      font-size: 1.5rem;
+      color: var(--star-color);
       text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
     }
 
+    .player-info-container {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 10;
+      padding: 2px;
+      background-color: rgba(0, 0, 0, 0.1);
+      border-radius: 6px;
+      max-width: 120px;
+      box-shadow: none;
+      transition: background-color 0.3s ease;
+    }
 
-    /* Estilos gerais da UI (AFETADOS PELO TEMA) */
+    .player-info-container.top-left {
+      top: 10px;
+      left: 10px;
+    }
+
+    .player-info-container.top-right {
+      top: 10px;
+      right: 10px;
+    }
+
+    .player-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.8);
+      text-align: center;
+      width: 100%;
+      max-height: 100px;
+      overflow-y: auto;
+      opacity: 1;
+    }
+
+    .player-list li {
+      background: none;
+      padding: 1px 0;
+      margin-bottom: 0;
+      border-radius: 0;
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin: 0;
+    }
+
     .btn {
-      background-color: var(--accent-color); /* Usa a cor de destaque do tema */
-      color: var(--text-color); /* Usa a cor de texto do tema */
+      background-color: var(--accent-color);
+      color: var(--text-color);
       border: none;
       padding: 0.5rem 1rem;
       margin: 0.5rem 0;
@@ -177,7 +229,7 @@
 
     .gear-button {
       position: fixed;     
-      background-color: var(--gear-button-bg); /* Usa a cor de fundo do botão de engrenagem do tema */
+      background-color: var(--gear-button-bg);
       border-radius: 0.4rem;
       border-style: unset;
       top: 1rem;
@@ -189,7 +241,7 @@
     }
 
     .gear-button i {
-      color: var(--text-color); /* Usa a cor de texto do tema */
+      color: var(--text-color);
       transition: color 0.3s ease;
     }
 
@@ -197,7 +249,7 @@
       position: fixed;
       top: 3.5rem;
       right: 1rem;
-      background-color: var(--menu-bg-color); /* Usa a cor de fundo do menu do tema */
+      background-color: var(--menu-bg-color);
       border-radius: 8px;
       overflow: hidden;
       display: none;
@@ -213,7 +265,7 @@
     .menu button {
       background: none;
       border: none;
-      color: var(--text-color); /* Usa a cor de texto do tema */
+      color: var(--text-color);
       padding: 1rem;
       text-align: left;
       width: 200px;
@@ -222,7 +274,13 @@
     }
 
     .menu button:hover {
-      background-color: var(--menu-hover-bg-color); /* Usa a cor de hover do menu do tema */
+      background-color: var(--menu-hover-bg-color);
+    }
+    
+    .menu button.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
     }
 
     .section {
@@ -237,15 +295,15 @@
       padding: 1rem;
       opacity: 0;
       pointer-events: none;
-      transform: scale(0.9); /* Inicia ligeiramente menor */
-      transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out; /* Transição mais suave */
+      transform: scale(0.9);
+      transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
       z-index: 1;
     }
 
     .active {
       opacity: 1;
       pointer-events: auto;
-      transform: scale(1); /* Desliza para a posição visível */
+      transform: scale(1);
       z-index: 2;
     }
 
@@ -255,10 +313,16 @@
       margin: 0.5rem 0;
       font-size: 1rem;
       border-radius: 5px;
-      border: none;
-      color: var(--input-text-color); /* Usa a cor de texto do input do tema */
-      background-color: var(--input-bg-color); /* Usa a cor de fundo do input do tema */
-      transition: background-color 0.3s ease, color 0.3s ease;
+      border: 1px solid var(--accent-color);
+      color: var(--input-text-color);
+      background-color: var(--input-bg-color);
+      transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+    }
+    
+    input:focus, select:focus {
+        outline: none;
+        border-color: var(--modal-button-bg);
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
     }
 
     input[type="number"] {
@@ -277,7 +341,7 @@
     }
 
     ul li {
-      background: var(--list-item-bg); /* Usa a cor de fundo do item da lista do tema */
+      background: var(--list-item-bg);
       padding: 0.5rem;
       margin-bottom: 0.25rem;
       border-radius: 5px;
@@ -292,12 +356,6 @@
       flex: 1;
     }
 
-    .teams {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-
     .start-game-button {
       position: absolute;
       top: 50%;
@@ -305,8 +363,8 @@
       transform: translate(-50%, -50%);
       padding: 1.5rem 3rem;
       font-size: 2rem;
-      z-index: 100; /* Above scoreboard overlay, below modals */
-      background-color: #28a745; /* Green color */
+      z-index: 100;
+      background-color: #28a745;
       color: white;
       border-radius: 10px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.3);
@@ -317,6 +375,17 @@
     .start-game-button:hover {
       background-color: #218838;
       transform: translate(-50%, -50%) scale(1.05);
+    }
+
+    .start-game-button.disabled-visual {
+      background-color: #6c757d;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: translate(-50%, -50%);
+    }
+    .start-game-button.disabled-visual:hover {
+      background-color: #6c757d;
+      transform: translate(-50%, -50%);
     }
 
     .adicionar {
@@ -331,7 +400,6 @@
       margin: 0.5rem 0;
     }
 
-    /* Estilo do Overlay */
     .overlay {
       display: none;
       position: fixed;
@@ -348,27 +416,154 @@
     }
 
     .config-group {
-      margin-bottom: 1rem;
+      margin-bottom: 0.75rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      background-color: var(--setting-item-bg);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      border: 1px solid var(--setting-item-border);
+    }
+    .config-group:last-child {
+        margin-bottom: 0;
     }
 
     .config-group label {
       display: block;
       margin-bottom: 0.5rem;
       font-weight: bold;
+      color: var(--text-color);
     }
 
-    /* Media query para orientação paisagem (APENAS PLACAR) */
+    .collapsible-container {
+        margin-bottom: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        border: 1px solid var(--card-border-color);
+    }
+
+    .collapsible-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background-color: var(--collapsible-header-bg);
+        padding: 0.8rem 1rem;
+        cursor: pointer;
+        transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .collapsible-header:hover {
+        background-color: var(--collapsible-header-hover-bg);
+    }
+    .collapsible-header h3 {
+        margin: 0;
+        font-size: 1.2rem;
+        color: var(--text-color);
+    }
+    .collapsible-arrow {
+        font-size: 1.2rem;
+        transition: transform 0.3s ease;
+    }
+    .collapsible-arrow.rotated {
+        transform: rotate(90deg);
+    }
+    .collapsible-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+        padding: 0 1rem;
+        background-color: var(--setting-section-bg);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .collapsible-content.show {
+        max-height: 600px;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+
+    .player-info-container.hidden-players {
+        display: none;
+    }
+
+    .color-picker-group {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 0;
+    }
+    .color-picker-group label {
+        flex-grow: 1;
+        margin-bottom: 0;
+    }
+    .color-picker-group input[type="color"] {
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        border: 1px solid var(--accent-color);
+        border-radius: 5px;
+        cursor: pointer;
+        background-color: transparent;
+        transition: border-color 0.3s ease;
+    }
+    .color-picker-group input[type="color"]::-webkit-color-swatch-wrapper {
+        padding: 0;
+    }
+    .color-picker-group input[type="color"]::-webkit-color-swatch {
+        border: none;
+        border-radius: 5px;
+    }
+    .color-picker-group input[type="color"]:focus {
+        border-color: var(--modal-button-bg);
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    }
+
+    .checkbox-group {
+        display: flex;
+	      flex-grow: 1;
+        align-items: center;
+        justify-content: space-between;
+        background-color: var(--setting-item-bg);
+        padding: 0.75rem;
+        border-radius: 8px;
+        margin-bottom: 0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border: 1px solid var(--setting-item-border);
+        transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .checkbox-group label {
+        margin-bottom: 0;
+        flex-grow: 1;
+        cursor: pointer;
+    }
+    .checkbox-group input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        margin: 0;
+        cursor: pointer;
+        accent-color: var(--modal-button-bg);
+    }
+
     @media (orientation: landscape) {
       .scoreboard {
-        flex-direction: row; /* Times lado a lado em paisagem */
+        flex-direction: row;
       }
 
       .score {
-        font-size: 10rem; /* Pontuação menor em paisagem para caber */
+        font-size: 10rem;
       }
 
       .team-name {
-        font-size: 2rem; /* Nome do time menor em paisagem */
+        font-size: 2rem;
+      }
+      .player-info-container {
+        max-width: 100px;
+        top: 10px;
+      }
+      .player-list {
+        font-size: 0.7rem;
+        max-height: 70px;
       }
 
       .set-indicators.left {
@@ -385,29 +580,27 @@
       }
     }
 
-    /* Media query para telas muito pequenas (ex: celulares antigos) (APENAS PLACAR) */
     @media (max-width: 480px) {
       .score {
-        font-size: 15rem; /* Ajusta para telas muito pequenas */
+        font-size: 15rem;
       }
     }
 
-    /* Estilos para a animação de vitória */
     .victory-elements {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      pointer-events: none; /* Não interfere com cliques no time */
-      overflow: hidden; /* Garante que os confetes não saiam da tela */
+      pointer-events: none;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      opacity: 0; /* Escondido por padrão */
-      transition: opacity 0.5s ease-out; /* Transição suave para aparecer/desaparecer */
-      z-index: 10; /* Acima do placar, mas abaixo do menu */
+      opacity: 0;
+      transition: opacity 0.5s ease-out;
+      z-index: 10;
     }
 
     .victory-elements.show {
@@ -416,42 +609,40 @@
 
     .crown-container {
       position: absolute;
-      top: 20%; /* Posição acima do nome do time */
+      top: 20%;
       transform: translateX(-50%);
       left: 50%;
-      z-index: 20; /* Acima do texto da vitória */
+      z-index: 20;
       opacity: 0;
-      animation: crownAppear 1.5s ease-out forwards; /* Animação de aparição */
+      animation: crownAppear 1.5s ease-out forwards;
     }
 
     .crown-icon {
-      font-size: 8rem; /* Tamanho da coroa */
-      color: var(--crown-color); /* Cor da coroa */
+      font-size: 8rem;
+      color: var(--crown-color);
       text-shadow: 2px 2px 5px rgba(0,0,0,0.5);
     }
 
-    /* Estilos para os confetes */
     .confetti-container {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      pointer-events: none; /* Não interfere com cliques */
-      overflow: hidden; /* Garante que os confetes não saiam do container */
+      pointer-events: none;
+      overflow: hidden;
     }
 
     .confetti-piece {
       position: absolute;
-      background-color: #f00; /* Cor padrão, será sobrescrita por JS */
+      background-color: #f00;
       width: 10px;
       height: 10px;
-      border-radius: 50%; /* Formato de círculo */
+      border-radius: 50%;
       opacity: 0;
       animation-fill-mode: forwards;
     }
 
-    /* Keyframes para as animações */
     @keyframes scaleIn {
       from {
         transform: scale(0.5);
@@ -498,16 +689,15 @@
       }
     }
 
-    /* Novas animações para a pontuação */
     @keyframes scoreIncreaseAnim {
       0% { transform: scale(1); color: #ffffff; }
-      50% { transform: scale(1.1); color: #8bc34a; } /* Verde para aumentar */
+      50% { transform: scale(1.1); color: #8bc34a; }
       100% { transform: scale(1); color: #ffffff; }
     }
 
     @keyframes scoreDecreaseAnim {
       0% { transform: scale(1); color: #ffffff; }
-      50% { transform: scale(0.9); color: #ff6347; } /* Vermelho tomate para diminuir */
+      50% { transform: scale(0.9); color: #ff6347; }
       100% { transform: scale(1); color: #ffffff; }
     }
 
@@ -519,59 +709,56 @@
       animation: scoreDecreaseAnim 0.3s ease-out forwards;
     }
 
-    /* Estilos base para todos os modais */
-    .game-over-modal, .increase-score-modal, .start-game-modal, .super-victory-modal {
-      display: none; /* Escondido por padrão */
+    .game-over-modal, .increase-score-modal, .start-game-modal, .super-victory-modal, .custom-message-modal, .custom-confirmation-modal, .manage-team-modal {
+      display: none;
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background-color: var(--modal-bg); /* Fundo semitransparente adaptado ao tema */
-      z-index: 3000; /* Acima de tudo */
+      background-color: var(--modal-bg);
+      z-index: 3000;
       align-items: center;
       justify-content: center;
       opacity: 0;
       transition: opacity 0.3s ease-out;
     }
 
-    .game-over-modal.show, .increase-score-modal.show, .start-game-modal.show, .super-victory-modal.show {
+    .game-over-modal.show, .increase-score-modal.show, .start-game-modal.show, .super-victory-modal.show, .custom-message-modal.show, .custom-confirmation-modal.show, .manage-team-modal.show {
       display: flex;
       opacity: 1;
     }
 
-    /* Conteúdo do modal base (aplicado a todos os modais) */
-    .modal-content, .increase-score-content, .super-victory-content {
-      background-color: var(--modal-content-bg); /* Fundo do modal adaptado ao tema */
-      padding: clamp(10px, 4vw, 20px); /* Further reduced padding */
+    .modal-content, .increase-score-content, .super-victory-content, .custom-message-content, .custom-confirmation-content, .manage-team-content {
+      background-color: var(--modal-content-bg);
+      padding: clamp(10px, 4vw, 20px);
       border-radius: 15px;
       text-align: center;
       box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-      max-width: 90vw; /* Max 90% da largura da viewport */
-      max-height: 90vh; /* Max 90% da altura da viewport */
-      width: clamp(250px, 85vw, 380px); /* Slightly smaller default width */
-      transform: translateY(-20px); /* Pequeno efeito de entrada */
+      max-width: 90vw;
+      max-height: 90vh;
+      width: clamp(250px, 85vw, 380px);
+      transform: translateY(-20px);
       opacity: 0;
       animation: modalPopIn 0.4s ease-out forwards;
-      color: var(--modal-text-color); /* Cor do texto do modal adaptada ao tema */
-      display: flex; /* Para flexbox interno */
-      flex-direction: column; /* Conteúdo em coluna */
-      justify-content: center; /* Centraliza verticalmente */
-      align-items: center; /* Centraliza horizontalmente */
-      overflow-y: auto; /* Adiciona rolagem se o conteúdo exceder a altura */
-      gap: 10px; /* Reduced gap */
+      color: var(--modal-text-color);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow-y: auto;
+      gap: 10px;
     }
 
-    /* Estilos específicos para o modal de Iniciar Nova Partida (start-game-content) */
     .start-game-content {
         background-color: var(--modal-content-bg);
-        padding: clamp(15px, 5vw, 30px); /* Adjusted padding */
+        padding: clamp(15px, 5vw, 30px);
         border-radius: 15px;
         text-align: center;
         box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         max-width: 95vw;
         max-height: 95vh;
-        width: clamp(280px, 90vw, 450px); /* Adjusted width */
+        width: clamp(280px, 90vw, 450px);
         transform: translateY(-20px);
         opacity: 0;
         animation: modalPopIn 0.4s ease-out forwards;
@@ -581,23 +768,23 @@
         justify-content: center;
         align-items: center;
         overflow-y: auto;
-        gap: 15px; /* Adjusted gap */
+        gap: 15px;
     }
 
-    .modal-content h3, .increase-score-content h3, .super-victory-content h3, .start-game-content h3 {
-      font-size: clamp(1.6rem, 5.5vw, 2.2rem); /* Further reduced font size */
+    .modal-content h3, .increase-score-content h3, .super-victory-content h3, .start-game-content h3, .custom-message-content h3, .custom-confirmation-content h3, .manage-team-content h3 {
+      font-size: clamp(1.6rem, 5.5vw, 2.2rem);
       margin-bottom: 0;
     }
 
-    .modal-content p, .increase-score-content p, .super-victory-content p, .start-game-content p {
-      font-size: clamp(0.9rem, 3vw, 1.3rem); /* Further reduced font size */
+    .modal-content p, .increase-score-content p, .super-victory-content p, .start-game-content p, .custom-message-content p, .custom-confirmation-content p, .manage-team-content p {
+      font-size: clamp(0.9rem, 3vw, 1.3rem);
       margin-bottom: 0;
     }
 
     .modal-buttons {
       display: flex;
-      flex-direction: column; /* Padrão em coluna para mobile */
-      gap: 8px; /* Reduced gap */
+      flex-direction: column;
+      gap: 8px;
       width: 100%;
       justify-content: space-evenly;
       flex-wrap: wrap;
@@ -607,53 +794,56 @@
       background-color: var(--modal-button-bg);
       color: var(--modal-button-text);
       border: none;
-      padding: 10px 18px; /* Reduced padding */
+      padding: 10px 18px;
       border-radius: 10px;
-      font-size: clamp(0.9rem, 3vw, 1.1rem); /* Reduced font size */
+      font-size: clamp(0.9rem, 3vw, 1.1rem);
       font-weight: bold;
       cursor: pointer;
       transition: background-color 0.2s ease;
       flex: 1;
-      min-width: 90px; /* Reduced min-width */
+      min-width: 90px;
     }
 
     .modal-buttons button:hover {
       background-color: var(--modal-button-hover-bg);
     }
 
-    /* Estilos específicos para os inputs dos modais */
     .increase-score-content input[type="number"],
-    .start-game-content input[type="number"] {
+    .start-game-content input[type="number"],
+    .start-game-content select,
+    .manage-team-content select {
       width: 100%;
       margin-bottom: 0;
       text-align: center;
-      font-size: clamp(1.3rem, 4.5vw, 1.8rem); /* Reduced font size */
-      padding: 6px; /* Reduced padding */
+      font-size: clamp(1.3rem, 4.5vw, 1.8rem);
+      padding: 6px;
     }
 
-    .start-game-content .input-group {
+    .start-game-content .input-group,
+    .manage-team-content .input-group {
       display: flex;
       flex-direction: column;
       align-items: center;
-      width: 48%; /* Para ficarem lado a lado */
-      gap: 5px; /* Espaçamento entre label e input */
+      width: 48%;
+      gap: 5px;
     }
 
-    .start-game-content .input-row {
+    .start-game-content .input-row,
+    .manage-team-content .input-row {
       display: flex;
       justify-content: space-between;
       width: 100%;
-      gap: 10px; /* Espaçamento entre os grupos de input */
+      gap: 10px;
     }
 
-    .start-game-content label {
+    .start-game-content label,
+    .manage-team-content label {
       display: block;
       margin-bottom: 0;
-      font-size: clamp(0.8rem, 2.8vw, 1rem); /* Further reduced font size */
+      font-size: clamp(0.8rem, 2.8vw, 1rem);
       text-align: center;
     }
 
-    /* Overlay para a tela de pontuação quando o jogo não está iniciado */
     .scoreboard-overlay {
       position: absolute;
       top: 0;
@@ -672,7 +862,6 @@
       pointer-events: none;
     }
 
-    /* Estilos para o modal de Super Vitória */
     .super-victory-modal {
       background: linear-gradient(45deg, #FFD700, #FFA500, #FF4500);
       animation: gradientAnimation 5s ease infinite alternate;
@@ -685,25 +874,25 @@
     .super-victory-content {
       background-color: rgba(0,0,0,0.7);
       color: #fff;
-      padding: clamp(20px, 7vw, 40px); /* Reduced padding */
+      padding: clamp(20px, 7vw, 40px);
       border-radius: 20px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
       animation: modalPopIn 0.5s ease-out forwards;
       max-width: 90vw;
       max-height: 90vh;
       overflow-y: auto;
-      gap: 15px; /* Reduced gap */
+      gap: 15px;
     }
 
     .super-victory-content h3 {
-      font-size: clamp(2.2rem, 7vw, 3.5rem); /* Reduced font size */
+      font-size: clamp(2.2rem, 7vw, 3.5rem);
       margin-bottom: 0;
       text-transform: uppercase;
-      letter-spacing: clamp(1px, 0.8vw, 4px); /* Reduced letter-spacing */
+      letter-spacing: clamp(1px, 0.8vw, 4px);
     }
 
     .super-victory-content p {
-      font-size: clamp(1.2rem, 4vw, 2rem); /* Reduced font size */
+      font-size: clamp(1.2rem, 4vw, 2rem);
       margin-bottom: 0;
     }
 
@@ -712,7 +901,6 @@
       100% { background-position: 100% 50%; }
     }
 
-    /* Animação para o modal */
     @keyframes modalPopIn {
       from {
         transform: translateY(-50px) scale(0.8);
@@ -724,22 +912,192 @@
       }
     }
 
-    /* Adaptação para orientação paisagem - Botões do modal em linha */
     @media (orientation: landscape) {
       .modal-buttons {
         flex-direction: row;
       }
-      .start-game-content .input-row {
-        flex-direction: row; /* Mantém lado a lado em paisagem */
+      .start-game-content .input-row,
+      .manage-team-content .input-row {
+        flex-direction: row;
       }
-      .start-game-content > div {
-        flex-direction: column; /* Label acima do input */
+      .start-game-content > div,
+      .manage-team-content > div {
+        flex-direction: column;
       }
-      .start-game-content .modal-buttons {
+      .start-game-content .modal-buttons,
+      .manage-team-content .modal-buttons {
         flex-basis: 100%;
         flex-direction: row;
         justify-content: space-evenly;
       }
+    }
+
+    .teams-display-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-top: 20px;
+        justify-content: center;
+    }
+
+    .team-card {
+        background: linear-gradient(145deg, var(--card-bg-color), var(--collapsible-header-bg));
+        border-radius: 15px;
+        padding: 25px;
+        width: 100%;
+        max-width: 300px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        border: none;
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        cursor: default;
+    }
+
+    .team-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 10px;
+        height: 100%;
+        background-color: var(--team-card-dynamic-border-color, var(--accent-color));
+        transition: background-color 0.3s ease;
+    }
+
+    .team-card:hover {
+        /* Removido transform e box-shadow para desativar a interação visual */
+    }
+
+    .team-card h4 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        font-size: 1.5rem;
+        color: var(--text-color);
+        display: flex;
+        align-items: center;
+        gap: 0;
+        font-weight: bold;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+    }
+
+    .team-card .team-color-indicator {
+        display: none;
+    }
+
+    .team-card .player-list-compact {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        font-size: 1.1rem;
+        color: var(--text-color);
+        text-align: center;
+        width: 100%;
+    }
+    .team-card .player-list-compact li {
+        background: none;
+        padding: 6px 0;
+        margin-bottom: 4px;
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        border-bottom: 1px solid rgba(255,255,255,0.15);
+        color: rgba(255,255,255,0.9);
+    }
+    .team-card .player-list-compact li:last-child {
+        border-bottom: none;
+    }
+
+    @media (min-width: 600px) {
+        .team-card {
+            width: calc(50% - 20px);
+        }
+    }
+
+    @media (min-width: 900px) {
+        .team-card {
+            width: calc(33.33% - 20px);
+        }
+    }
+
+    .swap-teams-button {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: var(--gear-button-bg);
+      color: var(--text-color);
+      border: none;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      font-size: 1.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      z-index: 100;
+      transition: background-color 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .swap-teams-button.show {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .swap-teams-button:hover,
+    .swap-teams-button:active {
+      background-color: var(--neutral-hover-bg);
+      transform: translate(-50%, -50%) scale(1.05);
+    }
+
+    @keyframes fadeOutAndShrink {
+      0% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(0.8); }
+    }
+    @keyframes fadeInAndGrow {
+      0% { opacity: 0; transform: scale(0.8); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    .team-section.fade-out {
+      animation: fadeOutAndShrink 0.3s ease-out forwards;
+    }
+    .team-section.fade-in {
+      animation: fadeInAndGrow 0.3s ease-out forwards;
+    }
+
+    .game-timer {
+      position: absolute;
+      bottom: 0px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: var(--text-color);
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+      background-color: rgba(0, 0, 0, 0.6);
+      padding: 10px 20px;
+      border-radius: 10px 10px 0px 0px;
+      z-index: 100;
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out, background-color 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: auto;
+      min-width: 150px;
+    }
+
+    .game-timer.show {
+      opacity: 1;
     }
 
   </style>
@@ -751,17 +1109,17 @@
 
   <div class="overlay" id="menuOverlay"></div>
   <div class="menu" id="gearMenu">
-    <button onclick="navigateTo('pontuacao')"><i class="fa-solid fa-chart-column" style="margin-right: 0.5rem;"></i>Pontuação</button>
-    <button onclick="navigateTo('jogadores')"><i class="fa-solid fa-users" style="margin-right: 0.5rem;"></i>Jogadores</button>
+    <button onclick="navigateTo('pontuacao')"><i class="fa-solid fa-medal" style="margin-right: 0.5rem;"></i>Pontuação</button>
     <button onclick="navigateTo('times')"><i class="fa-solid fa-shuffle" style="margin-right: 0.5rem;"></i>Times</button>
+    <button onclick="navigateTo('jogadores')"><i class="fa-solid fa-users" style="margin-right: 0.5rem;"></i>Jogadores</button>
     <button onclick="navigateTo('configuracoes')"><i class="fa-solid fa-gear" style="margin-right: 0.5rem;"></i>Configurações</button>
-    <button onclick="confirmReset()"><i class="fa-solid fa-rotate-right" style="margin-right: 0.5rem;"></i>Reiniciar Partida</button>
+    <button id="resetGameButton" class="disabled" onclick="confirmReset()"><i class="fa-solid fa-rotate-right" style="margin-right: 0.5rem;"></i>Reiniciar Partida</button>
   </div>
 
   <div id="pontuacao" class="section active">
     <div class="scoreboard-overlay" id="scoreboardOverlay"></div>
     <div class="scoreboard">
-      <div class="team-section blue" id="sectionA">
+      <div class="team-section" id="sectionA">
         <div class="victory-elements">
           <div class="crown-container">
             <i class="fa-solid fa-crown crown-icon"></i>
@@ -769,10 +1127,13 @@
           <div class="confetti-container"></div>
         </div>
         <div class="set-indicators left" id="setIndicatorA"></div>
-        <div class="team-name" id="teamNameA">Time A</div>
+        <div class="team-name" id="teamNameA"></div>
+        <div class="player-info-container top-left">
+          <ul class="player-list" id="playerListA"></ul>
+        </div>
         <div class="score" id="scoreA">0</div>
       </div>
-      <div class="team-section red" id="sectionB">
+      <div class="team-section" id="sectionB">
         <div class="victory-elements">
           <div class="crown-container">
             <i class="fa-solid fa-crown crown-icon"></i>
@@ -780,11 +1141,28 @@
           <div class="confetti-container"></div>
         </div>
         <div class="set-indicators right" id="setIndicatorB"></div>
-        <div class="team-name" id="teamNameB">Time B</div>
+        <div class="team-name" id="teamNameB"></div>
+        <div class="player-info-container top-left">
+          <ul class="player-list" id="playerListB"></ul>
+        </div>
         <div class="score" id="scoreB">0</div>
       </div>
     </div>
     <button class="btn start-game-button" id="startGameButton" onclick="showStartGameModal()">Iniciar Partida</button>
+    <button class="swap-teams-button" id="swapTeamsButton" onclick="swapTeams()">
+      <i class="fa-solid fa-right-left"></i>
+    </button>
+  </div>
+
+  <div id="times" class="section">
+    <h2>Gerar Times</h2>
+    <label>Jogadores por time:</label>
+    <span class="adicionar">
+      <input type="number" id="playersPerTeam" min="1" value="4" />
+      <button class="btn" onclick="generateCustomTeams()">Gerar</button>
+    </span>    
+    <div class="teams-display-container" id="teamsContainer">
+        </div>
   </div>
 
   <div id="jogadores" class="section">
@@ -801,48 +1179,96 @@
       </div>
     </span>
 
-
     <ul id="playerList"></ul>
-  </div>
 
-  <div id="times" class="section">
-    <h2>Gerar Times</h2>
-    <label>Jogadores por time:</label>
-    <span class="adicionar">
-      <input type="number" id="playersPerTeam" min="1" value="4" />
-      <button class="btn" onclick="generateCustomTeams()">Gerar</button>
-    </span>    
-    <div class="teams" id="teamsContainer"></div>
-  </div>
+    </div>
 
   <div id="configuracoes" class="section">
-    <h2>Configurações</h2>
-    <div class="config-group">
-      <label for="winningScore">Pontos para Vencer (Set):</label>
-      <input type="number" id="winningScore" min="1" value="15" onchange="saveSettings()">
+    <h2 style=" margin-bottom: 20px;">Configurações</h2>
+    
+    <div class="collapsible-container">
+        <div class="collapsible-header" onclick="toggleGeneralSettingsSection()">
+            <h3>Geral</h3>
+            <i class="fa-solid fa-chevron-right collapsible-arrow" id="generalSettingsArrow"></i>
+        </div>
+        <div class="collapsible-content" id="generalSettingsContent">
+          <div class="config-group">
+            <label for="winningScore">Pontos para Vencer (Set):</label>
+            <input type="number" id="winningScore" min="1" value="15" onchange="saveSettings()">
+          </div>
+          <div class="config-group">
+            <label for="setsToWinConfig">Número de Sets para Vencer a Partida (0 para ilimitado):</label>
+            <input type="number" id="setsToWinConfig" min="0" value="1" onchange="saveSettings()">
+          </div>
+          <div class="config-group">
+            <label for="themeSelect">Tema:</label>
+            <select id="themeSelect" onchange="setTheme(this.value)">
+              <option value="dark">Escuro</option>
+              <option value="light">Claro</option>
+            </select>
+          </div>
+	<span style="display: flex;">
+          <div class="checkbox-group">
+                <label for="vibrationEnabled">Vibração ao Pontuar:</label>
+                <input type="checkbox" id="vibrationEnabled" onchange="saveSettings()">
+            </div>
+            <div class="checkbox-group" style="margin-left: 20px;">
+                <label for="showPlayersOnScoreboard">Exibir Jogadores no Placar:</label>
+                <input type="checkbox" id="showPlayersOnScoreboard" onchange="saveSettings()">
+            </div>
+	</span>
+        </div>
     </div>
-    <div class="config-group">
-      <label for="setsToWinConfig">Número de Sets para Vencer a Partida (0 para ilimitado):</label>
-      <input type="number" id="setsToWinConfig" min="0" value="1" onchange="saveSettings()">
+    
+    <div class="collapsible-container">
+        <div class="collapsible-header" onclick="toggleCustomTeamNamesSection()">
+            <h3>Times Personalizados</h3> <i class="fa-solid fa-chevron-right collapsible-arrow" id="customTeamNamesArrow"></i>
+        </div>
+        <div class="collapsible-content" id="customTeamNamesContent">
+            <p style="font-size: 0.9em; color: var(--text-color); opacity: 0.8; margin-bottom: 0.5rem;">Defina nomes e cores para seus times favoritos. Eles aparecerão nas opções de seleção e ao gerar times.</p>
+            <div class="config-group color-picker-group">
+                <label for="customTeamName1">Time 1:</label>
+                <input type="text" id="customTeamName1" value="" onchange="saveSettings()" style="flex: 1;">
+                <input type="color" id="customTeamColor1" value="#007bff" onchange="saveSettings()">
+            </div>
+            <div class="config-group color-picker-group">
+                <label for="customTeamName2">Time 2:</label>
+                <input type="text" id="customTeamName2" value="" onchange="saveSettings()" style="flex: 1;">
+                <input type="color" id="customTeamColor2" value="#dc3545" onchange="saveSettings()">
+            </div>
+            <div class="config-group color-picker-group">
+                <label for="customTeamName3">Time 3:</label>
+                <input type="text" id="customTeamName3" value="" onchange="saveSettings()" style="flex: 1;">
+                <input type="color" id="customTeamColor3" value="#28a745" onchange="saveSettings()">
+            </div>
+            <div class="config-group color-picker-group">
+                <label for="customTeamName4">Time 4:</label>
+                <input type="text" id="customTeamName4" value="" onchange="saveSettings()" style="flex: 1;">
+                <input type="color" id="customTeamColor4" value="#ffc107" onchange="saveSettings()">
+            </div>
+            <div class="config-group color-picker-group">
+                <label for="customTeamName5">Time 5:</label>
+                <input type="text" id="customTeamName5" value="" onchange="saveSettings()" style="flex: 1;">
+                <input type="color" id="customTeamColor5" value="#6f42c1" onchange="saveSettings()">
+            </div>
+        </div>
     </div>
-    <div class="config-group">
-      <label for="editTeamNameA">Nome do Time A:</label>
-      <input type="text" id="editTeamNameA" value="Time A" onchange="saveTeamNames()">
-    </div>
-    <div class="config-group">
-      <label for="editTeamNameB">Nome do Time B:</label>
-      <input type="text" id="editTeamNameB" value="Time B" onchange="saveTeamNames()">
-    </div>
-    <div class="config-group">
-      <label for="themeSelect">Tema:</label>
-      <select id="themeSelect" onchange="setTheme(this.value)">
-        <option value="dark">Escuro</option>
-        <option value="light">Claro</option>
-      </select>
-    </div>
-    <div class="config-group">
-      <label for="vibrationEnabled">Vibração ao Pontuar:</label>
-      <input type="checkbox" id="vibrationEnabled" onchange="saveSettings()">
+
+    <div class="collapsible-container">
+        <div class="collapsible-header" onclick="toggleDataManagementSection()">
+            <h3>Gerenciamento de Dados</h3> <i class="fa-solid fa-chevron-right collapsible-arrow" id="dataManagementArrow"></i>
+        </div>
+        <div class="collapsible-content" id="dataManagementContent">
+            <div class="config-group">
+                <label>Exportar Dados:</label>
+                <button class="btn" onclick="exportSettings()">Exportar Configurações</button>
+            </div>
+            <div class="config-group">
+                <label>Importar Dados:</label>
+                <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="importSettings(event)">
+                <button class="btn" onclick="document.getElementById('importFileInput').click()">Importar Configurações</button>
+            </div>
+        </div>
     </div>
   </div>
 
@@ -873,7 +1299,8 @@
   <div id="startGameModal" class="start-game-modal">
     <div class="start-game-content">
       <h3>Iniciar Nova Partida</h3>
-      <p>Defina as configurações para a partida:</p>
+      <p>Defina as configurações da partida:</p>
+
       <div class="input-row">
         <div class="input-group">
           <label for="initialWinningScore">Pontos por set:</label>
@@ -884,8 +1311,9 @@
           <input type="number" id="initialNumberOfSets" min="0" value="0">
         </div>
       </div>
+
       <div class="modal-buttons">
-        <button onclick="confirmStartGame()">Iniciar Partida</button>
+        <button id="modalStartGameButton" onclick="confirmStartGame()">Iniciar Partida</button>
         <button onclick="hideStartGameModal()" style="background-color: #dc3545; --modal-button-hover-bg: #c82333;">Cancelar</button>
       </div>
     </div>
@@ -899,33 +1327,59 @@
     </div>
   </div>
 
+  <div id="manageTeamModal" class="manage-team-modal">
+    <div class="modal-content manage-team-content">
+      <h3 id="manageTeamModalTitle">Selecionar Time</h3>
+      <div class="input-group" style="width: 100%;">
+        <label for="selectTeamForManagement">Selecione um time:</label>
+        <select id="selectTeamForManagement" onchange="saveTeamNameAndPlayers()">
+          </select>
+      </div>
+      </div>
+  </div>
+
   <script>
-    // Variáveis globais para armazenar o estado do jogo e configurações
-    let players = JSON.parse(localStorage.getItem('players') || '[]'); // Lista de jogadores
-    let checkedState = JSON.parse(localStorage.getItem('checkedPlayers') || '{}'); // Estado de seleção dos jogadores
-    let scoreA = 0, scoreB = 0; // Pontuações dos times A e B
-    let setsA = 0, setsB = 0; // Sets ganhos pelos times
-    let gameEnded = false; // Flag para controlar se um set terminou
-    let gameStarted = false; // Flag para controlar se a partida foi iniciada
-    let lastWinningTeam = null; // Armazena o ID do último time vencedor ('A' ou 'B')
+    const defaultCustomTeamColors = ["#007bff", "#dc3545", "#28a745", "#ffc107", "#6f42c1"];
 
-    let winningScore = parseInt(localStorage.getItem('winningScore') || '15'); // Pontuação para vencer o set, carregada do localStorage
-    let setsToWin = parseInt(localStorage.getItem('setsToWin') || '1'); // Número de sets para vencer a partida (0 para ilimitado) - carregado do localStorage
-    let teamNameA = localStorage.getItem('teamNameA') || 'Time A'; // Nome do Time A, carregado do localStorage
-    let teamNameB = localStorage.getItem('teamNameB') || 'Time B'; // Nome do Time B, carregado do localStorage
-    let currentTheme = localStorage.getItem('theme') || 'dark'; // Tema atual, carregado do localStorage
-    let vibrationEnabled = JSON.parse(localStorage.getItem('vibrationEnabled') || 'true'); // Vibração ativada por padrão
+    let players = JSON.parse(localStorage.getItem('players') || '[]');
+    let checkedState = JSON.parse(localStorage.getItem('checkedPlayers') || '{}');
+    let generatedTeams = JSON.parse(localStorage.getItem('generatedTeams') || '[]');
+    let currentPlayingTeamA = JSON.parse(localStorage.getItem('currentPlayingTeamA')) || { name: 'Time A', players: [], color: '#007bff' };
+    let currentPlayingTeamB = JSON.parse(localStorage.getItem('currentPlayingTeamB')) || { name: 'Time B', players: [], color: '#dc3545' };
 
-    /**
-     * Alterna a visibilidade do menu de configurações e do overlay.
-     */
+    let scoreA = 0, scoreB = 0;
+    let setsA = 0, setsB = 0;
+    let gameEnded = false;
+    let gameStarted = false; 
+    let lastWinningTeam = null;
+
+    let winningScore = parseInt(localStorage.getItem('winningScore') || '15');
+    let setsToWin = parseInt(localStorage.getItem('setsToWin') || '1');
+    
+    let customTeamNames = JSON.parse(localStorage.getItem('customTeamNames') || '[]').map((team, index) => ({
+        name: team.name || "",
+        color: team.color || defaultCustomTeamColors[index] || '#cccccc'
+    }));
+    while (customTeamNames.length < 5) {
+        customTeamNames.push({ name: "", color: defaultCustomTeamColors[customTeamNames.length] || '#cccccc' });
+    }
+
+    let currentTheme = localStorage.getItem('theme') || 'dark';
+    let vibrationEnabled = JSON.parse(localStorage.getItem('vibrationEnabled') || 'true');
+    let showPlayersOnScoreboard = JSON.parse(localStorage.getItem('showPlayersOnScoreboard') || 'true');
+
+    let teamAColor = currentPlayingTeamA.color;
+    let teamBColor = currentPlayingTeamB.color;
+
+    let activeManageTeamId = null;
+
     function toggleMenu() {
       const menu = document.getElementById("gearMenu");
       const overlay = document.getElementById("menuOverlay");
       menu.classList.toggle("show");
       overlay.classList.toggle("show");
+      updateResetButtonVisibility();
 
-      // Adiciona ou remove o listener para fechar o menu ao clicar fora
       if (menu.classList.contains("show")) {
         document.addEventListener('click', closeMenuOnOutsideClick);
       } else {
@@ -933,16 +1387,10 @@
       }
     }
 
-    /**
-     * Fecha o menu de configurações se o clique ocorrer fora do menu ou do botão de engrenagem.
-     * @param {Event} e - O evento de clique.
-     */
     function closeMenuOnOutsideClick(e) {
       const menu = document.getElementById("gearMenu");
       const button = document.querySelector(".gear-button");
-      // Verifica se o clique não foi no menu, no botão ou no overlay
       if (!menu.contains(e.target) && !button.contains(e.target)) {
-        // Apenas fecha se o menu estiver realmente aberto
         if (menu.classList.contains("show")) {
             menu.classList.remove("show");
             document.getElementById("menuOverlay").classList.remove("show");
@@ -951,86 +1399,91 @@
       }
     }
 
-    /**
-     * Navega para a seção especificada pelo ID.
-     * @param {string} id - O ID da seção para navegar.
-     */
     function navigateTo(id) {
       showSection(id);
       document.getElementById("gearMenu").classList.remove("show");
       document.getElementById("menuOverlay").classList.remove("show");
+      updateResetButtonVisibility();
     }
 
-    /**
-     * Mostra a seção com o ID especificado e esconde as outras.
-     * @param {string} id - O ID da seção a ser mostrada.
-     */
     function showSection(id) {
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
       document.getElementById(id).classList.add('active');
+      updateResetButtonVisibility();
+      if (id === 'times') {
+          renderGeneratedTeams();
+      }
     }
 
-    /**
-     * Salva o estado de seleção dos jogadores no localStorage.
-     */
+    function updateResetButtonVisibility() {
+        const resetButton = document.getElementById('resetGameButton');
+        const pontuacaoSection = document.getElementById('pontuacao');
+        
+        if (gameStarted && pontuacaoSection.classList.contains('active')) {
+            resetButton.classList.remove('disabled');
+        } else {
+            resetButton.classList.add('disabled');
+        }
+    }
+
     function saveCheckedState() {
       localStorage.setItem('checkedPlayers', JSON.stringify(checkedState));
     }
 
-    /**
-     * Adiciona um novo jogador à lista.
-     */
     function addPlayer() {
       const input = document.getElementById("playerName");
       const name = input.value.trim();
       if (name && !players.includes(name)) {
         players.push(name);
-        checkedState[name] = true; // Marca o novo jogador como selecionado por padrão
+        checkedState[name] = true;
         input.value = "";
-        updatePlayerList(); // Atualiza a exibição da lista de jogadores
-        localStorage.setItem('players', JSON.stringify(players)); // Salva a lista de jogadores
-        saveCheckedState(); // Salva o estado de seleção
+        updatePlayerList();
+        localStorage.setItem('players', JSON.stringify(players));
+        saveCheckedState();
       } else if (players.includes(name)) {
-        alert("Este nome já está na lista."); // Alerta se o nome já existe
+        displayMessage("Este nome já está na lista.", "warning");
       }
     }
 
-    /**
-     * Atualiza a exibição da lista de jogadores e o contador.
-     */
     function updatePlayerList() {
-      players.sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' })); // Ordena os jogadores
+      players.sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' }));
       const list = document.getElementById("playerList");
-      list.innerHTML = ""; // Limpa a lista atual
+      list.innerHTML = "";
       players.forEach((p, i) => {
         const li = document.createElement("li");
 
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
-        checkbox.checked = checkedState[p] !== false; // Define o estado do checkbox
+        checkbox.checked = checkedState[p] !== false;
         checkbox.style.marginRight = '0.5rem';
         checkbox.style.width = '1rem';
         checkbox.onchange = () => {
-          checkedState[p] = checkbox.checked; // Atualiza o estado de seleção
+          checkedState[p] = checkbox.checked;
           saveCheckedState();
-          updatePlayerCounter(); // Atualiza o contador de jogadores
-          updateToggleSelectAllButtonText(); // Atualiza o texto do botão de alternância
+          updatePlayerCounter();
+          updateToggleSelectAllButtonText();
         };
 
         const span = document.createElement("span");
-        span.textContent = p; // Nome do jogador
+        span.textContent = p;
 
         const btn = document.createElement("button");
         btn.textContent = "Remover";
         btn.className = "btn";
         btn.onclick = () => {
-          if (confirm("Tem certeza que deseja remover este jogador?")) { // Confirmação de remoção
-            players.splice(i, 1); // Remove o jogador da lista
-            delete checkedState[p]; // Remove o estado de seleção do jogador
-            updatePlayerList();
-            localStorage.setItem('players', JSON.stringify(players));
-            saveCheckedState();
-          }
+            showConfirmationModal("Tem certeza que deseja remover este jogador?", (confirmed) => {
+                if (confirmed) {
+                    players.splice(i, 1);
+                    delete checkedState[p];
+                    updatePlayerList();
+                    localStorage.setItem('players', JSON.stringify(players));
+                    saveCheckedState();
+                    generatedTeams = [];
+                    localStorage.removeItem('generatedTeams');
+                    renderGeneratedTeams();
+                    resetGame();
+                }
+            });
         };
 
         li.appendChild(checkbox);
@@ -1039,22 +1492,16 @@
         list.appendChild(li);
       });
 
-      updatePlayerCounter(); // Atualiza o contador após a lista ser renderizada
-      updateToggleSelectAllButtonText(); // Atualiza o texto do botão de alternância após a lista ser renderizada
+      updatePlayerCounter();
+      updateToggleSelectAllButtonText();
     }
 
-    /**
-     * Atualiza o contador de jogadores selecionados/total.
-     */
     function updatePlayerCounter() {
-      const selected = players.filter(p => checkedState[p] !== false).length; // Conta jogadores selecionados
-      const total = players.length; // Total de jogadores
+      const selected = players.filter(p => checkedState[p] !== false).length;
+      const total = players.length;
       document.getElementById("playerCounter").textContent = `${selected}/${total}`;
     }
 
-    /**
-     * Alterna a seleção de todos os jogadores (seleciona todos se nenhum/alguns estiverem selecionados, desmarca todos se todos estiverem selecionados).
-     */
     function toggleSelectAllPlayers() {
       const allSelected = players.every(p => checkedState[p] !== false);
       let confirmationMessage;
@@ -1062,22 +1509,21 @@
 
       if (allSelected) {
         confirmationMessage = "Tem certeza que deseja desmarcar todos os jogadores?";
-        action = false; // Desmarcar todos
+        action = false;
       } else {
         confirmationMessage = "Tem certeza que deseja selecionar todos os jogadores?";
-        action = true; // Selecionar todos
+        action = true;
       }
 
-      if (confirm(confirmationMessage)) {
-        players.forEach(p => checkedState[p] = action);
-        saveCheckedState();
-        updatePlayerList();
-      }
+      showConfirmationModal(confirmationMessage, (confirmed) => {
+          if (confirmed) {
+              players.forEach(p => checkedState[p] = action);
+              saveCheckedState();
+              updatePlayerList();
+          }
+      });
     }
 
-    /**
-     * Atualiza o texto do botão de alternância de seleção de jogadores.
-     */
     function updateToggleSelectAllButtonText() {
       const toggleButton = document.getElementById('toggleSelectAllButton');
       if (toggleButton) {
@@ -1090,41 +1536,47 @@
       }
     }
 
-    /**
-     * Confirma e reinicia a pontuação do jogo.
-     */
     function confirmReset() {
-      if (confirm("Tem certeza que deseja reiniciar a pontuação? Isso irá zerar os pontos e sets de ambos os times.")) {
-        resetGame();
-        // Fecha o menu após reiniciar, se estiver aberto
-        document.getElementById("gearMenu").classList.remove("show");
-        document.getElementById("menuOverlay").classList.remove("show");
-        // Se o modal de iniciar partida estiver aberto, feche-o também
-        hideStartGameModal();
-      }
+        const resetButton = document.getElementById('resetGameButton');
+        if (resetButton.classList.contains('disabled')) {
+            return;
+        }
+
+        showConfirmationModal("Tem certeza que deseja reiniciar a pontuação? Isso irá zerar os pontos e sets de ambos os times.", (confirmed) => {
+            if (confirmed) {
+                resetGame();
+                document.getElementById("gearMenu").classList.remove("show");
+                document.getElementById("menuOverlay").classList.remove("show");
+            }
+        });
     }
 
-    /**
-     * Reinicia as pontuações dos times para zero.
-     */
     function resetGame() {
       scoreA = 0;
       scoreB = 0;
-      setsA = 0; // Zera os sets também
-      setsB = 0; // Zera os sets também
-      gameEnded = false; // Permite pontuar novamente
-      gameStarted = false; // Jogo não está mais iniciado
-      lastWinningTeam = null; // Reseta o último time vencedor
+      setsA = 0;
+      setsB = 0;
+      gameEnded = false;
+      gameStarted = false; 
+      lastWinningTeam = null;
+      currentPlayingTeamA = { name: 'Time A', players: [], color: '#007bff' };
+      currentPlayingTeamB = { name: 'Time B', players: [], color: '#dc3545' };
+
       document.getElementById("scoreA").textContent = 0;
       document.getElementById("scoreB").textContent = 0;
-      updateSetsDisplay(); // Atualiza a exibição dos sets
-      // Removido: document.getElementById('startGameButton').style.display = 'block';
-      // Removido: document.getElementById('scoreboardOverlay').classList.remove('hidden');
+      updateSetsDisplay();
+      
+      document.getElementById('startGameButton').style.display = 'block';
+      document.getElementById('scoreboardOverlay').classList.remove('hidden');
+      
+      updateScoreboardTeamsDisplay();
+      updateResetButtonVisibility();
+      localStorage.setItem('currentPlayingTeamA', JSON.stringify(currentPlayingTeamA));
+      localStorage.setItem('currentPlayingTeamB', JSON.stringify(currentPlayingTeamB));
+      updateSwapTeamsButtonVisibility(); 
+      saveAppState();
     }
 
-    /**
-     * Embaralha um array em ordem aleatória (Fisher-Yates shuffle).
-     */
     function shuffle(array) {
       for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -1132,106 +1584,172 @@
       }
     }
 
-    /**
-     * Gera times personalizados com base nos jogadores selecionados e no número de jogadores por time.
-     */
     function generateCustomTeams() {
-      const container = document.getElementById("teamsContainer");
-      container.innerHTML = ""; // Limpa o container de times
-
       const perTeam = parseInt(document.getElementById("playersPerTeam").value);
       if (isNaN(perTeam) || perTeam <= 0) {
-        alert("Informe um número válido de jogadores por time.");
+        displayMessage("Informe um número válido de jogadores por time.", "error");
         return;
       }
 
-      const selectedPlayers = players.filter(p => checkedState[p] !== false); // Filtra apenas jogadores selecionados
-
+      const selectedPlayers = players.filter(p => checkedState[p] !== false);
       if (selectedPlayers.length < 2) {
-        alert("Selecione pelo menos dois jogadores.");
+        displayMessage("Selecione pelo menos dois jogadores.", "error");
         return;
       }
-
-      shuffle(selectedPlayers); // Embaralha os jogadores selecionados
-      const totalTeams = Math.ceil(selectedPlayers.length / perTeam); // Calcula o número total de times
-
-      // Cria e exibe os times
-      for (let i = 0; i < totalTeams; i++) {
-        const teamPlayers = selectedPlayers.slice(i * perTeam, (i + 1) * perTeam);
-        const teamDiv = document.createElement("div");
-        teamDiv.innerHTML = `<h3>Time ${i + 1}</h3><ul>${teamPlayers.map(p => `<li>${p}</li>`).join('')}</ul>`;
-        container.appendChild(teamDiv);
+      if (selectedPlayers.length < perTeam) {
+          displayMessage(`Você precisa de pelo menos ${perTeam} jogadores selecionados para gerar um time.`, "error");
+          return;
       }
+
+      shuffle(selectedPlayers);
+      generatedTeams = [];
+
+      let teamCount = 0;
+      for (let i = 0; i < selectedPlayers.length; i += perTeam) {
+        teamCount++;
+        const customTeam = customTeamNames[teamCount - 1];
+        const teamName = customTeam && customTeam.name.trim() !== ""
+                         ? customTeam.name
+                         : `Time ${teamCount}`;
+        const teamColor = customTeam ? customTeam.color : defaultCustomTeamColors[teamCount - 1] || '#cccccc';
+        
+        generatedTeams.push({ name: teamName, players: selectedPlayers.slice(i, i + perTeam), color: teamColor });
+      }
+      
+      localStorage.setItem('generatedTeams', JSON.stringify(generatedTeams));
+      renderGeneratedTeams();
+      displayMessage(`${teamCount} time(s) gerado(s) com sucesso!`, "success");
+
+      // Seleção aleatória de times para o placar
+      if (generatedTeams.length >= 2) {
+          const shuffledGeneratedTeams = [...generatedTeams]; // Cria uma cópia para embaralhar
+          shuffle(shuffledGeneratedTeams); // Embaralha a cópia
+          currentPlayingTeamA = { ...shuffledGeneratedTeams[0] };
+          currentPlayingTeamB = { ...shuffledGeneratedTeams[1] };
+          localStorage.setItem('currentPlayingTeamA', JSON.stringify(currentPlayingTeamA));
+          localStorage.setItem('currentPlayingTeamB', JSON.stringify(currentPlayingTeamB));
+          teamAColor = currentPlayingTeamA.color; // Atualiza a cor do time A
+          teamBColor = currentPlayingTeamB.color; // Atualiza a cor do time B
+          updateScoreboardTeamsDisplay();
+          displayMessage(`Times "${currentPlayingTeamA.name}" e "${currentPlayingTeamB.name}" definidos no placar.`, "info");
+      } else if (generatedTeams.length === 1) {
+          currentPlayingTeamA = { ...generatedTeams[0] };
+          currentPlayingTeamB = { name: 'Time B', players: [], color: '#dc3545' };
+          localStorage.setItem('currentPlayingTeamA', JSON.stringify(currentPlayingTeamA));
+          localStorage.setItem('currentPlayingTeamB', JSON.stringify(currentPlayingTeamB));
+          teamAColor = currentPlayingTeamA.color; // Atualiza a cor do time A
+          teamBColor = currentPlayingTeamB.color; // Atualiza a cor do time B
+          updateScoreboardTeamsDisplay();
+          displayMessage(`Time "${currentPlayingTeamA.name}" definido no placar.`, "info");
+      } else {
+          currentPlayingTeamA = { name: 'Time A', players: [], color: '#007bff' };
+          currentPlayingTeamB = { name: 'Time B', players: [], color: '#dc3545' };
+          localStorage.setItem('currentPlayingTeamA', JSON.stringify(currentPlayingTeamA));
+          localStorage.setItem('currentPlayingTeamB', JSON.stringify(currentPlayingTeamB));
+          teamAColor = currentPlayingTeamA.color; // Atualiza a cor do time A
+          teamBColor = currentPlayingTeamB.color; // Atualiza a cor do time B
+          updateScoreboardTeamsDisplay();
+      }
+      saveAppState();
     }
 
-    /**
-     * Configura a funcionalidade de deslizar para diminuir a pontuação em uma seção.
-     * @param {string} id - O ID da seção do time.
-     * @param {string} team - O identificador do time ('A' ou 'B').
-     */
+    function renderGeneratedTeams() {
+        const container = document.getElementById("teamsContainer");
+        container.innerHTML = "";
+
+        if (generatedTeams.length === 0) {
+            const noTeamsMsg = document.createElement('p');
+            noTeamsMsg.textContent = 'Nenhum time gerado ainda. Vá em "Jogadores", selecione-os e depois use o botão "Gerar".';
+            noTeamsMsg.style.textAlign = 'center';
+            noTeamsMsg.style.fontStyle = 'italic';
+            noTeamsMsg.style.color = 'rgba(255,255,255,0.7)';
+            container.appendChild(noTeamsMsg);
+            return;
+        }
+
+        generatedTeams.forEach((team) => {
+            const teamCard = document.createElement("div");
+            teamCard.classList.add("team-card");
+            teamCard.style.setProperty('--team-card-dynamic-border-color', team.color);
+
+            const teamNameEl = document.createElement("h4");
+            teamNameEl.appendChild(document.createTextNode(team.name));
+
+            teamCard.appendChild(teamNameEl);
+
+            const playersList = document.createElement("ul");
+            playersList.classList.add('player-list-compact');
+            if (team.players.length === 0) {
+                const playerLi = document.createElement("li");
+                playerLi.textContent = "Sem jogadores";
+                playerLi.style.fontStyle = 'italic';
+                playerLi.style.color = 'rgba(255,255,255,0.5)';
+                playersList.appendChild(playerLi);
+            } else {
+                team.players.forEach(player => {
+                    const playerLi = document.createElement("li");
+                    playerLi.textContent = player;
+                    playersList.appendChild(playerLi);
+                });
+            }
+            teamCard.appendChild(playersList);
+            container.appendChild(teamCard);
+        });
+    }
+
     function setupSwipeToDecrease(id, team) {
       const el = document.getElementById(id);
       let startY = null;
 
       el.addEventListener('touchstart', e => {
+        const playerInfoContainer = el.querySelector('.player-info-container');
+        if (playerInfoContainer && playerInfoContainer.contains(e.target)) {
+            startY = null;
+            return;
+        }
         if (e.touches.length === 1) {
-          startY = e.touches[0].clientY; // Posição Y inicial do toque
+          startY = e.touches[0].clientY;
         }
       });
 
       el.addEventListener('touchend', e => {
         if (startY !== null && e.changedTouches.length === 1) {
-          const endY = e.changedTouches[0].clientY; // Posição Y final do toque
-          // Se o deslize foi para baixo (endY - startY > 30px)
+          const endY = e.changedTouches[0].clientY;
           if (endY - startY > 30) {
-            changeScore(team, -1); // Diminui a pontuação
+            changeScore(team, -1);
           }
-          startY = null; // Reseta a posição inicial
+          startY = null;
         }
       });
     }
 
-    /**
-     * Aciona a vibração do dispositivo, se ativada nas configurações e suportada pelo navegador.
-     */
     function triggerVibration() {
       if (vibrationEnabled && navigator.vibrate) {
-        console.log('Vibration triggered!');
-        navigator.vibrate(100); // Vibra por 100ms
-      } else {
-        console.log('Vibration not enabled or not supported.');
+        navigator.vibrate(100);
       }
     }
 
-    /**
-     * Altera a pontuação de um time.
-     * @param {string} team - O identificador do time ('A' ou 'B').
-     * @param {number} delta - O valor a ser adicionado (positivo para aumentar, negativo para diminuir).
-     */
     function changeScore(team, delta) {
-      if (!gameStarted && delta > 0) { // Impede adicionar pontos se o jogo não foi iniciado
+      if (!gameStarted) {
+        if (delta > 0) displayMessage("Inicie uma partida primeiro!", "warning");
         return;
       }
-      // Se o set terminou, impede qualquer alteração de pontuação (aumento ou diminuição)
       if (gameEnded) {
         return;
       }
 
       const scoreElement = document.getElementById('score' + team);
-      // Remove classes de animação existentes para garantir que a animação possa ser reativada
       scoreElement.classList.remove('increase-anim', 'decrease-anim');
-      // Força um reflow para reiniciar a animação
       void scoreElement.offsetWidth; 
 
       if (team === 'A') {
-        scoreA = Math.max(0, scoreA + delta); // Garante que a pontuação não seja negativa
+        scoreA = Math.max(0, scoreA + delta);
         scoreElement.textContent = scoreA;
       } else {
         scoreB = Math.max(0, scoreB + delta);
         scoreElement.textContent = scoreB;
       }
 
-      // Adiciona a classe de animação apropriada e vibra
       if (delta > 0) {
         scoreElement.classList.add('increase-anim');
         triggerVibration();
@@ -1240,14 +1758,12 @@
         triggerVibration();
       }
 
-      checkWinCondition(); // Verifica se a condição de vitória foi atingida
+      checkWinCondition();
+      saveAppState();
     }
 
-    /**
-     * Verifica se algum time atingiu a condição de vitória do set.
-     */
     function checkWinCondition() {
-      if (gameEnded) return; // Se o set já terminou, não verifica novamente
+      if (gameEnded) return;
 
       let winner = null;
       if (scoreA >= winningScore && scoreA - scoreB >= 2) {
@@ -1257,11 +1773,12 @@
       }
 
       if (winner) {
-        gameEnded = true; // Bloqueia a pontuação
+        gameEnded = true;
         lastWinningTeam = winner;
-        showVictoryAnimation(winner, winner === 'A' ? teamNameA : teamNameB);
-
-        // Após a animação, verifica se a partida foi vencida ou apenas o set
+        const winningTeamName = winner === 'A' ? currentPlayingTeamA.name : currentPlayingTeamB.name;
+        showVictoryAnimation(winner, winningTeamName);
+        updateSwapTeamsButtonVisibility(); 
+        
         setTimeout(() => {
           let currentSetsA = setsA;
           let currentSetsB = setsB;
@@ -1272,263 +1789,48 @@
           }
 
           if (setsToWin > 0 && (currentSetsA >= setsToWin || currentSetsB >= setsToWin)) {
-            // A partida inteira foi vencida
-            showSuperVictoryAnimation(winner === 'A' ? teamNameA : teamNameB);
+            showSuperVictoryAnimation(winningTeamName);
           } else {
-            // Apenas um set foi vencido, a partida continua
-            showGameOverModal(winner === 'A' ? teamNameA : teamNameB, 'set_won');
+            showGameOverModal(winningTeamName, 'set_won');
           }
-        }, 3000); // Após 3 segundos (duração da animação de vitória normal)
+          saveAppState();
+        }, 3000);
       }
     }
 
-    /**
-     * Exibe a animação de vitória para o time vencedor na própria tela de pontuação.
-     * @param {string} teamId - O ID do time vencedor ('A' ou 'B').
-     * @param {string} winningTeamName - O nome do time vencedor.
-     */
     function showVictoryAnimation(teamId, winningTeamName) {
       const teamSection = document.getElementById('section' + teamId);
       const victoryElements = teamSection.querySelector('.victory-elements');
       const crownContainer = victoryElements.querySelector('.crown-container');
       const confettiContainer = victoryElements.querySelector('.confetti-container');
 
-      // Limpa confetes anteriores
       confettiContainer.innerHTML = '';
 
-      // Mostra os elementos de vitória
       victoryElements.classList.add('show');
 
-      // Reseta e inicia a animação da coroa
       crownContainer.style.opacity = 0;
       crownContainer.style.animation = 'none';
-      void crownContainer.offsetWidth; // Trigger reflow
-      crownContainer.style.animation = 'crownAppear 1.5s ease-out forwards'; // Duração da animação da coroa
+      void crownContainer.offsetWidth; 
+      crownContainer.style.animation = 'crownAppear 1.5s ease-out forwards';
 
-      // Cria e anima os confetes
-      const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f', '#ffa500']; // Cores vibrantes para confetes
-      for (let i = 0; i < 100; i++) { // 100 peças de confete
+      const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f', '#ffa500'];
+      for (let i = 0; i < 100; i++) {
         const confetti = document.createElement('div');
         confetti.classList.add('confetti-piece');
         confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-        confetti.style.width = `${Math.random() * 10 + 5}px`; // Tamanho aleatório de 5 a 15px
+        confetti.style.width = `${Math.random() * 10 + 5}px`;
         confetti.style.height = confetti.style.width;
         
-        // Posição inicial no centro da seção do time
         const startX = teamSection.offsetWidth / 2;
         const startY = teamSection.offsetHeight / 2;
         confetti.style.left = `${startX}px`;
         confetti.style.top = `${startY}px`;
 
-        // Propriedades aleatórias para a animação
-        const endX = (Math.random() - 0.5) * teamSection.offsetWidth * 1.5; // Espalha horizontalmente
-        const endY = (Math.random() - 0.5) * teamSection.offsetHeight * 1.5; // Espalha verticalmente
-        const rotateDeg = Math.random() * 720; // Rotação aleatória
-        const duration = Math.random() * 1.5 + 1.5; // Duração de 1.5 a 3 segundos
-        const delay = Math.random() * 0.5; // Pequeno atraso para efeito de explosão
-
-        confetti.style.setProperty('--confetti-end-x', `${endX}px`);
-        confetti.style.setProperty('--confetti-end-y', `${endY}px`);
-        confetti.style.setProperty('--confetti-rotate-deg', `${rotateDeg}deg`);
-        confetti.style.animation = `confettiFall ${duration}s ease-out ${delay}s forwards`;
-        confetti.style.opacity = 1; // Garante que comece visível
-
-        confettiContainer.appendChild(confetti);
-
-        confetti.addEventListener('animationend', () => {
-          confetti.remove();
-        });
-      }
-
-      // Esconde os elementos de vitória após 3 segundos e mostra o modal de fim de jogo
-      setTimeout(() => {
-        victoryElements.classList.remove('show');
-        // O modal é mostrado dentro de checkWinCondition agora
-      }, 3000);
-    }
-
-    /**
-     * Exibe o modal de fim de jogo.
-     * @param {string} winningTeamName - O nome do time vencedor.
-     * @param {string} gameStatus - 'set_won' se apenas o set foi vencido, 'game_won' se a partida foi vencida.
-     */
-    function showGameOverModal(winningTeamName, gameStatus) {
-      const modal = document.getElementById('gameOverModal');
-      const modalWinningTeamName = document.getElementById('modalWinningTeamName');
-      const modalMessage = document.getElementById('modalMessage');
-      const newSetButton = document.getElementById('newSetButton');
-
-      modalWinningTeamName.textContent = winningTeamName;
-      if (gameStatus === 'game_won') {
-        modalMessage.textContent = 'Venceu a Partida!';
-        newSetButton.style.display = 'none'; // Oculta "Novo Set" se a partida terminou
-      } else { // 'set_won'
-        modalMessage.textContent = 'Venceu o Set!';
-        newSetButton.style.display = 'block'; // Mostra "Novo Set" se a partida continua
-      }
-      modal.classList.add('show');
-    }
-
-    /**
-     * Esconde o modal de fim de jogo.
-     */
-    function hideGameOverModal() {
-      document.getElementById('gameOverModal').classList.remove('show');
-    }
-
-    /**
-     * Exibe o modal para aumentar a pontuação de vitória.
-     */
-    function increaseWinningScoreModal() {
-      hideGameOverModal(); // Esconde o modal de fim de jogo primeiro
-      document.getElementById('increaseScoreModal').classList.add('show');
-      document.getElementById('newWinningScoreInput').value = winningScore + 5; // Sugere +5 por padrão
-    }
-
-    /**
-     * Esconde o modal para aumentar a pontuação de vitória.
-     */
-    function hideIncreaseScoreModal() {
-      document.getElementById('increaseScoreModal').classList.remove('show');
-    }
-
-    /**
-     * Confirma o aumento da pontuação de vitória.
-     */
-    function confirmIncreaseWinningScore() {
-      const newScore = parseInt(document.getElementById('newWinningScoreInput').value);
-      if (isNaN(newScore) || newScore <= 0) {
-        alert("Por favor, insira um número de pontos válido.");
-        return;
-      }
-      if (newScore <= winningScore) {
-        alert(`A nova pontuação (${newScore}) deve ser maior que a pontuação atual (${winningScore}).`);
-        return;
-      }
-
-      winningScore = newScore;
-      localStorage.setItem('winningScore', winningScore.toString());
-      document.getElementById('winningScore').value = winningScore; // Atualiza o campo nas configurações
-      alert(`Pontuação para vencer aumentada para ${winningScore}!`);
-      hideIncreaseScoreModal();
-      gameEnded = false; // Permite continuar o jogo com a nova pontuação
-    }
-
-    /**
-     * Exibe o modal para iniciar uma nova partida.
-     */
-    function showStartGameModal() {
-      document.getElementById('startGameModal').classList.add('show');
-      document.getElementById('initialWinningScore').value = winningScore; // Preenche com a última pontuação de set
-      document.getElementById('initialNumberOfSets').value = setsToWin; // Preenche com o último número de sets
-      document.getElementById('startGameButton').style.display = 'none'; // Oculta o botão de iniciar
-    }
-
-    /**
-     * Esconde o modal para iniciar uma nova partida.
-     */
-    function hideStartGameModal() {
-      document.getElementById('startGameModal').classList.remove('show');
-      document.getElementById('startGameButton').style.display = 'block'; // Mostra o botão de iniciar novamente
-    }
-
-    /**
-     * Confirma as configurações e inicia uma nova partida.
-     */
-    function confirmStartGame() {
-      const newWinningScore = parseInt(document.getElementById('initialWinningScore').value);
-      const newSetsToWin = parseInt(document.getElementById('initialNumberOfSets').value);
-
-      if (isNaN(newWinningScore) || newWinningScore <= 0) {
-        alert("Por favor, insira um valor válido para 'Pontos por set'.");
-        return;
-      }
-      if (isNaN(newSetsToWin) || newSetsToWin < 0) {
-        alert("Por favor, insira um valor válido para 'Número de sets'.");
-        return;
-      }
-
-      winningScore = newWinningScore;
-      setsToWin = newSetsToWin;
-      localStorage.setItem('winningScore', winningScore.toString()); // Salva a pontuação do set
-      localStorage.setItem('setsToWin', setsToWin.toString()); // Salva o número de sets para vencer
-
-      // Atualiza os campos nas configurações para refletir os novos valores
-      document.getElementById('winningScore').value = winningScore;
-      document.getElementById('setsToWinConfig').value = setsToWin;
-
-      hideStartGameModal();
-      resetGame(); // Reseta pontuações, sets, e gameEnded/gameStarted flags
-      gameStarted = true; // Define que o jogo foi iniciado
-      document.getElementById('startGameButton').style.display = 'none'; // Garante que o botão permaneça oculto
-      document.getElementById('scoreboardOverlay').classList.add('hidden'); // Oculta o overlay escuro
-    }
-
-
-    /**
-     * Inicia um novo jogo (reseta pontuações e sets).
-     */
-    function startNewGame() {
-      hideGameOverModal();
-      resetGame(); // Reseta tudo (pontos, sets, flags)
-      showStartGameModal(); // Abre o modal para configurar uma nova partida
-    }
-
-    /**
-     * Inicia um novo set (reseta apenas as pontuações atuais e incrementa o set do vencedor).
-     */
-    function startNewSet() {
-      hideGameOverModal();
-      if (lastWinningTeam === 'A') {
-        setsA++;
-      } else if (lastWinningTeam === 'B') {
-        setsB++;
-      }
-      scoreA = 0; // Reseta apenas os pontos para o novo set
-      scoreB = 0;
-      gameEnded = false; // Permite pontuar novamente
-      document.getElementById("scoreA").textContent = 0;
-      document.getElementById("scoreB").textContent = 0;
-      updateSetsDisplay(); // Atualiza a exibição dos sets
-      alert('Novo Set Iniciado!');
-    }
-
-    /**
-     * Exibe a animação de super vitória quando a partida é vencida.
-     * @param {string} winningTeamName - O nome do time vencedor da partida.
-     */
-    function showSuperVictoryAnimation(winningTeamName) {
-      const superVictoryModal = document.getElementById('superVictoryModal');
-      const superVictoryTeamName = document.getElementById('superVictoryTeamName');
-      const confettiContainer = superVictoryModal.querySelector('.confetti-container');
-
-      superVictoryTeamName.textContent = winningTeamName;
-      superVictoryModal.classList.add('show');
-
-      // Limpa confetes anteriores
-      confettiContainer.innerHTML = '';
-
-      // Cria e anima muitos confetes para a super vitória
-      const colors = ['#FFD700', '#FFA500', '#FF4500', '#FFFFFF', '#007bff', '#dc3545']; // Cores mais festivas
-      for (let i = 0; i < 200; i++) { // Mais confetes
-        const confetti = document.createElement('div');
-        confetti.classList.add('confetti-piece');
-        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-        confetti.style.width = `${Math.random() * 15 + 8}px`; // Confetes maiores
-        confetti.style.height = confetti.style.width;
-        
-        // Posição inicial aleatória no topo da tela
-        const startX = Math.random() * window.innerWidth;
-        const startY = -Math.random() * window.innerHeight; // Começa acima da tela
-        confetti.style.left = `${startX}px`;
-        confetti.style.top = `${startY}px`;
-
-        // Propriedades aleatórias para a animação
-        const endX = (Math.random() - 0.5) * window.innerWidth * 2; // Espalha mais horizontalmente
-        const endY = window.innerHeight + Math.random() * window.innerHeight; // Cai para baixo da tela
-        const rotateDeg = Math.random() * 1080; // Mais rotação
-        const duration = Math.random() * 2 + 3; // Duração de 3 a 5 segundos
-        const delay = Math.random() * 1; // Pequeno atraso para efeito de chuva
+        const endX = (Math.random() - 0.5) * teamSection.offsetWidth * 1.5;
+        const endY = (Math.random() - 0.5) * teamSection.offsetHeight * 1.5;
+        const rotateDeg = Math.random() * 720;
+        const duration = Math.random() * 1.5 + 1.5;
+        const delay = Math.random() * 0.5;
 
         confetti.style.setProperty('--confetti-end-x', `${endX}px`);
         confetti.style.setProperty('--confetti-end-y', `${endY}px`);
@@ -1543,21 +1845,222 @@
         });
       }
 
-      // Esconde o modal de super vitória após um tempo e então mostra o modal de fim de jogo
       setTimeout(() => {
-        superVictoryModal.classList.remove('show');
-        showGameOverModal(winningTeamName, 'game_won'); // Chama o modal de fim de jogo com status de partida vencida
-      }, 5000); // Animação de super vitória dura 5 segundos
+        victoryElements.classList.remove('show');
+      }, 3000);
     }
 
+    function showGameOverModal(winningTeamName, gameStatus) {
+      const modal = document.getElementById('gameOverModal');
+      const modalWinningTeamName = document.getElementById('modalWinningTeamName');
+      const modalMessage = document.getElementById('modalMessage');
+      const newSetButton = document.getElementById('newSetButton');
 
-    /**
-     * Atualiza a exibição das estrelas de set para cada time.
-     */
+      modalWinningTeamName.textContent = winningTeamName;
+      if (gameStatus === 'game_won') {
+        modalMessage.textContent = 'Venceu a Partida!';
+        newSetButton.style.display = 'none';
+      } else {
+        modalMessage.textContent = 'Venceu o Set!';
+        newSetButton.style.display = 'block';
+      }
+      modal.classList.add('show');
+    }
+
+    function hideGameOverModal() {
+      document.getElementById('gameOverModal').classList.remove('show');
+    }
+
+    function increaseWinningScoreModal() {
+      hideGameOverModal();
+      document.getElementById('increaseScoreModal').classList.add('show');
+      document.getElementById('newWinningScoreInput').value = winningScore + 5;
+    }
+
+    function hideIncreaseScoreModal() {
+      document.getElementById('increaseScoreModal').classList.remove('show');
+    }
+
+    function confirmIncreaseWinningScore() {
+      const newScore = parseInt(document.getElementById('newWinningScoreInput').value);
+      if (isNaN(newScore) || newScore <= 0) {
+        displayMessage("Por favor, insira um número de pontos válido.", "error");
+        return;
+      }
+      if (newScore <= winningScore) {
+        displayMessage(`A nova pontuação (${newScore}) deve ser maior que a pontuação atual (${winningScore}).`, "error");
+        return;
+      }
+
+      winningScore = newScore;
+      localStorage.setItem('winningScore', winningScore.toString());
+      document.getElementById('winningScore').value = winningScore;
+      displayMessage(`Pontuação para vencer aumentada para ${winningScore}!`, "success");
+      hideIncreaseScoreModal();
+      gameEnded = false;
+      saveAppState();
+    }
+
+    function showStartGameModal() {
+      document.getElementById('startGameModal').classList.add('show');
+      document.getElementById('initialWinningScore').value = winningScore;
+      document.getElementById('initialNumberOfSets').value = setsToWin;
+      document.getElementById('startGameButton').style.display = 'none';
+    }
+
+    function hideStartGameModal() {
+      document.getElementById('startGameModal').classList.remove('show');
+      if (!gameStarted) { 
+          document.getElementById('startGameButton').style.display = 'block';
+          document.getElementById('scoreboardOverlay').classList.remove('hidden');
+      }
+    }
+
+    function confirmStartGame() {
+      const newWinningScore = parseInt(document.getElementById('initialWinningScore').value);
+      const newSetsToWin = parseInt(document.getElementById('initialNumberOfSets').value);
+
+      if (isNaN(newWinningScore) || newWinningScore <= 0) {
+        displayMessage("Por favor, insira um valor válido para 'Pontos por set'.", "error");
+        return;
+      }
+      if (isNaN(newSetsToWin) || newSetsToWin < 0) {
+        displayMessage("Por favor, insira um valor válido para 'Número de sets'.", "error");
+        return;
+      }
+
+      winningScore = newWinningScore;
+      setsToWin = newSetsToWin;
+      localStorage.setItem('winningScore', winningScore.toString());
+      localStorage.setItem('setsToWin', setsToWin.toString());
+
+      scoreA = 0;
+      scoreB = 0;
+      setsA = 0;
+      setsB = 0;
+      gameEnded = false;
+      gameStarted = true; 
+
+      document.getElementById("scoreA").textContent = scoreA;
+      document.getElementById("scoreB").textContent = scoreB;
+      updateSetsDisplay();
+
+      hideStartGameModal();
+      document.getElementById('startGameButton').style.display = 'none';
+      document.getElementById('scoreboardOverlay').classList.add('hidden');
+      
+      updateScoreboardTeamsDisplay();
+      updateResetButtonVisibility();
+      updateSwapTeamsButtonVisibility(); 
+      
+      saveAppState();
+    }
+
+    function updateScoreboardTeamsDisplay() {
+        const teamNameAEl = document.getElementById('teamNameA');
+        const teamNameBEl = document.getElementById('teamNameB');
+        const playerInfoContainerA = document.querySelector('#sectionA .player-info-container');
+        const playerInfoContainerB = document.querySelector('#sectionB .player-info-container');
+        const playerListAEl = document.getElementById('playerListA');
+        const playerListBEl = document.getElementById('playerListB');
+
+        teamNameAEl.textContent = currentPlayingTeamA.name;
+        playerListAEl.innerHTML = currentPlayingTeamA.players.length > 0 ? 
+                                  currentPlayingTeamA.players.map(p => `<li>${p}</li>`).join('') : 
+                                  '<li style="font-style: italic; color: rgba(255,255,255,0.5);">Selecionar time</li>';
+
+        teamNameBEl.textContent = currentPlayingTeamB.name;
+        playerListBEl.innerHTML = currentPlayingTeamB.players.length > 0 ? 
+                                  currentPlayingTeamB.players.map(p => `<li>${p}</li>`).join('') : 
+                                  '<li style="font-style: italic; color: rgba(255,255,255,0.5);">Selecionar Time</li>';
+
+        if (showPlayersOnScoreboard) {
+            playerInfoContainerA.classList.remove('hidden-players');
+            playerInfoContainerB.classList.remove('hidden-players');
+        } else {
+            playerInfoContainerA.classList.add('hidden-players');
+            playerInfoContainerB.classList.add('hidden-players');
+        }
+        applyTeamColorsToScoreboard();
+    }
+
+    function startNewGame() {
+      hideGameOverModal();
+      resetGame();
+      showStartGameModal();
+    }
+
+    function startNewSet() {
+      hideGameOverModal();
+      if (lastWinningTeam === 'A') {
+        setsA++;
+      } else if (lastWinningTeam === 'B') {
+        setsB++;
+      }
+      scoreA = 0;
+      scoreB = 0;
+      gameEnded = false;
+      document.getElementById("scoreA").textContent = 0;
+      document.getElementById("scoreB").textContent = 0;
+      updateSetsDisplay();
+      displayMessage('Novo Set Iniciado!', "info");
+      updateSwapTeamsButtonVisibility(); 
+      
+      saveAppState();
+    }
+
+    function showSuperVictoryAnimation(winningTeamName) {
+      const superVictoryModal = document.getElementById('superVictoryModal');
+      const superVictoryTeamName = document.getElementById('superVictoryTeamName');
+      const confettiContainer = superVictoryModal.querySelector('.confetti-container');
+
+      superVictoryTeamName.textContent = winningTeamName;
+      superVictoryModal.classList.add('show');
+
+      confettiContainer.innerHTML = '';
+
+      const colors = ['#FFD700', '#FFA500', '#FF4500', '#FFFFFF', '#007bff', '#dc3545'];
+      for (let i = 0; i < 200; i++) {
+        const confetti = document.createElement('div');
+        confetti.classList.add('confetti-piece');
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.width = `${Math.random() * 15 + 8}px`;
+        confetti.style.height = confetti.style.width;
+        
+        const startX = Math.random() * window.innerWidth;
+        const startY = -Math.random() * window.innerHeight;
+        confetti.style.left = `${startX}px`;
+        confetti.style.top = `${startY}px`;
+
+        const endX = (Math.random() - 0.5) * window.innerWidth * 2;
+        const endY = window.innerHeight + Math.random() * window.innerHeight;
+        const rotateDeg = Math.random() * 1080;
+        const duration = Math.random() * 2 + 3;
+        const delay = Math.random() * 1;
+
+        confetti.style.setProperty('--confetti-end-x', `${endX}px`);
+        confetti.style.setProperty('--confetti-end-y', `${endY}px`);
+        confetti.style.setProperty('--confetti-rotate-deg', `${rotateDeg}deg`);
+        confetti.style.animation = `confettiFall ${duration}s ease-out ${delay}s forwards`;
+        confetti.style.opacity = 1;
+
+        confettiContainer.appendChild(confetti);
+
+        confetti.addEventListener('animationend', () => {
+          confetti.remove();
+        });
+      }
+
+      setTimeout(() => {
+        superVictoryModal.classList.remove('show');
+        showGameOverModal(winningTeamName, 'game_won');
+      }, 5000);
+    }
+
     function updateSetsDisplay() {
       const setIndicatorA = document.getElementById('setIndicatorA');
       const setIndicatorB = document.getElementById('setIndicatorB');
-      setIndicatorA.innerHTML = ''; // Limpa indicadores existentes
+      setIndicatorA.innerHTML = '';
       setIndicatorB.innerHTML = '';
 
       for (let i = 0; i < setsA; i++) {
@@ -1572,53 +2075,39 @@
       }
     }
 
-    /**
-     * Salva as configurações de pontos para vencer e sets no localStorage.
-     */
     function saveSettings() {
       winningScore = parseInt(document.getElementById('winningScore').value);
-      setsToWin = parseInt(document.getElementById('setsToWinConfig').value); // Obtém o valor do novo input
-      vibrationEnabled = document.getElementById('vibrationEnabled').checked; // Obtém o valor do checkbox de vibração
+      setsToWin = parseInt(document.getElementById('setsToWinConfig').value);
+      vibrationEnabled = document.getElementById('vibrationEnabled').checked;
+      showPlayersOnScoreboard = document.getElementById('showPlayersOnScoreboard').checked;
 
       if (isNaN(winningScore) || winningScore <= 0) {
-        winningScore = 15; // Valor padrão se a entrada for inválida
+        winningScore = 15;
         document.getElementById('winningScore').value = 15;
       }
-      if (isNaN(setsToWin) || setsToWin < 0) { // Validação para setsToWin
-        setsToWin = 1; // Valor padrão se a entrada for inválida
+      if (isNaN(setsToWin) || setsToWin < 0) {
+        setsToWin = 1;
         document.getElementById('setsToWinConfig').value = 1;
       }
 
+      for (let i = 0; i < 5; i++) {
+        customTeamNames[i] = {
+            name: document.getElementById(`customTeamName${i + 1}`).value.trim(),
+            color: document.getElementById(`customTeamColor${i + 1}`).value
+        };
+      }
+
       localStorage.setItem('winningScore', winningScore.toString());
-      localStorage.setItem('setsToWin', setsToWin.toString()); // Salva o número de sets para vencer
-      localStorage.setItem('vibrationEnabled', JSON.stringify(vibrationEnabled)); // Salva o estado da vibração
-      // alert('Configurações salvas!'); // Removido para não alertar em cada mudança
+      localStorage.setItem('setsToWin', setsToWin.toString());
+      localStorage.setItem('vibrationEnabled', JSON.stringify(vibrationEnabled));
+      localStorage.setItem('showPlayersOnScoreboard', JSON.stringify(showPlayersOnScoreboard));
+      localStorage.setItem('customTeamNames', JSON.stringify(customTeamNames));
+
+      updatePlayerDisplayOnScoreboard();
+      applyTeamColorsToScoreboard();
+      saveAppState();
     }
 
-    /**
-     * Salva os nomes dos times no localStorage e atualiza a exibição.
-     */
-    function saveTeamNames() {
-      teamNameA = document.getElementById('editTeamNameA').value.trim();
-      teamNameB = document.getElementById('editTeamNameB').value.trim();
-
-      // Define nomes padrão se os campos estiverem vazios
-      if (teamNameA === '') teamNameA = 'Time A';
-      if (teamNameB === '') teamNameB = 'Time B';
-
-      localStorage.setItem('teamNameA', teamNameA);
-      localStorage.setItem('teamNameB', teamNameB);
-
-      document.getElementById('teamNameA').textContent = teamNameA;
-      document.getElementById('teamNameB').textContent = teamNameB;
-      // alert('Nomes dos times salvos!'); // Removido para não alertar em cada mudança
-    }
-
-    /**
-     * Define o tema do aplicativo (claro ou escuro).
-     * @param {string} themeName - O nome do tema ('dark' ou 'light').
-     * @param {boolean} save - Se o tema deve ser salvo no localStorage (true por padrão).
-     */
     function setTheme(themeName, save = true) {
       if (themeName === 'light') {
         document.body.classList.add('light-theme');
@@ -1628,120 +2117,584 @@
       currentTheme = themeName;
       if (save) {
         localStorage.setItem('theme', themeName);
-        alert('Tema alterado para ' + (themeName === 'dark' ? 'Escuro' : 'Claro') + '!');
+        displayMessage('Tema alterado para ' + (themeName === 'dark' ? 'Escuro' : 'Claro') + '!', "info");
+        saveAppState();
       }
     }
 
-    /**
-     * Carrega as configurações (pontos para vencer, nomes dos times e tema) do localStorage
-     * e as aplica aos elementos da interface.
-     */
-    function loadSettings() {
-      winningScore = parseInt(localStorage.getItem('winningScore') || '15');
-      setsToWin = parseInt(localStorage.getItem('setsToWin') || '1'); // Carrega setsToWin
-      vibrationEnabled = JSON.parse(localStorage.getItem('vibrationEnabled') || 'true'); // Carrega o estado da vibração
-      
-      document.getElementById('winningScore').value = winningScore;
-      document.getElementById('setsToWinConfig').value = setsToWin; // Aplica setsToWin ao input
-      document.getElementById('editTeamNameA').value = teamNameA;
-      document.getElementById('editTeamNameB').value = teamNameB;
-      document.getElementById('teamNameA').textContent = teamNameA;
-      document.getElementById('teamNameB').textContent = teamNameB;
-      document.getElementById('vibrationEnabled').checked = vibrationEnabled; // Aplica o estado da vibração ao checkbox
-
-      // Carrega a configuração do tema e a aplica
-      currentTheme = localStorage.getItem('theme') || 'dark';
-      document.getElementById('themeSelect').value = currentTheme;
-      setTheme(currentTheme, false); // Aplica o tema sem exibir o alerta ao carregar
+    function saveAppState() {
+        const appState = {
+            players: players,
+            checkedState: checkedState,
+            generatedTeams: generatedTeams,
+            currentPlayingTeamA: currentPlayingTeamA,
+            currentPlayingTeamB: currentPlayingTeamB,
+            scoreA: scoreA,
+            scoreB: scoreB,
+            setsA: setsA,
+            setsB: setsB,
+            gameEnded: gameEnded,
+            gameStarted: gameStarted,
+            lastWinningTeam: lastWinningTeam,
+            winningScore: winningScore,
+            setsToWin: setsToWin,
+            customTeamNames: customTeamNames,
+            currentTheme: currentTheme,
+            vibrationEnabled: vibrationEnabled,
+            showPlayersOnScoreboard: showPlayersOnScoreboard,
+        };
+        localStorage.setItem('volleyballScoreboardAppState', JSON.stringify(appState));
     }
 
-    /**
-     * Configura a funcionalidade de deslize horizontal para navegar entre as seções.
-     */
+    function loadSettings() {
+      const storedAppState = localStorage.getItem('volleyballScoreboardAppState');
+      if (storedAppState) {
+          const appState = JSON.parse(storedAppState);
+
+          players = appState.players || [];
+          checkedState = appState.checkedState || {};
+          generatedTeams = appState.generatedTeams || [];
+          currentPlayingTeamA = appState.currentPlayingTeamA || { name: 'Time A', players: [], color: '#007bff' };
+          currentPlayingTeamB = appState.currentPlayingTeamB || { name: 'Time B', players: [], color: '#dc3545' };
+          scoreA = appState.scoreA || 0;
+          scoreB = appState.scoreB || 0;
+          setsA = appState.setsA || 0;
+          setsB = appState.setsB || 0;
+          gameEnded = appState.gameEnded || false;
+          gameStarted = appState.gameStarted || false;
+          lastWinningTeam = appState.lastWinningTeam || null;
+          winningScore = appState.winningScore || 15;
+          setsToWin = appState.setsToWin || 1;
+          customTeamNames = appState.customTeamNames || defaultCustomTeamColors.map((color, index) => ({ name: "", color: color }));
+          currentTheme = appState.currentTheme || 'dark';
+          vibrationEnabled = appState.vibrationEnabled !== undefined ? appState.vibrationEnabled : true;
+          showPlayersOnScoreboard = appState.showPlayersOnScoreboard !== undefined ? appState.showPlayersOnScoreboard : true;
+
+      } else {
+          winningScore = parseInt(localStorage.getItem('winningScore') || '15');
+          setsToWin = parseInt(localStorage.getItem('setsToWin') || '1');
+          vibrationEnabled = JSON.parse(localStorage.getItem('vibrationEnabled') || 'true');
+          generatedTeams = JSON.parse(localStorage.getItem('generatedTeams') || '[]');
+          showPlayersOnScoreboard = JSON.parse(localStorage.getItem('showPlayersOnScoreboard') || 'true');
+          currentTheme = localStorage.getItem('theme') || 'dark';
+          gameStarted = false; 
+      }
+
+      teamAColor = currentPlayingTeamA.color;
+      teamBColor = currentPlayingTeamB.color;
+
+      document.getElementById('winningScore').value = winningScore;
+      document.getElementById('setsToWinConfig').value = setsToWin;
+      document.getElementById('vibrationEnabled').checked = vibrationEnabled;
+      document.getElementById('showPlayersOnScoreboard').checked = showPlayersOnScoreboard;
+      
+      for (let i = 0; i < 5; i++) {
+        document.getElementById(`customTeamName${i + 1}`).value = customTeamNames[i].name;
+        document.getElementById(`customTeamColor${i + 1}`).value = customTeamNames[i].color;
+      }
+
+      document.getElementById('themeSelect').value = currentTheme;
+      setTheme(currentTheme, false);
+      
+      updateScoreboardTeamsDisplay();
+      updateResetButtonVisibility();
+      updatePlayerDisplayOnScoreboard();
+      applyTeamColorsToScoreboard();
+      updateSwapTeamsButtonVisibility(); 
+      
+      const generalContent = document.getElementById('generalSettingsContent');
+      const generalArrow = document.getElementById('generalSettingsArrow');
+      const customNamesContent = document.getElementById('customTeamNamesContent');
+      const customNamesArrow = document.getElementById('customTeamNamesArrow');
+      const dataManagementContent = document.getElementById('dataManagementContent');
+      const dataManagementArrow = document.getElementById('dataManagementArrow');
+
+
+      generalContent.classList.add('show');
+      generalArrow.classList.add('rotated');
+
+      customNamesContent.classList.remove('show');
+      customNamesArrow.classList.remove('rotated');
+
+      dataManagementContent.classList.remove('show');
+      dataManagementArrow.classList.remove('rotated');
+    }
+
+    function applyTeamColorsToScoreboard() {
+        document.getElementById('sectionA').style.backgroundColor = teamAColor;
+        document.getElementById('sectionB').style.backgroundColor = teamBColor;
+    }
+
     function setupSwipeBetweenSections() {
       let touchStartX = null;
       document.body.addEventListener('touchstart', e => {
-        // Ignorar o swipe se o menu estiver aberto ou um modal estiver ativo
         if (document.getElementById("gearMenu").classList.contains("show") ||
             document.getElementById("gameOverModal").classList.contains("show") ||
             document.getElementById("increaseScoreModal").classList.contains("show") ||
             document.getElementById("startGameModal").classList.contains("show") ||
-            document.getElementById("superVictoryModal").classList.contains("show")) { // Adicionado o modal de super vitória
-            touchStartX = null; // Impede o swipe
+            document.getElementById("superVictoryModal").classList.contains("show") ||
+            document.getElementById("customMessageModal").classList.contains("show") || 
+            document.getElementById("customConfirmationModal").classList.contains("show") || 
+            document.getElementById("manageTeamModal").classList.contains("show") ||
+            e.target.closest('#startGameButton') || e.target.closest('#swapTeamsButton')) {
+            touchStartX = null;
             return;
         }
-        touchStartX = e.touches[0].clientX; // Posição X inicial do toque
+        touchStartX = e.touches[0].clientX;
       });
       document.body.addEventListener('touchend', e => {
-        if (touchStartX === null) return; // Sai se não houve toque inicial
-        const touchEndX = e.changedTouches[0].clientX; // Posição X final do toque
-        const dx = touchStartX - touchEndX; // Diferença no eixo X
-        const threshold = 50; // Limiar para considerar um deslize
-        const sections = ['pontuacao', 'jogadores', 'times', 'configuracoes']; // IDs das seções
-        const currentIndex = sections.findIndex(id => document.getElementById(id).classList.contains('active')); // Seção atual
+        if (touchStartX === null) return;
+
+        const touchEndX = e.changedTouches[0].clientX;
+        const dx = touchStartX - touchEndX;
+        const threshold = 50;
+
+        if (e.target.closest('#startGameButton') || e.target.closest('#swapTeamsButton')) {
+            touchStartX = null;
+            return;
+        }
+
+        const sections = ['pontuacao', 'times', 'jogadores', 'configuracoes']; // Ordem atualizada
+        const currentIndex = sections.findIndex(id => document.getElementById(id).classList.contains('active'));
         let nextIndex = currentIndex;
         
-        // Determina a próxima seção com base na direção do deslize
-        if (dx > threshold) { // Deslize para a esquerda (próxima seção)
+        if (dx > threshold) {
           nextIndex = (currentIndex + 1) % sections.length;
-        } else if (dx < -threshold) { // Deslize para a direita (seção anterior)
+        } else if (dx < -threshold) {
           nextIndex = (currentIndex - 1 + sections.length) % sections.length;
         }
-        showSection(sections[nextIndex]); // Mostra a próxima seção
-        touchStartX = null; // Reseta a posição inicial
+        showSection(sections[nextIndex]);
+        touchStartX = null;
       });
     }
 
-    // Executa quando a janela é totalmente carregada
+    function swapTeams() {
+      if (!gameStarted) {
+        displayMessage("Inicie uma partida para inverter os times.", "warning");
+        return;
+      }
+      
+      const sectionA = document.getElementById('sectionA');
+      const sectionB = document.getElementById('sectionB');
+
+      sectionA.style.pointerEvents = 'none';
+      sectionB.style.pointerEvents = 'none';
+      document.getElementById('swapTeamsButton').style.pointerEvents = 'none';
+
+      const animationDuration = 300;
+
+      sectionA.classList.add('fade-out');
+      sectionB.classList.add('fade-out');
+
+      setTimeout(() => {
+        let tempScore = scoreA;
+        scoreA = scoreB;
+        scoreB = tempScore;
+
+        let tempSets = setsA;
+        setsA = setsB;
+        setsB = tempSets;
+
+        let tempTeam = currentPlayingTeamA;
+        currentPlayingTeamA = currentPlayingTeamB;
+        currentPlayingTeamB = tempTeam;
+
+        let tempColor = teamAColor;
+        teamAColor = teamBColor;
+        teamBColor = tempColor;
+
+        localStorage.setItem('currentPlayingTeamA', JSON.stringify(currentPlayingTeamA));
+        localStorage.setItem('currentPlayingTeamB', JSON.stringify(currentPlayingTeamB));
+
+        document.getElementById("scoreA").textContent = scoreA;
+        document.getElementById("scoreB").textContent = scoreB;
+        updateSetsDisplay();
+        updateScoreboardTeamsDisplay();
+        applyTeamColorsToScoreboard();
+
+        sectionA.classList.remove('fade-out');
+        sectionB.classList.remove('fade-out');
+        sectionA.classList.add('fade-in');
+        sectionB.classList.add('fade-in');
+
+        setTimeout(() => {
+          sectionA.classList.remove('fade-in');
+          sectionB.classList.remove('fade-in');
+          sectionA.style.pointerEvents = 'auto';
+          sectionB.style.pointerEvents = 'auto';
+          document.getElementById('swapTeamsButton').style.pointerEvents = 'auto';
+        }, animationDuration);
+
+      }, animationDuration);
+      saveAppState();
+    }
+
+    function updateSwapTeamsButtonVisibility() {
+        const swapButton = document.getElementById('swapTeamsButton');
+        if (gameStarted && !gameEnded) {
+            swapButton.classList.add('show');
+        } else {
+            swapButton.classList.remove('show');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const customModalHTML = `
+            <div id="customMessageModal" class="custom-message-modal">
+                <div class="modal-content custom-message-content">
+                    <h3 id="customMessageTitle"></h3>
+                    <p id="customMessageText"></p>
+                    <div class="modal-buttons">
+                        <button onclick="hideCustomMessageModal()">OK</button>
+                    </div>
+                </div>
+            </div>
+            <div id="customConfirmationModal" class="custom-confirmation-modal">
+                <div class="modal-content custom-confirmation-content">
+                    <h3 id="customConfirmationTitle">Confirmação</h3>
+                    <p id="customConfirmationText"></p>
+                    <div class="modal-buttons">
+                        <button id="confirmYesButton">Sim</button>
+                        <button id="confirmNoButton" style="background-color: #dc3545; --modal-button-hover-bg: #c82333;">Não</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', customModalHTML);
+
+        document.getElementById('confirmYesButton').addEventListener('click', () => {
+            if (typeof window.currentConfirmationCallback === 'function') {
+                window.currentConfirmationCallback(true);
+            }
+            hideCustomConfirmationModal();
+        });
+
+        document.getElementById('confirmNoButton').addEventListener('click', () => {
+            if (typeof window.currentConfirmationCallback === 'function') {
+                window.currentConfirmationCallback(false);
+            }
+            hideCustomConfirmationModal();
+        });
+    });
+
+    function displayMessage(message, type = 'info') {
+        const modal = document.getElementById('customMessageModal');
+        const titleElement = document.getElementById('customMessageTitle');
+        const textElement = document.getElementById('customMessageText');
+
+        let title = '';
+        switch (type) {
+            case 'success': title = 'Sucesso!'; break;
+            case 'error': title = 'Erro!'; break;
+            case 'warning': title = 'Atenção!'; break;
+            default: title = 'Informação'; break;
+        }
+
+        titleElement.textContent = title;
+        textElement.textContent = message;
+        modal.classList.add('show');
+    }
+
+    function hideCustomMessageModal() {
+        document.getElementById('customMessageModal').classList.remove('show');
+    }
+
+    function showConfirmationModal(message, callback) {
+        const modal = document.getElementById('customConfirmationModal');
+        const textElement = document.getElementById('customConfirmationText');
+        textElement.textContent = message;
+        window.currentConfirmationCallback = callback;
+        modal.classList.add('show');
+    }
+
+    function hideCustomConfirmationModal() {
+        document.getElementById('customConfirmationModal').classList.remove('show');
+        window.currentConfirmationCallback = null;
+    }
+
+    function showManageTeamModal(teamId) {
+        activeManageTeamId = teamId;
+        const modal = document.getElementById('manageTeamModal');
+        const selectElement = document.getElementById('selectTeamForManagement');
+        
+        document.getElementById('manageTeamModalTitle').textContent = `Selecionar Time`;
+
+        const currentTeam = (teamId === 'A' ? currentPlayingTeamA : currentPlayingTeamB);
+
+        selectElement.innerHTML = '<option value="">Selecione um time</option>';
+
+        if (generatedTeams.length === 0) {
+            selectElement.innerHTML += '<option value="" disabled>Nenhum time gerado</option>';
+        } else {
+            generatedTeams.forEach((team, index) => {
+                const option = document.createElement('option');
+                option.value = `generated-${index}`;
+                option.textContent = `${team.name}`;
+                selectElement.appendChild(option);
+            });
+        }
+
+        let foundInDropdown = false;
+        const generatedIndex = generatedTeams.findIndex(t => t.name === currentTeam.name && t.players.length === currentTeam.players.length && t.players.every((p, i) => p === currentTeam.players[i]));
+        if (generatedIndex !== -1) {
+            selectElement.value = `generated-${generatedIndex}`;
+            foundInDropdown = true;
+        }
+
+        if (!foundInDropdown) {
+            selectElement.value = "";
+        }
+
+        modal.classList.add('show');
+
+        setTimeout(() => {
+            document.addEventListener('click', closeManageTeamModalOnOutsideClick);
+        }, 0);
+    }
+
+    function closeManageTeamModalOnOutsideClick(e) {
+      const modal = document.getElementById("manageTeamModal");
+      const modalContent = modal.querySelector(".modal-content");
+      if (!modalContent.contains(e.target)) {
+        hideManageTeamModal();
+      }
+    }
+
+    function hideManageTeamModal() {
+        document.getElementById('manageTeamModal').classList.remove('show');
+        activeManageTeamId = null;
+        document.removeEventListener('click', closeManageTeamModalOnOutsideClick);
+    }
+
+    function saveTeamNameAndPlayers() {
+        const selectedDropdownValue = document.getElementById('selectTeamForManagement').value;
+
+        let targetTeam = (activeManageTeamId === 'A' ? currentPlayingTeamA : currentPlayingTeamB);
+        let otherTeam = (activeManageTeamId === 'A' ? currentPlayingTeamB : currentPlayingTeamA);
+
+        let finalTeamName;
+        let finalTeamPlayers;
+        let finalTeamColor;
+
+        if (selectedDropdownValue === "") {
+            finalTeamName = (activeManageTeamId === 'A' ? 'Time A' : 'Time B');
+            finalTeamPlayers = [];
+            finalTeamColor = (activeManageTeamId === 'A' ? '#007bff' : '#dc3545');
+        } else if (selectedDropdownValue.startsWith('generated-')) {
+            const index = parseInt(selectedDropdownValue.split('-')[1]);
+            const selectedGeneratedTeam = generatedTeams[index];
+
+            if (otherTeam.name === selectedGeneratedTeam.name && otherTeam.players.length === selectedGeneratedTeam.players.length && otherTeam.players.every((p, i) => p === selectedGeneratedTeam.players[i])) {
+                displayMessage("Este time gerado já está atribuído ao outro time. Por favor, selecione um time diferente.", "warning");
+                return;
+            }
+            finalTeamName = selectedGeneratedTeam.name;
+            finalTeamPlayers = selectedGeneratedTeam.players;
+            finalTeamColor = selectedGeneratedTeam.color;
+        }
+
+        targetTeam.name = finalTeamName;
+        targetTeam.players = finalTeamPlayers;
+        targetTeam.color = finalTeamColor;
+
+        localStorage.setItem('currentPlayingTeamA', JSON.stringify(currentPlayingTeamA));
+        localStorage.setItem('currentPlayingTeamB', JSON.stringify(currentPlayingTeamB));
+        
+        if (activeManageTeamId === 'A') {
+            teamAColor = finalTeamColor;
+        } else {
+            teamBColor = finalTeamColor;
+        }
+
+        updateScoreboardTeamsDisplay();
+        hideManageTeamModal();
+        saveAppState();
+    }
+
+    function toggleCustomTeamNamesSection() {
+        const content = document.getElementById('customTeamNamesContent');
+        const arrow = document.getElementById('customTeamNamesArrow');
+        content.classList.toggle('show');
+        arrow.classList.toggle('rotated');
+    }
+
+    function toggleGeneralSettingsSection() {
+        const content = document.getElementById('generalSettingsContent');
+        const arrow = document.getElementById('generalSettingsArrow');
+        content.classList.toggle('show');
+        arrow.classList.toggle('rotated');
+    }
+
+    function toggleDataManagementSection() {
+        const content = document.getElementById('dataManagementContent');
+        const arrow = document.getElementById('dataManagementArrow');
+        content.classList.toggle('show');
+        arrow.classList.toggle('rotated');
+    }
+
+    function updatePlayerDisplayOnScoreboard() {
+        const playerInfoContainerA = document.querySelector('#sectionA .player-info-container');
+        const playerInfoContainerB = document.querySelector('#sectionB .player-info-container');
+        if (showPlayersOnScoreboard) {
+            playerInfoContainerA.classList.remove('hidden-players');
+            playerInfoContainerB.classList.remove('hidden-players');
+        } else {
+            playerInfoContainerA.classList.add('hidden-players');
+            playerInfoContainerB.classList.add('hidden-players');
+        }
+    }
+
+    function exportSettings() {
+        const appState = {
+            players: players,
+            checkedState: checkedState,
+            generatedTeams: generatedTeams,
+            currentPlayingTeamA: currentPlayingTeamA,
+            currentPlayingTeamB: currentPlayingTeamB,
+            scoreA: scoreA,
+            scoreB: scoreB,
+            setsA: setsA,
+            setsB: setsB,
+            gameEnded: gameEnded,
+            gameStarted: gameStarted,
+            lastWinningTeam: lastWinningTeam,
+            winningScore: winningScore,
+            setsToWin: setsToWin,
+            customTeamNames: customTeamNames,
+            currentTheme: currentTheme,
+            vibrationEnabled: vibrationEnabled,
+            showPlayersOnScoreboard: showPlayersOnScoreboard,
+        };
+
+        const dataStr = JSON.stringify(appState, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'placar_volei_config.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        displayMessage("Configurações exportadas com sucesso!", "success");
+    }
+
+    function importSettings(event) {
+        const file = event.target.files[0];
+        if (!file) {
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const importedAppState = JSON.parse(e.target.result);
+                
+                players = importedAppState.players || [];
+                checkedState = importedAppState.checkedState || {};
+                generatedTeams = importedAppState.generatedTeams || [];
+                currentPlayingTeamA = importedAppState.currentPlayingTeamA || { name: 'Time A', players: [], color: '#007bff' };
+                currentPlayingTeamB = importedAppState.currentPlayingTeamB || { name: 'Time B', players: [], color: '#dc3545' };
+                scoreA = importedAppState.scoreA || 0;
+                scoreB = importedAppState.scoreB || 0;
+                setsA = importedAppState.setsA || 0;
+                setsB = importedAppState.setsB || 0;
+                gameEnded = importedAppState.gameEnded || false;
+                gameStarted = importedAppState.gameStarted || false;
+                lastWinningTeam = importedAppState.lastWinningTeam || null;
+                winningScore = importedAppState.winningScore || 15;
+                setsToWin = importedAppState.setsToWin || 1;
+                customTeamNames = importedAppState.customTeamNames || defaultCustomTeamColors.map((color, index) => ({ name: "", color: color }));
+                currentTheme = importedAppState.currentTheme || 'dark';
+                vibrationEnabled = importedAppState.vibrationEnabled !== undefined ? importedAppState.vibrationEnabled : true;
+                showPlayersOnScoreboard = importedAppState.showPlayersOnScoreboard !== undefined ? importedAppState.showPlayersOnScoreboard : true;
+
+                document.getElementById('winningScore').value = winningScore;
+                document.getElementById('setsToWinConfig').value = setsToWin;
+                document.getElementById('vibrationEnabled').checked = vibrationEnabled;
+                document.getElementById('showPlayersOnScoreboard').checked = showPlayersOnScoreboard;
+                document.getElementById('themeSelect').value = currentTheme;
+                setTheme(currentTheme, false);
+
+                for (let i = 0; i < 5; i++) {
+                    document.getElementById(`customTeamName${i + 1}`).value = customTeamNames[i].name;
+                    document.getElementById(`customTeamColor${i + 1}`).value = customTeamNames[i].color;
+                }
+
+                updatePlayerList();
+                updateSetsDisplay();
+                updateScoreboardTeamsDisplay();
+                applyTeamColorsToScoreboard();
+                updateSwapTeamsButtonVisibility();
+
+                if (gameStarted && !gameEnded) {
+                } else {
+                }
+
+                if (gameStarted && !gameEnded) {
+                    document.getElementById('startGameButton').style.display = 'none';
+                    document.getElementById('scoreboardOverlay').classList.add('hidden');
+                } else {
+                    document.getElementById('startGameButton').style.display = 'block';
+                    document.getElementById('scoreboardOverlay').classList.remove('hidden');
+                }
+
+                saveAppState();
+                displayMessage("Configurações importadas com sucesso!", "success");
+
+            } catch (error) {
+                console.error("Erro ao importar configurações:", error);
+                displayMessage("Erro ao importar arquivo. Verifique se é um arquivo de configurações válido.", "error");
+            } finally {
+                event.target.value = '';
+            }
+        };
+        reader.readAsText(file);
+    }
+
     window.onload = () => {
-      // Registra o Service Worker para funcionalidade PWA
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./service-worker.js')
-          .then(() => console.log('Service Worker registrado com sucesso'))
-          .catch(error => console.error('Erro ao registrar Service Worker:', error));
+          .then(() => {})
+          .catch(error => {});
       }
 
-      loadSettings(); // Carrega as configurações salvas (incluindo o tema)
-      updatePlayerList(); // Atualiza a lista de jogadores
-      updateSetsDisplay(); // Garante que os sets sejam exibidos ao carregar
+      loadSettings();
 
-      setupSwipeToDecrease('sectionA', 'A'); // Configura deslize para diminuir pontuação Time A
-      setupSwipeToDecrease('sectionB', 'B'); // Configura deslize para diminuir pontuação Time B
-      setupSwipeBetweenSections(); // Configura deslize para navegar entre seções
+      updatePlayerList();
+      updateSetsDisplay();
+      renderGeneratedTeams();
 
-      // Adiciona listeners de clique para aumentar a pontuação
-      document.getElementById('sectionA').addEventListener('click', () => changeScore('A', 1));
-      document.getElementById('sectionB').addEventListener('click', () => changeScore('B', 1));
+      setupSwipeToDecrease('sectionA', 'A');
+      setupSwipeToDecrease('sectionB', 'B');
+      setupSwipeBetweenSections();
 
-      // Ao carregar, o jogo não está iniciado, então o overlay deve estar visível
-      document.getElementById('scoreboardOverlay').classList.remove('hidden');
-      document.getElementById('startGameButton').style.display = 'block';
-      gameStarted = false; // Garante que o estado seja correto ao carregar
+      document.getElementById('sectionA').addEventListener('click', (e) => {
+        if (e.target.closest('.team-name') || e.target.closest('.player-info-container')) {
+            showManageTeamModal('A');
+        } else {
+            changeScore('A', 1);
+        }
+      });
+      document.getElementById('sectionB').addEventListener('click', (e) => {
+        if (e.target.closest('.team-name') || e.target.closest('.player-info-container')) {
+            showManageTeamModal('B');
+        } else {
+            changeScore('B', 1);
+        }
+      });
+      
+      // Determina a tela inicial com base no estado do jogo carregado
+      if (gameStarted && !gameEnded) {
+          // Um jogo estava em andamento, mostra o placar
+          document.getElementById('startGameButton').style.display = 'none';
+          document.getElementById('scoreboardOverlay').classList.add('hidden');
+      } else {
+          // Nenhum jogo em andamento ou jogo terminou, garante que o botão de iniciar partida e o overlay estejam visíveis
+          document.getElementById('startGameButton').style.display = 'block';
+          document.getElementById('scoreboardOverlay').classList.remove('hidden');
+      }
     }
-  // Executa quando a janela é totalmente carregada
-window.onload = () => {
-  // Registra o Service Worker para funcionalidade PWA
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./service-worker.js')
-      .then(() => console.log('Service Worker registrado com sucesso'))
-      .catch(error => console.error('Erro ao registrar Service Worker:', error));
-  }
-
-  loadSettings();
-  updatePlayerList();
-  updateSetsDisplay();
-
-  setupSwipeToDecrease('sectionA', 'A');
-  setupSwipeToDecrease('sectionB', 'B');
-  setupSwipeBetweenSections();
-
-  document.getElementById('sectionA').addEventListener('click', () => changeScore('A', 1));
-  document.getElementById('sectionB').addEventListener('click', () => changeScore('B', 1));
-
-  document.getElementById('scoreboardOverlay').classList.remove('hidden');
-  document.getElementById('startGameButton').style.display = 'block';
-  gameStarted = false;
-}
-</script>
+  </script>
 </body>
 </html>
