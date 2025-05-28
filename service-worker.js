@@ -1,4 +1,4 @@
-const CACHE_NAME = 'placar-volei-v2'; // Nome do cache
+const CACHE_NAME = 'placar-volei-v2.1'; // Nome do cache
 const urlsToCache = [
   './', // O arquivo HTML principal
   './index.html', // Ou o nome do seu arquivo HTML, se for diferente de index.html
