@@ -733,7 +733,7 @@ async function selectAndInitializeTeams() {
   if (generatedTeams.length >= 2) {
       currentPlayingTeamA = { ...generatedTeams[0] };
       currentPlayingTeamB = { ...generatedTeams[1] };
-  } else if (customTeamNames.length >= 2 && customTeamNames[0].name.trim() !== "" && customTeamNames[1].name.trim() !== "") {
+  } else if (customTeamNames.length >= 2 && customTeamNames[0].name.trim() !== "" && customTeamNames[0].name.trim() !== "") {
       currentPlayingTeamA = { ...customTeamNames[0] };
       currentPlayingTeamB = { ...customTeamNames[1] };
   } else {
@@ -1405,6 +1405,7 @@ function updateScoreboardTeamsDisplay() {
     currentPlayingTeamB.players.forEach(p => {
         const li = document.createElement('li');
         li.textContent = p;
+        li.style.color = 'inherit';
         playerListB.appendChild(li);
     });
     updatePlayerDisplayOnScoreboard();
