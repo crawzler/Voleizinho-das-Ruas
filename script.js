@@ -1,14 +1,16 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, doc, getDocs, getDoc, setDoc, updateDoc, addDoc, deleteDoc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestore, collection, doc, getDocs, getDoc, setDoc, updateDoc, addDoc, deleteDoc, query, where, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 const DEFAULT_CUSTOM_TEAM_COLORS = ["#007bff", "#dc3545", "#28a745", "#ffc107", "#6f42c1"];
+// players agora será um array de objetos com id, name, checked, lastModified
 let players = [];
-let checkedState = {};
+let checkedState = {}; // Derivado do array de players
 let generatedTeams = [];
 let winningScore = 15;
 let setsToWin = 0;
 let playersPerTeam = 4;
+// customTeamNames agora será um array de objetos com id, name, color, order, lastModified
 let customTeamNames = [];
 let currentTheme = 'dark';
 let vibrationEnabled = true;
@@ -26,6 +28,7 @@ let setTimerInterval = null;
 let gameTimeInSeconds = 0;
 let setTimeInSeconds = 0;
 let isTimerRunning = false;
+// appointments agora será um array de objetos com id, date, time, location, lastModified
 let appointments = [];
 let newWorker = null;
 
@@ -33,6 +36,7 @@ let db;
 let auth;
 let userId;
 let isAuthReady = false;
+let isOnline = navigator.onLine; // Flag para status da conexão
 
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : `{
@@ -45,6 +49,10 @@ const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __f
   "appId": "1:394754605937:web:e97314f6c48373c8dc2cd0"
 }`);
 
+/**
+ * Inicializa o Firebase e a autenticação.
+ * Configura o listener de estado de autenticação para carregar dados e configurar listeners do Firestore.
+ */
 async function initFirebase() {
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
@@ -55,18 +63,33 @@ async function initFirebase() {
             userId = user.uid;
             document.getElementById('userIdDisplay').textContent = `ID do Usuário: ${userId}`;
         } else {
-            userId = crypto.randomUUID();
-            document.getElementById('userIdDisplay').textContent = `ID do Usuário: ${userId} (Anônimo)`;
+            // Se não houver usuário logado, tenta login anônimo
+            try {
+                await signInAnonymously(auth);
+                userId = auth.currentUser.uid; // Pega o UID do usuário anônimo
+                document.getElementById('userIdDisplay').textContent = `ID do Usuário: ${userId} (Anônimo)`;
+            } catch (anonError) {
+                console.error("Erro ao fazer login anonimamente:", anonError);
+                userId = crypto.randomUUID(); // Fallback para um ID aleatório se o login anônimo falhar
+                document.getElementById('userIdDisplay').textContent = `ID do Usuário: ${userId} (Erro de Auth)`;
+            }
         }
         isAuthReady = true;
-        loadLocalSettings();
-        setupFirestoreListeners();
+        // Se estiver online, sincroniza dados locais para o Firestore e configura listeners
+        if (isOnline) {
+            await syncLocalToFirestore();
+            setupFirestoreListeners();
+        } else {
+            console.log("Offline: Firestore listeners não serão configurados até que a conexão seja reestabelecida.");
+        }
     });
 
-    if (typeof __initial_auth_token !== 'undefined') {
+    // Tenta autenticar com token personalizado se disponível
+    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
         try {
             await signInWithCustomToken(auth, __initial_auth_token);
         } catch (error) {
+            console.log("Erro ao autenticar com token personalizado, tentando anonimamente:", error);
             await signInAnonymously(auth);
         }
     } else {
@@ -74,6 +97,10 @@ async function initFirebase() {
     }
 }
 
+/**
+ * Carrega todas as configurações e dados do localStorage.
+ * Atualiza o estado do aplicativo com os dados carregados.
+ */
 function loadLocalSettings() {
     winningScore = parseInt(localStorage.getItem('winningScore') || '15');
     setsToWin = parseInt(localStorage.getItem('setsToWin') || '0');
@@ -81,7 +108,6 @@ function loadLocalSettings() {
     currentTheme = localStorage.getItem('theme') || 'dark';
     vibrationEnabled = JSON.parse(localStorage.getItem('vibrationEnabled') || 'true');
     showPlayersOnScoreboard = JSON.parse(localStorage.getItem('showPlayersOnScoreboard') || 'true');
-
     scoreA = parseInt(localStorage.getItem('scoreA') || '0');
     scoreB = parseInt(localStorage.getItem('scoreB') || '0');
     setsA = parseInt(localStorage.getItem('setsA') || '0');
@@ -95,14 +121,25 @@ function loadLocalSettings() {
     setTimeInSeconds = parseInt(localStorage.getItem('setTimeInSeconds') || '0');
     isTimerRunning = JSON.parse(localStorage.getItem('isTimerRunning') || 'false');
 
+    // Carrega dados específicos que agora são objetos com ID e lastModified
+    players = JSON.parse(localStorage.getItem('players') || '[]');
+    // Recria checkedState a partir dos players carregados
+    checkedState = {};
+    players.forEach(p => {
+        checkedState[p.name] = p.checked;
+    });
+
+    appointments = JSON.parse(localStorage.getItem('appointments') || '[]');
+    customTeamNames = JSON.parse(localStorage.getItem('customTeamNames') || '[]');
+
+    // Atualiza a UI com os dados carregados
     document.getElementById('winningScore').value = winningScore;
     document.getElementById('setsToWinConfig').value = setsToWin;
     document.getElementById('playersPerTeam').value = playersPerTeam;
     document.getElementById('vibrationEnabled').checked = vibrationEnabled;
     document.getElementById('showPlayersOnScoreboard').checked = showPlayersOnScoreboard;
-
     document.getElementById('themeSelect').value = currentTheme;
-    setTheme(currentTheme, false);
+    setTheme(currentTheme, false); // Não salva novamente ao carregar
     updatePlayerDisplayOnScoreboard();
     updateScoreboardTeamsDisplay();
     document.getElementById("scoreA").textContent = scoreA;
@@ -114,8 +151,16 @@ function loadLocalSettings() {
     } else {
         stopAllTimers();
     }
+    // Renderiza listas que dependem dos dados carregados
+    updatePlayerList();
+    renderAppointments();
+    renderCustomTeamNamesConfig(); // Nova função para renderizar configs de times
+    renderGeneratedTeams(); // Garante que times gerados (se houver) sejam exibidos
 }
 
+/**
+ * Salva todas as configurações e dados no localStorage.
+ */
 async function saveLocalSettings() {
     localStorage.setItem('winningScore', winningScore.toString());
     localStorage.setItem('setsToWin', setsToWin.toString());
@@ -123,7 +168,6 @@ async function saveLocalSettings() {
     localStorage.setItem('vibrationEnabled', JSON.stringify(vibrationEnabled));
     localStorage.setItem('showPlayersOnScoreboard', JSON.stringify(showPlayersOnScoreboard));
     localStorage.setItem('theme', currentTheme);
-
     localStorage.setItem('scoreA', scoreA.toString());
     localStorage.setItem('scoreB', scoreB.toString());
     localStorage.setItem('setsA', setsA.toString());
@@ -136,56 +180,307 @@ async function saveLocalSettings() {
     localStorage.setItem('gameTimeInSeconds', gameTimeInSeconds.toString());
     localStorage.setItem('setTimeInSeconds', setTimeInSeconds.toString());
     localStorage.setItem('isTimerRunning', JSON.stringify(isTimerRunning));
+    localStorage.setItem('generatedTeams', JSON.stringify(generatedTeams)); // Salva times gerados
+
+    // Salva os arrays de objetos com ID e lastModified
+    localStorage.setItem('players', JSON.stringify(players));
+    localStorage.setItem('checkedState', JSON.stringify(checkedState)); // Salva o estado de checked separadamente
+    localStorage.setItem('appointments', JSON.stringify(appointments));
+    localStorage.setItem('customTeamNames', JSON.stringify(customTeamNames));
 
     updatePlayerDisplayOnScoreboard();
     applyTeamColorsToScoreboard();
 }
 
-async function setupFirestoreListeners() {
-    if (!isAuthReady) return;
+/**
+ * Configura os listeners em tempo real do Firestore para jogadores, agendamentos e nomes de times personalizados.
+ * Realiza a fusão de dados com base no timestamp lastModified.
+ */
+function setupFirestoreListeners() {
+    if (!isAuthReady || !isOnline) {
+        console.log("Firestore listeners não configurados: Auth não pronto ou offline.");
+        return;
+    }
 
+    // Listener para Jogadores
     onSnapshot(collection(db, `artifacts/${appId}/public/data/players`), (snapshot) => {
         const fetchedPlayers = [];
-        const fetchedCheckedState = {};
         snapshot.forEach(doc => {
-            const data = doc.data();
-            fetchedPlayers.push(data.name);
-            fetchedCheckedState[data.name] = data.checked;
+            fetchedPlayers.push({ id: doc.id, ...doc.data() });
         });
-        players = fetchedPlayers;
-        checkedState = fetchedCheckedState;
+
+        // Fusão de dados: Firebase é a fonte de verdade quando online
+        const newPlayers = [];
+        const newCheckedState = {};
+        fetchedPlayers.forEach(fbPlayer => {
+            const localPlayer = players.find(p => p.id === fbPlayer.id);
+            if (localPlayer) {
+                // Se o Firebase for mais recente ou igual, usa a versão do Firebase
+                if (fbPlayer.lastModified >= localPlayer.lastModified) {
+                    newPlayers.push(fbPlayer);
+                } else {
+                    // Se o local for mais recente (e já deveria ter sido sincronizado), mantém o local
+                    // Ou, se o Firebase for mais antigo, atualiza o Firebase com o local (isso é feito em syncLocalToFirestore)
+                    newPlayers.push(localPlayer);
+                }
+            } else {
+                // Jogador novo no Firebase, adiciona localmente
+                newPlayers.push(fbPlayer);
+            }
+            newCheckedState[fbPlayer.name] = fbPlayer.checked;
+        });
+
+        // Remove jogadores locais que não existem mais no Firebase
+        players.forEach(localPlayer => {
+            if (!fetchedPlayers.some(fbPlayer => fbPlayer.id === localPlayer.id)) {
+                // Jogador foi deletado no Firebase, remove localmente
+                // Não adiciona a newPlayers
+            }
+        });
+
+        players = newPlayers;
+        checkedState = newCheckedState;
+        saveLocalSettings(); // Salva o estado atualizado no localStorage
         updatePlayerList();
     }, (error) => {
-        console.error("Erro ao carregar jogadores:", error);
+        console.error("Erro ao carregar jogadores do Firestore:", error);
+        displayMessage("Erro ao carregar jogadores do servidor.", "error");
     });
 
+    // Listener para Agendamentos
     onSnapshot(collection(db, `artifacts/${appId}/public/data/appointments`), (snapshot) => {
         const fetchedAppointments = [];
         snapshot.forEach(doc => {
             fetchedAppointments.push({ id: doc.id, ...doc.data() });
         });
-        appointments = fetchedAppointments;
+
+        const newAppointments = [];
+        fetchedAppointments.forEach(fbAppt => {
+            const localAppt = appointments.find(a => a.id === fbAppt.id);
+            if (localAppt) {
+                if (fbAppt.lastModified >= localAppt.lastModified) {
+                    newAppointments.push(fbAppt);
+                } else {
+                    newAppointments.push(localAppt);
+                }
+            } else {
+                newAppointments.push(fbAppt);
+            }
+        });
+
+        appointments.forEach(localAppt => {
+            if (!fetchedAppointments.some(fbAppt => fbAppt.id === localAppt.id)) {
+                // Agendamento deletado no Firebase, remove localmente
+            }
+        });
+
+        appointments = newAppointments;
+        saveLocalSettings();
         renderAppointments();
     }, (error) => {
-        console.error("Erro ao carregar agendamentos:", error);
+        console.error("Erro ao carregar agendamentos do Firestore:", error);
+        displayMessage("Erro ao carregar agendamentos do servidor.", "error");
     });
 
-    onSnapshot(collection(db, `artifacts/${appId}/public/data/customTeamNames`), (snapshot) => {
+    // Listener para Nomes de Times Personalizados
+    onSnapshot(query(collection(db, `artifacts/${appId}/public/data/customTeamNames`), orderBy('order')), (snapshot) => {
         const fetchedCustomTeamNames = [];
         snapshot.forEach(doc => {
-            fetchedCustomTeamNames.push(doc.data());
+            fetchedCustomTeamNames.push({ id: doc.id, ...doc.data() });
         });
-        customTeamNames = fetchedCustomTeamNames;
-        while (customTeamNames.length < 5) {
-            customTeamNames.push({ name: "", color: DEFAULT_CUSTOM_TEAM_COLORS[customTeamNames.length] || '#cccccc' });
+
+        const newCustomTeamNames = [];
+        fetchedCustomTeamNames.forEach(fbTeam => {
+            const localTeam = customTeamNames.find(t => t.id === fbTeam.id);
+            if (localTeam) {
+                if (fbTeam.lastModified >= localTeam.lastModified) {
+                    newCustomTeamNames.push(fbTeam);
+                } else {
+                    newCustomTeamNames.push(localTeam);
+                }
+            } else {
+                newCustomTeamNames.push(fbTeam);
+            }
+        });
+
+        // Garante que sempre haja 5 times personalizados
+        while (newCustomTeamNames.length < 5) {
+            newCustomTeamNames.push({
+                id: null, // Será gerado pelo Firebase
+                name: "",
+                color: DEFAULT_CUSTOM_TEAM_COLORS[newCustomTeamNames.length] || '#cccccc',
+                order: newCustomTeamNames.length,
+                lastModified: Date.now()
+            });
         }
-        for (let i = 0; i < 5; i++) {
-            document.getElementById(`customTeamName${i + 1}`).value = customTeamNames[i].name;
-            document.getElementById(`customTeamColor${i + 1}`).value = customTeamNames[i].color;
-        }
+        customTeamNames = newCustomTeamNames;
+        saveLocalSettings();
+        renderCustomTeamNamesConfig(); // Renderiza a UI das configurações de times
+        renderGeneratedTeams(); // Atualiza a exibição dos times gerados
     }, (error) => {
-        console.error("Erro ao carregar nomes de times personalizados:", error);
+        console.error("Erro ao carregar nomes de times personalizados do Firestore:", error);
+        displayMessage("Erro ao carregar nomes de times personalizados do servidor.", "error");
     });
+}
+
+/**
+ * Sincroniza as alterações locais (localStorage) para o Firestore.
+ * Isso é chamado quando a aplicação fica online.
+ */
+async function syncLocalToFirestore() {
+    if (!isAuthReady || !isOnline) return;
+
+    console.log("Sincronizando alterações locais para o Firestore...");
+
+    // Sincronizar Jogadores
+    const playersCollectionRef = collection(db, `artifacts/${appId}/public/data/players`);
+    const firebasePlayersSnapshot = await getDocs(playersCollectionRef);
+    const firebasePlayers = firebasePlayersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    for (const localPlayer of players) {
+        const fbPlayer = firebasePlayers.find(p => p.id === localPlayer.id);
+
+        if (!fbPlayer) {
+            // Jogador local não existe no Firebase (criado offline ou ID ainda não atribuído)
+            if (!localPlayer.id) { // Novo jogador sem ID do Firebase
+                try {
+                    const docRef = await addDoc(playersCollectionRef, {
+                        name: localPlayer.name,
+                        checked: localPlayer.checked,
+                        lastModified: localPlayer.lastModified
+                    });
+                    localPlayer.id = docRef.id; // Atribui o ID do Firebase ao objeto local
+                    console.log(`Jogador '${localPlayer.name}' adicionado ao Firestore.`);
+                } catch (e) {
+                    console.error(`Erro ao adicionar jogador '${localPlayer.name}' ao Firestore:`, e);
+                }
+            } else {
+                // Jogador local com ID, mas não encontrado no Firebase (provavelmente deletado por outro usuário)
+                // Remove localmente (já feito pelo onSnapshot, mas garante consistência)
+                console.log(`Jogador '${localPlayer.name}' (ID: ${localPlayer.id}) não encontrado no Firestore, removendo localmente.`);
+                players = players.filter(p => p.id !== localPlayer.id);
+            }
+        } else {
+            // Jogador existe em ambos, verifica lastModified para atualizar
+            if (localPlayer.lastModified > fbPlayer.lastModified) {
+                try {
+                    await updateDoc(doc(playersCollectionRef, localPlayer.id), {
+                        name: localPlayer.name, // Pode ser necessário se o nome puder ser editado
+                        checked: localPlayer.checked,
+                        lastModified: localPlayer.lastModified
+                    });
+                    console.log(`Jogador '${localPlayer.name}' atualizado no Firestore.`);
+                } catch (e) {
+                    console.error(`Erro ao atualizar jogador '${localPlayer.name}' no Firestore:`, e);
+                }
+            }
+        }
+    }
+
+    // Sincronizar Agendamentos
+    const appointmentsCollectionRef = collection(db, `artifacts/${appId}/public/data/appointments`);
+    const firebaseAppointmentsSnapshot = await getDocs(appointmentsCollectionRef);
+    const firebaseAppointments = firebaseAppointmentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    for (const localAppt of appointments) {
+        const fbAppt = firebaseAppointments.find(a => a.id === localAppt.id);
+
+        if (!fbAppt) {
+            if (!localAppt.id) { // Novo agendamento sem ID do Firebase
+                try {
+                    const docRef = await addDoc(appointmentsCollectionRef, {
+                        date: localAppt.date,
+                        time: localAppt.time,
+                        location: localAppt.location,
+                        lastModified: localAppt.lastModified
+                    });
+                    localAppt.id = docRef.id;
+                    console.log(`Agendamento em '${localAppt.date}' adicionado ao Firestore.`);
+                } catch (e) {
+                    console.error(`Erro ao adicionar agendamento em '${localAppt.date}' ao Firestore:`, e);
+                }
+            } else {
+                console.log(`Agendamento (ID: ${localAppt.id}) não encontrado no Firestore, removendo localmente.`);
+                appointments = appointments.filter(a => a.id !== localAppt.id);
+            }
+        } else {
+            if (localAppt.lastModified > fbAppt.lastModified) {
+                try {
+                    await updateDoc(doc(appointmentsCollectionRef, localAppt.id), {
+                        date: localAppt.date,
+                        time: localAppt.time,
+                        location: localAppt.location,
+                        lastModified: localAppt.lastModified
+                    });
+                    console.log(`Agendamento em '${localAppt.date}' atualizado no Firestore.`);
+                } catch (e) {
+                    console.error(`Erro ao atualizar agendamento em '${localAppt.date}' no Firestore:`, e);
+                }
+            }
+        }
+    }
+
+    // Sincronizar Nomes de Times Personalizados (sempre sobrescreve o Firebase com o local se o local for mais recente)
+    const customTeamNamesCollectionRef = collection(db, `artifacts/${appId}/public/data/customTeamNames`);
+    const firebaseCustomTeamNamesSnapshot = await getDocs(customTeamNamesCollectionRef);
+    const firebaseCustomTeamNames = firebaseCustomTeamNamesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    for (let i = 0; i < customTeamNames.length; i++) {
+        const localTeam = customTeamNames[i];
+        const fbTeam = firebaseCustomTeamNames.find(t => t.id === localTeam.id || t.order === localTeam.order); // Tenta encontrar pelo ID ou pela ordem
+
+        if (!fbTeam) {
+            // Time local não existe no Firebase, adiciona
+            try {
+                const docRef = await addDoc(customTeamNamesCollectionRef, {
+                    name: localTeam.name,
+                    color: localTeam.color,
+                    order: localTeam.order,
+                    lastModified: localTeam.lastModified
+                });
+                localTeam.id = docRef.id;
+                console.log(`Time personalizado '${localTeam.name}' adicionado ao Firestore.`);
+            } catch (e) {
+                console.error(`Erro ao adicionar time personalizado '${localTeam.name}' ao Firestore:`, e);
+            }
+        } else {
+            // Time existe em ambos, verifica lastModified para atualizar
+            if (localTeam.lastModified > fbTeam.lastModified) {
+                try {
+                    // Se o ID local for nulo mas o Firebase tiver um ID para a mesma ordem, usa o ID do Firebase
+                    const targetId = localTeam.id || fbTeam.id;
+                    await setDoc(doc(customTeamNamesCollectionRef, targetId), {
+                        name: localTeam.name,
+                        color: localTeam.color,
+                        order: localTeam.order,
+                        lastModified: localTeam.lastModified
+                    });
+                    localTeam.id = targetId; // Garante que o ID local seja o do Firebase
+                    console.log(`Time personalizado '${localTeam.name}' atualizado no Firestore.`);
+                } catch (e) {
+                    console.error(`Erro ao atualizar time personalizado '${localTeam.name}' no Firestore:`, e);
+                }
+            } else if (!localTeam.id && fbTeam.id) {
+                // Se o local não tem ID mas o Firebase tem, atualiza o local com o ID do Firebase
+                localTeam.id = fbTeam.id;
+            }
+        }
+    }
+    saveLocalSettings(); // Salva todas as alterações após a sincronização
+    console.log("Sincronização local para Firestore concluída.");
+}
+
+/**
+ * Renderiza os campos de input para os nomes de times personalizados.
+ */
+function renderCustomTeamNamesConfig() {
+    for (let i = 0; i < 5; i++) {
+        const team = customTeamNames[i] || { name: "", color: DEFAULT_CUSTOM_TEAM_COLORS[i] || '#cccccc' };
+        const nameInput = document.getElementById(`customTeamName${i + 1}`);
+        const colorInput = document.getElementById(`customTeamColor${i + 1}`);
+        if (nameInput) nameInput.value = team.name || "";
+        if (colorInput) colorInput.value = team.color || DEFAULT_CUSTOM_TEAM_COLORS[i] || '#cccccc';
+    }
 }
 
 function toggleMenu() {
@@ -236,70 +531,128 @@ function updateResetButtonVisibility() {
     }
 }
 
+/**
+ * Adiciona um novo jogador. Salva localmente e, se online, no Firestore.
+ */
 async function addPlayer() {
-  if (!isAuthReady) return;
   const input = document.getElementById("playerName");
   const name = input.value.trim();
-  if (name && !players.includes(name)) {
-    try {
-        await addDoc(collection(db, `artifacts/${appId}/public/data/players`), { name: name, checked: true });
-        input.value = "";
-    } catch (e) {
-        displayMessage("Erro ao adicionar jogador.", "error");
+  if (name && !players.some(p => p.name === name)) {
+    const newPlayer = {
+        id: null, // O ID será atribuído pelo Firebase se online
+        name: name,
+        checked: true,
+        lastModified: Date.now()
+    };
+    players.push(newPlayer);
+    checkedState[name] = true;
+    input.value = "";
+    updatePlayerList();
+    await saveLocalSettings(); // Salva localmente
+
+    if (isOnline && isAuthReady) {
+        try {
+            const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/players`), {
+                name: newPlayer.name,
+                checked: newPlayer.checked,
+                lastModified: newPlayer.lastModified
+            });
+            newPlayer.id = docRef.id; // Atualiza o ID do jogador local com o ID do Firebase
+            await saveLocalSettings(); // Salva novamente para persistir o ID do Firebase
+            displayMessage("Jogador adicionado e sincronizado!", "success");
+        } catch (e) {
+            displayMessage("Erro ao adicionar jogador ao servidor. Salvo localmente.", "error");
+            console.error("Erro ao adicionar jogador ao Firestore:", e);
+        }
+    } else {
+        displayMessage("Jogador adicionado localmente. Sincronizará quando online.", "info");
     }
-  } else if (players.includes(name)) {
+  } else if (players.some(p => p.name === name)) {
     displayMessage("Este nome já está na lista.", "warning");
   }
 }
 
+/**
+ * Atualiza a lista de jogadores na UI.
+ */
 function updatePlayerList() {
-  players.sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' }));
+  const sortedPlayers = [...players].sort((a, b) => a.name.localeCompare(b.name, 'pt', { sensitivity: 'base' }));
   const list = document.getElementById("playerList");
   list.innerHTML = "";
-  players.forEach((p) => {
+  sortedPlayers.forEach((p) => {
     const li = document.createElement("li");
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
-    checkbox.checked = checkedState[p] !== false;
+    checkbox.checked = p.checked; // Usa o checked do objeto do jogador
     checkbox.style.marginRight = '.5rem';
     checkbox.style.width = '1rem';
     checkbox.onchange = async () => {
-      if (!isAuthReady) return;
-      checkedState[p] = checkbox.checked;
-      try {
-          const q = query(collection(db, `artifacts/${appId}/public/data/players`), where("name", "==", p));
-          const querySnapshot = await getDocs(q);
-          if (!querySnapshot.empty) {
-              const playerDoc = querySnapshot.docs[0];
-              await updateDoc(doc(db, `artifacts/${appId}/public/data/players`, playerDoc.id), { checked: checkbox.checked });
+      p.checked = checkbox.checked; // Atualiza o objeto do jogador
+      p.lastModified = Date.now(); // Atualiza o timestamp de modificação
+      checkedState[p.name] = p.checked; // Atualiza o checkedState
+      await saveLocalSettings(); // Salva localmente
+
+      if (isOnline && isAuthReady && p.id) { // Só tenta atualizar no Firebase se tiver ID e estiver online
+          try {
+              await updateDoc(doc(db, `artifacts/${appId}/public/data/players`, p.id), {
+                  checked: p.checked,
+                  lastModified: p.lastModified
+              });
+              displayMessage("Status do jogador sincronizado!", "success");
+          } catch (e) {
+              displayMessage("Erro ao sincronizar status do jogador. Salvo localmente.", "error");
+              console.error("Erro ao atualizar status do jogador no Firestore:", e);
           }
-      } catch (e) {
-          displayMessage("Erro ao atualizar status do jogador.", "error");
+      } else if (isOnline && isAuthReady && !p.id) {
+          // Jogador sem ID, tenta adicionar ao Firebase
+          try {
+              const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/players`), {
+                  name: p.name,
+                  checked: p.checked,
+                  lastModified: p.lastModified
+              });
+              p.id = docRef.id;
+              await saveLocalSettings();
+              displayMessage("Jogador sincronizado com ID!", "success");
+          } catch (e) {
+              displayMessage("Erro ao sincronizar jogador sem ID. Salvo localmente.", "error");
+              console.error("Erro ao adicionar jogador sem ID ao Firestore:", e);
+          }
+      } else {
+          displayMessage("Status do jogador atualizado localmente. Sincronizará quando online.", "info");
       }
       updatePlayerCounter();
       updateToggleSelectAllButtonText();
     };
     const span = document.createElement("span");
-    span.textContent = p;
+    span.textContent = p.name;
     const btn = document.createElement("button");
     btn.textContent = "Remover";
     btn.className = "btn";
     btn.onclick = () => {
         showConfirmationModal("Tem certeza que deseja remover este jogador?", async (confirmed) => {
             if (confirmed) {
-                if (!isAuthReady) return;
-                try {
-                    const q = query(collection(db, `artifacts/${appId}/public/data/players`), where("name", "==", p));
-                    const querySnapshot = await getDocs(q);
-                    if (!querySnapshot.empty) {
-                        const playerDoc = querySnapshot.docs[0];
-                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/players`, playerDoc.id));
-                    }
-                    generatedTeams = [];
+                // Remove localmente
+                const playerIndex = players.findIndex(player => player.id === p.id);
+                if (playerIndex > -1) {
+                    const removedPlayer = players.splice(playerIndex, 1)[0];
+                    delete checkedState[removedPlayer.name];
+                    await saveLocalSettings(); // Salva localmente
+                    updatePlayerList();
+                    generatedTeams = []; // Reinicia os times gerados ao remover um jogador
                     renderGeneratedTeams();
-                    resetGame();
-                } catch (e) {
-                    displayMessage("Erro ao remover jogador.", "error");
+
+                    if (isOnline && isAuthReady && removedPlayer.id) {
+                        try {
+                            await deleteDoc(doc(db, `artifacts/${appId}/public/data/players`, removedPlayer.id));
+                            displayMessage("Jogador removido e sincronizado!", "success");
+                        } catch (e) {
+                            displayMessage("Erro ao remover jogador do servidor. Removido localmente.", "error");
+                            console.error("Erro ao remover jogador do Firestore:", e);
+                        }
+                    } else {
+                        displayMessage("Jogador removido localmente. Sincronizará quando online.", "info");
+                    }
                 }
             }
         });
@@ -314,31 +667,57 @@ function updatePlayerList() {
 }
 
 function updatePlayerCounter() {
-  const selected = players.filter(p => checkedState[p] !== false).length;
+  const selected = players.filter(p => p.checked !== false).length; // Usa p.checked diretamente
   const total = players.length;
   document.getElementById("playerCounter").textContent = `${selected}/${total}`;
 }
 
+/**
+ * Alterna a seleção de todos os jogadores. Salva localmente e, se online, no Firestore.
+ */
 async function toggleSelectAllPlayers() {
-  if (!isAuthReady) return;
-  const allSelected = players.every(p => checkedState[p] !== false);
-  try {
-      const playersCollectionRef = collection(db, `artifacts/${appId}/public/data/players`);
-      const querySnapshot = await getDocs(playersCollectionRef);
-      const batch = [];
-      querySnapshot.forEach(playerDoc => {
-          batch.push(updateDoc(doc(db, `artifacts/${appId}/public/data/players`, playerDoc.id), { checked: !allSelected }));
-      });
-      await Promise.all(batch);
-  } catch (e) {
-      displayMessage("Erro ao alternar seleção de jogadores.", "error");
+  const allSelected = players.every(p => p.checked !== false);
+  const newCheckedState = !allSelected;
+
+  // Atualiza o estado local de todos os jogadores
+  players.forEach(p => {
+      p.checked = newCheckedState;
+      p.lastModified = Date.now();
+      checkedState[p.name] = newCheckedState;
+  });
+  await saveLocalSettings(); // Salva localmente
+  updatePlayerList(); // Atualiza a UI
+
+  if (isOnline && isAuthReady) {
+      try {
+          const batch = [];
+          const playersCollectionRef = collection(db, `artifacts/${appId}/public/data/players`);
+          // Busca todos os documentos para ter seus IDs
+          const querySnapshot = await getDocs(playersCollectionRef);
+          querySnapshot.forEach(playerDoc => {
+              const localPlayer = players.find(p => p.id === playerDoc.id);
+              if (localPlayer) { // Garante que o jogador ainda existe localmente
+                  batch.push(updateDoc(doc(db, `artifacts/${appId}/public/data/players`, playerDoc.id), {
+                      checked: localPlayer.checked,
+                      lastModified: localPlayer.lastModified
+                  }));
+              }
+          });
+          await Promise.all(batch);
+          displayMessage("Seleção de jogadores sincronizada!", "success");
+      } catch (e) {
+          displayMessage("Erro ao sincronizar seleção de jogadores. Salvo localmente.", "error");
+          console.error("Erro ao alternar seleção de jogadores no Firestore:", e);
+      }
+  } else {
+      displayMessage("Seleção de jogadores atualizada localmente. Sincronizará quando online.", "info");
   }
 }
 
 function updateToggleSelectAllButtonText() {
   const toggleButton = document.getElementById('toggleSelectAllButton');
   if (toggleButton) {
-    const allSelected = players.every(p => checkedState[p] !== false);
+    const allSelected = players.every(p => p.checked !== false);
     if (allSelected && players.length > 0) {
       toggleButton.textContent = "Desselecionar Todos";
     } else {
@@ -375,8 +754,8 @@ async function resetGame() {
   updateScoreboardTeamsDisplay();
   updateResetButtonVisibility();
   updateSwapTeamsButtonVisibility();
-  showStartGameModal();
-  generatedTeams = [];
+  showStartGameModal(); // Mantenha esta chamada aqui, pois é para reiniciar a partida
+  generatedTeams = []; // Reinicia os times gerados ao reiniciar o jogo
   renderGeneratedTeams();
   stopAllTimers();
   gameTimeInSeconds = 0;
@@ -385,54 +764,22 @@ async function resetGame() {
   await saveLocalSettings();
 }
 
-async function resetAllData() {
-    showConfirmationModal("Tem certeza que deseja resetar TODOS os dados? Isso apagará jogadores, times gerados, configurações e o estado atual do jogo.", async (confirmed) => {
-        if (confirmed) {
-            if (!isAuthReady) return;
-            try {
-                const playersCollectionRef = collection(db, `artifacts/${appId}/public/data/players`);
-                const appointmentsCollectionRef = collection(db, `artifacts/${appId}/public/data/appointments`);
-                const customTeamNamesCollectionRef = collection(db, `artifacts/${appId}/public/data/customTeamNames`);
-
-                const playerDocs = await getDocs(playersCollectionRef);
-                const appointmentDocs = await getDocs(appointmentsCollectionRef);
-                const customTeamNameDocs = await getDocs(customTeamNamesCollectionRef);
-
-                const deletePromises = [];
-                playerDocs.forEach(d => deletePromises.push(deleteDoc(doc(db, `artifacts/${appId}/public/data/players`, d.id))));
-                appointmentDocs.forEach(d => deletePromises.push(deleteDoc(doc(db, `artifacts/${appId}/public/data/appointments`, d.id))));
-                customTeamNameDocs.forEach(d => deletePromises.push(deleteDoc(doc(db, `artifacts/${appId}/public/data/customTeamNames`, d.id))));
-
-                await Promise.all(deletePromises);
-
-                localStorage.clear();
-                location.reload();
-            } catch (e) {
-                displayMessage("Erro ao resetar todos os dados.", "error");
-            }
-        }
-    });
-}
-
-function confirmResetAllData() {
-    resetAllData();
-}
-
 function shuffle(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[i], array[j]];
+    const temp = array[i];
+    array[i] = array[j];
+    array[j] = temp;
   }
 }
 
 async function generateCustomTeams() {
   const perTeam = parseInt(document.getElementById("playersPerTeam").value);
-
   if (isNaN(perTeam) || perTeam <= 0) {
     displayMessage("Informe um número válido de jogadores por time.", "error");
     return false;
   }
-  const selectedPlayers = players.filter(p => checkedState[p] !== false);
+  const selectedPlayers = players.filter(p => p.checked !== false).map(p => p.name); // Pega apenas os nomes
   if (selectedPlayers.length < 2) {
     displayMessage("Selecione pelo menos dois jogadores para gerar times.", "error");
     return false;
@@ -441,14 +788,16 @@ async function generateCustomTeams() {
       displayMessage(`Você precisa de pelo menos ${perTeam} jogadores selecionados para gerar um time.`, "error");
       return false;
   }
+  
   shuffle(selectedPlayers);
+
   generatedTeams = [];
   let teamCount = 0;
   for (let i = 0; i < selectedPlayers.length; i += perTeam) {
     teamCount++;
-    const customTeam = customTeamNames[teamCount - 1];
-    const teamName = customTeam && customTeam.name.trim() !== "" ? customTeam.name : `Time ${teamCount}`;
-    const teamColor = customTeam ? customTeam.color : DEFAULT_CUSTOM_TEAM_COLORS[teamCount - 1] || '#cccccc';
+    const customTeamConfig = customTeamNames[teamCount - 1]; // Usa a configuração do time personalizado
+    const teamName = customTeamConfig && customTeamConfig.name.trim() !== "" ? customTeamConfig.name : `Time ${teamCount}`;
+    const teamColor = customTeamConfig ? customTeamConfig.color : DEFAULT_CUSTOM_TEAM_COLORS[teamCount - 1] || '#cccccc';
     generatedTeams.push({ name: teamName, players: selectedPlayers.slice(i, i + perTeam), color: teamColor });
   }
   renderGeneratedTeams();
@@ -681,6 +1030,8 @@ function showStartGameModal() {
   document.getElementById('startGameModal').classList.add('show');
   document.getElementById('initialWinningScore').value = winningScore;
   document.getElementById('initialNumberOfSets').value = setsToWin;
+  document.getElementById('modalStartGameButton').onclick = confirmStartGame;
+  document.getElementById('modalCancelGameButton').onclick = hideStartGameModal;
   document.getElementById('startGameButton').style.display = 'none';
 }
 
@@ -733,14 +1084,13 @@ async function selectAndInitializeTeams() {
   if (generatedTeams.length >= 2) {
       currentPlayingTeamA = { ...generatedTeams[0] };
       currentPlayingTeamB = { ...generatedTeams[1] };
-  } else if (customTeamNames.length >= 2 && customTeamNames[0].name.trim() !== "" && customTeamNames[0].name.trim() !== "") {
+  } else if (customTeamNames.length >= 2 && customTeamNames[0].name.trim() !== "" && customTeamNames[1].name.trim() !== "") {
       currentPlayingTeamA = { ...customTeamNames[0] };
       currentPlayingTeamB = { ...customTeamNames[1] };
   } else {
       currentPlayingTeamA = { name: 'Time A', players: [], color: '#007bff' };
       currentPlayingTeamB = { name: 'Time B', players: [], color: '#dc3545' };
   }
-
   await initializeGameAndTeams();
 }
 
@@ -756,8 +1106,9 @@ async function initializeGameAndTeams() {
   document.getElementById("scoreA").textContent = scoreA;
   document.getElementById("scoreB").textContent = scoreB;
   updateSetsDisplay();
-  document.getElementById('startGameButton').style.display = 'none';
   document.getElementById('scoreboardOverlay').classList.add('hidden');
+  document.getElementById('startGameButton').style.display = 'none';
+
   updateScoreboardTeamsDisplay();
   updateResetButtonVisibility();
   updateSwapTeamsButtonVisibility();
@@ -837,22 +1188,18 @@ async function startNewGame() {
 
 async function startNewSet() {
   hideGameOverModal();
-
   let winnerId = lastWinningTeam;
-
   if (winnerId === 'A') {
       setsA++;
   } else {
       setsB++;
   }
-
   scoreA = 0;
   scoreB = 0;
   gameEnded = false;
   document.getElementById("scoreA").textContent = 0;
   document.getElementById("scoreB").textContent = 0;
   updateSetsDisplay();
-
   updateScoreboardTeamsDisplay();
   updateSwapTeamsButtonVisibility();
   setTimeInSeconds = 0;
@@ -936,83 +1283,63 @@ function applyTeamColorsToScoreboard() {
 
 function setupSwipeBetweenSections() {
   let touchStartX = null;
+
   document.body.addEventListener('touchstart', e => {
-    if (document.getElementById("gearMenu").classList.contains("show") ||
-        document.getElementById("gameOverModal").classList.contains("show") ||
-        document.getElementById("increaseScoreModal").classList.contains("show") ||
-        document.getElementById("startGameModal").classList.contains("show") ||
-        document.getElementById("superVictoryModal").classList.contains("show") ||
-        document.getElementById("customMessageModal").classList.contains("show") ||
-        document.getElementById("customConfirmationModal").classList.contains("show") ||
-        document.getElementById("manageTeamModal").classList.contains("show") ||
-        e.target.closest('#startGameButton') || e.target.closest('#swapTeamsButton')) {
-        touchStartX = null;
-        return;
+    if (e.target.closest('.game-over-modal.show, .increase-score-modal.show, .start-game-modal.show, .super-victory-modal.show, .custom-message-modal.show, .custom-confirmation-modal.show, .manage-team-modal.show') ||
+        e.target.closest('#startGameButton') || e.target.closest('#swapTeamsButton') || document.getElementById("gearMenu").classList.contains("show")) {
+      touchStartX = null;
+      return;
     }
+    
     const activeSection = document.querySelector('.section.active');
     if (activeSection && activeSection.scrollHeight > activeSection.clientHeight) {
         const touch = e.touches[0];
         const startY = touch.clientY;
         const scrollableElement = activeSection;
-
         let isScrollingVertically = false;
-
         const handleTouchMove = (moveEvent) => {
             const currentY = moveEvent.touches[0].clientY;
             const deltaY = currentY - startY;
-
             if (Math.abs(deltaY) > 5) {
                 isScrollingVertically = true;
             }
-
             if (isScrollingVertically &&
                 ((deltaY > 0 && scrollableElement.scrollTop === 0) ||
                  (deltaY < 0 && scrollableElement.scrollTop + scrollableElement.clientHeight >= scrollableElement.scrollHeight - 1))) {
                 moveEvent.preventDefault();
             }
         };
-
         const handleTouchEnd = () => {
             document.removeEventListener('touchmove', handleTouchMove);
             document.removeEventListener('touchend', handleTouchEnd);
         };
-
         document.addEventListener('touchmove', handleTouchMove, { passive: false });
         document.addEventListener('touchend', handleTouchEnd);
     }
-
     touchStartX = e.touches[0].clientX;
   });
+
   document.body.addEventListener('touchend', e => {
     if (touchStartX === null) return;
+
+    if (e.target.closest('.game-over-modal.show, .increase-score-modal.show, .start-game-modal.show, .super-victory-modal.show, .custom-message-modal.show, .custom-confirmation-modal.show, .manage-team-modal.show') ||
+        e.target.closest('#startGameButton') || e.target.closest('#swapTeamsButton') || document.getElementById("gearMenu").classList.contains("show")) {
+      touchStartX = null;
+      return;
+    }
+
     const touchEndX = e.changedTouches[0].clientX;
     const dx = touchStartX - touchEndX;
     const threshold = 50;
-
-    if (document.getElementById("gameOverModal").classList.contains("show") ||
-        document.getElementById("increaseScoreModal").classList.contains("show") ||
-        document.getElementById("startGameModal").classList.contains("show") ||
-        document.getElementById("superVictoryModal").classList.contains("show") ||
-        document.getElementById("customMessageModal").classList.contains("show") ||
-        document.getElementById("customConfirmationModal").classList.contains("show") ||
-        document.getElementById("manageTeamModal").classList.contains("show") ||
-        e.target.closest('#startGameButton') || e.target.closest('#swapTeamsButton') ||
-        document.getElementById("gearMenu").classList.contains("show")
-        ) {
-        touchStartX = null;
-        return;
-    }
-
+    
     const sections = ['pontuacao', 'times', 'jogadores', 'agendamentos', 'configuracoes'];
     const currentIndex = sections.findIndex(id => document.getElementById(id).classList.contains('active'));
     let nextIndex = currentIndex;
-
     if (dx > threshold) {
       nextIndex = (currentIndex + 1) % sections.length;
     } else if (dx < -threshold) {
       nextIndex = (currentIndex - 1 + sections.length) % sections.length;
     }
-
     if (nextIndex !== currentIndex) {
         navigateTo(sections[nextIndex]);
     }
@@ -1151,9 +1478,9 @@ async function showManageTeamModal(teamId) {
     const currentTeam = (teamId === 'A' ? currentPlayingTeamA : currentPlayingTeamB);
     selectElement.innerHTML = '<option value="">Selecione um time</option>';
 
-    if (generatedTeams.length === 0) {
-        selectElement.innerHTML += '<option value="" disabled>Nenhum time gerado</option>';
-    } else {
+    if (generatedTeams.length > 0) {
+        const optgroupGenerated = document.createElement('optgroup');
+        optgroupGenerated.label = 'Times Gerados';
         generatedTeams.forEach((team, index) => {
             const option = document.createElement('option');
             option.value = `generated-${index}`;
@@ -1161,8 +1488,32 @@ async function showManageTeamModal(teamId) {
             if (currentTeam.name === team.name && currentTeam.players.length === team.players.length && currentTeam.players.every((p, i) => p === team.players[i])) {
               option.selected = true;
             }
-            selectElement.appendChild(option);
+            optgroupGenerated.appendChild(option);
         });
+        selectElement.appendChild(optgroupGenerated);
+    }
+
+    if (customTeamNames.length > 0) {
+        const optgroupCustom = document.createElement('optgroup');
+        optgroupCustom.label = 'Times Personalizados';
+        customTeamNames.forEach((team, index) => {
+            if (team.name && team.name.trim() !== "") {
+                const option = document.createElement('option');
+                option.value = `custom-${index}`;
+                option.textContent = `${team.name}`;
+                if (currentTeam.name === team.name && currentTeam.color === team.color && currentTeam.players.length === 0) {
+                  option.selected = true;
+                }
+                optgroupCustom.appendChild(option);
+            }
+        });
+        if (optgroupCustom.children.length > 0) {
+            selectElement.appendChild(optgroupCustom);
+        }
+    }
+
+    if (selectElement.children.length <= 1) {
+        selectElement.innerHTML += '<option value="" disabled>Nenhum time disponível</option>';
     }
 
     const selectedValue = selectElement.value;
@@ -1170,9 +1521,14 @@ async function showManageTeamModal(teamId) {
     const currentTeamIndex = isCurrentTeamGenerated ? parseInt(selectedValue.split('-')[1]) : -1;
 
     if (currentTeamIndex === -1 ||
-        (generatedTeams[currentTeamIndex].name !== currentTeam.name ||
-         !generatedTeams[currentTeamIndex].players.every((p, i) => p === currentTeam.players[i])) ) {
-          selectElement.value = "";
+        (generatedTeams[currentTeamIndex] && (generatedTeams[currentTeamIndex].name !== currentTeam.name ||
+         !generatedTeams[currentTeamIndex].players.every((p, i) => p === currentTeam.players[i])))) {
+          const isCurrentTeamCustom = customTeamNames.some((ct, idx) =>
+              currentTeam.name === ct.name && currentTeam.color === ct.color && `custom-${idx}` === selectedValue
+          );
+          if (!isCurrentTeamCustom) {
+              selectElement.value = "";
+          }
     }
 
     modal.classList.add('show');
@@ -1221,6 +1577,18 @@ async function saveTeamNameAndPlayers() {
         finalTeamName = selectedGeneratedTeam.name;
         finalTeamPlayers = selectedGeneratedTeam.players;
         finalTeamColor = selectedGeneratedTeam.color;
+    } else if (selectedDropdownValue.startsWith('custom-')) {
+        const index = parseInt(selectedDropdownValue.split('-')[1]);
+        const selectedCustomTeam = customTeamNames[index];
+
+        if (otherTeam.name === selectedCustomTeam.name && otherTeam.players.length === 0) {
+            displayMessage("Este time personalizado já está atribuído ao outro time. Por favor, selecione um time diferente.", "warning");
+            document.getElementById('selectTeamForManagement').value = "";
+            return;
+        }
+        finalTeamName = selectedCustomTeam.name;
+        finalTeamPlayers = [];
+        finalTeamColor = selectedCustomTeam.color;
     }
 
     targetTeam.name = finalTeamName;
@@ -1232,25 +1600,57 @@ async function saveTeamNameAndPlayers() {
     await saveLocalSettings();
 }
 
+/**
+ * Salva os nomes e cores dos times personalizados. Salva localmente e, se online, no Firestore.
+ */
 async function saveCustomTeamNamesToFirestore() {
-    if (!isAuthReady) return;
-    try {
-        const customTeamNamesCollectionRef = collection(db, `artifacts/${appId}/public/data/customTeamNames`);
-        const existingDocs = await getDocs(customTeamNamesCollectionRef);
-        const batch = [];
-        existingDocs.forEach(d => batch.push(deleteDoc(doc(db, `artifacts/${appId}/public/data/customTeamNames`, d.id))));
-        await Promise.all(batch);
+    for (let i = 0; i < 5; i++) {
+        const name = document.getElementById(`customTeamName${i + 1}`).value.trim();
+        const color = document.getElementById(`customTeamColor${i + 1}`).value;
 
-        const addPromises = [];
-        for (let i = 0; i < 5; i++) {
-            const name = document.getElementById(`customTeamName${i + 1}`).value;
-            const color = document.getElementById(`customTeamColor${i + 1}`).value;
-            addPromises.push(addDoc(customTeamNamesCollectionRef, { name: name, color: color, order: i }));
+        // Garante que o objeto exista no array customTeamNames
+        if (!customTeamNames[i]) {
+            customTeamNames[i] = { id: null, name: "", color: DEFAULT_CUSTOM_TEAM_COLORS[i], order: i, lastModified: Date.now() };
         }
-        await Promise.all(addPromises);
-    } catch (e) {
-        console.error("Erro ao salvar times personalizados:", e);
-        displayMessage("Erro ao salvar times personalizados.", "error");
+
+        customTeamNames[i].name = name;
+        customTeamNames[i].color = color;
+        customTeamNames[i].lastModified = Date.now();
+        customTeamNames[i].order = i; // Garante a ordem
+    }
+    await saveLocalSettings(); // Salva localmente
+
+    if (isOnline && isAuthReady) {
+        try {
+            const customTeamNamesCollectionRef = collection(db, `artifacts/${appId}/public/data/customTeamNames`);
+            const batch = [];
+            for (let i = 0; i < customTeamNames.length; i++) {
+                const team = customTeamNames[i];
+                const docRef = team.id ? doc(customTeamNamesCollectionRef, team.id) : doc(customTeamNamesCollectionRef, `customTeam_${i}`); // Usa ID se existir, senão um nome fixo
+                batch.push(setDoc(docRef, {
+                    name: team.name,
+                    color: team.color,
+                    order: team.order,
+                    lastModified: team.lastModified
+                }, { merge: true })); // Usa merge para não sobrescrever completamente se o doc já existir
+            }
+            await Promise.all(batch);
+            displayMessage("Times personalizados salvos e sincronizados!", "success");
+            // Após salvar no Firestore, atualiza os IDs locais caso algum tenha sido gerado
+            const updatedSnapshot = await getDocs(customTeamNamesCollectionRef);
+            updatedSnapshot.forEach(doc => {
+                const localTeam = customTeamNames.find(t => t.order === doc.data().order);
+                if (localTeam) {
+                    localTeam.id = doc.id;
+                }
+            });
+            await saveLocalSettings();
+        } catch (e) {
+            console.error("Erro ao salvar times personalizados no Firestore:", e);
+            displayMessage("Erro ao sincronizar times personalizados. Salvo localmente.", "error");
+        }
+    } else {
+        displayMessage("Times personalizados salvos localmente. Sincronizará quando online.", "info");
     }
 }
 
@@ -1259,15 +1659,16 @@ function toggleCustomTeamNamesSection() {
     const arrow = document.getElementById('customTeamNamesArrow');
     content.classList.toggle('show');
     arrow.classList.toggle('rotated');
-    if (content.classList.contains('show')) {
-        for (let i = 0; i < 5; i++) {
-            document.getElementById(`customTeamName${i + 1}`).addEventListener('change', saveCustomTeamNamesToFirestore);
-            document.getElementById(`customTeamColor${i + 1}`).addEventListener('change', saveCustomTeamNamesToFirestore);
-        }
-    } else {
-        for (let i = 0; i < 5; i++) {
-            document.getElementById(`customTeamName${i + 1}`).removeEventListener('change', saveCustomTeamNamesToFirestore);
-            document.getElementById(`customTeamColor${i + 1}`).removeEventListener('change', saveCustomTeamNamesToFirestore);
+    // Adiciona/remove listeners para salvar quando a seção está aberta
+    for (let i = 0; i < 5; i++) {
+        const nameInput = document.getElementById(`customTeamName${i + 1}`);
+        const colorInput = document.getElementById(`customTeamColor${i + 1}`);
+        if (content.classList.contains('show')) {
+            nameInput.addEventListener('change', saveCustomTeamNamesToFirestore);
+            colorInput.addEventListener('change', saveCustomTeamNamesToFirestore);
+        } else {
+            nameInput.removeEventListener('change', saveCustomTeamNamesToFirestore);
+            colorInput.removeEventListener('change', saveCustomTeamNamesToFirestore);
         }
     }
 }
@@ -1275,13 +1676,6 @@ function toggleCustomTeamNamesSection() {
 function toggleGeneralSettingsSection() {
     const content = document.getElementById('generalSettingsContent');
     const arrow = document.getElementById('generalSettingsArrow');
-    content.classList.toggle('show');
-    arrow.classList.toggle('rotated');
-}
-
-function toggleDataManagementSection() {
-    const content = document.getElementById('dataManagementContent');
-    const arrow = document.getElementById('dataManagementArrow');
     content.classList.toggle('show');
     arrow.classList.toggle('rotated');
 }
@@ -1305,93 +1699,9 @@ function updatePlayerDisplayOnScoreboard() {
     }
 }
 
-async function exportSettings() {
-    const appStateToExport = {
-        winningScore: winningScore,
-        setsToWin: setsToWin,
-        playersPerTeam: playersPerTeam,
-        currentTheme: currentTheme,
-        vibrationEnabled: vibrationEnabled,
-        showPlayersOnScoreboard: showPlayersOnScoreboard,
-        generatedTeams: generatedTeams
-    };
-    const dataStr = JSON.stringify(appStateToExport, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'placar_volei_config_local.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    displayMessage("Configurações locais exportadas com sucesso!", "success");
-}
-
-function importSettings(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        try {
-            const importedAppState = JSON.parse(e.target.result);
-
-            winningScore = importedAppState.winningScore !== undefined ? importedAppState.winningScore : 15;
-            setsToWin = importedAppState.setsToWin !== undefined ? importedAppState.setsToWin : 0;
-            playersPerTeam = importedAppState.playersPerTeam !== undefined ? importedAppState.playersPerTeam : 4;
-            currentTheme = importedAppState.currentTheme || 'dark';
-            vibrationEnabled = importedAppState.vibrationEnabled !== undefined ? importedAppState.vibrationEnabled : true;
-            showPlayersOnScoreboard = importedAppState.showPlayersOnScoreboard !== undefined ? importedAppState.showPlayersOnScoreboard : true;
-            generatedTeams = importedAppState.generatedTeams || [];
-
-            scoreA = 0;
-            scoreB = 0;
-            setsA = 0;
-            setsB = 0;
-            gameEnded = false;
-            gameStarted = false;
-            lastWinningTeam = null;
-            currentPlayingTeamA = { name: 'Time A', players: [], color: '#007bff' };
-            currentPlayingTeamB = { name: 'Time B', players: [], color: '#dc3545' };
-            gameTimeInSeconds = 0;
-            setTimeInSeconds = 0;
-            isTimerRunning = false;
-            stopAllTimers();
-
-            document.getElementById('winningScore').value = winningScore;
-            document.getElementById('setsToWinConfig').value = setsToWin;
-            document.getElementById('playersPerTeam').value = playersPerTeam;
-            document.getElementById('vibrationEnabled').checked = vibrationEnabled;
-            document.getElementById('showPlayersOnScoreboard').checked = showPlayersOnScoreboard;
-            document.getElementById('themeSelect').value = currentTheme;
-            setTheme(currentTheme, false);
-
-            updateSetsDisplay();
-            document.getElementById("scoreA").textContent = scoreA;
-            document.getElementById("scoreB").textContent = scoreB;
-            updateScoreboardTeamsDisplay();
-            updateSwapTeamsButtonVisibility();
-            updateResetButtonVisibility();
-            document.getElementById('startGameButton').style.display = 'block';
-            document.getElementById('scoreboardOverlay').classList.remove('hidden');
-            updateTimerDisplay();
-
-            await saveLocalSettings();
-            displayMessage("Configurações locais importadas com sucesso!", "success");
-
-        } catch (error) {
-            displayMessage("Erro ao importar arquivo. Verifique se é um arquivo de configurações válido.", "error");
-        } finally {
-            event.target.value = '';
-        }
-    };
-    reader.readAsText(file);
-}
-
 function updateScoreboardTeamsDisplay() {
     document.getElementById('teamNameA').textContent = currentPlayingTeamA.name;
     document.getElementById('teamNameB').textContent = currentPlayingTeamB.name;
-
     const playerListA = document.getElementById('playerListA');
     const playerListB = document.getElementById('playerListB');
     playerListA.innerHTML = '';
@@ -1443,20 +1753,16 @@ function startAllTimers() {
   if (setTimerInterval) {
     clearInterval(setTimerInterval);
   }
-
   document.getElementById('gameTimer').classList.add('show');
   isTimerRunning = true;
-
   gameTimerInterval = setInterval(() => {
     gameTimeInSeconds++;
     updateTimerDisplay();
   }, 1000);
-
   setTimerInterval = setInterval(() => {
     setTimeInSeconds++;
     updateTimerDisplay();
   }, 1000);
-
   updateTimerDisplay();
 }
 
@@ -1485,8 +1791,10 @@ function toggleTimer() {
     }
 }
 
+/**
+ * Adiciona um novo agendamento. Salva localmente e, se online, no Firestore.
+ */
 async function addAppointment() {
-    if (!isAuthReady) return;
     const gameDateInput = document.getElementById('gameDate');
     const gameTimeInput = document.getElementById('gameTime');
     const gameLocationInput = document.getElementById('gameLocation');
@@ -1501,31 +1809,63 @@ async function addAppointment() {
     }
 
     const newAppointment = {
+        id: null, // O ID será atribuído pelo Firebase se online
         date: date,
         time: time,
-        location: location
+        location: location,
+        lastModified: Date.now()
     };
+    appointments.push(newAppointment);
+    gameDateInput.value = '';
+    gameTimeInput.value = '';
+    gameLocationInput.value = '';
+    renderAppointments();
+    await saveLocalSettings(); // Salva localmente
 
-    try {
-        await addDoc(collection(db, `artifacts/${appId}/public/data/appointments`), newAppointment);
-        gameDateInput.value = '';
-        gameTimeInput.value = '';
-        gameLocationInput.value = '';
-        displayMessage("Agendamento adicionado com sucesso!", "success");
-    } catch (e) {
-        displayMessage("Erro ao adicionar agendamento.", "error");
+    if (isOnline && isAuthReady) {
+        try {
+            const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/appointments`), {
+                date: newAppointment.date,
+                time: newAppointment.time,
+                location: newAppointment.location,
+                lastModified: newAppointment.lastModified
+            });
+            newAppointment.id = docRef.id; // Atualiza o ID do agendamento local
+            await saveLocalSettings(); // Salva novamente para persistir o ID do Firebase
+            displayMessage("Agendamento adicionado e sincronizado!", "success");
+        } catch (e) {
+            displayMessage("Erro ao adicionar agendamento ao servidor. Salvo localmente.", "error");
+            console.error("Erro ao adicionar agendamento ao Firestore:", e);
+        }
+    } else {
+        displayMessage("Agendamento adicionado localmente. Sincronizará quando online.", "info");
     }
 }
 
+/**
+ * Exclui um agendamento. Remove localmente e, se online, do Firestore.
+ */
 function deleteAppointment(idToDelete) {
     showConfirmationModal("Tem certeza que deseja excluir este agendamento?", async (confirmed) => {
         if (confirmed) {
-            if (!isAuthReady) return;
-            try {
-                await deleteDoc(doc(db, `artifacts/${appId}/public/data/appointments`, idToDelete));
-                displayMessage("Agendamento excluído com sucesso!", "success");
-            } catch (e) {
-                displayMessage("Erro ao excluir agendamento.", "error");
+            // Remove localmente
+            const initialLength = appointments.length;
+            appointments = appointments.filter(appt => appt.id !== idToDelete);
+            if (appointments.length < initialLength) {
+                renderAppointments();
+                await saveLocalSettings(); // Salva localmente
+
+                if (isOnline && isAuthReady && idToDelete) { // Só tenta remover do Firebase se tiver ID e estiver online
+                    try {
+                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/appointments`, idToDelete));
+                        displayMessage("Agendamento excluído e sincronizado!", "success");
+                    } catch (e) {
+                        displayMessage("Erro ao excluir agendamento do servidor. Excluído localmente.", "error");
+                        console.error("Erro ao excluir agendamento do Firestore:", e);
+                    }
+                } else {
+                    displayMessage("Agendamento excluído localmente. Sincronizará quando online.", "info");
+                }
             }
         }
     });
@@ -1539,7 +1879,6 @@ function formatDate(dateString) {
 function renderAppointments() {
     const upcomingAppointmentsList = document.getElementById('upcomingAppointmentsList');
     const pastAppointmentsList = document.getElementById('pastAppointmentsList');
-
     upcomingAppointmentsList.innerHTML = '';
     pastAppointmentsList.innerHTML = '';
 
@@ -1556,15 +1895,11 @@ function renderAppointments() {
     appointments.forEach((appointment) => {
         const li = document.createElement('li');
         li.dataset.id = appointment.id;
-
         const appointmentDateTime = new Date(`${appointment.date}T${appointment.time}`);
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const appointmentDateOnly = new Date(appointmentDateTime.getFullYear(), appointmentDateTime.getMonth(), appointmentDateTime.getDate());
-
         const isPast = appointmentDateOnly < today;
-
         const statusClass = isPast ? 'appointment-past' : 'appointment-upcoming';
-
         li.innerHTML = `
             <div class="appointment-card ${statusClass}">
                 <div class="card-header">
@@ -1577,7 +1912,6 @@ function renderAppointments() {
                 <button class="delete-appointment-btn" data-id="${appointment.id}" title="Excluir agendamento"><i class="fas fa-trash-alt"></i></button>
             </div>
         `;
-
         if (isPast) {
             pastAppointmentsList.appendChild(li);
             hasPast = true;
@@ -1593,7 +1927,6 @@ function renderAppointments() {
     if (!hasPast) {
         pastAppointmentsList.innerHTML = '<p style="text-align: center; color: var(--text-color);">Nenhum jogo anterior registrado.</p>';
     }
-
     document.querySelectorAll('.delete-appointment-btn').forEach(button => {
         button.addEventListener('click', (event) => {
             const idToDelete = event.currentTarget.dataset.id;
@@ -1607,18 +1940,20 @@ async function displaySystemVersion() {
         const response = await fetch('./service-worker.js');
         if (!response.ok) {
             document.getElementById('systemVersionDisplay').textContent = 'Erro ao carregar (status: ' + response.status + ')';
+            console.error('Erro ao carregar service-worker.js (status:', response.status + ')');
             return;
         }
         const text = await response.text();
         const match = text.match(/const CACHE_NAME = '(volei-das-ruas-v[^']+)';/);
-
         if (match && match[1]) {
             document.getElementById('systemVersionDisplay').textContent = match[1];
         } else {
             document.getElementById('systemVersionDisplay').textContent = 'Não disponível';
+            console.error('Versão do Service Worker não encontrada.');
         }
     } catch (error) {
         document.getElementById('systemVersionDisplay').textContent = 'Erro ao carregar';
+        console.error('Erro ao carregar service-worker.js:', error);
     }
 }
 
@@ -1628,6 +1963,27 @@ function reloadApp() {
     }
     window.location.reload();
 }
+
+// Event listeners para status da conexão
+window.addEventListener('online', async () => {
+    isOnline = true;
+    console.log('App está online. Tentando sincronizar alterações offline...');
+    displayMessage("Conexão reestabelecida. Sincronizando dados...", "info");
+    if (isAuthReady) {
+        await syncLocalToFirestore();
+        setupFirestoreListeners(); // Re-configura listeners para garantir que estejam ativos
+    } else {
+        // Se a autenticação ainda não estiver pronta, a sincronização e os listeners serão configurados após initFirebase
+        console.log("App online, mas autenticação ainda não pronta. Sincronização e listeners aguardando initFirebase.");
+    }
+});
+
+window.addEventListener('offline', () => {
+    isOnline = false;
+    console.log('App está offline.');
+    displayMessage("Você está offline. As alterações serão salvas localmente.", "warning");
+    // Não há necessidade de desconfigurar listeners, eles falharão silenciosamente ou com erro
+});
 
 window.onload = async () => {
   if ('serviceWorker' in navigator) {
@@ -1645,28 +2001,34 @@ window.onload = async () => {
       .catch(error => console.error('Service Worker registration failed:', error));
   }
 
+  // Carrega as configurações e dados locais primeiro
+  loadLocalSettings();
+
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('pontuacao').classList.add('active');
-
+  
+  // Inicia o Firebase APÓS carregar as configurações locais
   await initFirebase();
 
   document.getElementById("scoreA").textContent = scoreA;
   document.getElementById("scoreB").textContent = scoreB;
   updateSetsDisplay();
   updateScoreboardTeamsDisplay();
-
-  document.getElementById('startGameButton').style.display = 'block';
-  document.getElementById('scoreboardOverlay').classList.remove('hidden');
+  
+  if (gameStarted) {
+    document.getElementById('startGameButton').style.display = 'none';
+    document.getElementById('scoreboardOverlay').classList.add('hidden');
+  } else {
+    document.getElementById('startGameButton').style.display = 'block';
+    document.getElementById('scoreboardOverlay').classList.remove('hidden');
+  }
 
   updateSwapTeamsButtonVisibility();
   updateResetButtonVisibility();
-
   renderGeneratedTeams();
-
   setupSwipeToDecrease('sectionA', 'A');
   setupSwipeToDecrease('sectionB', 'B');
   setupSwipeBetweenSections();
-
   document.getElementById('sectionA').addEventListener('click', (e) => {
     if (e.target.closest('.team-name') || e.target.closest('.player-info-container')) {
         showManageTeamModal('A');
@@ -1683,7 +2045,6 @@ window.onload = async () => {
   });
   updateTimerDisplay();
   displaySystemVersion();
-
   window.addEventListener('beforeunload', async () => {
       await saveLocalSettings();
   });
@@ -1703,20 +2064,13 @@ window.deleteAppointment = deleteAppointment;
 window.togglePastAppointmentsSection = togglePastAppointmentsSection;
 window.toggleGeneralSettingsSection = toggleGeneralSettingsSection;
 window.toggleCustomTeamNamesSection = toggleCustomTeamNamesSection;
-window.toggleDataManagementSection = toggleDataManagementSection;
-window.exportSettings = exportSettings;
-window.importSettings = importSettings;
-window.confirmResetAllData = confirmResetAllData;
-window.confirmIncreaseWinningScore = confirmIncreaseWinningScore;
-window.hideIncreaseScoreModal = hideIncreaseScoreModal;
-window.confirmStartGame = confirmStartGame;
-window.hideStartGameModal = hideStartGameModal;
-window.startNewGame = startNewGame;
-window.startNewSet = startNewSet;
-window.increaseWinningScoreModal = increaseWinningScoreModal;
 window.showManageTeamModal = showManageTeamModal;
 window.saveTeamNameAndPlayers = saveTeamNameAndPlayers;
 window.hideCustomMessageModal = hideCustomMessageModal;
 window.hideCustomConfirmationModal = hideCustomConfirmationModal;
 window.reloadApp = reloadApp;
 window.setTheme = setTheme;
+window.saveCustomTeamNamesToFirestore = saveCustomTeamNamesToFirestore;
+window.startNewGame = startNewGame;
+window.startNewSet = startNewSet;
+window.increaseWinningScoreModal = increaseWinningScoreModal;

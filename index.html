@@ -190,26 +190,6 @@
             </div>
         </div>
     </div>
-    <div class="collapsible-container">
-        <div class="collapsible-header" onclick="toggleDataManagementSection()">
-            <h3>Gerenciamento de Dados</h3> <i class="fa-solid fa-chevron-right collapsible-arrow" id="dataManagementArrow"></i>
-        </div>
-        <div class="collapsible-content" id="dataManagementContent">
-            <div class="config-group">
-                <label>Exportar Dados Locais:</label>
-                <button class="btn" onclick="exportSettings()">Exportar Configurações</button>
-            </div>
-            <div class="config-group">
-                <label>Importar Dados Locais:</label>
-                <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="importSettings(event)">
-                <button class="btn" onclick="document.getElementById('importFileInput').click()">Importar Configurações</button>
-            </div>
-            <div class="config-group">
-                <label>Resetar Tudo:</label>
-                <button class="btn" onclick="confirmResetAllData()" style="background-color: #dc3545;">Resetar Todos os Dados</button>
-            </div>
-        </div>
-    </div>
     <div class="config-group" style="margin-top: 20px; text-align: center; padding: 15px; border-radius: 10px; background-color: var(--setting-section-bg); border: 1px solid var(--setting-item-border);">
         <label style="font-size: 1.1em; margin-bottom: 5px; color: var(--text-color);">Versão do Sistema:</label>
         <span id="systemVersionDisplay" style="font-weight: bold; font-size: 1.2em; color: var(--text-color);">Carregando...</span>
@@ -256,8 +236,8 @@
         </div>
       </div>
       <div class="modal-buttons">
-        <button id="modalStartGameButton" onclick="confirmStartGame()">Iniciar Partida</button>
-        <button onclick="hideStartGameModal()" style="background-color:#dc3545;--modal-button-hover-bg:#c82333;">Cancelar</button>
+        <button id="modalStartGameButton">Iniciar Partida</button>
+        <button id="modalCancelGameButton" style="background-color:#dc3545;--modal-button-hover-bg:#c82333;">Cancelar</button>
       </div>
     </div>
   </div>
