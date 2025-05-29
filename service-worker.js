@@ -1,4 +1,4 @@
-const CACHE_NAME = 'voleizinho-das-ruas-v2.2';
+const CACHE_NAME = 'voleizinho-das-ruas-v2.5';
 
 const urlsToCache = [
   './',
