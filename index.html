@@ -1364,6 +1364,10 @@
       </div>
     </div>
   </div>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
   <script>
     const DEFAULT_CUSTOM_TEAM_COLORS = ["#007bff", "#dc3545", "#28a745", "#ffc107", "#6f42c1"];
     let players = JSON.parse(localStorage.getItem('players') || '[]');
@@ -1389,7 +1393,35 @@
     let gameTimeInSeconds = 0;
     let setTimeInSeconds = 0; // Novo contador de tempo para o set
     let isTimerRunning = false; // Variável para controlar o estado do cronômetro
-    let appointments = []; // Nova variável para agendamentos
+    // let appointments = []; // Esta variável será gerenciada pelo Firestore agora
+
+    // Firebase Initialization
+    const firebaseConfig = {
+      apiKey: "AIzaSyBeu7H2Us7FYNb0yhGx8pkYj_aeTgnndUA",
+      authDomain: "voleizinho-das-ruas.firebaseapp.com",
+      databaseURL: "https://voleizinho-das-ruas-default-rtdb.firebaseio.com",
+      projectId: "voleizinho-das-ruas",
+      storageBucket: "voleizinho-das-ruas.firebasestorage.app",
+      messagingSenderId: "394754605937",
+      appId: "1:394754605937:web:e97314f6c48373c8dc2cd0"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    let userId = null; // Variável para armazenar o ID do usuário autenticado
+
+    // Autenticação anônima para acessar o Firestore
+    auth.signInAnonymously().then((result) => {
+        userId = result.user.uid;
+        console.log("Autenticado anonimamente. User ID:", userId);
+        // Após a autenticação, podemos começar a ouvir os agendamentos
+        listenForAppointments();
+    }).catch((error) => {
+        console.error("Erro na autenticação anônima:", error);
+        displayMessage("Erro ao autenticar no Firebase. Agendamentos podem não ser salvos.", "error");
+    });
 
     function toggleMenu() {
       const menu = document.getElementById("gearMenu");
@@ -1424,7 +1456,8 @@
       if (id === 'times') {
           renderGeneratedTeams();
       } else if (id === 'agendamentos') {
-          renderAppointments(); // Renderiza os agendamentos ao navegar para a tela
+          // A renderização de agendamentos é feita pelo listener do Firestore (onSnapshot)
+          // renderAppointments(); // Não chame diretamente aqui, o listener fará isso
       }
     }
 
@@ -1587,7 +1620,9 @@
         showConfirmationModal("Tem certeza que deseja resetar TODOS os dados? Isso apagará jogadores, times gerados, configurações e o estado atual do jogo.", (confirmed) => {
             if (confirmed) {
                 localStorage.clear();
-                location.reload();
+                // Não é necessário limpar o Firestore aqui, pois os dados são do usuário logado
+                // e o onSnapshot já vai atualizar a UI se as regras de segurança permitirem.
+                location.reload(); // Recarrega a página para refletir o reset do localStorage
             }
         });
     }
@@ -1664,7 +1699,7 @@
             } else {
                 team.players.forEach(player => {
                     const playerLi = document.createElement("li");
-                    li.textContent = player;
+                    playerLi.textContent = player; // Corrigido de 'li.textContent' para 'playerLi.textContent'
                     playersList.appendChild(playerLi);
                 });
             }
@@ -1928,7 +1963,7 @@
       gameEnded = false;
       gameStarted = true; 
       lastWinningTeam = null;
-
+      
       document.getElementById("scoreA").textContent = scoreA;
       document.getElementById("scoreB").textContent = scoreB;
       updateSetsDisplay();
@@ -2520,7 +2555,7 @@
             currentTheme: currentTheme,
             vibrationEnabled: vibrationEnabled,
             showPlayersOnScoreboard: showPlayersOnScoreboard,
-            appointments: appointments // Inclui agendamentos na exportação
+            // appointments: appointments // Agendamentos agora vêm do Firestore, não do localStorage
         };
         const dataStr = JSON.stringify(appStateToExport, null, 2);
         const blob = new Blob([dataStr], { type: 'application/json' });
@@ -2553,7 +2588,7 @@
                 currentTheme = importedAppState.currentTheme || 'dark';
                 vibrationEnabled = importedAppState.vibrationEnabled !== undefined ? importedAppState.vibrationEnabled : true;
                 showPlayersOnScoreboard = importedAppState.showPlayersOnScoreboard !== undefined ? importedAppState.showPlayersOnScoreboard : true;
-                appointments = importedAppState.appointments || []; // Importa agendamentos
+                // appointments = importedAppState.appointments || []; // Não importa agendamentos do arquivo, eles vêm do Firestore
                 
                 localStorage.setItem('players', JSON.stringify(players));
                 localStorage.setItem('checkedPlayers', JSON.stringify(checkedState));
@@ -2564,7 +2599,7 @@
                 localStorage.setItem('theme', currentTheme);
                 localStorage.setItem('vibrationEnabled', JSON.stringify(vibrationEnabled));
                 localStorage.setItem('showPlayersOnScoreboard', JSON.stringify(showPlayersOnScoreboard));
-                localStorage.setItem('appointments', JSON.stringify(appointments)); // Salva agendamentos importados
+                // localStorage.setItem('appointments', JSON.stringify(appointments)); // Não salva agendamentos no localStorage
 
                 scoreA = 0;
                 scoreB = 0;
@@ -2594,12 +2629,12 @@
                 updateScoreboardTeamsDisplay();
                 updateSwapTeamsButtonVisibility();
                 updateResetButtonVisibility(); 
-
+                
                 document.getElementById('startGameButton').style.display = 'block';
                 document.getElementById('scoreboardOverlay').classList.remove('hidden');
 
                 displayMessage("Configurações importadas com sucesso!", "success");
-                renderAppointments(); // Renderiza os agendamentos após a importação
+                // renderAppointments() é chamado pelo onSnapshot do Firestore
             } catch (error) {
                 console.error("Erro ao importar configurações:", error);
                 displayMessage("Erro ao importar arquivo. Verifique se é um arquivo de configurações válido.", "error");
@@ -2705,19 +2740,48 @@
         }
     }
 
-    // Funções para Agendamentos
-    function loadAppointments() {
-        console.log('Carregando agendamentos do localStorage...');
-        appointments = JSON.parse(localStorage.getItem('appointments') || '[]');
-        console.log('Agendamentos carregados:', appointments);
+    // Funções para Agendamentos (AGORA USANDO FIRESTORE)
+
+    // A função loadAppointments não é mais necessária, pois onSnapshot lida com o carregamento inicial e atualizações em tempo real.
+    // function loadAppointments() { ... }
+
+    // A função saveAppointments não é mais necessária para salvar todos os appointments de uma vez.
+    // As operações de adicionar/deletar já interagem diretamente com o Firestore.
+    // function saveAppointments() { ... }
+
+    // Listener em tempo real para os agendamentos do usuário
+    function listenForAppointments() {
+        if (!userId) {
+            console.warn("User ID não disponível para ouvir agendamentos.");
+            return;
+        }
+        // Caminho para a coleção de agendamentos do usuário
+        const appointmentsCollectionRef = db.collection(`artifacts/${firebaseConfig.projectId}/users/${userId}/appointments`);
+
+        // onSnapshot para ouvir mudanças em tempo real
+        appointmentsCollectionRef.onSnapshot((snapshot) => {
+            const fetchedAppointments = [];
+            snapshot.forEach((doc) => {
+                fetchedAppointments.push({
+                    id: doc.id, // Adiciona o ID do documento para futuras operações de exclusão
+                    ...doc.data()
+                });
+            });
+            // Renderiza os agendamentos sempre que há uma mudança no Firestore
+            renderAppointments(fetchedAppointments); 
+            console.log("Agendamentos atualizados do Firestore:", fetchedAppointments);
+        }, (error) => {
+            console.error("Erro ao ouvir agendamentos do Firestore:", error);
+            displayMessage("Erro ao carregar agendamentos do Firebase. Verifique sua conexão ou regras de segurança.", "error");
+        });
     }
 
-    function saveAppointments() {
-        console.log('Salvando agendamentos no localStorage:', appointments);
-        localStorage.setItem('appointments', JSON.stringify(appointments));
-    }
+    async function addAppointment() {
+        if (!userId) {
+            displayMessage("Por favor, aguarde a autenticação para adicionar agendamentos.", "warning");
+            return;
+        }
 
-    function addAppointment() {
         const gameDateInput = document.getElementById('gameDate');
         const gameTimeInput = document.getElementById('gameTime');
         const gameLocationInput = document.getElementById('gameLocation');
@@ -2731,24 +2795,41 @@
             return;
         }
 
-        const newAppointment = { date, time, location }; // Objeto de agendamento atualizado, sem times
-        appointments.push(newAppointment);
-        saveAppointments();
-        renderAppointments();
+        try {
+            // Adiciona um novo documento à subcoleção 'appointments' do usuário
+            await db.collection(`artifacts/${firebaseConfig.projectId}/users/${userId}/appointments`).add({
+                date: date,
+                time: time,
+                location: location,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp() // Adiciona um timestamp para ordenação
+            });
 
-        gameDateInput.value = '';
-        gameTimeInput.value = '';
-        gameLocationInput.value = '';
-        displayMessage("Agendamento adicionado com sucesso!", "success");
+            gameDateInput.value = '';
+            gameTimeInput.value = '';
+            gameLocationInput.value = '';
+            displayMessage("Agendamento adicionado com sucesso!", "success");
+        } catch (error) {
+            console.error("Erro ao adicionar agendamento:", error);
+            displayMessage(`Erro ao adicionar agendamento: ${error.message}`, "error");
+        }
     }
 
-    function deleteAppointment(index) {
-        showConfirmationModal("Tem certeza que deseja remover este agendamento?", (confirmed) => {
+    async function deleteAppointment(appointmentId) {
+        if (!userId) {
+            displayMessage("Por favor, aguarde a autenticação para remover agendamentos.", "warning");
+            return;
+        }
+
+        showConfirmationModal("Tem certeza que deseja remover este agendamento?", async (confirmed) => {
             if (confirmed) {
-                appointments.splice(index, 1);
-                saveAppointments();
-                renderAppointments();
-                displayMessage("Agendamento removido!", "info");
+                try {
+                    // Remove o documento específico da subcoleção 'appointments' do usuário
+                    await db.collection(`artifacts/${firebaseConfig.projectId}/users/${userId}/appointments`).doc(appointmentId).delete();
+                    displayMessage("Agendamento removido!", "info");
+                } catch (error) {
+                    console.error("Erro ao remover agendamento:", error);
+                    displayMessage(`Erro ao remover agendamento: ${error.message}`, "error");
+                }
             }
         });
     }
@@ -2759,35 +2840,36 @@
         return `${day}/${month}/${year}`;
     }
 
-    function renderAppointments() {
+    // renderAppointments agora recebe os agendamentos como argumento
+    function renderAppointments(appointmentsToRender) {
         const upcomingAppointmentsList = document.getElementById('upcomingAppointmentsList');
         const pastAppointmentsList = document.getElementById('pastAppointmentsList');
         
         upcomingAppointmentsList.innerHTML = ''; // Limpa a lista existente
         pastAppointmentsList.innerHTML = ''; // Limpa a lista existente
 
-        const appointments = JSON.parse(localStorage.getItem('appointments') || '[]');
-
-        if (appointments.length === 0) {
+        if (!appointmentsToRender || appointmentsToRender.length === 0) {
             upcomingAppointmentsList.innerHTML = '<p style="text-align: center; color: var(--text-color);">Nenhum agendamento futuro. Adicione um para começar!</p>';
             pastAppointmentsList.innerHTML = '<p style="text-align: center; color: var(--text-color);">Nenhum jogo anterior registrado.</p>';
             return;
         }
 
-        // Ordena os agendamentos por data e hora
-        appointments.sort((a, b) => {
-            const dateTimeA = new Date(`${a.date}T${a.time}`);
-            const dateTimeB = new Date(`${b.date}T${b.time}`);
-            return dateTimeA - dateTimeB;
+        // Ordena os agendamentos por data e hora (timestamp do Firestore é melhor para isso)
+        // Se o timestamp for null (para agendamentos antigos sem ele), use date/time para ordenação
+        appointmentsToRender.sort((a, b) => {
+            const timeA = a.timestamp ? a.timestamp.toDate() : new Date(`${a.date}T${a.time}`);
+            const timeB = b.timestamp ? b.timestamp.toDate() : new Date(`${b.date}T${b.time}`);
+            return timeA - timeB;
         });
 
         const now = new Date();
         let hasUpcoming = false;
         let hasPast = false;
 
-        appointments.forEach((appointment, index) => {
+        appointmentsToRender.forEach((appointment) => {
             const li = document.createElement('li');
-            li.dataset.index = index; // Adiciona um atributo para fácil referência
+            // O ID do documento Firestore é usado para a exclusão
+            li.dataset.id = appointment.id; 
 
             const appointmentDateTime = new Date(`${appointment.date}T${appointment.time}`);
             // Para comparar apenas a data, zere as horas, minutos, segundos e milissegundos
@@ -2807,7 +2889,7 @@
                     <div class="card-body">
                         <p class="card-location"><i class="fas fa-map-marker-alt"></i> <strong>Local:</strong> ${appointment.location}</p>
                     </div>
-                    <button class="delete-appointment-btn" data-index="${index}" title="Excluir agendamento"><i class="fas fa-trash-alt"></i></button>
+                    <button class="delete-appointment-btn" data-id="${appointment.id}" title="Excluir agendamento"><i class="fas fa-trash-alt"></i></button>
                 </div>
             `;
 
@@ -2832,8 +2914,8 @@
         // Adiciona event listeners aos botões de excluir
         document.querySelectorAll('.delete-appointment-btn').forEach(button => {
             button.addEventListener('click', (event) => {
-                const indexToDelete = event.currentTarget.dataset.index;
-                deleteAppointment(indexToDelete);
+                const idToDelete = event.currentTarget.dataset.id; // Pega o ID do documento
+                deleteAppointment(idToDelete);
             });
         });
     }
@@ -2876,8 +2958,8 @@
           .catch(error => {});
       }
       loadSettings();
-      loadAppointments(); // Carrega os agendamentos ao iniciar
-      renderAppointments(); // Adicionado: Renderiza os agendamentos após o carregamento
+      // loadAppointments(); // Não é mais necessário chamar aqui, o onSnapshot faz isso
+      // renderAppointments(); // Não é mais necessário chamar aqui, o onSnapshot faz isso
       displaySystemVersion(); // Adicionado: Exibe a versão do sistema
 
       scoreA = 0;
@@ -2925,9 +3007,10 @@
       updateTimerDisplay(); // Garante que o ícone inicial seja "play"
 
       // Adiciona o listener para salvar agendamentos antes de descarregar a página
-      window.addEventListener('beforeunload', () => {
-          saveAppointments();
-      });
+      // Esta linha não é mais necessária, pois o onSnapshot lida com a persistência em tempo real
+      // window.addEventListener('beforeunload', () => {
+      //     saveAppointments();
+      // });
     }
   </script>
 </body>
