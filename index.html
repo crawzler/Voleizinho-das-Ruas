@@ -1288,6 +1288,16 @@
         </div>
     </div>
     <div class="collapsible-container">
+        <div class="collapsible-header" onclick="toggleAccountSettingsSection()">
+            <h3>Conta</h3>
+            <i class="fa-solid fa-chevron-right collapsible-arrow" id="accountSettingsArrow"></i>
+        </div>
+        <div class="collapsible-content" id="accountSettingsContent">
+            <div class="config-group" id="authOptionsContainer">
+                </div>
+        </div>
+    </div>
+    <div class="collapsible-container">
         <div class="collapsible-header" onclick="toggleDataManagementSection()">
             <h3>Gerenciamento de Dados</h3> <i class="fa-solid fa-chevron-right collapsible-arrow" id="dataManagementArrow"></i>
         </div>
@@ -1469,6 +1479,7 @@
             loadSettings();
             setupAppointmentsListener(); // Set up real-time listener for appointments
             displaySystemVersion(); 
+            updateAccountAuthUI(); // Update account section in settings
           } else {
             // User is signed out or not yet signed in
             userId = null;
@@ -1481,6 +1492,7 @@
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.getElementById('authModal').classList.add('show');
             console.log("User signed out or not authenticated. Showing auth modal.");
+            updateAccountAuthUI(); // Update account section in settings
           }
         });
 
@@ -1497,6 +1509,7 @@
         // Hide auth modal and show main content if using local storage
         document.getElementById('authModal').classList.remove('show');
         document.getElementById('pontuacao').classList.add('active');
+        updateAccountAuthUI(); // Update account section in settings
       }
     }
 
@@ -1533,14 +1546,20 @@
     }
 
     // Function to log out
-    async function logoutUser() {
-        showConfirmationModal("Tem certeza que deseja sair? Seus dados serão salvos, mas você precisará fazer login novamente para acessá-los.", async (confirmed) => {
+    async function logoutUser(switchAccount = false) {
+        let message = "Tem certeza que deseja sair? Seus dados serão salvos, mas você precisará fazer login novamente para acessá-los.";
+        if (switchAccount) {
+            message = "Tem certeza que deseja mudar de conta? Você será desconectado e poderá fazer login com outra conta Google.";
+        }
+
+        showConfirmationModal(message, async (confirmed) => {
             if (confirmed) {
                 try {
                     await signOut(auth);
                     console.log("Usuário deslogado.");
                     displayMessage("Logout bem-sucedido!", "info");
-                    // onAuthStateChanged will handle showing the auth modal and resetting UI
+                    // The onAuthStateChanged listener will handle showing the auth modal and resetting UI
+                    // If switchAccount is true, the user will be presented with the auth modal again.
                 } catch (error) {
                     console.error("Erro no logout:", error.message);
                     displayMessage("Erro no logout: " + error.message, "error");
@@ -2883,16 +2902,19 @@
         arrow.classList.toggle('rotated');
     }
 
+    function toggleAccountSettingsSection() {
+        const content = document.getElementById('accountSettingsContent');
+        const arrow = document.getElementById('accountSettingsArrow');
+        content.classList.toggle('show');
+        arrow.classList.toggle('rotated');
+        if (content.classList.contains('show')) {
+            updateAccountAuthUI(); // Ensure UI is updated when section is opened
+        }
+    }
+
     function toggleDataManagementSection() {
         const content = document.getElementById('dataManagementContent');
         const arrow = document.getElementById('dataManagementArrow');
-        content.classList.toggle('show');
-        arrow.classList.toggle('rotated');
-    }
-
-    function togglePastAppointmentsSection() {
-        const content = document.getElementById('pastAppointmentsContent');
-        const arrow = document.getElementById('pastAppointmentsArrow');
         content.classList.toggle('show');
         arrow.classList.toggle('rotated');
     }
@@ -3282,6 +3304,45 @@
         }
     }
 
+    function updateAccountAuthUI() {
+        const authOptionsContainer = document.getElementById('authOptionsContainer');
+        authOptionsContainer.innerHTML = ''; // Clear existing buttons
+
+        if (isUserAuthenticated) {
+            // User is authenticated (not anonymous)
+            const switchAccountButton = document.createElement('button');
+            switchAccountButton.className = 'btn google-button';
+            switchAccountButton.innerHTML = '<i class="fa-brands fa-google"></i> Mudar de Conta';
+            switchAccountButton.onclick = () => logoutUser(true); // Pass true to indicate switch account
+            authOptionsContainer.appendChild(switchAccountButton);
+
+            const logoutButton = document.getElementById('logoutButton');
+            if (logoutButton) {
+                logoutButton.style.display = 'block'; // Ensure the main menu logout button is visible
+            }
+        } else if (auth.currentUser && auth.currentUser.isAnonymous) {
+            // User is anonymous
+            const signInGoogleButton = document.createElement('button');
+            signInGoogleButton.className = 'btn google-button';
+            signInGoogleButton.innerHTML = '<i class="fa-brands fa-google"></i> Entrar com Google';
+            signInGoogleButton.onclick = () => signInWithGoogle();
+            authOptionsContainer.appendChild(signInGoogleButton);
+
+            const logoutButton = document.getElementById('logoutButton');
+            if (logoutButton) {
+                logoutButton.style.display = 'block'; // Still allow anonymous logout
+            }
+        } else {
+            // No user or not yet determined (e.g., initial load before auth state is known)
+            // The authModal handles this initially, so this container might be empty or show a loading state if needed.
+            // For now, it will be empty if authModal is shown.
+            const logoutButton = document.getElementById('logoutButton');
+            if (logoutButton) {
+                logoutButton.style.display = 'none'; // Hide if not authenticated
+            }
+        }
+    }
+
     window.onload = async () => {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./service-worker.js')
@@ -3369,6 +3430,7 @@
     window.saveTeamNameAndPlayers = saveTeamNameAndPlayers; // Ensure saveTeamNameAndPlayers is global
     window.hideCustomMessageModal = hideCustomMessageModal; // Ensure hideCustomMessageModal is global
     window.hideCustomConfirmationModal = hideCustomConfirmationModal; // Ensure hideCustomConfirmationModal is global
+    window.toggleAccountSettingsSection = toggleAccountSettingsSection; // Make the new toggle function global
   </script>
 </body>
 </html>
