@@ -43,6 +43,10 @@
       --appointment-icon-color: #fff;
       --google-button-bg: #4285F4;
       --google-button-hover-bg: #357ae8;
+      --update-banner-bg: #333;
+      --update-banner-text: #fff;
+      --update-button-bg: #007bff;
+      --update-button-hover-bg: #0056b3;
     }
     body.light-theme {
       --bg-color: #f0f0f0;
@@ -80,6 +84,10 @@
       --appointment-icon-color: #666;
       --google-button-bg: #4285F4;
       --google-button-hover-bg: #357ae8;
+      --update-banner-bg: #ddd;
+      --update-banner-text: #1a1a1a;
+      --update-button-bg: #4682B4;
+      --update-button-hover-bg: #32628C;
     }
     * {
       margin: 0;
@@ -1102,6 +1110,40 @@
       width: 100%;
       margin-top: 10px;
     }
+    .update-banner {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: var(--update-banner-bg);
+      color: var(--update-banner-text);
+      padding: 15px;
+      text-align: center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      z-index: 5000;
+      box-shadow: 0 -2px 10px rgba(0,0,0,.2);
+      transform: translateY(100%);
+      transition: transform .4s ease-out;
+    }
+    .update-banner.show {
+      transform: translateY(0);
+    }
+    .update-banner button {
+      background-color: var(--update-button-bg);
+      color: var(--modal-button-text);
+      border: none;
+      padding: 8px 15px;
+      border-radius: 8px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background-color .2s ease;
+    }
+    .update-banner button:hover {
+      background-color: var(--update-button-hover-bg);
+    }
   </style>
 </head>
 <body>
@@ -1288,6 +1330,16 @@
         </div>
     </div>
     <div class="collapsible-container">
+        <div class="collapsible-header" onclick="toggleAccountSettingsSection()">
+            <h3>Conta</h3>
+            <i class="fa-solid fa-chevron-right collapsible-arrow" id="accountSettingsArrow"></i>
+        </div>
+        <div class="collapsible-content" id="accountSettingsContent">
+            <div class="config-group" id="authOptionsContainer">
+            </div>
+        </div>
+    </div>
+    <div class="collapsible-container">
         <div class="collapsible-header" onclick="toggleDataManagementSection()">
             <h3>Gerenciamento de Dados</h3> <i class="fa-solid fa-chevron-right collapsible-arrow" id="dataManagementArrow"></i>
         </div>
@@ -1375,7 +1427,7 @@
     </div>
   </div>
 
-  <div id="authModal" class="auth-modal show">
+  <div id="authModal" class="auth-modal">
     <div class="modal-content auth-content">
       <h3>Bem-vindo ao Placar Vôlei!</h3>
       <p>Escolha como deseja continuar:</p>
@@ -1386,13 +1438,16 @@
     </div>
   </div>
 
+  <div id="updateBanner" class="update-banner">
+    <span>Nova versão disponível!</span>
+    <button onclick="reloadApp()">Atualizar</button>
+  </div>
+
   <script type="module">
-    // Import the functions you need from the SDKs you need
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, deleteDoc, query, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // Global variables provided by Canvas environment (or fallback for local testing)
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
     const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : JSON.stringify({
         apiKey: "AIzaSyBeu7H2Us7FYNb0yhGx8pkYj_aeTgnndUA",
@@ -1409,8 +1464,8 @@
     let db;
     let auth;
     let userId;
-    let isAuthReady = false; // Flag to ensure Firestore operations only happen after auth
-    let isUserAuthenticated = false; // Flag to track if user is logged in (not anonymous fallback)
+    let isAuthReady = false;
+    let isUserAuthenticated = false;
 
     const DEFAULT_CUSTOM_TEAM_COLORS = ["#007bff", "#dc3545", "#28a745", "#ffc107", "#6f42c1"];
     let players = [];
@@ -1437,124 +1492,95 @@
     let setTimeInSeconds = 0;
     let isTimerRunning = false;
     let appointments = [];
+    let newWorker = null;
 
-    // Initialize Firebase and set up authentication listener
     async function initializeFirebase() {
       try {
         app = initializeApp(firebaseConfig);
         db = getFirestore(app);
         auth = getAuth(app);
 
-        // Listen for auth state changes
         onAuthStateChanged(auth, async (user) => {
           if (user) {
             userId = user.uid;
-            isUserAuthenticated = !user.isAnonymous; // True if not anonymous
+            isUserAuthenticated = !user.isAnonymous;
             document.getElementById('userIdDisplay').textContent = userId;
-            document.getElementById('logoutButton').style.display = 'block'; // Show logout button
+            document.getElementById('logoutButton').style.display = 'block';
             isAuthReady = true;
-            console.log("Firebase Auth Ready. User ID:", userId, "Authenticated:", isUserAuthenticated);
             
-            // Hide auth modal and show main content
             document.getElementById('authModal').classList.remove('show');
             document.querySelectorAll('.section').forEach(s => {
-                if (s.id === 'pontuacao') { // Only show pontuacao initially
+                if (s.id === 'pontuacao') {
                     s.classList.add('active');
                 } else {
                     s.classList.remove('active');
                 }
             });
 
-            // Now that auth is ready, load settings and appointments from Firestore
             loadSettings();
-            setupAppointmentsListener(); // Set up real-time listener for appointments
+            setupAppointmentsListener();
             displaySystemVersion(); 
           } else {
-            // User is signed out or not yet signed in
             userId = null;
             isUserAuthenticated = false;
             document.getElementById('userIdDisplay').textContent = 'Não logado';
-            document.getElementById('logoutButton').style.display = 'none'; // Hide logout button
-            isAuthReady = false; // Mark as not ready for Firestore ops until signed in
+            document.getElementById('logoutButton').style.display = 'none';
+            isAuthReady = false;
 
-            // Hide all sections and show auth modal
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.getElementById('authModal').classList.add('show');
-            console.log("User signed out or not authenticated. Showing auth modal.");
           }
         });
 
-        // No initial sign-in here. onAuthStateChanged will handle displaying the modal.
       } catch (error) {
-        console.error("Error initializing Firebase:", error);
         displayMessage("Erro ao iniciar o Firebase. Tente recarregar a página.", "error");
-        // Fallback to localStorage if Firebase fails to initialize or authenticate
-        isAuthReady = true; // Mark as ready even if failed, to proceed with local storage
-        loadSettingsFromLocalStorage(); // Use localStorage fallback
-        loadAppointmentsFromLocalStorage(); // Use localStorage fallback
+        isAuthReady = true;
+        loadSettingsFromLocalStorage();
+        loadAppointmentsFromLocalStorage();
         renderAppointments();
         displaySystemVersion();
-        // Hide auth modal and show main content if using local storage
         document.getElementById('authModal').classList.remove('show');
         document.getElementById('pontuacao').classList.add('active');
       }
     }
 
-    // Function to sign in with Google
     async function signInWithGoogle() {
         const provider = new GoogleAuthProvider();
         try {
-            // Check if initialAuthToken exists and sign in with it first
             if (initialAuthToken) {
                 await signInWithCustomToken(auth, initialAuthToken);
-                console.log("Signed in with custom token before Google.");
             }
             const result = await signInWithPopup(auth, provider);
-            console.log("Login com Google bem-sucedido:", result.user);
             displayMessage("Login com Google bem-sucedido!", "success");
-            // The onAuthStateChanged listener will handle UI updates
         } catch (error) {
-            console.error("Erro no login com Google:", error.message);
             displayMessage("Erro no login com Google: " + error.message, "error");
         }
     }
 
-    // Function to continue anonymously
     async function continueAnonymously() {
         try {
             await signInAnonymously(auth);
-            console.log("Login anónimo bem-sucedido.");
             displayMessage("Entrou como usuário temporário.", "info");
-            // The onAuthStateChanged listener will handle UI updates
         } catch (error) {
-            console.error("Erro no login anónimo:", error.message);
             displayMessage("Erro no login anónimo: " + error.message, "error");
         }
     }
 
-    // Function to log out
     async function logoutUser() {
         showConfirmationModal("Tem certeza que deseja sair? Seus dados serão salvos, mas você precisará fazer login novamente para acessá-los.", async (confirmed) => {
             if (confirmed) {
                 try {
                     await signOut(auth);
-                    console.log("Usuário deslogado.");
                     displayMessage("Logout bem-sucedido!", "info");
-                    // onAuthStateChanged will handle showing the auth modal and resetting UI
                 } catch (error) {
-                    console.error("Erro no logout:", error.message);
                     displayMessage("Erro no logout: " + error.message, "error");
                 }
             }
         });
     }
 
-    // --- Firebase Data Operations ---
-
-    // Load settings from Firestore
     function loadSettings() {
       if (!isAuthReady) {
-        console.log("Firestore not ready, skipping loadSettings.");
         return;
       }
       const settingsDocRef = doc(db, 'artifacts', appId, 'users', userId, 'app_data', 'settings');
@@ -1571,7 +1597,6 @@
           vibrationEnabled = data.vibrationEnabled !== undefined ? data.vibrationEnabled : true;
           showPlayersOnScoreboard = data.showPlayersOnScoreboard !== undefined ? data.showPlayersOnScoreboard : true;
           
-          // Ensure customTeamNames has 5 entries with default colors if missing
           while (customTeamNames.length < 5) {
               customTeamNames.push({ name: "", color: DEFAULT_CUSTOM_TEAM_COLORS[customTeamNames.length] || '#cccccc' });
           }
@@ -1588,25 +1613,20 @@
           document.getElementById('themeSelect').value = currentTheme;
           setTheme(currentTheme, false);
           updatePlayerDisplayOnScoreboard();
-          updatePlayerList(); // Update player list in UI
-          updateScoreboardTeamsDisplay(); // Update playing teams display
+          updatePlayerList();
+          updateScoreboardTeamsDisplay();
         } else {
-          // Document does not exist, initialize with default values and save to Firestore
-          console.log("No settings document found, initializing with defaults.");
           saveSettings(); 
         }
       }, (error) => {
-        console.error("Error listening to settings:", error);
         displayMessage("Erro ao carregar configurações do Firebase. Carregando dados locais.", "error");
-        loadSettingsFromLocalStorage(); // Fallback to localStorage on error
+        loadSettingsFromLocalStorage();
       });
     }
 
-    // Save settings to Firestore
     async function saveSettings() {
       if (!isAuthReady) {
-        console.log("Firestore not ready, skipping saveSettings.");
-        saveSettingsToLocalStorage(); // Save to local storage as fallback
+        saveSettingsToLocalStorage();
         return;
       }
       try {
@@ -1637,7 +1657,7 @@
           currentTheme: currentTheme,
           vibrationEnabled: vibrationEnabled,
           showPlayersOnScoreboard: showPlayersOnScoreboard,
-          scoreA: scoreA, // Include current game state
+          scoreA: scoreA,
           scoreB: scoreB,
           setsA: setsA,
           setsB: setsB,
@@ -1654,16 +1674,13 @@
         updatePlayerDisplayOnScoreboard();
         applyTeamColorsToScoreboard();
       } catch (error) {
-        console.error("Error saving settings to Firestore:", error);
         displayMessage("Erro ao salvar configurações no Firebase. Salvando dados locais.", "error");
-        saveSettingsToLocalStorage(); // Fallback to localStorage on error
+        saveSettingsToLocalStorage();
       }
     }
 
-    // Set up real-time listener for appointments from Firestore
     function setupAppointmentsListener() {
         if (!isAuthReady) {
-            console.log("Firestore not ready, skipping setupAppointmentsListener.");
             return;
         }
         const appointmentsColRef = collection(db, 'artifacts', appId, 'users', userId, 'app_data', 'appointments');
@@ -1674,13 +1691,11 @@
             });
             renderAppointments();
         }, (error) => {
-            console.error("Error listening to appointments:", error);
             displayMessage("Erro ao carregar agendamentos do Firebase. Carregando dados locais.", "error");
-            loadAppointmentsFromLocalStorage(); // Fallback to localStorage on error
+            loadAppointmentsFromLocalStorage();
         });
     }
 
-    // Add an appointment to Firestore
     async function addAppointment() {
         if (!isAuthReady) {
             displayMessage("O Firebase não está pronto. Tente novamente.", "warning");
@@ -1707,12 +1722,10 @@
             gameTimeInput.value = '';
             gameLocationInput.value = '';
         } catch (error) {
-            console.error("Error adding appointment to Firestore:", error);
             displayMessage("Erro ao adicionar agendamento ao Firebase.", "error");
         }
     }
 
-    // Delete an appointment from Firestore
     async function deleteAppointment(id) {
         if (!isAuthReady) {
             displayMessage("O Firebase não está pronto. Tente novamente.", "warning");
@@ -1724,14 +1737,11 @@
                     await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'app_data', 'appointments', id));
                     displayMessage("Agendamento removido!", "info");
                 } catch (error) {
-                    console.error("Error deleting appointment from Firestore:", error);
                     displayMessage("Erro ao remover agendamento do Firebase.", "error");
                 }
             }
         });
     }
-
-    // --- Local Storage Fallback Functions (for when Firebase is not ready or fails) ---
 
     function loadSettingsFromLocalStorage() {
         players = JSON.parse(localStorage.getItem('players') || '[]');
@@ -1750,7 +1760,6 @@
         vibrationEnabled = JSON.parse(localStorage.getItem('vibrationEnabled') || 'true');
         showPlayersOnScoreboard = JSON.parse(localStorage.getItem('showPlayersOnScoreboard') || 'true');
 
-        // Load game state from local storage as well
         scoreA = parseInt(localStorage.getItem('scoreA') || '0');
         scoreB = parseInt(localStorage.getItem('scoreB') || '0');
         setsA = parseInt(localStorage.getItem('setsA') || '0');
@@ -1800,7 +1809,6 @@
         localStorage.setItem('customTeamNames', JSON.stringify(customTeamNames));
         localStorage.setItem('theme', currentTheme);
 
-        // Save game state to local storage
         localStorage.setItem('scoreA', scoreA.toString());
         localStorage.setItem('scoreB', scoreB.toString());
         localStorage.setItem('setsA', setsA.toString());
@@ -1822,8 +1830,6 @@
     function saveAppointmentsToLocalStorage() {
         localStorage.setItem('appointments', JSON.stringify(appointments));
     }
-
-    // --- Existing Functions (adapted for Firebase/local storage) ---
 
     function toggleMenu() {
       const menu = document.getElementById("gearMenu");
@@ -1880,7 +1886,7 @@
         players.push(name);
         checkedState[name] = true;
         input.value = "";
-        await saveSettings(); // Save updated players and checkedState to Firestore
+        await saveSettings();
         updatePlayerList();
       } else if (players.includes(name)) {
         displayMessage("Este nome já está na lista.", "warning");
@@ -1900,7 +1906,7 @@
         checkbox.style.width = '1rem';
         checkbox.onchange = async () => {
           checkedState[p] = checkbox.checked;
-          await saveSettings(); // Save updated checkedState to Firestore
+          await saveSettings();
           updatePlayerCounter();
           updateToggleSelectAllButtonText();
         };
@@ -1914,7 +1920,7 @@
                 if (confirmed) {
                     players.splice(i, 1);
                     delete checkedState[p];
-                    await saveSettings(); // Save updated players and checkedState to Firestore
+                    await saveSettings();
                     updatePlayerList();
                     generatedTeams = [];
                     renderGeneratedTeams();
@@ -1951,7 +1957,7 @@
       showConfirmationModal(confirmationMessage, async (confirmed) => {
           if (confirmed) {
               players.forEach(p => checkedState[p] = action);
-              await saveSettings(); // Save updated checkedState to Firestore
+              await saveSettings();
               updatePlayerList();
           }
       });
@@ -2005,7 +2011,7 @@
       setTimeInSeconds = 0;
       updateTimerDisplay();
       document.getElementById('gameTimer').classList.remove('show');
-      await saveSettings(); // Save reset game state to Firestore
+      await saveSettings();
     }
 
     async function resetAllData() {
@@ -2013,10 +2019,8 @@
             if (confirmed) {
                 if (isAuthReady) {
                     try {
-                        // Delete settings document
                         await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'app_data', 'settings'));
                         
-                        // Delete all appointments in the subcollection
                         const q = query(collection(db, 'artifacts', appId, 'users', userId, 'app_data', 'appointments'));
                         const querySnapshot = await getDocs(q);
                         const deletePromises = [];
@@ -2024,14 +2028,11 @@
                             deletePromises.push(deleteDoc(doc.ref));
                         });
                         await Promise.all(deletePromises);
-                        console.log("All Firestore data deleted.");
                     } catch (error) {
-                        console.error("Error deleting Firestore data:", error);
                         displayMessage("Erro ao apagar dados do Firebase. Tente novamente.", "error");
                         return;
                     }
                 }
-                // Clear local storage as a fallback/cleanup
                 localStorage.clear();
                 location.reload();
             }
@@ -2077,7 +2078,7 @@
       }
       renderGeneratedTeams();
       displayMessage(`${teamCount} time(s) gerado(s) com sucesso!`, "success");
-      await saveSettings(); // Save generated teams to Firestore
+      await saveSettings();
       return true;
     }
 
@@ -2173,7 +2174,7 @@
         scoreElement.classList.add('decrease-anim');
         triggerVibration();
       }
-      await saveSettings(); // Save updated scores to Firestore
+      await saveSettings();
       checkWinCondition();
     }
 
@@ -2192,7 +2193,7 @@
         const winningTeamName = winner === 'A' ? currentPlayingTeamA.name : currentPlayingTeamB.name;
         showVictoryAnimation(winner, winningTeamName);
         updateSwapTeamsButtonVisibility(); 
-        await saveSettings(); // Save gameEnded and lastWinningTeam to Firestore
+        await saveSettings();
         setTimeout(async () => {
           let currentSetsA = setsA;
           let currentSetsB = setsB;
@@ -2298,7 +2299,7 @@
       hideIncreaseScoreModal();
       gameEnded = false;
       startAllTimers();
-      await saveSettings(); // Save updated winningScore to Firestore
+      await saveSettings();
     }
 
     function showStartGameModal() {
@@ -2350,7 +2351,7 @@
       } else {
           await selectAndInitializeTeams();
       }
-      await saveSettings(); // Save updated winningScore and setsToWin to Firestore
+      await saveSettings();
     }
 
     async function selectAndInitializeTeams() {
@@ -2388,7 +2389,7 @@
       gameTimeInSeconds = 0;
       setTimeInSeconds = 0;
       startAllTimers();
-      await saveSettings(); // Save initial game state to Firestore
+      await saveSettings();
     }
 
     async function startNewGame() {
@@ -2456,7 +2457,7 @@
       gameTimeInSeconds = 0;
       setTimeInSeconds = 0;
       startAllTimers();
-      await saveSettings(); // Save new game state to Firestore
+      await saveSettings();
     }
 
     async function startNewSet() {
@@ -2481,7 +2482,7 @@
       updateSwapTeamsButtonVisibility(); 
       setTimeInSeconds = 0;
       startAllTimers();
-      await saveSettings(); // Save new set state to Firestore
+      await saveSettings();
     }
 
     function showSuperVictoryAnimation(winningTeamName) {
@@ -2548,7 +2549,7 @@
       }
       currentTheme = themeName;
       if (save) {
-        await saveSettings(); // Save updated theme to Firestore
+        await saveSettings();
         displayMessage('Tema alterado para ' + (themeName === 'dark' ? 'Escuro' : 'Claro') + '!', "info");
       }
     }
@@ -2569,7 +2570,7 @@
             document.getElementById("customMessageModal").classList.contains("show") || 
             document.getElementById("customConfirmationModal").classList.contains("show") || 
             document.getElementById("manageTeamModal").classList.contains("show") ||
-            document.getElementById("authModal").classList.contains("show") || // Added authModal check
+            document.getElementById("authModal").classList.contains("show") ||
             e.target.closest('#startGameButton') || e.target.closest('#swapTeamsButton')) {
             touchStartX = null;
             return;
@@ -2621,7 +2622,7 @@
             document.getElementById("customMessageModal").classList.contains("show") || 
             document.getElementById("customConfirmationModal").classList.contains("show") || 
             document.getElementById("manageTeamModal").classList.contains("show") ||
-            document.getElementById("authModal").classList.contains("show") || // Added authModal check
+            document.getElementById("authModal").classList.contains("show") ||
             e.target.closest('#startGameButton') || e.target.closest('#swapTeamsButton') ||
             document.getElementById("gearMenu").classList.contains("show")
             ) {
@@ -2640,7 +2641,7 @@
         }
         
         if (nextIndex !== currentIndex) {
-            navigateTo(sections[nextIndex]); // Changed to navigateTo to ensure menu closes
+            navigateTo(sections[nextIndex]);
         }
         touchStartX = null;
       });
@@ -2677,7 +2678,7 @@
         sectionB.classList.remove('fade-out');
         sectionA.classList.add('fade-in');
         sectionB.classList.add('fade-in');
-        await saveSettings(); // Save swapped teams and scores to Firestore
+        await saveSettings();
         setTimeout(() => {
           sectionA.classList.remove('fade-in');
           sectionB.classList.remove('fade-in');
@@ -2775,7 +2776,6 @@
         const currentTeam = (teamId === 'A' ? currentPlayingTeamA : currentPlayingTeamB);
         selectElement.innerHTML = '<option value="">Selecione um time</option>';
         
-        // Fetch generated teams from Firestore to ensure latest data
         if (isAuthReady) {
             try {
                 const settingsDoc = await getDoc(doc(db, 'artifacts', appId, 'users', userId, 'app_data', 'settings'));
@@ -2783,7 +2783,6 @@
                     generatedTeams = settingsDoc.data().generatedTeams || [];
                 }
             } catch (error) {
-                console.error("Error fetching generated teams for manage modal:", error);
                 displayMessage("Erro ao carregar times gerados.", "error");
             }
         }
@@ -2866,7 +2865,7 @@
 
         updateScoreboardTeamsDisplay();
         hideManageTeamModal();
-        await saveSettings(); // Save updated current playing teams to Firestore
+        await saveSettings();
     }
 
     function toggleCustomTeamNamesSection() {
@@ -2879,6 +2878,13 @@
     function toggleGeneralSettingsSection() {
         const content = document.getElementById('generalSettingsContent');
         const arrow = document.getElementById('generalSettingsArrow');
+        content.classList.toggle('show');
+        arrow.classList.toggle('rotated');
+    }
+
+    function toggleAccountSettingsSection() {
+        const content = document.getElementById('accountSettingsContent');
+        const arrow = document.getElementById('accountSettingsArrow');
         content.classList.toggle('show');
         arrow.classList.toggle('rotated');
     }
@@ -2922,7 +2928,7 @@
                 currentTheme: currentTheme,
                 vibrationEnabled: vibrationEnabled,
                 showPlayersOnScoreboard: showPlayersOnScoreboard,
-                appointments: appointments // Current local appointments
+                appointments: appointments
             };
             const dataStr = JSON.stringify(appStateToExport, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
@@ -2971,7 +2977,6 @@
             URL.revokeObjectURL(url);
             displayMessage("Configurações do Firebase exportadas com sucesso!", "success");
         } catch (error) {
-            console.error("Erro ao exportar configurações do Firebase:", error);
             displayMessage("Erro ao exportar configurações do Firebase. Tente novamente.", "error");
         }
     }
@@ -2984,7 +2989,6 @@
             try {
                 const importedAppState = JSON.parse(e.target.result);
                 
-                // Update local state first
                 players = importedAppState.players || [];
                 checkedState = importedAppState.checkedState || {};
                 winningScore = importedAppState.winningScore !== undefined ? importedAppState.winningScore : 15;
@@ -2996,7 +3000,6 @@
                 showPlayersOnScoreboard = importedAppState.showPlayersOnScoreboard !== undefined ? importedAppState.showPlayersOnScoreboard : true;
                 appointments = importedAppState.appointments || [];
 
-                // Reset game state on import
                 scoreA = 0;
                 scoreB = 0;
                 setsA = 0;
@@ -3009,9 +3012,8 @@
                 gameTimeInSeconds = 0;
                 setTimeInSeconds = 0;
                 isTimerRunning = false;
-                stopAllTimers(); // Ensure timers are stopped
+                stopAllTimers();
 
-                // Update UI
                 document.getElementById('winningScore').value = winningScore;
                 document.getElementById('setsToWinConfig').value = setsToWin;
                 document.getElementById('playersPerTeam').value = playersPerTeam; 
@@ -3034,7 +3036,6 @@
                 document.getElementById('scoreboardOverlay').classList.remove('hidden');
                 updateTimerDisplay();
 
-                // Save to Firestore (if ready)
                 if (isAuthReady) {
                     try {
                         const settingsData = {
@@ -3062,7 +3063,6 @@
                         };
                         await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'app_data', 'settings'), settingsData);
 
-                        // Clear existing appointments in Firestore and add new ones
                         const q = query(collection(db, 'artifacts', appId, 'users', userId, 'app_data', 'appointments'));
                         const querySnapshot = await getDocs(q);
                         const deletePromises = [];
@@ -3075,17 +3075,14 @@
                         await Promise.all(addPromises);
                         displayMessage("Configurações importadas para o Firebase com sucesso!", "success");
                     } catch (firebaseError) {
-                        console.error("Erro ao importar dados para o Firebase:", firebaseError);
                         displayMessage("Erro ao salvar dados importados no Firebase. Os dados foram carregados localmente.", "error");
                     }
                 } else {
-                    // If Firebase not ready, save to local storage (already done above)
                     saveSettingsToLocalStorage();
                     saveAppointmentsToLocalStorage();
                     displayMessage("Configurações importadas localmente com sucesso!", "success");
                 }
             } catch (error) {
-                console.error("Erro ao importar configurações:", error);
                 displayMessage("Erro ao importar arquivo. Verifique se é um arquivo de configurações válido.", "error");
             } finally {
                 event.target.value = '';
@@ -3138,7 +3135,7 @@
           timerIcon.classList.remove('fa-pause');
           timerIcon.classList.add('fa-play');
       }
-      await saveSettings(); // Save timer state to Firestore
+      await saveSettings();
     }
 
     function startAllTimers() {
@@ -3202,7 +3199,6 @@
         upcomingAppointmentsList.innerHTML = '';
         pastAppointmentsList.innerHTML = '';
 
-        // Sort appointments in memory as orderBy() is not used
         appointments.sort((a, b) => {
             const dateTimeA = new Date(`${a.date}T${a.time}`);
             const dateTimeB = new Date(`${b.date}T${b.time}`);
@@ -3213,9 +3209,9 @@
         let hasUpcoming = false;
         let hasPast = false;
 
-        appointments.forEach((appointment) => { // Removed index as it's not needed for Firestore ID
+        appointments.forEach((appointment) => {
             const li = document.createElement('li');
-            li.dataset.id = appointment.id; // Use Firestore document ID
+            li.dataset.id = appointment.id;
 
             const appointmentDateTime = new Date(`${appointment.date}T${appointment.time}`);
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -3282,21 +3278,34 @@
         }
     }
 
+    function reloadApp() {
+        if (newWorker) {
+            newWorker.postMessage({ action: 'skipWaiting' });
+        }
+        window.location.reload();
+    }
+
     window.onload = async () => {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./service-worker.js')
-          .then(() => {})
+          .then(reg => {
+            reg.addEventListener('updatefound', () => {
+              newWorker = reg.installing;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'activated') {
+                  document.getElementById('updateBanner').classList.add('show');
+                }
+              });
+            });
+          })
           .catch(error => {});
       }
       
-      // Initially hide all main sections
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-      // Show the authentication modal by default
       document.getElementById('authModal').classList.add('show');
 
-      await initializeFirebase(); // Initialize Firebase and let onAuthStateChanged handle UI visibility
+      await initializeFirebase();
 
-      // Initial UI updates (will be overwritten by Firestore data once loaded or after auth)
       document.getElementById("scoreA").textContent = scoreA;
       document.getElementById("scoreB").textContent = scoreB;
       updateSetsDisplay();
@@ -3332,43 +3341,43 @@
       updateTimerDisplay();
 
       window.addEventListener('beforeunload', async () => {
-          // Save current state to Firestore before unload
           await saveSettings();
       });
     }
 
-    // Make functions globally accessible for inline onclick attributes
     window.signInWithGoogle = signInWithGoogle;
     window.continueAnonymously = continueAnonymously;
-    window.logoutUser = logoutUser; // Also make logoutUser global if it's called from HTML
-    window.toggleMenu = toggleMenu; // Ensure menu toggle is global
-    window.navigateTo = navigateTo; // Ensure navigation is global
-    window.confirmReset = confirmReset; // Ensure reset confirmation is global
-    window.addPlayer = addPlayer; // Ensure addPlayer is global
-    window.toggleSelectAllPlayers = toggleSelectAllPlayers; // Ensure toggleSelectAllPlayers is global
-    window.generateCustomTeams = generateCustomTeams; // Ensure generateCustomTeams is global
-    window.showStartGameModal = showStartGameModal; // Ensure showStartGameModal is global
-    window.swapTeams = swapTeams; // Ensure swapTeams is global
-    window.toggleTimer = toggleTimer; // Ensure toggleTimer is global
-    window.addAppointment = addAppointment; // Ensure addAppointment is global
-    window.togglePastAppointmentsSection = togglePastAppointmentsSection; // Ensure togglePastAppointmentsSection is global
-    window.toggleGeneralSettingsSection = toggleGeneralSettingsSection; // Ensure toggleGeneralSettingsSection is global
-    window.toggleCustomTeamNamesSection = toggleCustomTeamNamesSection; // Ensure toggleCustomTeamNamesSection is global
-    window.toggleDataManagementSection = toggleDataManagementSection; // Ensure toggleDataManagementSection is global
-    window.exportSettings = exportSettings; // Ensure exportSettings is global
-    window.importSettings = importSettings; // Ensure importSettings is global
-    window.confirmResetAllData = confirmResetAllData; // Ensure confirmResetAllData is global
-    window.confirmIncreaseWinningScore = confirmIncreaseWinningScore; // Ensure confirmIncreaseWinningScore is global
-    window.hideIncreaseScoreModal = hideIncreaseScoreModal; // Ensure hideIncreaseScoreModal is global
-    window.confirmStartGame = confirmStartGame; // Ensure confirmStartGame is global
-    window.hideStartGameModal = hideStartGameModal; // Ensure hideStartGameModal is global
-    window.startNewGame = startNewGame; // Ensure startNewGame is global
-    window.startNewSet = startNewSet; // Ensure startNewSet is global
-    window.increaseWinningScoreModal = increaseWinningScoreModal; // Ensure increaseWinningScoreModal is global
-    window.showManageTeamModal = showManageTeamModal; // Ensure showManageTeamModal is global
-    window.saveTeamNameAndPlayers = saveTeamNameAndPlayers; // Ensure saveTeamNameAndPlayers is global
-    window.hideCustomMessageModal = hideCustomMessageModal; // Ensure hideCustomMessageModal is global
-    window.hideCustomConfirmationModal = hideCustomConfirmationModal; // Ensure hideCustomConfirmationModal is global
+    window.logoutUser = logoutUser;
+    window.toggleMenu = toggleMenu;
+    window.navigateTo = navigateTo;
+    window.confirmReset = confirmReset;
+    window.addPlayer = addPlayer;
+    window.toggleSelectAllPlayers = toggleSelectAllPlayers;
+    window.generateCustomTeams = generateCustomTeams;
+    window.showStartGameModal = showStartGameModal;
+    window.swapTeams = swapTeams;
+    window.toggleTimer = toggleTimer;
+    window.addAppointment = addAppointment;
+    window.togglePastAppointmentsSection = togglePastAppointmentsSection;
+    window.toggleGeneralSettingsSection = toggleGeneralSettingsSection;
+    window.toggleCustomTeamNamesSection = toggleCustomTeamNamesSection;
+    window.toggleDataManagementSection = toggleDataManagementSection;
+    window.exportSettings = exportSettings;
+    window.importSettings = importSettings;
+    window.confirmResetAllData = confirmResetAllData;
+    window.confirmIncreaseWinningScore = confirmIncreaseWinningScore;
+    window.hideIncreaseScoreModal = hideIncreaseScoreModal;
+    window.confirmStartGame = confirmStartGame;
+    window.hideStartGameModal = hideStartGameModal;
+    window.startNewGame = startNewGame;
+    window.startNewSet = startNewSet;
+    window.increaseWinningScoreModal = increaseWinningScoreModal;
+    window.showManageTeamModal = showManageTeamModal;
+    window.saveTeamNameAndPlayers = saveTeamNameAndPlayers;
+    window.hideCustomMessageModal = hideCustomMessageModal;
+    window.hideCustomConfirmationModal = hideCustomConfirmationModal;
+    window.toggleAccountSettingsSection = toggleAccountSettingsSection;
+    window.reloadApp = reloadApp;
   </script>
 </body>
 </html>
