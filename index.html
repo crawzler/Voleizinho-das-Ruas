@@ -884,7 +884,7 @@
     }
     @media (min-width: 900px) {
       .team-card {
-        width: calc(33.33% - 20px);
+        width: calc(33.33% - 10px);
       }
       }
     .swap-teams-button {
@@ -1451,7 +1451,7 @@
     const firebaseConfig = {
       apiKey: "AIzaSyBeu7H2Us7FYNb0yhGx8pkYj_aeTgnndUA",
       authDomain: "voleizinho-das-ruas.firebaseapp.com",
-      databaseURL: "https://voleizinho-das-ruas-default-rtdb.firebaseio.com",
+      databaseURL: "https://voleizinho-das-das-ruas-default-rtdb.firebaseio.com",
       projectId: "voleizinho-das-ruas",
       storageBucket: "voleizinho-das-ruas.firebasestorage.app",
       messagingSenderId: "394754605937",
@@ -1472,92 +1472,42 @@
     // Autenticação para acessar o Firestore
     const authenticateUser = async () => {
         console.log("Attempting authentication...");
-        loginOverlay.style.display = 'flex'; // Ensure login overlay is visible during auth process
+        loginOverlay.style.display = 'flex'; // Garante que a tela de carregamento esteja visível
         loginMessage.textContent = "Verificando autenticação...";
 
-        // 1. Check if user is already authenticated (e.g., from a previous session)
-        if (auth.currentUser) {
-            userId = auth.currentUser.uid;
-            document.getElementById('userIdDisplay').textContent = userId + ' (Autenticado)';
-            console.log("User already authenticated:", auth.currentUser.displayName || auth.currentUser.email, "UID:", userId);
-            loginOverlay.style.display = 'none'; // Hide login overlay
-            appContent.style.display = 'block'; // Show app content
+        // Use o token de autenticação fornecido pelo ambiente Canvas
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        try {
+            if (initialAuthToken) {
+                // Tenta fazer login com o token personalizado
+                const userCredential = await auth.signInWithCustomToken(initialAuthToken);
+                userId = userCredential.user.uid;
+                document.getElementById('userIdDisplay').textContent = userId + ' (Autenticado)';
+                console.log("Login com token personalizado bem-sucedido. UID:", userId);
+            } else {
+                // Se não houver token, tenta o login anônimo (fallback)
+                const userCredential = await auth.signInAnonymously();
+                userId = userCredential.user.uid;
+                document.getElementById('userIdDisplay').textContent = userId + ' (Anônimo)';
+                console.log("Login anônimo bem-sucedido. UID:", userId);
+            }
+
+            // Após o login, esconde a tela de carregamento e mostra o conteúdo do app
+            loginOverlay.style.display = 'none';
+            appContent.style.display = 'block';
             listenForAppointments();
             listenForPlayers();
-            return;
-        }
 
-        // 2. Handle redirect result (if this is a redirect callback)
-        try {
-            const result = await auth.getRedirectResult();
-            if (result.user) {
-                userId = result.user.uid;
-                document.getElementById('userIdDisplay').textContent = userId + ' (Autenticado)';
-                console.log("Redirect result: User successfully signed in.", result.user.displayName || result.user.email, "UID:", userId);
-                loginOverlay.style.display = 'none'; // Hide login overlay
-                appContent.style.display = 'block'; // Show app content
-                listenForAppointments();
-                listenForPlayers();
-                return; // Exit, as user is now authenticated
-            } else {
-                console.log("Redirect result: No user from redirect, or not a redirect flow.");
-            }
         } catch (error) {
-            console.error("Erro ao obter resultado do redirecionamento:", error);
-            if (error.code === 'auth/popup-closed-by-user') {
-                displayMessage("Login com Google cancelado. A janela pop-up foi fechada.", "warning");
-            } else if (error.code === 'auth/unauthorized-domain') {
-                displayMessage("Domínio não autorizado para operações OAuth. Verifique o console do Firebase.", "error");
-            } else {
-                displayMessage(`Erro no login com Google: ${error.message}`, "error");
-            }
-            loginMessage.textContent = `Erro no login: ${error.message}. Recarregue a página.`;
-            // Do not proceed with signInWithRedirect if there was an error with redirect result
-            return;
+            console.error("Erro na autenticação:", error);
+            loginMessage.textContent = `Erro na autenticação: ${error.message}. Recarregue a página.`;
+            displayMessage(`Erro na autenticação: ${error.message}`, "error");
+            // Em caso de erro, garante que o app não seja exibido e as listas sejam limpas
+            appContent.style.display = 'none';
+            renderAppointments([]);
+            renderPlayerList([]);
         }
-
-        // 3. If no user and no redirect result, initiate sign-in
-        if (!auth.currentUser) { // Double check after redirect result
-            userId = null;
-            document.getElementById('userIdDisplay').textContent = 'Não autenticado';
-            console.log("Nenhum usuário logado e nenhum resultado de redirecionamento. Iniciando login com Google...");
-            loginMessage.textContent = "Redirecionando para o login com Google...";
-
-            const provider = new firebase.auth.GoogleAuthProvider();
-            try {
-                await auth.signInWithRedirect(provider);
-            } catch (error) {
-                console.error("Erro ao iniciar redirecionamento para login com Google:", error);
-                loginMessage.textContent = `Erro: ${error.message}. Por favor, recarregue a página.`;
-                displayMessage("Erro ao iniciar login com Google. Por favor, recarregue a página.", "error");
-            }
-        }
-
-        // 4. Set up onAuthStateChanged listener for future state changes (e.g., logout)
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                if (userId !== user.uid) { // Only update if it's a new user or state change
-                    userId = user.uid;
-                    document.getElementById('userIdDisplay').textContent = userId + ' (Autenticado)';
-                    console.log("onAuthStateChanged: User authenticated (subsequent check).", user.displayName || user.email, "UID:", userId);
-                    loginOverlay.style.display = 'none';
-                    appContent.style.display = 'block';
-                    listenForAppointments();
-                    listenForPlayers();
-                }
-            } else {
-                if (userId !== null) { // Only update if user was previously authenticated
-                    userId = null;
-                    document.getElementById('userIdDisplay').textContent = 'Não autenticado';
-                    console.log("onAuthStateChanged: User logged out.");
-                    loginOverlay.style.display = 'flex';
-                    appContent.style.display = 'none';
-                    loginMessage.textContent = "Sessão encerrada. Por favor, faça login novamente.";
-                    renderAppointments([]); // Clear lists on logout
-                    renderPlayerList([]);
-                }
-            }
-        });
     };
 
     function toggleMenu() {
