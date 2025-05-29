@@ -1363,10 +1363,6 @@
         <label style="font-size: 1.1em; margin-bottom: 5px; color: var(--text-color);">Versão do Sistema:</label>
         <span id="systemVersionDisplay" style="font-weight: bold; font-size: 1.2em; color: var(--text-color);">Carregando...</span>
     </div>
-    <div class="config-group" style="margin-top: 20px; text-align: center; padding: 15px; border-radius: 10px; background-color: var(--setting-section-bg); border: 1px solid var(--setting-item-border);">
-        <label style="font-size: 1.1em; margin-bottom: 5px; color: var(--text-color);">ID do Usuário:</label>
-        <span id="userIdDisplay" style="font-weight: bold; font-size: 1.2em; color: var(--text-color);">Carregando...</span>
-    </div>
   </div>
   <div id="gameOverModal" class="game-over-modal">
     <div class="modal-content">
@@ -1458,7 +1454,7 @@
         messagingSenderId: "394754605937",
         appId: "1:394754605937:web:e97314f6c48373c8dc2cd0"
     }));
-    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? initialAuthToken : null;
 
     let app;
     let db;
@@ -1504,7 +1500,6 @@
           if (user) {
             userId = user.uid;
             isUserAuthenticated = !user.isAnonymous;
-            document.getElementById('userIdDisplay').textContent = userId;
             document.getElementById('logoutButton').style.display = 'block';
             isAuthReady = true;
             
@@ -1520,15 +1515,16 @@
             loadSettings();
             setupAppointmentsListener();
             displaySystemVersion(); 
+            updateAccountAuthUI();
           } else {
             userId = null;
             isUserAuthenticated = false;
-            document.getElementById('userIdDisplay').textContent = 'Não logado';
             document.getElementById('logoutButton').style.display = 'none';
             isAuthReady = false;
 
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.getElementById('authModal').classList.add('show');
+            updateAccountAuthUI();
           }
         });
 
@@ -1541,6 +1537,7 @@
         displaySystemVersion();
         document.getElementById('authModal').classList.remove('show');
         document.getElementById('pontuacao').classList.add('active');
+        updateAccountAuthUI();
       }
     }
 
@@ -1567,7 +1564,7 @@
     }
 
     async function logoutUser() {
-        showConfirmationModal("Tem certeza que deseja sair? Seus dados serão salvos, mas você precisará fazer login novamente para acessá-los.", async (confirmed) => {
+        showConfirmationModal("Tem certeza que deseja sair? Você poderá fazer login novamente para continuar contribuindo com os dados compartilhados.", async (confirmed) => {
             if (confirmed) {
                 try {
                     await signOut(auth);
@@ -1583,7 +1580,7 @@
       if (!isAuthReady) {
         return;
       }
-      const settingsDocRef = doc(db, 'artifacts', appId, 'users', userId, 'app_data', 'settings');
+      const settingsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_data', 'settings');
       onSnapshot(settingsDocRef, (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
@@ -1670,7 +1667,7 @@
           setTimeInSeconds: setTimeInSeconds,
           isTimerRunning: isTimerRunning,
         };
-        await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'app_data', 'settings'), settingsData, { merge: true });
+        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'app_data', 'settings'), settingsData, { merge: true });
         updatePlayerDisplayOnScoreboard();
         applyTeamColorsToScoreboard();
       } catch (error) {
@@ -1683,7 +1680,7 @@
         if (!isAuthReady) {
             return;
         }
-        const appointmentsColRef = collection(db, 'artifacts', appId, 'users', userId, 'app_data', 'appointments');
+        const appointmentsColRef = collection(db, 'artifacts', appId, 'public', 'data', 'app_data', 'appointments');
         onSnapshot(appointmentsColRef, (querySnapshot) => {
             appointments = [];
             querySnapshot.forEach((doc) => {
@@ -1698,7 +1695,7 @@
 
     async function addAppointment() {
         if (!isAuthReady) {
-            displayMessage("O Firebase não está pronto. Tente novamente.", "warning");
+            displayMessage("Você precisa estar logado para adicionar agendamentos.", "warning");
             return;
         }
         const gameDateInput = document.getElementById('gameDate');
@@ -1716,7 +1713,7 @@
 
         try {
             const newAppointment = { date, time, location };
-            await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'app_data', 'appointments'), newAppointment);
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'app_data', 'appointments'), newAppointment);
             displayMessage("Agendamento adicionado com sucesso!", "success");
             gameDateInput.value = '';
             gameTimeInput.value = '';
@@ -1728,13 +1725,13 @@
 
     async function deleteAppointment(id) {
         if (!isAuthReady) {
-            displayMessage("O Firebase não está pronto. Tente novamente.", "warning");
+            displayMessage("Você precisa estar logado para remover agendamentos.", "warning");
             return;
         }
         showConfirmationModal("Tem certeza que deseja remover este agendamento?", async (confirmed) => {
             if (confirmed) {
                 try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'app_data', 'appointments', id));
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'app_data', 'appointments', id));
                     displayMessage("Agendamento removido!", "info");
                 } catch (error) {
                     displayMessage("Erro ao remover agendamento do Firebase.", "error");
@@ -1880,6 +1877,10 @@
     }
 
     async function addPlayer() {
+      if (!isAuthReady) {
+            displayMessage("Você precisa estar logado para adicionar jogadores.", "warning");
+            return;
+        }
       const input = document.getElementById("playerName");
       const name = input.value.trim();
       if (name && !players.includes(name)) {
@@ -1905,6 +1906,11 @@
         checkbox.style.marginRight = '.5rem';
         checkbox.style.width = '1rem';
         checkbox.onchange = async () => {
+          if (!isAuthReady) {
+            displayMessage("Você precisa estar logado para alterar a seleção de jogadores.", "warning");
+            checkbox.checked = !checkbox.checked; // Reverte a alteração visual
+            return;
+          }
           checkedState[p] = checkbox.checked;
           await saveSettings();
           updatePlayerCounter();
@@ -1916,6 +1922,10 @@
         btn.textContent = "Remover";
         btn.className = "btn";
         btn.onclick = () => {
+            if (!isAuthReady) {
+                displayMessage("Você precisa estar logado para remover jogadores.", "warning");
+                return;
+            }
             showConfirmationModal("Tem certeza que deseja remover este jogador?", async (confirmed) => {
                 if (confirmed) {
                     players.splice(i, 1);
@@ -1944,6 +1954,10 @@
     }
 
     function toggleSelectAllPlayers() {
+      if (!isAuthReady) {
+            displayMessage("Você precisa estar logado para alterar a seleção de jogadores.", "warning");
+            return;
+        }
       const allSelected = players.every(p => checkedState[p] !== false);
       let confirmationMessage;
       let action;
@@ -2019,9 +2033,9 @@
             if (confirmed) {
                 if (isAuthReady) {
                     try {
-                        await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'app_data', 'settings'));
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'app_data', 'settings'));
                         
-                        const q = query(collection(db, 'artifacts', appId, 'users', userId, 'app_data', 'appointments'));
+                        const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'app_data', 'appointments'));
                         const querySnapshot = await getDocs(q);
                         const deletePromises = [];
                         querySnapshot.forEach((doc) => {
@@ -2051,6 +2065,10 @@
     }
 
     async function generateCustomTeams() {
+      if (!isAuthReady) {
+            displayMessage("Você precisa estar logado para gerar times.", "warning");
+            return false;
+        }
       const perTeam = parseInt(document.getElementById("playersPerTeam").value);
 
       if (isNaN(perTeam) || perTeam <= 0) {
@@ -2284,6 +2302,10 @@
     }
 
     async function confirmIncreaseWinningScore() {
+      if (!isAuthReady) {
+            displayMessage("Você precisa estar logado para alterar as configurações.", "warning");
+            return;
+        }
       const newScore = parseInt(document.getElementById('newWinningScoreInput').value);
       if (isNaN(newScore) || newScore <= 0) {
         displayMessage("Por favor, insira um número de pontos válido.", "error");
@@ -2318,6 +2340,10 @@
     }
 
     async function confirmStartGame() {
+      if (!isAuthReady) {
+            displayMessage("Você precisa estar logado para iniciar uma partida.", "warning");
+            return;
+        }
       const newWinningScore = parseInt(document.getElementById('initialWinningScore').value);
       const newSetsToWin = parseInt(document.getElementById('initialNumberOfSets').value);
       if (isNaN(newWinningScore) || newWinningScore <= 0) {
@@ -2393,6 +2419,10 @@
     }
 
     async function startNewGame() {
+      if (!isAuthReady) {
+            displayMessage("Você precisa estar logado para iniciar um novo jogo.", "warning");
+            return;
+        }
       hideGameOverModal();
 
       scoreA = 0;
@@ -2461,6 +2491,10 @@
     }
 
     async function startNewSet() {
+      if (!isAuthReady) {
+            displayMessage("Você precisa estar logado para iniciar um novo set.", "warning");
+            return;
+        }
       hideGameOverModal();
 
       let winnerId = lastWinningTeam;
@@ -2648,6 +2682,10 @@
     }
 
     async function swapTeams() {
+      if (!isAuthReady) {
+            displayMessage("Você precisa estar logado para inverter os times.", "warning");
+            return;
+        }
       if (!gameStarted) {
         displayMessage("Inicie uma partida para inverter os times.", "warning");
         return;
@@ -2769,6 +2807,10 @@
     }
 
     async function showManageTeamModal(teamId) {
+        if (!isAuthReady) {
+            displayMessage("Você precisa estar logado para gerenciar times.", "warning");
+            return;
+        }
         activeManageTeamId = teamId;
         const modal = document.getElementById('manageTeamModal');
         const selectElement = document.getElementById('selectTeamForManagement');
@@ -2778,7 +2820,7 @@
         
         if (isAuthReady) {
             try {
-                const settingsDoc = await getDoc(doc(db, 'artifacts', appId, 'users', userId, 'app_data', 'settings'));
+                const settingsDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'app_data', 'settings'));
                 if (settingsDoc.exists()) {
                     generatedTeams = settingsDoc.data().generatedTeams || [];
                 }
@@ -2832,6 +2874,10 @@
     }
 
     async function saveTeamNameAndPlayers() {
+        if (!isAuthReady) {
+            displayMessage("Você precisa estar logado para salvar os times.", "warning");
+            return;
+        }
         const selectedDropdownValue = document.getElementById('selectTeamForManagement').value;
         let targetTeam = (activeManageTeamId === 'A' ? currentPlayingTeamA : currentPlayingTeamB);
         let otherTeam = (activeManageTeamId === 'A' ? currentPlayingTeamB : currentPlayingTeamA);
@@ -2945,10 +2991,10 @@
         }
 
         try {
-            const settingsDoc = await getDoc(doc(db, 'artifacts', appId, 'users', userId, 'app_data', 'settings'));
+            const settingsDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'app_data', 'settings'));
             const settingsData = settingsDoc.exists() ? settingsDoc.data() : {};
 
-            const appointmentsQuery = query(collection(db, 'artifacts', appId, 'users', userId, 'app_data', 'appointments'));
+            const appointmentsQuery = query(collection(db, 'artifacts', appId, 'public', 'data', 'app_data', 'appointments'));
             const appointmentsSnapshot = await getDocs(appointmentsQuery);
             const firebaseAppointments = appointmentsSnapshot.docs.map(doc => doc.data());
 
@@ -3061,9 +3107,9 @@
                             setTimeInSeconds: setTimeInSeconds,
                             isTimerRunning: isTimerRunning,
                         };
-                        await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'app_data', 'settings'), settingsData);
+                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'app_data', 'settings'), settingsData);
 
-                        const q = query(collection(db, 'artifacts', appId, 'users', userId, 'app_data', 'appointments'));
+                        const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'app_data', 'appointments'));
                         const querySnapshot = await getDocs(q);
                         const deletePromises = [];
                         querySnapshot.forEach((doc) => {
@@ -3071,7 +3117,7 @@
                         });
                         await Promise.all(deletePromises);
 
-                        const addPromises = importedAppState.appointments.map(app => addDoc(collection(db, 'artifacts', appId, 'users', userId, 'app_data', 'appointments'), app));
+                        const addPromises = importedAppState.appointments.map(app => addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'app_data', 'appointments'), app));
                         await Promise.all(addPromises);
                         displayMessage("Configurações importadas para o Firebase com sucesso!", "success");
                     } catch (firebaseError) {
@@ -3275,6 +3321,32 @@
             }
         } catch (error) {
             document.getElementById('systemVersionDisplay').textContent = 'Erro ao carregar';
+        }
+    }
+
+    function updateAccountAuthUI() {
+        const authOptionsContainer = document.getElementById('authOptionsContainer');
+        authOptionsContainer.innerHTML = '';
+
+        if (auth.currentUser) {
+            if (auth.currentUser.isAnonymous) {
+                authOptionsContainer.innerHTML = `
+                    <p style="font-size: 0.9em; margin-bottom: 10px; color: var(--text-color);">Você está logado como um usuário temporário. Faça login com o Google para contribuir com os dados compartilhados.</p>
+                    <button class="btn google-button" onclick="signInWithGoogle()"><i class="fa-brands fa-google"></i> Entrar com Google</button>
+                `;
+            } else {
+                authOptionsContainer.innerHTML = `
+                    <p style="font-size: 0.9em; margin-bottom: 10px; color: var(--text-color);">Você está logado como: <strong>${auth.currentUser.displayName || auth.currentUser.email || 'Usuário Google'}</strong>. Você pode contribuir com os dados compartilhados.</p>
+                    <button class="btn google-button" onclick="logoutUser()"><i class="fa-brands fa-google"></i> Sair da Conta Google</button>
+                `;
+            }
+            document.getElementById('logoutButton').style.display = 'block';
+        } else {
+            authOptionsContainer.innerHTML = `
+                <p style="font-size: 0.9em; margin-bottom: 10px; color: var(--text-color);">Faça login para contribuir com os dados compartilhados do aplicativo.</p>
+                <button class="btn google-button" onclick="signInWithGoogle()"><i class="fa-brands fa-google"></i> Entrar com Google</button>
+            `;
+            document.getElementById('logoutButton').style.display = 'none';
         }
     }
 
