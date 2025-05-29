@@ -1,4 +1,4 @@
-const CACHE_NAME = 'volei-das-ruas-v0.4'; // **IMPORTANTE: Mude este nome a cada nova versão do seu app**
+const CACHE_NAME = 'volei-das-ruas-v0.4.0'; // **IMPORTANTE: Mude este nome a cada nova versão do seu app**
 
 const urlsToCache = [
   './',

@@ -1454,12 +1454,12 @@
         messagingSenderId: "394754605937",
         appId: "1:394754605937:web:e97314f6c48373c8dc2cd0"
     }));
-    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? initialAuthToken : null;
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
     let app;
     let db;
     let auth;
-    let userId;
+    let userId; // Still needed for auth state, but not for data paths
     let isAuthReady = false;
     let isUserAuthenticated = false;
 
@@ -1498,7 +1498,7 @@
 
         onAuthStateChanged(auth, async (user) => {
           if (user) {
-            userId = user.uid;
+            userId = user.uid; // User ID is still set for internal Firebase operations
             isUserAuthenticated = !user.isAnonymous;
             document.getElementById('logoutButton').style.display = 'block';
             isAuthReady = true;
@@ -1580,7 +1580,8 @@
       if (!isAuthReady) {
         return;
       }
-      const settingsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_data', 'settings');
+      // Path for shared settings: artifacts/{appId}/public/shared_data/settings
+      const settingsDocRef = doc(db, 'artifacts', appId, 'public', 'shared_data', 'settings');
       onSnapshot(settingsDocRef, (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
@@ -1613,7 +1614,7 @@
           updatePlayerList();
           updateScoreboardTeamsDisplay();
         } else {
-          saveSettings(); 
+          saveSettings(); // If no settings exist, save default ones
         }
       }, (error) => {
         displayMessage("Erro ao carregar configurações do Firebase. Carregando dados locais.", "error");
@@ -1667,7 +1668,8 @@
           setTimeInSeconds: setTimeInSeconds,
           isTimerRunning: isTimerRunning,
         };
-        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'app_data', 'settings'), settingsData, { merge: true });
+        // Path for shared settings: artifacts/{appId}/public/shared_data/settings
+        await setDoc(doc(db, 'artifacts', appId, 'public', 'shared_data', 'settings'), settingsData, { merge: true });
         updatePlayerDisplayOnScoreboard();
         applyTeamColorsToScoreboard();
       } catch (error) {
@@ -1680,7 +1682,8 @@
         if (!isAuthReady) {
             return;
         }
-        const appointmentsColRef = collection(db, 'artifacts', appId, 'public', 'data', 'app_data', 'appointments');
+        // Path for shared appointments: artifacts/{appId}/public/shared_data/appointments
+        const appointmentsColRef = collection(db, 'artifacts', appId, 'public', 'shared_data', 'appointments');
         onSnapshot(appointmentsColRef, (querySnapshot) => {
             appointments = [];
             querySnapshot.forEach((doc) => {
@@ -1713,7 +1716,8 @@
 
         try {
             const newAppointment = { date, time, location };
-            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'app_data', 'appointments'), newAppointment);
+            // Path for shared appointments: artifacts/{appId}/public/shared_data/appointments
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'shared_data', 'appointments'), newAppointment);
             displayMessage("Agendamento adicionado com sucesso!", "success");
             gameDateInput.value = '';
             gameTimeInput.value = '';
@@ -1731,7 +1735,8 @@
         showConfirmationModal("Tem certeza que deseja remover este agendamento?", async (confirmed) => {
             if (confirmed) {
                 try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'app_data', 'appointments', id));
+                    // Path for shared appointments: artifacts/{appId}/public/shared_data/appointments/{id}
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'shared_data', 'appointments', id));
                     displayMessage("Agendamento removido!", "info");
                 } catch (error) {
                     displayMessage("Erro ao remover agendamento do Firebase.", "error");
@@ -2033,9 +2038,11 @@
             if (confirmed) {
                 if (isAuthReady) {
                     try {
-                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'app_data', 'settings'));
+                        // Path for shared settings: artifacts/{appId}/public/shared_data/settings
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'shared_data', 'settings'));
                         
-                        const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'app_data', 'appointments'));
+                        // Path for shared appointments: artifacts/{appId}/public/shared_data/appointments
+                        const q = query(collection(db, 'artifacts', appId, 'public', 'shared_data', 'appointments'));
                         const querySnapshot = await getDocs(q);
                         const deletePromises = [];
                         querySnapshot.forEach((doc) => {
@@ -2820,7 +2827,8 @@
         
         if (isAuthReady) {
             try {
-                const settingsDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'app_data', 'settings'));
+                // Path for shared settings: artifacts/{appId}/public/shared_data/settings
+                const settingsDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'shared_data', 'settings'));
                 if (settingsDoc.exists()) {
                     generatedTeams = settingsDoc.data().generatedTeams || [];
                 }
@@ -2991,10 +2999,12 @@
         }
 
         try {
-            const settingsDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'app_data', 'settings'));
+            // Path for shared settings: artifacts/{appId}/public/shared_data/settings
+            const settingsDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'shared_data', 'settings'));
             const settingsData = settingsDoc.exists() ? settingsDoc.data() : {};
 
-            const appointmentsQuery = query(collection(db, 'artifacts', appId, 'public', 'data', 'app_data', 'appointments'));
+            // Path for shared appointments: artifacts/{appId}/public/shared_data/appointments
+            const appointmentsQuery = query(collection(db, 'artifacts', appId, 'public', 'shared_data', 'appointments'));
             const appointmentsSnapshot = await getDocs(appointmentsQuery);
             const firebaseAppointments = appointmentsSnapshot.docs.map(doc => doc.data());
 
@@ -3107,9 +3117,11 @@
                             setTimeInSeconds: setTimeInSeconds,
                             isTimerRunning: isTimerRunning,
                         };
-                        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'app_data', 'settings'), settingsData);
+                        // Path for shared settings: artifacts/{appId}/public/shared_data/settings
+                        await setDoc(doc(db, 'artifacts', appId, 'public', 'shared_data', 'settings'), settingsData);
 
-                        const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'app_data', 'appointments'));
+                        // Path for shared appointments: artifacts/{appId}/public/shared_data/appointments
+                        const q = query(collection(db, 'artifacts', appId, 'public', 'shared_data', 'appointments'));
                         const querySnapshot = await getDocs(q);
                         const deletePromises = [];
                         querySnapshot.forEach((doc) => {
@@ -3117,7 +3129,7 @@
                         });
                         await Promise.all(deletePromises);
 
-                        const addPromises = importedAppState.appointments.map(app => addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'app_data', 'appointments'), app));
+                        const addPromises = importedAppState.appointments.map(app => addDoc(collection(db, 'artifacts', appId, 'public', 'shared_data', 'appointments'), app));
                         await Promise.all(addPromises);
                         displayMessage("Configurações importadas para o Firebase com sucesso!", "success");
                     } catch (firebaseError) {
