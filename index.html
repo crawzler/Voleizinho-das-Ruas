@@ -886,7 +886,7 @@
       .team-card {
         width: calc(33.33% - 20px);
       }
-    }
+      }
     .swap-teams-button {
       position: absolute;
       top: 50%;
@@ -924,7 +924,7 @@
     }
     @keyframes fadeInAndGrow {
       0% { opacity: 0; transform: scale(.8); }
-      100% { opacity: 1; transform: scale(1); }
+      100% { transform: scale(1); opacity: 1; }
     }
     .team-section.fade-out {
       animation: fadeOutAndShrink .3s ease-out forwards;
@@ -1094,273 +1094,326 @@
             width: calc(33.33% - 10px); /* Três cartões por linha */
         }
     }
+
+    /* Estilos para a tela de login */
+    .login-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: var(--modal-bg); /* Use modal background for consistency */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 5000; /* Ensure it's on top of everything */
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .login-content {
+      background-color: var(--modal-content-bg);
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      box-shadow: 0 5px 15px rgba(0,0,0,.3);
+      color: var(--modal-text-color);
+    }
+
+    .spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-left-color: var(--modal-button-bg);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto 0;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
-  <button class="gear-button" onclick="toggleMenu()">
-    <i class="fa-solid fa-bars"></i>
-  </button>
-  <div class="overlay" id="menuOverlay"></div>
-  <div class="menu" id="gearMenu">
-    <button onclick="navigateTo('pontuacao')"><i class="fa-solid fa-medal" style="margin-right:.5rem;"></i>Pontuação</button>
-    <button onclick="navigateTo('times')"><i class="fa-solid fa-shuffle" style="margin-right:.5rem;"></i>Times</button>
-    <button onclick="navigateTo('jogadores')"><i class="fa-solid fa-users" style="margin-right:.5rem;"></i>Jogadores</button>
-    <button onclick="navigateTo('agendamentos')"><i class="fa-solid fa-calendar-alt" style="margin-right:.5rem;"></i>Agendamentos</button>
-    <button onclick="navigateTo('configuracoes')"><i class="fa-solid fa-gear" style="margin-right:.5rem;"></i>Configurações</button>
-    <button id="resetGameButton" class="disabled" onclick="confirmReset()"><i class="fa-solid fa-rotate-right" style="margin-right:.5rem;"></i>Reiniciar Partida</button>
-  </div>
-  <div id="pontuacao" class="section active">
-    <div class="scoreboard-overlay" id="scoreboardOverlay"></div>
-    <div class="scoreboard">
-      <div class="team-section" id="sectionA">
-        <div class="victory-elements">
-          <div class="crown-container">
-            <i class="fa-solid fa-crown crown-icon"></i>
-          </div>
-          <div class="confetti-container"></div>
-        </div>
-        <div class="set-indicators left" id="setIndicatorA"></div>
-        <div class="team-name" id="teamNameA"></div>
-        <div class="player-info-container top-left">
-          <ul class="player-list" id="playerListA"></ul>
-        </div>
-        <div class="score" id="scoreA">0</div>
-      </div>
-      <div class="team-section" id="sectionB">
-        <div class="victory-elements">
-          <div class="crown-container">
-            <i class="fa-solid fa-crown crown-icon"></i>
-          </div>
-          <div class="confetti-container"></div>
-        </div>
-        <div class="set-indicators right" id="setIndicatorB"></div>
-        <div class="team-name" id="teamNameB"></div>
-        <div class="player-info-container top-left">
-          <ul class="player-list" id="playerListB"></ul>
-        </div>
-        <div class="score" id="scoreB">0</div>
-      </div>
+  <div id="loginOverlay" class="login-overlay">
+    <div class="login-content">
+      <p id="loginMessage">Carregando...</p>
+      <div class="spinner"></div>
     </div>
-    <button class="btn start-game-button" id="startGameButton" onclick="showStartGameModal()">Iniciar Partida</button>
-    <button class="swap-teams-button" id="swapTeamsButton" onclick="swapTeams()">
-      <i class="fa-solid fa-right-left"></i>
+  </div>
+
+  <div id="appContent" style="display: none;">
+    <button class="gear-button" onclick="toggleMenu()">
+      <i class="fa-solid fa-bars"></i>
     </button>
-    <div class="game-timer" id="gameTimer" onclick="toggleTimer()">
-      <div class="timer-main">
-        <span id="timerDisplay">00:00</span>
-        <i id="timerIcon" class="fa-solid fa-play"></i>
+    <div class="overlay" id="menuOverlay"></div>
+    <div class="menu" id="gearMenu">
+      <button onclick="navigateTo('pontuacao')"><i class="fa-solid fa-medal" style="margin-right:.5rem;"></i>Pontuação</button>
+      <button onclick="navigateTo('times')"><i class="fa-solid fa-shuffle" style="margin-right:.5rem;"></i>Times</button>
+      <button onclick="navigateTo('jogadores')"><i class="fa-solid fa-users" style="margin-right:.5rem;"></i>Jogadores</button>
+      <button onclick="navigateTo('agendamentos')"><i class="fa-solid fa-calendar-alt" style="margin-right:.5rem;"></i>Agendamentos</button>
+      <button onclick="navigateTo('configuracoes')"><i class="fa-solid fa-gear" style="margin-right:.5rem;"></i>Configurações</button>
+      <button id="resetGameButton" class="disabled" onclick="confirmReset()"><i class="fa-solid fa-rotate-right" style="margin-right:.5rem;"></i>Reiniciar Partida</button>
+    </div>
+    <div id="pontuacao" class="section active">
+      <div class="scoreboard-overlay" id="scoreboardOverlay"></div>
+      <div class="scoreboard">
+        <div class="team-section" id="sectionA">
+          <div class="victory-elements">
+            <div class="crown-container">
+              <i class="fa-solid fa-crown crown-icon"></i>
+            </div>
+            <div class="confetti-container"></div>
+          </div>
+          <div class="set-indicators left" id="setIndicatorA"></div>
+          <div class="team-name" id="teamNameA"></div>
+          <div class="player-info-container top-left">
+            <ul class="player-list" id="playerListA"></ul>
+          </div>
+          <div class="score" id="scoreA">0</div>
+        </div>
+        <div class="team-section" id="sectionB">
+          <div class="victory-elements">
+            <div class="crown-container">
+              <i class="fa-solid fa-crown crown-icon"></i>
+            </div>
+            <div class="confetti-container"></div>
+          </div>
+          <div class="set-indicators right" id="setIndicatorB"></div>
+          <div class="team-name" id="teamNameB"></div>
+          <div class="player-info-container top-left">
+            <ul class="player-list" id="playerListB"></ul>
+          </div>
+          <div class="score" id="scoreB">0</div>
+        </div>
       </div>
-      <div class="timer-set">
-        Set: <span id="setTimerDisplay">00:00</span>
+      <button class="btn start-game-button" id="startGameButton" onclick="showStartGameModal()">Iniciar Partida</button>
+      <button class="swap-teams-button" id="swapTeamsButton" onclick="swapTeams()">
+        <i class="fa-solid fa-right-left"></i>
+      </button>
+      <div class="game-timer" id="gameTimer" onclick="toggleTimer()">
+        <div class="timer-main">
+          <span id="timerDisplay">00:00</span>
+          <i id="timerIcon" class="fa-solid fa-play"></i>
+        </div>
+        <div class="timer-set">
+          Set: <span id="setTimerDisplay">00:00</span>
+        </div>
       </div>
     </div>
-  </div>
-  <div id="times" class="section">
-    <h2 style="margin: 0px 0px 10px 0px;">Gerar Times</h2>
-    <span class="adicionar">
-      <button class="btn" onclick="generateCustomTeams()" style="width: 100%;">Gerar</button>
-    </span>    
-    <div class="teams-display-container" id="teamsContainer"></div>
-  </div>
-  <div id="jogadores" class="section">
-    <h2>Jogadores</h2>
-    <span class="adicionar">
-      <input type="text" id="playerName" placeholder="Nome do jogador" />
-      <button class="btn" onclick="addPlayer()">Adicionar</button>
-    </span>
-    <span style="display:flex;flex-direction:row-reverse;justify-content:space-between;">
-      <div id="playerCounter">0/0</div>
-      <div style="display:flex;gap:1rem;margin-bottom:1rem;">
-        <button class="btn" id="toggleSelectAllButton" onclick="toggleSelectAllPlayers()">Alternar Seleção</button>
-      </div>
-    </span>
-    <ul id="playerList"></ul>
-  </div>
-  <div id="agendamentos" class="section">
-    <h2 style="margin-bottom:10px;">Agendamentos de Jogos</h2>
+    <div id="times" class="section">
+      <h2 style="margin: 0px 0px 10px 0px;">Gerar Times</h2>
+      <span class="adicionar">
+        <button class="btn" onclick="generateCustomTeams()" style="width: 100%;">Gerar</button>
+      </span>    
+      <div class="teams-display-container" id="teamsContainer"></div>
+    </div>
+    <div id="jogadores" class="section">
+      <h2>Jogadores</h2>
+      <span class="adicionar">
+        <input type="text" id="playerName" placeholder="Nome do jogador" />
+        <button class="btn" onclick="addPlayer()">Adicionar</button>
+      </span>
+      <span style="display:flex;flex-direction:row-reverse;justify-content:space-between;">
+        <div id="playerCounter">0/0</div>
+        <div style="display:flex;gap:1rem;margin-bottom:1rem;">
+          <button class="btn" id="toggleSelectAllButton" onclick="toggleSelectAllPlayers()">Alternar Seleção</button>
+        </div>
+      </span>
+      <ul id="playerList"></ul>
+    </div>
+    <div id="agendamentos" class="section">
+      <h2 style="margin-bottom:10px;">Agendamentos de Jogos</h2>
 
-    <div class="input-row">
-      <div class="input-group">
-        <label for="gameDate">Data:</label>
-        <input type="date" id="gameDate">
-      </div>
-      <div class="input-group">
-        <label for="gameTime">Hora:</label>
-        <input type="time" id="gameTime">
-      </div>
-    </div>
-    <div class="input-row">
-      <div class="input-group" style="flex: 100%;"> <label for="gameLocation">Local:</label>
-        <input type="text" id="gameLocation" placeholder="Ex: Praia, Ginásio X">
-      </div>
-    </div>
-    <button class="btn" onclick="addAppointment()">Adicionar Agendamento</button>
-
-    <h3 style="margin: 20px 0px 10px 0px;">Próximos Jogos</h3>
-    <ul id="upcomingAppointmentsList"></ul>
-
-    <div class="collapsible-container">
-        <div class="collapsible-header" onclick="togglePastAppointmentsSection()">
-            <h3>Jogos Anteriores</h3>
-            <i class="fa-solid fa-chevron-right collapsible-arrow" id="pastAppointmentsArrow"></i>
-        </div>
-        <div class="collapsible-content" id="pastAppointmentsContent">
-            <ul id="pastAppointmentsList"></ul>
-        </div>
-    </div>
-  </div>
-  <div id="configuracoes" class="section">
-    <h2 style="margin-bottom:20px;">Configurações</h2>
-    <div class="collapsible-container">
-        <div class="collapsible-header" onclick="toggleGeneralSettingsSection()">
-            <h3>Geral</h3>
-            <i class="fa-solid fa-chevron-right collapsible-arrow" id="generalSettingsArrow"></i>
-        </div>
-        <div class="collapsible-content" id="generalSettingsContent">
-          <div class="config-group">
-            <label for="playersPerTeam">Jogadores por time:</label>
-            <input type="number" id="playersPerTeam" min="1" value="4" onchange="saveSettings()">
-          </div>
-          <div class="config-group">
-            <label for="winningScore">Pontos para Vencer (Set):</label>
-            <input type="number" id="winningScore" min="1" value="15" onchange="saveSettings()">
-          </div>
-          <div class="config-group">
-            <label for="setsToWinConfig">Número de Sets para Vencer a Partida (0 para ilimitado):</label>
-            <input type="number" id="setsToWinConfig" min="0" value="0" onchange="saveSettings()">
-          </div>
-          <div class="config-group">
-            <label for="themeSelect">Tema:</label>
-            <select id="themeSelect" onchange="setTheme(this.value)">
-              <option value="dark">Escuro</option>
-              <option value="light">Claro</option>
-            </select>
-          </div>
-          <span style="display:flex;">
-            <div class="checkbox-group">
-              <label for="vibrationEnabled">Vibração ao Pontuar:</label>
-              <input type="checkbox" id="vibrationEnabled" onchange="saveSettings()">
-            </div>
-            <div class="checkbox-group" style="margin-left:20px;">
-              <label for="showPlayersOnScoreboard">Exibir Jogadores no Placar:</label>
-              <input type="checkbox" id="showPlayersOnScoreboard" onchange="saveSettings()">
-            </div>
-          </span>
-        </div>
-    </div>
-    <div class="collapsible-container">
-        <div class="collapsible-header" onclick="toggleCustomTeamNamesSection()">
-            <h3>Times Personalizados</h3> <i class="fa-solid fa-chevron-right collapsible-arrow" id="customTeamNamesArrow"></i>
-        </div>
-        <div class="collapsible-content" id="customTeamNamesContent">
-            <p style="font-size:.9em;color:var(--text-color);opacity:.8;margin-bottom:.5rem;">Defina nomes e cores para seus times favoritos. Eles aparecerão nas opções de seleção e ao gerar times.</p>
-            <div class="config-group color-picker-group">
-                <label for="customTeamName1">Time 1:</label>
-                <input type="text" id="customTeamName1" value="" onchange="saveSettings()" style="flex:1;">
-                <input type="color" id="customTeamColor1" value="#007bff" onchange="saveSettings()">
-            </div>
-            <div class="config-group color-picker-group">
-                <label for="customTeamName2">Time 2:</label>
-                <input type="text" id="customTeamName2" value="" onchange="saveSettings()" style="flex:1;">
-                <input type="color" id="customTeamColor2" value="#dc3545" onchange="saveSettings()">
-            </div>
-            <div class="config-group color-picker-group">
-                <label for="customTeamName3">Time 3:</label>
-                <input type="text" id="customTeamName3" value="" onchange="saveSettings()" style="flex:1;">
-                <input type="color" id="customTeamColor3" value="#28a745" onchange="saveSettings()">
-            </div>
-            <div class="config-group color-picker-group">
-                <label for="customTeamName4">Time 4:</label>
-                <input type="text" id="customTeamName4" value="" onchange="saveSettings()" style="flex:1;">
-                <input type="color" id="customTeamColor4" value="#ffc107" onchange="saveSettings()">
-            </div>
-            <div class="config-group color-picker-group">
-                <label for="customTeamName5">Time 5:</label>
-                <input type="text" id="customTeamName5" value="" onchange="saveSettings()" style="flex:1;">
-                <input type="color" id="customTeamColor5" value="#6f42c1" onchange="saveSettings()">
-            </div>
-        </div>
-    </div>
-    <div class="collapsible-container">
-        <div class="collapsible-header" onclick="toggleDataManagementSection()">
-            <h3>Gerenciamento de Dados</h3> <i class="fa-solid fa-chevron-right collapsible-arrow" id="dataManagementArrow"></i>
-        </div>
-        <div class="collapsible-content" id="dataManagementContent">
-            <div class="config-group">
-                <label>Exportar Dados:</label>
-                <button class="btn" onclick="exportSettings()">Exportar Configurações</button>
-            </div>
-            <div class="config-group">
-                <label>Importar Dados:</label>
-                <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="importSettings(event)">
-                <button class="btn" onclick="document.getElementById('importFileInput').click()">Importar Configurações</button>
-            </div>
-            <div class="config-group">
-                <label>Resetar Tudo:</label>
-                <button class="btn" onclick="confirmResetAllData()" style="background-color: #dc3545;">Resetar Todos os Dados</button>
-            </div>
-        </div>
-    </div>
-    <div class="config-group" style="margin-top: 20px; text-align: center; padding: 15px; border-radius: 10px; background-color: var(--setting-section-bg); border: 1px solid var(--setting-item-border);">
-        <label style="font-size: 1.1em; margin-bottom: 5px; color: var(--text-color);">Versão do Sistema:</label>
-        <span id="systemVersionDisplay" style="font-weight: bold; font-size: 1.2em; color: var(--text-color);">Carregando...</span>
-    </div>
-  </div>
-  <div id="gameOverModal" class="game-over-modal">
-    <div class="modal-content">
-      <h3 id="modalWinningTeamName"></h3>
-      <p id="modalMessage"></p>
-      <div class="modal-buttons">
-        <button onclick="startNewGame()">Novo Jogo</button>
-        <button id="newSetButton" onclick="startNewSet()">Novo Set</button>
-        <button onclick="increaseWinningScoreModal()">Continuar partida</button>
-      </div>
-    </div>
-  </div>
-  <div id="increaseScoreModal" class="increase-score-modal">
-    <div class="increase-score-content">
-      <h3>Aumentar Pontuação</h3>
-      <p>Defina o novo valor para a pontuação de vitória do set:</p>
-      <input type="number" id="newWinningScoreInput" min="1" value="15">
-      <div class="modal-buttons">
-        <button onclick="confirmIncreaseWinningScore()">Confirmar</button>
-        <button onclick="hideIncreaseScoreModal()">Cancelar</button>
-      </div>
-    </div>
-  </div>
-  <div id="startGameModal" class="start-game-modal">
-    <div class="start-game-content">
-      <h3>Iniciar Nova Partida</h3>
-      <p>Defina as configurações da partida:</p>
       <div class="input-row">
         <div class="input-group">
-          <label for="initialWinningScore">Pontos por set:</label>
-          <input type="number" id="initialWinningScore" min="1" value="15">
+          <label for="gameDate">Data:</label>
+          <input type="date" id="gameDate">
         </div>
         <div class="input-group">
-          <label for="initialNumberOfSets">Número de sets:</label>
-          <input type="number" id="initialNumberOfSets" min="0" value="0">
+          <label for="gameTime">Hora:</label>
+          <input type="time" id="gameTime">
         </div>
       </div>
-      <div class="modal-buttons">
-        <button id="modalStartGameButton" onclick="confirmStartGame()">Iniciar Partida</button>
-        <button onclick="hideStartGameModal()" style="background-color:#dc3545;--modal-button-hover-bg:#c82333;">Cancelar</button>
+      <div class="input-row">
+        <div class="input-group" style="flex: 100%;"> <label for="gameLocation">Local:</label>
+          <input type="text" id="gameLocation" placeholder="Ex: Praia, Ginásio X">
+        </div>
+      </div>
+      <button class="btn" onclick="addAppointment()">Adicionar Agendamento</button>
+
+      <h3 style="margin: 20px 0px 10px 0px;">Próximos Jogos</h3>
+      <ul id="upcomingAppointmentsList"></ul>
+
+      <div class="collapsible-container">
+          <div class="collapsible-header" onclick="togglePastAppointmentsSection()">
+              <h3>Jogos Anteriores</h3>
+              <i class="fa-solid fa-chevron-right collapsible-arrow" id="pastAppointmentsArrow"></i>
+          </div>
+          <div class="collapsible-content" id="pastAppointmentsContent">
+              <ul id="pastAppointmentsList"></ul>
+          </div>
       </div>
     </div>
-  </div>
-  <div id="superVictoryModal" class="super-victory-modal">
-    <div class="super-victory-content">
-      <h3 id="superVictoryTeamName"></h3>
-      <p>VENCEU A PARTIDA!</p>
-      <div class="confetti-container" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>
+    <div id="configuracoes" class="section">
+      <h2 style="margin-bottom:20px;">Configurações</h2>
+      <div class="collapsible-container">
+          <div class="collapsible-header" onclick="toggleGeneralSettingsSection()">
+              <h3>Geral</h3>
+              <i class="fa-solid fa-chevron-right collapsible-arrow" id="generalSettingsArrow"></i>
+          </div>
+          <div class="collapsible-content" id="generalSettingsContent">
+            <div class="config-group">
+              <label for="playersPerTeam">Jogadores por time:</label>
+              <input type="number" id="playersPerTeam" min="1" value="4" onchange="saveSettings()">
+            </div>
+            <div class="config-group">
+              <label for="winningScore">Pontos para Vencer (Set):</label>
+              <input type="number" id="winningScore" min="1" value="15" onchange="saveSettings()">
+            </div>
+            <div class="config-group">
+              <label for="setsToWinConfig">Número de Sets para Vencer a Partida (0 para ilimitado):</label>
+              <input type="number" id="setsToWinConfig" min="0" value="0" onchange="saveSettings()">
+            </div>
+            <div class="config-group">
+              <label for="themeSelect">Tema:</label>
+              <select id="themeSelect" onchange="setTheme(this.value)">
+                <option value="dark">Escuro</option>
+                <option value="light">Claro</option>
+              </select>
+            </div>
+            <span style="display:flex;">
+              <div class="checkbox-group">
+                <label for="vibrationEnabled">Vibração ao Pontuar:</label>
+                <input type="checkbox" id="vibrationEnabled" onchange="saveSettings()">
+              </div>
+              <div class="checkbox-group" style="margin-left:20px;">
+                <label for="showPlayersOnScoreboard">Exibir Jogadores no Placar:</label>
+                <input type="checkbox" id="showPlayersOnScoreboard" onchange="saveSettings()">
+              </div>
+            </span>
+          </div>
+      </div>
+      <div class="collapsible-container">
+          <div class="collapsible-header" onclick="toggleCustomTeamNamesSection()">
+              <h3>Times Personalizados</h3> <i class="fa-solid fa-chevron-right collapsible-arrow" id="customTeamNamesArrow"></i>
+          </div>
+          <div class="collapsible-content" id="customTeamNamesContent">
+              <p style="font-size:.9em;color:var(--text-color);opacity:.8;margin-bottom:.5rem;">Defina nomes e cores para seus times favoritos. Eles aparecerão nas opções de seleção e ao gerar times.</p>
+              <div class="config-group color-picker-group">
+                  <label for="customTeamName1">Time 1:</label>
+                  <input type="text" id="customTeamName1" value="" onchange="saveSettings()" style="flex:1;">
+                  <input type="color" id="customTeamColor1" value="#007bff" onchange="saveSettings()">
+              </div>
+              <div class="config-group color-picker-group">
+                  <label for="customTeamName2">Time 2:</label>
+                  <input type="text" id="customTeamName2" value="" onchange="saveSettings()" style="flex:1;">
+                  <input type="color" id="customTeamColor2" value="#dc3545" onchange="saveSettings()">
+              </div>
+              <div class="config-group color-picker-group">
+                  <label for="customTeamName3">Time 3:</label>
+                  <input type="text" id="customTeamName3" value="" onchange="saveSettings()" style="flex:1;">
+                  <input type="color" id="customTeamColor3" value="#28a745" onchange="saveSettings()">
+              </div>
+              <div class="config-group color-picker-group">
+                  <label for="customTeamName4">Time 4:</label>
+                  <input type="text" id="customTeamName4" value="" onchange="saveSettings()" style="flex:1;">
+                  <input type="color" id="customTeamColor4" value="#ffc107" onchange="saveSettings()">
+              </div>
+              <div class="config-group color-picker-group">
+                  <label for="customTeamName5">Time 5:</label>
+                  <input type="text" id="customTeamName5" value="" onchange="saveSettings()" style="flex:1;">
+                  <input type="color" id="customTeamColor5" value="#6f42c1" onchange="saveSettings()">
+              </div>
+          </div>
+      </div>
+      <div class="collapsible-container">
+          <div class="collapsible-header" onclick="toggleDataManagementSection()">
+              <h3>Gerenciamento de Dados</h3> <i class="fa-solid fa-chevron-right collapsible-arrow" id="dataManagementArrow"></i>
+          </div>
+          <div class="collapsible-content" id="dataManagementContent">
+              <div class="config-group">
+                  <label>Exportar Dados:</label>
+                  <button class="btn" onclick="exportSettings()">Exportar Configurações</button>
+              </div>
+              <div class="config-group">
+                  <label>Importar Dados:</label>
+                  <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="importSettings(event)">
+                  <button class="btn" onclick="document.getElementById('importFileInput').click()">Importar Configurações</button>
+              </div>
+              <div class="config-group">
+                  <label>Resetar Tudo:</label>
+                  <button class="btn" onclick="confirmResetAllData()" style="background-color: #dc3545;">Resetar Todos os Dados</button>
+              </div>
+          </div>
+      </div>
+      <div class="config-group" style="margin-top: 20px; text-align: center; padding: 15px; border-radius: 10px; background-color: var(--setting-section-bg); border: 1px solid var(--setting-item-border);">
+          <label style="font-size: 1.1em; margin-bottom: 5px; color: var(--text-color);">Versão do Sistema:</label>
+          <span id="systemVersionDisplay" style="font-weight: bold; font-size: 1.2em; color: var(--text-color);">Carregando...</span>
+      </div>
+      <div class="config-group" style="margin-top: 10px; text-align: center; padding: 15px; border-radius: 10px; background-color: var(--setting-section-bg); border: 1px solid var(--setting-item-border);">
+          <label style="font-size: 1.1em; margin-bottom: 5px; color: var(--text-color);">Seu ID de Usuário:</label>
+          <span id="userIdDisplay" style="font-weight: bold; font-size: 0.9em; word-break: break-all; color: var(--text-color);">Carregando...</span>
+      </div>
     </div>
-  </div>
-  <div id="manageTeamModal" class="manage-team-modal">
-    <div class="modal-content manage-team-content">
-      <h3 id="manageTeamModalTitle">Selecionar Time</h3>
-      <div class="input-group" style="width:100%;">
-        <label for="selectTeamForManagement">Selecione um time:</label>
-        <select id="selectTeamForManagement" onchange="saveTeamNameAndPlayers()"></select>
+    <div id="gameOverModal" class="game-over-modal">
+      <div class="modal-content">
+        <h3 id="modalWinningTeamName"></h3>
+        <p id="modalMessage"></p>
+        <div class="modal-buttons">
+          <button onclick="startNewGame()">Novo Jogo</button>
+          <button id="newSetButton" onclick="startNewSet()">Novo Set</button>
+          <button onclick="increaseWinningScoreModal()">Continuar partida</button>
+        </div>
+      </div>
+    </div>
+    <div id="increaseScoreModal" class="increase-score-modal">
+      <div class="increase-score-content">
+        <h3>Aumentar Pontuação</h3>
+        <p>Defina o novo valor para a pontuação de vitória do set:</p>
+        <input type="number" id="newWinningScoreInput" min="1" value="15">
+        <div class="modal-buttons">
+          <button onclick="confirmIncreaseWinningScore()">Confirmar</button>
+          <button onclick="hideIncreaseScoreModal()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+    <div id="startGameModal" class="start-game-modal">
+      <div class="start-game-content">
+        <h3>Iniciar Nova Partida</h3>
+        <p>Defina as configurações da partida:</p>
+        <div class="input-row">
+          <div class="input-group">
+            <label for="initialWinningScore">Pontos por set:</label>
+            <input type="number" id="initialWinningScore" min="1" value="15">
+          </div>
+          <div class="input-group">
+            <label for="initialNumberOfSets">Número de sets:</label>
+            <input type="number" id="initialNumberOfSets" min="0" value="0">
+          </div>
+        </div>
+        <div class="modal-buttons">
+          <button id="modalStartGameButton" onclick="confirmStartGame()">Iniciar Partida</button>
+          <button onclick="hideStartGameModal()" style="background-color:#dc3545;--modal-button-hover-bg:#c82333;">Cancelar</button>
+        </div>
+      </div>
+    </div>
+    <div id="superVictoryModal" class="super-victory-modal">
+      <div class="super-victory-content">
+        <h3 id="superVictoryTeamName"></h3>
+        <p>VENCEU A PARTIDA!</p>
+        <div class="confetti-container" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>
+      </div>
+    </div>
+    <div id="manageTeamModal" class="manage-team-modal">
+      <div class="modal-content manage-team-content">
+        <h3 id="manageTeamModalTitle">Selecionar Time</h3>
+        <div class="input-group" style="width:100%;">
+          <label for="selectTeamForManagement">Selecione um time:</label>
+          <select id="selectTeamForManagement" onchange="saveTeamNameAndPlayers()"></select>
+        </div>
       </div>
     </div>
   </div>
@@ -1370,8 +1423,8 @@
 
   <script>
     const DEFAULT_CUSTOM_TEAM_COLORS = ["#007bff", "#dc3545", "#28a745", "#ffc107", "#6f42c1"];
-    let players = JSON.parse(localStorage.getItem('players') || '[]');
-    let checkedState = JSON.parse(localStorage.getItem('checkedPlayers') || '{}');
+    // Variáveis de estado globais para jogadores, agora gerenciadas pelo Firestore
+    let allPlayers = []; // Armazenará os objetos de jogador do Firestore
     let generatedTeams = []; 
     let winningScore;
     let setsToWin;
@@ -1393,7 +1446,6 @@
     let gameTimeInSeconds = 0;
     let setTimeInSeconds = 0; // Novo contador de tempo para o set
     let isTimerRunning = false; // Variável para controlar o estado do cronômetro
-    // let appointments = []; // Esta variável será gerenciada pelo Firestore agora
 
     // Firebase Initialization
     const firebaseConfig = {
@@ -1412,16 +1464,70 @@
     const auth = firebase.auth();
     let userId = null; // Variável para armazenar o ID do usuário autenticado
 
-    // Autenticação anônima para acessar o Firestore
-    auth.signInAnonymously().then((result) => {
-        userId = result.user.uid;
-        console.log("Autenticado anonimamente. User ID:", userId);
-        // Após a autenticação, podemos começar a ouvir os agendamentos
-        listenForAppointments();
-    }).catch((error) => {
-        console.error("Erro na autenticação anônima:", error);
-        displayMessage("Erro ao autenticar no Firebase. Agendamentos podem não ser salvos.", "error");
-    });
+    // New elements for login UI
+    let loginOverlay;
+    let loginMessage;
+    let appContent;
+
+    // Autenticação para acessar o Firestore
+    const authenticateUser = async () => {
+        console.log("Attempting authentication...");
+
+        // Listener para mudanças no estado de autenticação
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                userId = user.uid;
+                document.getElementById('userIdDisplay').textContent = userId + ' (Autenticado)';
+                console.log("User authenticated:", user.displayName || user.email, "UID:", userId);
+                loginOverlay.style.display = 'none'; // Hide login overlay
+                appContent.style.display = 'block'; // Show app content
+                // Inicia os listeners do Firestore somente após a autenticação
+                listenForAppointments();
+                listenForPlayers();
+            } else {
+                userId = null;
+                document.getElementById('userIdDisplay').textContent = 'Não autenticado';
+                console.log("User not authenticated. Redirecting for Google Sign-In.");
+                loginOverlay.style.display = 'flex'; // Show login overlay
+                appContent.style.display = 'none'; // Hide app content
+                loginMessage.textContent = "Redirecionando para o login com Google...";
+
+                // Attempt Google Sign-In redirect
+                const provider = new firebase.auth.GoogleAuthProvider();
+                try {
+                    await auth.signInWithRedirect(provider);
+                } catch (error) {
+                    console.error("Erro ao iniciar redirecionamento para login com Google:", error);
+                    loginMessage.textContent = `Erro: ${error.message}. Por favor, recarregue a página.`;
+                    displayMessage("Erro ao iniciar login com Google. Por favor, recarregue a página.", "error");
+                }
+                // Limpa as listas se o usuário não estiver autenticado (já que não há mais login anônimo)
+                renderAppointments([]);
+                renderPlayerList([]);
+            }
+        });
+
+        // Handle redirect result (important for signInWithRedirect)
+        try {
+            const result = await auth.getRedirectResult();
+            if (result.user) {
+                console.log("Redirect result: User successfully signed in.");
+                // onAuthStateChanged will handle the UI update
+            } else {
+                console.log("Redirect result: No user from redirect, or not a redirect flow.");
+            }
+        } catch (error) {
+            console.error("Erro ao obter resultado do redirecionamento:", error);
+            if (error.code === 'auth/popup-closed-by-user') {
+                displayMessage("Login com Google cancelado. A janela pop-up foi fechada.", "warning");
+            } else if (error.code === 'auth/unauthorized-domain') {
+                displayMessage("Domínio não autorizado para operações OAuth. Verifique o console do Firebase.", "error");
+            } else {
+                displayMessage(`Erro no login com Google: ${error.message}`, "error");
+            }
+            loginMessage.textContent = `Erro no login: ${error.message}. Recarregue a página.`;
+        }
+    };
 
     function toggleMenu() {
       const menu = document.getElementById("gearMenu");
@@ -1457,7 +1563,8 @@
           renderGeneratedTeams();
       } else if (id === 'agendamentos') {
           // A renderização de agendamentos é feita pelo listener do Firestore (onSnapshot)
-          // renderAppointments(); // Não chame diretamente aqui, o listener fará isso
+      } else if (id === 'jogadores') {
+          // A renderização de jogadores é feita pelo listener do Firestore (onSnapshot)
       }
     }
 
@@ -1477,58 +1584,75 @@
         }
     }
 
-    function saveCheckedState() {
-      localStorage.setItem('checkedPlayers', JSON.stringify(checkedState));
+    async function addPlayer() {
+        if (!userId) {
+            displayMessage("Por favor, aguarde a autenticação ou faça login para adicionar jogadores.", "warning");
+            return;
+        }
+        const input = document.getElementById("playerName");
+        const name = input.value.trim();
+
+        if (name) {
+            const playerExists = allPlayers.some(p => p.name.toLowerCase() === name.toLowerCase());
+            if (playerExists) {
+                displayMessage("Este nome já está na lista.", "warning");
+                return;
+            }
+
+            try {
+                await db.collection(`artifacts/${firebaseConfig.projectId}/users/${userId}/players`).add({
+                    name: name,
+                    isChecked: true,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                input.value = "";
+                displayMessage("Jogador adicionado com sucesso!", "success");
+            } catch (error) {
+                console.error("Erro ao adicionar jogador:", error);
+                displayMessage(`Erro ao adicionar jogador: ${error.message}`, "error");
+            }
+        }
     }
 
-    function addPlayer() {
-      const input = document.getElementById("playerName");
-      const name = input.value.trim();
-      if (name && !players.includes(name)) {
-        players.push(name);
-        checkedState[name] = true;
-        input.value = "";
-        updatePlayerList();
-        localStorage.setItem('players', JSON.stringify(players));
-        saveCheckedState();
-      } else if (players.includes(name)) {
-        displayMessage("Este nome já está na lista.", "warning");
-      }
-    }
+    function renderPlayerList(playersToRender) {
+      playersToRender.sort((a, b) => a.name.localeCompare(b.name, 'pt', { sensitivity: 'base' }));
+      allPlayers = playersToRender;
 
-    function updatePlayerList() {
-      players.sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' }));
       const list = document.getElementById("playerList");
       list.innerHTML = "";
-      players.forEach((p, i) => {
+      allPlayers.forEach((player) => {
         const li = document.createElement("li");
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
-        checkbox.checked = checkedState[p] !== false;
+        checkbox.checked = player.isChecked !== false;
         checkbox.style.marginRight = '.5rem';
         checkbox.style.width = '1rem';
-        checkbox.onchange = () => {
-          checkedState[p] = checkbox.checked;
-          saveCheckedState();
+        checkbox.onchange = async () => {
+          if (!userId) {
+              displayMessage("Por favor, faça login para atualizar o estado do jogador.", "warning");
+              checkbox.checked = !checkbox.checked; // Reverte a seleção visual
+              return;
+          }
+          try {
+            await db.collection(`artifacts/${firebaseConfig.projectId}/users/${userId}/players`).doc(player.id).update({
+              isChecked: checkbox.checked
+            });
+          } catch (error) {
+            console.error("Erro ao atualizar estado do jogador:", error);
+            displayMessage("Erro ao atualizar estado do jogador.", "error");
+          }
           updatePlayerCounter();
           updateToggleSelectAllButtonText();
         };
         const span = document.createElement("span");
-        span.textContent = p;
+        span.textContent = player.name;
         const btn = document.createElement("button");
         btn.textContent = "Remover";
         btn.className = "btn";
         btn.onclick = () => {
-            showConfirmationModal("Tem certeza que deseja remover este jogador?", (confirmed) => {
+            showConfirmationModal("Tem certeza que deseja remover este jogador?", async (confirmed) => {
                 if (confirmed) {
-                    players.splice(i, 1);
-                    delete checkedState[p];
-                    updatePlayerList();
-                    localStorage.setItem('players', JSON.stringify(players));
-                    saveCheckedState();
-                    generatedTeams = [];
-                    renderGeneratedTeams();
-                    resetGame();
+                    await deletePlayerFromFirestore(player.id);
                 }
             });
         };
@@ -1542,36 +1666,55 @@
     }
 
     function updatePlayerCounter() {
-      const selected = players.filter(p => checkedState[p] !== false).length;
-      const total = players.length;
+      const selected = allPlayers.filter(p => p.isChecked !== false).length;
+      const total = allPlayers.length;
       document.getElementById("playerCounter").textContent = `${selected}/${total}`;
     }
 
-    function toggleSelectAllPlayers() {
-      const allSelected = players.every(p => checkedState[p] !== false);
-      let confirmationMessage;
-      let action;
-      if (allSelected) {
-        confirmationMessage = "Tem certeza que deseja desmarcar todos os jogadores?";
-        action = false;
-      } else {
-        confirmationMessage = "Tem certeza que deseja selecionar todos os jogadores?";
-        action = true;
-      }
-      showConfirmationModal(confirmationMessage, (confirmed) => {
-          if (confirmed) {
-              players.forEach(p => checkedState[p] = action);
-              saveCheckedState();
-              updatePlayerList();
-          }
-      });
+    async function toggleSelectAllPlayers() {
+        if (!userId) {
+            displayMessage("Por favor, faça login para selecionar jogadores.", "warning");
+            return;
+        }
+        if (allPlayers.length === 0) {
+            displayMessage("Não há jogadores para selecionar/desselecionar.", "warning");
+            return;
+        }
+
+        const allSelected = allPlayers.every(p => p.isChecked !== false);
+        let confirmationMessage;
+        let action;
+        if (allSelected) {
+            confirmationMessage = "Tem certeza que deseja desmarcar todos os jogadores?";
+            action = false;
+        } else {
+            confirmationMessage = "Tem certeza que deseja selecionar todos os jogadores?";
+            action = true;
+        }
+
+        showConfirmationModal(confirmationMessage, async (confirmed) => {
+            if (confirmed) {
+                const batch = db.batch();
+                allPlayers.forEach(player => {
+                    const playerDocRef = db.collection(`artifacts/${firebaseConfig.projectId}/users/${userId}/players`).doc(player.id);
+                    batch.update(playerDocRef, { isChecked: action });
+                });
+                try {
+                    await batch.commit();
+                    displayMessage("Estado de seleção dos jogadores atualizado!", "success");
+                } catch (error) {
+                    console.error("Erro ao atualizar todos os jogadores:", error);
+                    displayMessage("Erro ao atualizar estado de seleção dos jogadores.", "error");
+                }
+            }
+        });
     }
 
     function updateToggleSelectAllButtonText() {
       const toggleButton = document.getElementById('toggleSelectAllButton');
       if (toggleButton) {
-        const allSelected = players.every(p => checkedState[p] !== false);
-        if (allSelected && players.length > 0) {
+        const allSelected = allPlayers.every(p => p.isChecked !== false);
+        if (allSelected && allPlayers.length > 0) {
           toggleButton.textContent = "Desselecionar Todos";
         } else {
           toggleButton.textContent = "Selecionar Todos";
@@ -1609,20 +1752,19 @@
       updateSwapTeamsButtonVisibility(); 
       showStartGameModal();
       generatedTeams = [];
-      stopAllTimers(); // Para ambos os cronômetros
+      renderGeneratedTeams();
+      stopAllTimers();
       gameTimeInSeconds = 0;
-      setTimeInSeconds = 0; // Zera o tempo do set também
-      updateTimerDisplay(); // Atualiza o display de ambos
+      setTimeInSeconds = 0;
+      updateTimerDisplay();
       document.getElementById('gameTimer').classList.remove('show');
     }
 
-    function resetAllData() {
-        showConfirmationModal("Tem certeza que deseja resetar TODOS os dados? Isso apagará jogadores, times gerados, configurações e o estado atual do jogo.", (confirmed) => {
+    async function resetAllData() {
+        showConfirmationModal("Tem certeza que deseja resetar TODOS os dados locais? Isso apagará times gerados e configurações salvas localmente. Seus jogadores e agendamentos no Firebase NÃO serão afetados.", (confirmed) => {
             if (confirmed) {
                 localStorage.clear();
-                // Não é necessário limpar o Firestore aqui, pois os dados são do usuário logado
-                // e o onSnapshot já vai atualizar a UI se as regras de segurança permitirem.
-                location.reload(); // Recarrega a página para refletir o reset do localStorage
+                location.reload();
             }
         });
     }
@@ -1645,7 +1787,7 @@
         displayMessage("Informe um número válido de jogadores por time.", "error");
         return false;
       }
-      const selectedPlayers = players.filter(p => checkedState[p] !== false);
+      const selectedPlayers = allPlayers.filter(p => p.isChecked !== false).map(p => p.name);
       if (selectedPlayers.length < 2) {
         displayMessage("Selecione pelo menos dois jogadores para gerar times.", "error");
         return false;
@@ -1699,7 +1841,7 @@
             } else {
                 team.players.forEach(player => {
                     const playerLi = document.createElement("li");
-                    playerLi.textContent = player; // Corrigido de 'li.textContent' para 'playerLi.textContent'
+                    playerLi.textContent = player;
                     playersList.appendChild(playerLi);
                 });
             }
@@ -1775,7 +1917,7 @@
       if (winner) {
         gameEnded = true;
         lastWinningTeam = winner;
-        stopAllTimers(); // Para ambos os cronômetros ao final do set/partida
+        stopAllTimers();
         const winningTeamName = winner === 'A' ? currentPlayingTeamA.name : currentPlayingTeamB.name;
         showVictoryAnimation(winner, winningTeamName);
         updateSwapTeamsButtonVisibility(); 
@@ -1884,7 +2026,7 @@
       displayMessage(`Pontuação para vencer aumentada para ${winningScore}!`, "success");
       hideIncreaseScoreModal();
       gameEnded = false;
-      startAllTimers(); // Reinicia os cronômetros se a partida continuar
+      startAllTimers();
     }
 
     function showStartGameModal() {
@@ -1920,8 +2062,9 @@
       
       hideStartGameModal();
 
-      if (generatedTeams.length === 0) {
-          showConfirmationModal("Não há times gerados. Deseja gerar times automaticamente com o número de jogadores por time definido nas configurações?", (confirmed) => { 
+      const selectedPlayersCount = allPlayers.filter(p => p.isChecked !== false).length;
+      if (selectedPlayersCount === 0) {
+          showConfirmationModal("Não há jogadores selecionados. Deseja gerar times automaticamente com o número de jogadores por time definido nas configurações?", (confirmed) => { 
               if (confirmed) {
                   const success = generateCustomTeams(); 
                   if (!success) {
@@ -1972,9 +2115,9 @@
       updateScoreboardTeamsDisplay();
       updateResetButtonVisibility();
       updateSwapTeamsButtonVisibility();
-      gameTimeInSeconds = 0; // Zera o tempo ao iniciar uma nova partida
-      setTimeInSeconds = 0; // Zera o tempo do set também
-      startAllTimers(); // Inicia ambos os cronômetros
+      gameTimeInSeconds = 0;
+      setTimeInSeconds = 0;
+      startAllTimers();
     }
 
     function startNewGame() {
@@ -2039,9 +2182,9 @@
 
       updateScoreboardTeamsDisplay();
       lastWinningTeam = null; 
-      gameTimeInSeconds = 0; // Zera o tempo ao iniciar um novo jogo
-      setTimeInSeconds = 0; // Zera o tempo do set também
-      startAllTimers(); // Inicia ambos os cronômetros
+      gameTimeInSeconds = 0;
+      setTimeInSeconds = 0;
+      startAllTimers();
     }
 
     function startNewSet() {
@@ -2064,8 +2207,8 @@
 
       updateScoreboardTeamsDisplay();
       updateSwapTeamsButtonVisibility(); 
-      setTimeInSeconds = 0; // Zera o tempo do set ao iniciar um novo set
-      startAllTimers(); // Inicia ambos os cronômetros
+      setTimeInSeconds = 0;
+      startAllTimers();
     }
 
     function showSuperVictoryAnimation(winningTeamName) {
@@ -2179,8 +2322,6 @@
       showPlayersOnScoreboard = JSON.parse(localStorage.getItem('showPlayersOnScoreboard') || 'true');
       currentTheme = localStorage.getItem('theme') || 'dark';
 
-      players = JSON.parse(localStorage.getItem('players') || '[]');
-      checkedState = JSON.parse(localStorage.getItem('checkedPlayers') || '{}');
       generatedTeams = []; 
 
       customTeamNames = JSON.parse(localStorage.getItem('customTeamNames') || '[]').map((team, index) => ({
@@ -2221,7 +2362,8 @@
             document.getElementById("customMessageModal").classList.contains("show") || 
             document.getElementById("customConfirmationModal").classList.contains("show") || 
             document.getElementById("manageTeamModal").classList.contains("show") ||
-            e.target.closest('#startGameButton') || e.target.closest('#swapTeamsButton')) {
+            e.target.closest('#startGameButton') || e.target.closest('#swapTeamsButton') ||
+            document.getElementById("loginOverlay").style.display === 'flex') { // Adicionado para ignorar swipes durante o login
             touchStartX = null;
             return;
         }
@@ -2273,13 +2415,14 @@
             document.getElementById("customConfirmationModal").classList.contains("show") || 
             document.getElementById("manageTeamModal").classList.contains("show") ||
             e.target.closest('#startGameButton') || e.target.closest('#swapTeamsButton') ||
-            document.getElementById("gearMenu").classList.contains("show")
+            document.getElementById("gearMenu").classList.contains("show") ||
+            document.getElementById("loginOverlay").style.display === 'flex' // Adicionado para ignorar swipes durante o login
             ) {
             touchStartX = null;
             return;
         }
 
-        const sections = ['pontuacao', 'times', 'jogadores', 'agendamentos', 'configuracoes']; // Adicionado 'agendamentos'
+        const sections = ['pontuacao', 'times', 'jogadores', 'agendamentos', 'configuracoes'];
         const currentIndex = sections.findIndex(id => document.getElementById(id).classList.contains('active'));
         let nextIndex = currentIndex;
 
@@ -2524,7 +2667,6 @@
         arrow.classList.toggle('rotated');
     }
 
-    // Nova função para a seção de Agendamentos Anteriores
     function togglePastAppointmentsSection() {
         const content = document.getElementById('pastAppointmentsContent');
         const arrow = document.getElementById('pastAppointmentsArrow');
@@ -2546,8 +2688,6 @@
 
     function exportSettings() {
         const appStateToExport = {
-            players: players,
-            checkedState: checkedState,
             winningScore: winningScore,
             setsToWin: setsToWin,
             playersPerTeam: playersPerTeam, 
@@ -2555,7 +2695,6 @@
             currentTheme: currentTheme,
             vibrationEnabled: vibrationEnabled,
             showPlayersOnScoreboard: showPlayersOnScoreboard,
-            // appointments: appointments // Agendamentos agora vêm do Firestore, não do localStorage
         };
         const dataStr = JSON.stringify(appStateToExport, null, 2);
         const blob = new Blob([dataStr], { type: 'application/json' });
@@ -2578,8 +2717,6 @@
             try {
                 const importedAppState = JSON.parse(e.target.result);
                 
-                players = importedAppState.players || [];
-                checkedState = importedAppState.checkedState || {};
                 generatedTeams = []; 
                 winningScore = importedAppState.winningScore || 15;
                 setsToWin = importedAppState.setsToWin !== undefined ? importedAppState.setsToWin : 0;
@@ -2588,10 +2725,7 @@
                 currentTheme = importedAppState.currentTheme || 'dark';
                 vibrationEnabled = importedAppState.vibrationEnabled !== undefined ? importedAppState.vibrationEnabled : true;
                 showPlayersOnScoreboard = importedAppState.showPlayersOnScoreboard !== undefined ? importedAppState.showPlayersOnScoreboard : true;
-                // appointments = importedAppState.appointments || []; // Não importa agendamentos do arquivo, eles vêm do Firestore
                 
-                localStorage.setItem('players', JSON.stringify(players));
-                localStorage.setItem('checkedPlayers', JSON.stringify(checkedState));
                 localStorage.setItem('winningScore', winningScore.toString());
                 localStorage.setItem('setsToWin', setsToWin.toString());
                 localStorage.setItem('playersPerTeam', playersPerTeam.toString()); 
@@ -2599,7 +2733,6 @@
                 localStorage.setItem('theme', currentTheme);
                 localStorage.setItem('vibrationEnabled', JSON.stringify(vibrationEnabled));
                 localStorage.setItem('showPlayersOnScoreboard', JSON.stringify(showPlayersOnScoreboard));
-                // localStorage.setItem('appointments', JSON.stringify(appointments)); // Não salva agendamentos no localStorage
 
                 scoreA = 0;
                 scoreB = 0;
@@ -2622,7 +2755,6 @@
                     document.getElementById(`customTeamName${i + 1}`).value = customTeamNames[i].name;
                     document.getElementById(`customTeamColor${i + 1}`).value = customTeamNames[i].color;
                 }
-                updatePlayerList();
                 updateSetsDisplay();
                 document.getElementById("scoreA").textContent = scoreA; 
                 document.getElementById("scoreB").textContent = scoreB; 
@@ -2634,7 +2766,6 @@
                 document.getElementById('scoreboardOverlay').classList.remove('hidden');
 
                 displayMessage("Configurações importadas com sucesso!", "success");
-                // renderAppointments() é chamado pelo onSnapshot do Firestore
             } catch (error) {
                 console.error("Erro ao importar configurações:", error);
                 displayMessage("Erro ao importar arquivo. Verifique se é um arquivo de configurações válido.", "error");
@@ -2712,7 +2843,7 @@
         updateTimerDisplay();
       }, 1000);
 
-      updateTimerDisplay(); // Atualiza o display e o ícone imediatamente
+      updateTimerDisplay();
     }
 
     function stopAllTimers() {
@@ -2725,7 +2856,7 @@
         setTimerInterval = null;
       }
       isTimerRunning = false;
-      updateTimerDisplay(); // Atualiza o ícone para "play"
+      updateTimerDisplay();
     }
 
     function toggleTimer() {
@@ -2740,34 +2871,21 @@
         }
     }
 
-    // Funções para Agendamentos (AGORA USANDO FIRESTORE)
-
-    // A função loadAppointments não é mais necessária, pois onSnapshot lida com o carregamento inicial e atualizações em tempo real.
-    // function loadAppointments() { ... }
-
-    // A função saveAppointments não é mais necessária para salvar todos os appointments de uma vez.
-    // As operações de adicionar/deletar já interagem diretamente com o Firestore.
-    // function saveAppointments() { ... }
-
-    // Listener em tempo real para os agendamentos do usuário
     function listenForAppointments() {
         if (!userId) {
             console.warn("User ID não disponível para ouvir agendamentos.");
             return;
         }
-        // Caminho para a coleção de agendamentos do usuário
         const appointmentsCollectionRef = db.collection(`artifacts/${firebaseConfig.projectId}/users/${userId}/appointments`);
 
-        // onSnapshot para ouvir mudanças em tempo real
         appointmentsCollectionRef.onSnapshot((snapshot) => {
             const fetchedAppointments = [];
             snapshot.forEach((doc) => {
                 fetchedAppointments.push({
-                    id: doc.id, // Adiciona o ID do documento para futuras operações de exclusão
+                    id: doc.id,
                     ...doc.data()
                 });
             });
-            // Renderiza os agendamentos sempre que há uma mudança no Firestore
             renderAppointments(fetchedAppointments); 
             console.log("Agendamentos atualizados do Firestore:", fetchedAppointments);
         }, (error) => {
@@ -2778,7 +2896,7 @@
 
     async function addAppointment() {
         if (!userId) {
-            displayMessage("Por favor, aguarde a autenticação para adicionar agendamentos.", "warning");
+            displayMessage("Por favor, faça login para adicionar agendamentos.", "warning");
             return;
         }
 
@@ -2796,12 +2914,11 @@
         }
 
         try {
-            // Adiciona um novo documento à subcoleção 'appointments' do usuário
             await db.collection(`artifacts/${firebaseConfig.projectId}/users/${userId}/appointments`).add({
                 date: date,
                 time: time,
                 location: location,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp() // Adiciona um timestamp para ordenação
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
 
             gameDateInput.value = '';
@@ -2816,14 +2933,13 @@
 
     async function deleteAppointment(appointmentId) {
         if (!userId) {
-            displayMessage("Por favor, aguarde a autenticação para remover agendamentos.", "warning");
+            displayMessage("Por favor, faça login para remover agendamentos.", "warning");
             return;
         }
 
         showConfirmationModal("Tem certeza que deseja remover este agendamento?", async (confirmed) => {
             if (confirmed) {
                 try {
-                    // Remove o documento específico da subcoleção 'appointments' do usuário
                     await db.collection(`artifacts/${firebaseConfig.projectId}/users/${userId}/appointments`).doc(appointmentId).delete();
                     displayMessage("Agendamento removido!", "info");
                 } catch (error) {
@@ -2834,19 +2950,17 @@
         });
     }
 
-    // Função auxiliar para formatar a data
     function formatDate(dateString) {
         const [year, month, day] = dateString.split('-');
         return `${day}/${month}/${year}`;
     }
 
-    // renderAppointments agora recebe os agendamentos como argumento
     function renderAppointments(appointmentsToRender) {
         const upcomingAppointmentsList = document.getElementById('upcomingAppointmentsList');
         const pastAppointmentsList = document.getElementById('pastAppointmentsList');
         
-        upcomingAppointmentsList.innerHTML = ''; // Limpa a lista existente
-        pastAppointmentsList.innerHTML = ''; // Limpa a lista existente
+        upcomingAppointmentsList.innerHTML = '';
+        pastAppointmentsList.innerHTML = '';
 
         if (!appointmentsToRender || appointmentsToRender.length === 0) {
             upcomingAppointmentsList.innerHTML = '<p style="text-align: center; color: var(--text-color);">Nenhum agendamento futuro. Adicione um para começar!</p>';
@@ -2854,8 +2968,6 @@
             return;
         }
 
-        // Ordena os agendamentos por data e hora (timestamp do Firestore é melhor para isso)
-        // Se o timestamp for null (para agendamentos antigos sem ele), use date/time para ordenação
         appointmentsToRender.sort((a, b) => {
             const timeA = a.timestamp ? a.timestamp.toDate() : new Date(`${a.date}T${a.time}`);
             const timeB = b.timestamp ? b.timestamp.toDate() : new Date(`${b.date}T${b.time}`);
@@ -2868,15 +2980,13 @@
 
         appointmentsToRender.forEach((appointment) => {
             const li = document.createElement('li');
-            // O ID do documento Firestore é usado para a exclusão
             li.dataset.id = appointment.id; 
 
             const appointmentDateTime = new Date(`${appointment.date}T${appointment.time}`);
-            // Para comparar apenas a data, zere as horas, minutos, segundos e milissegundos
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const appointmentDateOnly = new Date(appointmentDateTime.getFullYear(), appointmentDateTime.getMonth(), appointmentDateTime.getDate());
 
-            const isPast = appointmentDateOnly < today; // Compara apenas as datas
+            const isPast = appointmentDateOnly < today;
 
             const statusClass = isPast ? 'appointment-past' : 'appointment-upcoming';
 
@@ -2902,25 +3012,59 @@
             }
         });
 
-        // Exibe mensagens se as listas estiverem vazias
         if (!hasUpcoming) {
             upcomingAppointmentsList.innerHTML = '<p style="text-align: center; color: var(--text-color);">Nenhum agendamento futuro.</p>';
         }
-        // A mensagem para jogos anteriores agora está dentro do collapsible-content
         if (!hasPast) {
             pastAppointmentsList.innerHTML = '<p style="text-align: center; color: var(--text-color);">Nenhum jogo anterior registrado.</p>';
         }
 
-        // Adiciona event listeners aos botões de excluir
         document.querySelectorAll('.delete-appointment-btn').forEach(button => {
             button.addEventListener('click', (event) => {
-                const idToDelete = event.currentTarget.dataset.id; // Pega o ID do documento
+                const idToDelete = event.currentTarget.dataset.id;
                 deleteAppointment(idToDelete);
             });
         });
     }
 
-    // Função para exibir a versão do sistema lendo o service-worker.js
+    function listenForPlayers() {
+        if (!userId) {
+            console.warn("User ID não disponível para ouvir jogadores.");
+            return;
+        }
+        const playersCollectionRef = db.collection(`artifacts/${firebaseConfig.projectId}/users/${userId}/players`);
+
+        playersCollectionRef.onSnapshot((snapshot) => {
+            const fetchedPlayers = [];
+            snapshot.forEach((doc) => {
+                fetchedPlayers.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+            renderPlayerList(fetchedPlayers); 
+            console.log("Jogadores atualizados do Firestore:", fetchedPlayers);
+        }, (error) => {
+            console.error("Erro ao ouvir jogadores do Firestore:", error);
+            displayMessage("Erro ao carregar jogadores do Firebase. Verifique sua conexão ou regras de segurança.", "error");
+        });
+    }
+
+    async function deletePlayerFromFirestore(playerId) {
+        if (!userId) {
+            displayMessage("Por favor, faça login para remover jogadores.", "warning");
+            return;
+        }
+        try {
+            await db.collection(`artifacts/${firebaseConfig.projectId}/users/${userId}/players`).doc(playerId).delete();
+            displayMessage("Jogador removido!", "info");
+            resetGame();
+        } catch (error) {
+            console.error("Erro ao remover jogador:", error);
+            displayMessage(`Erro ao remover jogador: ${error.message}`, "error");
+        }
+    }
+
     async function displaySystemVersion() {
         console.log('Attempting to load system version from service-worker.js...');
         try {
@@ -2934,7 +3078,7 @@
             }
 
             const text = await response.text();
-            console.log('Service Worker content fetched successfully. Content start:', text.substring(0, 50) + '...'); // Log first 50 chars
+            console.log('Service Worker content fetched successfully. Content start:', text.substring(0, 50) + '...');
             const match = text.match(/const CACHE_NAME = '(placar-volei-v[^']+)';/);
             
             if (match && match[1]) {
@@ -2958,9 +3102,20 @@
           .catch(error => {});
       }
       loadSettings();
-      // loadAppointments(); // Não é mais necessário chamar aqui, o onSnapshot faz isso
-      // renderAppointments(); // Não é mais necessário chamar aqui, o onSnapshot faz isso
-      displaySystemVersion(); // Adicionado: Exibe a versão do sistema
+      displaySystemVersion();
+
+      // Get references to login UI elements
+      loginOverlay = document.getElementById('loginOverlay');
+      loginMessage = document.getElementById('loginMessage');
+      appContent = document.getElementById('appContent');
+
+      // Initially hide app content and show login overlay
+      appContent.style.display = 'none';
+      loginOverlay.style.display = 'flex';
+      loginMessage.textContent = "Verificando autenticação...";
+
+      // Start authentication process
+      authenticateUser();
 
       scoreA = 0;
       scoreB = 0;
@@ -2983,7 +3138,6 @@
       updateSwapTeamsButtonVisibility();
       updateResetButtonVisibility();
 
-      updatePlayerList();
       renderGeneratedTeams();
 
       setupSwipeToDecrease('sectionA', 'A');
@@ -3004,13 +3158,7 @@
             changeScore('B', 1);
         }
       });
-      updateTimerDisplay(); // Garante que o ícone inicial seja "play"
-
-      // Adiciona o listener para salvar agendamentos antes de descarregar a página
-      // Esta linha não é mais necessária, pois o onSnapshot lida com a persistência em tempo real
-      // window.addEventListener('beforeunload', () => {
-      //     saveAppointments();
-      // });
+      updateTimerDisplay();
     }
   </script>
 </body>
