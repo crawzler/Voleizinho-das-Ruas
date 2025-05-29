@@ -37,11 +37,10 @@
       --setting-item-bg: #3a3a3a;
       --setting-section-bg: #222;
       --setting-item-border: rgba(255,255,255,.1);
-      /* Novas variáveis para cores dos cartões de agendamento */
-      --appointment-card-bg: #2c2c2c; /* Fundo do cartão */
-      --appointment-card-border: #007bff; /* Borda do cartão (azul) */
-      --appointment-card-past-bg: #3a3a3a; /* Fundo do cartão passado */
-      --appointment-icon-color: #fff; /* Ícones brancos para tema escuro */
+      --appointment-card-bg: #2c2c2c;
+      --appointment-card-border: #007bff;
+      --appointment-card-past-bg: #3a3a3a;
+      --appointment-icon-color: #fff;
     }
     body.light-theme {
       --bg-color: #f0f0f0;
@@ -73,11 +72,10 @@
       --setting-item-bg: #e0e0e0;
       --setting-section-bg: #f0f0f0;
       --setting-item-border: rgba(0,0,0,.1);
-      /* Novas variáveis para cores dos cartões de agendamento - Tema Claro */
       --appointment-card-bg: #f0f0f0;
-      --appointment-card-border: #4682B4; /* Borda do cartão (azul) */
-      --appointment-card-past-bg: #e0e0e0; /* Fundo do cartão passado */
-      --appointment-icon-color: #666; /* Ícones cinza escuro para tema claro */
+      --appointment-card-border: #4682B4;
+      --appointment-card-past-bg: #e0e0e0;
+      --appointment-icon-color: #666;
     }
     * {
       margin: 0;
@@ -948,19 +946,19 @@
       opacity: 0;
       transition: opacity .3s ease-in-out, background-color .3s ease;
       display: flex;
-      flex-direction: column; /* Alterado para coluna para empilhar os timers */
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 5px; /* Espaçamento entre os timers */
+      gap: 5px;
       width: auto;
       min-width: 150px;
-      cursor: pointer; /* Adicionado para indicar que é clicável */
+      cursor: pointer;
     }
     .game-timer.show {
       opacity: 1;
     }
     .game-timer i {
-      font-size: 1.5rem; /* Tamanho do ícone */
+      font-size: 1.5rem;
     }
     .game-timer .timer-main {
         display: flex;
@@ -968,45 +966,42 @@
         gap: 10px;
     }
     .game-timer .timer-set {
-        font-size: 1.2rem; /* Tamanho menor para o cronômetro do set */
-        color: rgba(255, 255, 255, 0.8); /* Cor mais suave para o set timer */
+        font-size: 1.2rem;
+        color: rgba(255, 255, 255, 0.8);
         text-shadow: 1px 1px 2px rgba(0,0,0,.4);
     }
-    /* Estilos para a nova seção de Agendamentos */
     #agendamentos .input-row {
       display: flex;
       justify-content: space-between;
       gap: 10px;
       margin-bottom: 10px;
-      flex-wrap: wrap; /* Permite que os inputs quebrem a linha em telas menores */
+      flex-wrap: wrap;
     }
     #agendamentos .input-group {
-      flex: 1; /* Permite que os grupos de input cresçam e ocupem o espaço */
-      min-width: 120px; /* Garante que não fiquem muito pequenos */
-      margin-bottom: 0; /* Removido para evitar espaçamento duplo com input-row */
+      flex: 1;
+      min-width: 120px;
+      margin-bottom: 0;
     }
     #agendamentos .input-group label {
       font-weight: bold;
       margin-bottom: 5px;
-      display: block; /* Garante que o label ocupe sua própria linha */
+      display: block;
     }
     #agendamentos ul {
       display: flex;
       flex-wrap: wrap;
-      gap: 15px; /* Espaçamento entre os cartões */
+      gap: 15px;
       padding: 0;
     }
     #agendamentos ul li {
-      background: none; /* Removido background do li, pois o cartão terá o seu */
+      background: none;
       padding: 0;
-      margin-bottom: 0; /* Removido para evitar espaçamento duplo com gap */
+      margin-bottom: 0;
       border-radius: 0;
-      display: block; /* Para que o cartão seja o único item do li */
-      width: 100%; /* Ocupa a largura total por padrão */
-      max-width: 400px; /* Limita a largura máxima do cartão */
+      display: block;
+      width: 100%;
+      max-width: 400px;
     }
-
-    /* Estilos para os Cartões de Agendamento */
     .appointment-card {
         background-color: var(--appointment-card-bg);
         border-radius: 10px;
@@ -1014,17 +1009,15 @@
         display: flex;
         flex-direction: column;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        position: relative; /* Para posicionar o botão de exclusão */
+        position: relative;
         border: 1px solid var(--appointment-card-border);
-        height: 100%; /* Garante que o cartão preencha o li */
+        height: 100%;
     }
-
     .appointment-card.appointment-past {
-        opacity: 0.8; /* Jogos passados um pouco mais opacos */
+        opacity: 0.8;
         background-color: var(--appointment-card-past-bg);
-        border-color: var(--accent-color); /* Past items get a more neutral border */
+        border-color: var(--accent-color);
     }
-
     .appointment-card .card-header {
         display: flex;
         justify-content: space-between;
@@ -1033,65 +1026,55 @@
         padding-bottom: 10px;
         border-bottom: 1px dashed rgba(255, 255, 255, 0.2);
     }
-
     .appointment-card .card-header span {
         font-weight: bold;
         color: var(--text-color);
         display: flex;
         align-items: center;
-        font-size: 0.95em; /* Ajuste para caber melhor */
+        font-size: 0.95em;
     }
-
     .appointment-card .card-header i {
         margin-right: 8px;
-        color: var(--appointment-icon-color); /* Usando a nova variável para a cor do ícone */
+        color: var(--appointment-icon-color);
     }
-
     .appointment-card .card-body {
-        flex-grow: 1; /* Permite que o corpo ocupe o espaço restante */
+        flex-grow: 1;
     }
-
     .appointment-card p {
         margin: 5px 0;
         color: var(--text-color);
-        display: flex; /* Para alinhar ícone com texto */
-        align-items: center; /* Para alinhar ícone com texto */
+        display: flex;
+        align-items: center;
     }
-
     .appointment-card p i {
         margin-right: 8px;
-        color: var(--appointment-icon-color); /* Usando a nova variável para a cor do ícone */
+        color: var(--appointment-icon-color);
     }
-
     .delete-appointment-btn {
         position: absolute;
         top: 10px;
         right: 10px;
         background: none;
         border: none;
-        color: rgba(255, 0, 0, 0.7); /* Vermelho para exclusão */
+        color: rgba(255, 0, 0, 0.7);
         font-size: 1.2em;
         cursor: pointer;
         padding: 5px;
         border-radius: 50%;
         transition: background-color 0.3s ease;
     }
-
     .delete-appointment-btn:hover {
         background-color: rgba(255, 0, 0, 0.1);
         color: red;
     }
-
-    /* Media query para telas maiores */
     @media (min-width: 600px) {
         #agendamentos ul li {
-            width: calc(50% - 10px); /* Dois cartões por linha com espaçamento */
+            width: calc(50% - 10px);
         }
     }
-
     @media (min-width: 900px) {
         #agendamentos ul li {
-            width: calc(33.33% - 10px); /* Três cartões por linha */
+            width: calc(33.33% - 10px);
         }
     }
   </style>
@@ -1178,7 +1161,6 @@
   </div>
   <div id="agendamentos" class="section">
     <h2 style="margin-bottom:10px;">Agendamentos de Jogos</h2>
-
     <div class="input-row">
       <div class="input-group">
         <label for="gameDate">Data:</label>
@@ -1195,10 +1177,8 @@
       </div>
     </div>
     <button class="btn" onclick="addAppointment()">Adicionar Agendamento</button>
-
     <h3 style="margin: 20px 0px 10px 0px;">Próximos Jogos</h3>
     <ul id="upcomingAppointmentsList"></ul>
-
     <div class="collapsible-container">
         <div class="collapsible-header" onclick="togglePastAppointmentsSection()">
             <h3>Jogos Anteriores</h3>
@@ -1384,12 +1364,12 @@
     let currentPlayingTeamA = { name: 'Time A', players: [], color: '#007bff' };
     let currentPlayingTeamB = { name: 'Time B', players: [], color: '#dc3545' };
     let activeManageTeamId = null;
-    let gameTimerInterval = null; // Renomeado para clareza
-    let setTimerInterval = null; // Novo cronômetro para o set
+    let gameTimerInterval = null;
+    let setTimerInterval = null;
     let gameTimeInSeconds = 0;
-    let setTimeInSeconds = 0; // Novo contador de tempo para o set
-    let isTimerRunning = false; // Variável para controlar o estado do cronômetro
-    let appointments = []; // Nova variável para agendamentos
+    let setTimeInSeconds = 0;
+    let isTimerRunning = false;
+    let appointments = [];
 
     function toggleMenu() {
       const menu = document.getElementById("gearMenu");
@@ -1424,7 +1404,7 @@
       if (id === 'times') {
           renderGeneratedTeams();
       } else if (id === 'agendamentos') {
-          renderAppointments(); // Renderiza os agendamentos ao navegar para a tela
+          renderAppointments();
       }
     }
 
@@ -1576,10 +1556,10 @@
       updateSwapTeamsButtonVisibility(); 
       showStartGameModal();
       generatedTeams = [];
-      stopAllTimers(); // Para ambos os cronômetros
+      stopAllTimers();
       gameTimeInSeconds = 0;
-      setTimeInSeconds = 0; // Zera o tempo do set também
-      updateTimerDisplay(); // Atualiza o display de ambos
+      setTimeInSeconds = 0;
+      updateTimerDisplay();
       document.getElementById('gameTimer').classList.remove('show');
     }
 
@@ -1599,7 +1579,7 @@
     function shuffle(array) {
       for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
+        [array[i], array[j]] = [array[i], array[j]];
       }
     }
 
@@ -1664,7 +1644,7 @@
             } else {
                 team.players.forEach(player => {
                     const playerLi = document.createElement("li");
-                    li.textContent = player;
+                    playerLi.textContent = player;
                     playersList.appendChild(playerLi);
                 });
             }
@@ -1740,7 +1720,7 @@
       if (winner) {
         gameEnded = true;
         lastWinningTeam = winner;
-        stopAllTimers(); // Para ambos os cronômetros ao final do set/partida
+        stopAllTimers();
         const winningTeamName = winner === 'A' ? currentPlayingTeamA.name : currentPlayingTeamB.name;
         showVictoryAnimation(winner, winningTeamName);
         updateSwapTeamsButtonVisibility(); 
@@ -1849,7 +1829,7 @@
       displayMessage(`Pontuação para vencer aumentada para ${winningScore}!`, "success");
       hideIncreaseScoreModal();
       gameEnded = false;
-      startAllTimers(); // Reinicia os cronômetros se a partida continuar
+      startAllTimers();
     }
 
     function showStartGameModal() {
@@ -1937,9 +1917,9 @@
       updateScoreboardTeamsDisplay();
       updateResetButtonVisibility();
       updateSwapTeamsButtonVisibility();
-      gameTimeInSeconds = 0; // Zera o tempo ao iniciar uma nova partida
-      setTimeInSeconds = 0; // Zera o tempo do set também
-      startAllTimers(); // Inicia ambos os cronômetros
+      gameTimeInSeconds = 0;
+      setTimeInSeconds = 0;
+      startAllTimers();
     }
 
     function startNewGame() {
@@ -2004,9 +1984,9 @@
 
       updateScoreboardTeamsDisplay();
       lastWinningTeam = null; 
-      gameTimeInSeconds = 0; // Zera o tempo ao iniciar um novo jogo
-      setTimeInSeconds = 0; // Zera o tempo do set também
-      startAllTimers(); // Inicia ambos os cronômetros
+      gameTimeInSeconds = 0;
+      setTimeInSeconds = 0;
+      startAllTimers();
     }
 
     function startNewSet() {
@@ -2029,8 +2009,8 @@
 
       updateScoreboardTeamsDisplay();
       updateSwapTeamsButtonVisibility(); 
-      setTimeInSeconds = 0; // Zera o tempo do set ao iniciar um novo set
-      startAllTimers(); // Inicia ambos os cronômetros
+      setTimeInSeconds = 0;
+      startAllTimers();
     }
 
     function showSuperVictoryAnimation(winningTeamName) {
@@ -2244,7 +2224,7 @@
             return;
         }
 
-        const sections = ['pontuacao', 'times', 'jogadores', 'agendamentos', 'configuracoes']; // Adicionado 'agendamentos'
+        const sections = ['pontuacao', 'times', 'jogadores', 'agendamentos', 'configuracoes'];
         const currentIndex = sections.findIndex(id => document.getElementById(id).classList.contains('active'));
         let nextIndex = currentIndex;
 
@@ -2489,7 +2469,6 @@
         arrow.classList.toggle('rotated');
     }
 
-    // Nova função para a seção de Agendamentos Anteriores
     function togglePastAppointmentsSection() {
         const content = document.getElementById('pastAppointmentsContent');
         const arrow = document.getElementById('pastAppointmentsArrow');
@@ -2520,7 +2499,7 @@
             currentTheme: currentTheme,
             vibrationEnabled: vibrationEnabled,
             showPlayersOnScoreboard: showPlayersOnScoreboard,
-            appointments: appointments // Inclui agendamentos na exportação
+            appointments: appointments
         };
         const dataStr = JSON.stringify(appStateToExport, null, 2);
         const blob = new Blob([dataStr], { type: 'application/json' });
@@ -2553,7 +2532,7 @@
                 currentTheme = importedAppState.currentTheme || 'dark';
                 vibrationEnabled = importedAppState.vibrationEnabled !== undefined ? importedAppState.vibrationEnabled : true;
                 showPlayersOnScoreboard = importedAppState.showPlayersOnScoreboard !== undefined ? importedAppState.showPlayersOnScoreboard : true;
-                appointments = importedAppState.appointments || []; // Importa agendamentos
+                appointments = importedAppState.appointments || [];
                 
                 localStorage.setItem('players', JSON.stringify(players));
                 localStorage.setItem('checkedPlayers', JSON.stringify(checkedState));
@@ -2564,7 +2543,7 @@
                 localStorage.setItem('theme', currentTheme);
                 localStorage.setItem('vibrationEnabled', JSON.stringify(vibrationEnabled));
                 localStorage.setItem('showPlayersOnScoreboard', JSON.stringify(showPlayersOnScoreboard));
-                localStorage.setItem('appointments', JSON.stringify(appointments)); // Salva agendamentos importados
+                localStorage.setItem('appointments', JSON.stringify(appointments));
 
                 scoreA = 0;
                 scoreB = 0;
@@ -2599,7 +2578,7 @@
                 document.getElementById('scoreboardOverlay').classList.remove('hidden');
 
                 displayMessage("Configurações importadas com sucesso!", "success");
-                renderAppointments(); // Renderiza os agendamentos após a importação
+                renderAppointments();
             } catch (error) {
                 console.error("Erro ao importar configurações:", error);
                 displayMessage("Erro ao importar arquivo. Verifique se é um arquivo de configurações válido.", "error");
@@ -2677,7 +2656,7 @@
         updateTimerDisplay();
       }, 1000);
 
-      updateTimerDisplay(); // Atualiza o display e o ícone imediatamente
+      updateTimerDisplay();
     }
 
     function stopAllTimers() {
@@ -2690,7 +2669,7 @@
         setTimerInterval = null;
       }
       isTimerRunning = false;
-      updateTimerDisplay(); // Atualiza o ícone para "play"
+      updateTimerDisplay();
     }
 
     function toggleTimer() {
@@ -2705,15 +2684,11 @@
         }
     }
 
-    // Funções para Agendamentos
     function loadAppointments() {
-        console.log('Carregando agendamentos do localStorage...');
         appointments = JSON.parse(localStorage.getItem('appointments') || '[]');
-        console.log('Agendamentos carregados:', appointments);
     }
 
     function saveAppointments() {
-        console.log('Salvando agendamentos no localStorage:', appointments);
         localStorage.setItem('appointments', JSON.stringify(appointments));
     }
 
@@ -2731,7 +2706,7 @@
             return;
         }
 
-        const newAppointment = { date, time, location }; // Objeto de agendamento atualizado, sem times
+        const newAppointment = { date, time, location };
         appointments.push(newAppointment);
         saveAppointments();
         renderAppointments();
@@ -2753,7 +2728,6 @@
         });
     }
 
-    // Função auxiliar para formatar a data
     function formatDate(dateString) {
         const [year, month, day] = dateString.split('-');
         return `${day}/${month}/${year}`;
@@ -2763,8 +2737,8 @@
         const upcomingAppointmentsList = document.getElementById('upcomingAppointmentsList');
         const pastAppointmentsList = document.getElementById('pastAppointmentsList');
         
-        upcomingAppointmentsList.innerHTML = ''; // Limpa a lista existente
-        pastAppointmentsList.innerHTML = ''; // Limpa a lista existente
+        upcomingAppointmentsList.innerHTML = '';
+        pastAppointmentsList.innerHTML = '';
 
         const appointments = JSON.parse(localStorage.getItem('appointments') || '[]');
 
@@ -2774,7 +2748,6 @@
             return;
         }
 
-        // Ordena os agendamentos por data e hora
         appointments.sort((a, b) => {
             const dateTimeA = new Date(`${a.date}T${a.time}`);
             const dateTimeB = new Date(`${b.date}T${b.time}`);
@@ -2787,14 +2760,13 @@
 
         appointments.forEach((appointment, index) => {
             const li = document.createElement('li');
-            li.dataset.index = index; // Adiciona um atributo para fácil referência
+            li.dataset.index = index;
 
             const appointmentDateTime = new Date(`${appointment.date}T${appointment.time}`);
-            // Para comparar apenas a data, zere as horas, minutos, segundos e milissegundos
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const appointmentDateOnly = new Date(appointmentDateTime.getFullYear(), appointmentDateTime.getMonth(), appointmentDateTime.getDate());
 
-            const isPast = appointmentDateOnly < today; // Compara apenas as datas
+            const isPast = appointmentDateOnly < today;
 
             const statusClass = isPast ? 'appointment-past' : 'appointment-upcoming';
 
@@ -2820,16 +2792,13 @@
             }
         });
 
-        // Exibe mensagens se as listas estiverem vazias
         if (!hasUpcoming) {
             upcomingAppointmentsList.innerHTML = '<p style="text-align: center; color: var(--text-color);">Nenhum agendamento futuro.</p>';
         }
-        // A mensagem para jogos anteriores agora está dentro do collapsible-content
         if (!hasPast) {
             pastAppointmentsList.innerHTML = '<p style="text-align: center; color: var(--text-color);">Nenhum jogo anterior registrado.</p>';
         }
 
-        // Adiciona event listeners aos botões de excluir
         document.querySelectorAll('.delete-appointment-btn').forEach(button => {
             button.addEventListener('click', (event) => {
                 const indexToDelete = event.currentTarget.dataset.index;
@@ -2838,36 +2807,25 @@
         });
     }
 
-    // Função para exibir a versão do sistema lendo o service-worker.js
     async function displaySystemVersion() {
-        console.log('Attempting to load system version from service-worker.js...');
         try {
             const response = await fetch('./service-worker.js');
-            console.log('Fetch response received:', response);
-
             if (!response.ok) {
-                console.error('Service Worker fetch failed with status:', response.status, response.statusText);
                 document.getElementById('systemVersionDisplay').textContent = 'Erro ao carregar (status: ' + response.status + ')';
                 return;
             }
-
             const text = await response.text();
-            console.log('Service Worker content fetched successfully. Content start:', text.substring(0, 50) + '...'); // Log first 50 chars
-            const match = text.match(/const CACHE_NAME = '(placar-volei-v[^']+)';/);
+            const match = text.match(/const CACHE_NAME = '(volei-das-ruas-v[^']+)';/);
             
             if (match && match[1]) {
                 document.getElementById('systemVersionDisplay').textContent = match[1];
-                console.log('System version loaded:', match[1]);
             } else {
                 document.getElementById('systemVersionDisplay').textContent = 'Não disponível';
-                console.warn('System version pattern not found in service-worker.js. Content might be unexpected.');
             }
         } catch (error) {
-            console.error('Erro ao carregar a versão do Service Worker:', error);
             document.getElementById('systemVersionDisplay').textContent = 'Erro ao carregar';
         }
     }
-
 
     window.onload = () => {
       if ('serviceWorker' in navigator) {
@@ -2876,9 +2834,9 @@
           .catch(error => {});
       }
       loadSettings();
-      loadAppointments(); // Carrega os agendamentos ao iniciar
-      renderAppointments(); // Adicionado: Renderiza os agendamentos após o carregamento
-      displaySystemVersion(); // Adicionado: Exibe a versão do sistema
+      loadAppointments();
+      renderAppointments();
+      displaySystemVersion();
 
       scoreA = 0;
       scoreB = 0;
@@ -2922,9 +2880,8 @@
             changeScore('B', 1);
         }
       });
-      updateTimerDisplay(); // Garante que o ícone inicial seja "play"
+      updateTimerDisplay();
 
-      // Adiciona o listener para salvar agendamentos antes de descarregar a página
       window.addEventListener('beforeunload', () => {
           saveAppointments();
       });
