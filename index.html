@@ -1473,6 +1473,30 @@
     const authenticateUser = async () => {
         console.log("Attempting authentication...");
 
+        // Handle redirect result first, as this runs when the page reloads after a successful Google login.
+        try {
+            const result = await auth.getRedirectResult();
+            if (result.user) {
+                console.log("Redirect result: User successfully signed in.", result.user.displayName || result.user.email);
+                // The onAuthStateChanged listener will handle the UI update and Firestore listeners
+                return; // Exit, as onAuthStateChanged will be triggered
+            } else {
+                console.log("Redirect result: No user from redirect, or not a redirect flow.");
+            }
+        } catch (error) {
+            console.error("Erro ao obter resultado do redirecionamento:", error);
+            if (error.code === 'auth/popup-closed-by-user') {
+                displayMessage("Login com Google cancelado. A janela pop-up foi fechada.", "warning");
+            } else if (error.code === 'auth/unauthorized-domain') {
+                displayMessage("Domínio não autorizado para operações OAuth. Verifique o console do Firebase.", "error");
+            } else {
+                displayMessage(`Erro no login com Google: ${error.message}`, "error");
+            }
+            loginMessage.textContent = `Erro no login: ${error.message}. Recarregue a página.`;
+            // Do not proceed with signInWithRedirect if there was an error with redirect result
+            return;
+        }
+
         // Listener para mudanças no estado de autenticação
         auth.onAuthStateChanged(async (user) => {
             if (user) {
@@ -1487,12 +1511,12 @@
             } else {
                 userId = null;
                 document.getElementById('userIdDisplay').textContent = 'Não autenticado';
-                console.log("User not authenticated. Redirecting for Google Sign-In.");
+                console.log("Nenhum usuário logado. Iniciando login com Google...");
                 loginOverlay.style.display = 'flex'; // Show login overlay
                 appContent.style.display = 'none'; // Hide app content
                 loginMessage.textContent = "Redirecionando para o login com Google...";
 
-                // Attempt Google Sign-In redirect
+                // Attempt Google Sign-In redirect only if no user is currently logged in
                 const provider = new firebase.auth.GoogleAuthProvider();
                 try {
                     await auth.signInWithRedirect(provider);
@@ -1501,32 +1525,11 @@
                     loginMessage.textContent = `Erro: ${error.message}. Por favor, recarregue a página.`;
                     displayMessage("Erro ao iniciar login com Google. Por favor, recarregue a página.", "error");
                 }
-                // Limpa as listas se o usuário não estiver autenticado (já que não há mais login anônimo)
+                // Limpa as listas se o usuário não estiver autenticado
                 renderAppointments([]);
                 renderPlayerList([]);
             }
         });
-
-        // Handle redirect result (important for signInWithRedirect)
-        try {
-            const result = await auth.getRedirectResult();
-            if (result.user) {
-                console.log("Redirect result: User successfully signed in.");
-                // onAuthStateChanged will handle the UI update
-            } else {
-                console.log("Redirect result: No user from redirect, or not a redirect flow.");
-            }
-        } catch (error) {
-            console.error("Erro ao obter resultado do redirecionamento:", error);
-            if (error.code === 'auth/popup-closed-by-user') {
-                displayMessage("Login com Google cancelado. A janela pop-up foi fechada.", "warning");
-            } else if (error.code === 'auth/unauthorized-domain') {
-                displayMessage("Domínio não autorizado para operações OAuth. Verifique o console do Firebase.", "error");
-            } else {
-                displayMessage(`Erro no login com Google: ${error.message}`, "error");
-            }
-            loginMessage.textContent = `Erro no login: ${error.message}. Recarregue a página.`;
-        }
     };
 
     function toggleMenu() {
