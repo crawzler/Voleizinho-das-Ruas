@@ -1,4 +1,4 @@
-const CACHE_NAME = 'volei-das-ruas-v0.1';
+const CACHE_NAME = 'volei-das-ruas-v0.2';
 
 const urlsToCache = [
   './',

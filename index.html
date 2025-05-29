@@ -41,6 +41,8 @@
       --appointment-card-border: #007bff;
       --appointment-card-past-bg: #3a3a3a;
       --appointment-icon-color: #fff;
+      --google-button-bg: #4285F4;
+      --google-button-hover-bg: #357ae8;
     }
     body.light-theme {
       --bg-color: #f0f0f0;
@@ -76,6 +78,8 @@
       --appointment-card-border: #4682B4;
       --appointment-card-past-bg: #e0e0e0;
       --appointment-icon-color: #666;
+      --google-button-bg: #4285F4;
+      --google-button-hover-bg: #357ae8;
     }
     * {
       margin: 0;
@@ -248,9 +252,6 @@
       width: 200px;
       cursor: pointer;
       transition: background-color .3s ease, color .3s ease;
-    }
-    .menu button:hover {
-      background-color: var(--menu-hover-bg-color);
     }
     .menu button.disabled {
       opacity: .5;
@@ -610,7 +611,7 @@
     .score.decrease-anim {
       animation: scoreDecreaseAnim .3s ease-out forwards;
     }
-    .game-over-modal, .increase-score-modal, .start-game-modal, .super-victory-modal, .custom-message-modal, .custom-confirmation-modal, .manage-team-modal {
+    .game-over-modal, .increase-score-modal, .start-game-modal, .super-victory-modal, .custom-message-modal, .custom-confirmation-modal, .manage-team-modal, .auth-modal {
       display: none;
       position: fixed;
       top: 0;
@@ -624,11 +625,11 @@
       opacity: 0;
       transition: opacity .3s ease-out;
     }
-    .game-over-modal.show, .increase-score-modal.show, .start-game-modal.show, .super-victory-modal.show, .custom-message-modal.show, .custom-confirmation-modal.show, .manage-team-modal.show {
+    .game-over-modal.show, .increase-score-modal.show, .start-game-modal.show, .super-victory-modal.show, .custom-message-modal.show, .custom-confirmation-modal.show, .manage-team-modal.show, .auth-modal.show {
       display: flex;
       opacity: 1;
     }
-    .modal-content, .increase-score-content, .super-victory-content, .custom-message-content, .custom-confirmation-content, .manage-team-content {
+    .modal-content, .increase-score-content, .super-victory-content, .custom-message-content, .custom-confirmation-content, .manage-team-content, .auth-content {
       background-color: var(--modal-content-bg);
       padding: clamp(10px,4vw,20px);
       border-radius: 15px;
@@ -668,11 +669,11 @@
       overflow-y: auto;
       gap: 15px;
     }
-    .modal-content h3, .increase-score-content h3, .super-victory-content h3, .start-game-content h3, .custom-message-content h3, .custom-confirmation-content h3, .manage-team-content h3 {
+    .modal-content h3, .increase-score-content h3, .super-victory-content h3, .start-game-content h3, .custom-message-content h3, .custom-confirmation-content h3, .manage-team-content h3, .auth-content h3 {
       font-size: clamp(1.6rem,5.5vw,2.2rem);
       margin-bottom: 0;
     }
-    .modal-content p, .increase-score-content p, .super-victory-content p, .start-game-content p, .custom-message-content p, .custom-confirmation-content p, .manage-team-content p {
+    .modal-content p, .increase-score-content p, .super-victory-content p, .start-game-content p, .custom-message-content p, .custom-confirmation-content p, .manage-team-content p, .auth-content p {
       font-size: clamp(.9rem,3vw,1.3rem);
       margin-bottom: 0;
     }
@@ -1077,6 +1078,30 @@
             width: calc(33.33% - 10px);
         }
     }
+    .google-button {
+      background-color: var(--google-button-bg) !important;
+      color: white !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 20px !important;
+      font-size: 1.1rem !important;
+      border-radius: 8px !important;
+      box-shadow: 0 2px 4px rgba(0,0,0,.2);
+      transition: background-color .2s ease, box-shadow .2s ease;
+    }
+    .google-button:hover {
+      background-color: var(--google-button-hover-bg) !important;
+      box-shadow: 0 4px 8px rgba(0,0,0,.3);
+    }
+    .google-button i {
+      font-size: 1.2em;
+    }
+    .auth-content button {
+      width: 100%;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -1091,8 +1116,9 @@
     <button onclick="navigateTo('agendamentos')"><i class="fa-solid fa-calendar-alt" style="margin-right:.5rem;"></i>Agendamentos</button>
     <button onclick="navigateTo('configuracoes')"><i class="fa-solid fa-gear" style="margin-right:.5rem;"></i>Configurações</button>
     <button id="resetGameButton" class="disabled" onclick="confirmReset()"><i class="fa-solid fa-rotate-right" style="margin-right:.5rem;"></i>Reiniciar Partida</button>
+    <button id="logoutButton" style="display:none;" onclick="logoutUser()"><i class="fa-solid fa-sign-out-alt" style="margin-right:.5rem;"></i>Sair</button>
   </div>
-  <div id="pontuacao" class="section active">
+  <div id="pontuacao" class="section">
     <div class="scoreboard-overlay" id="scoreboardOverlay"></div>
     <div class="scoreboard">
       <div class="team-section" id="sectionA">
@@ -1255,7 +1281,7 @@
                 <input type="color" id="customTeamColor4" value="#ffc107" onchange="saveSettings()">
             </div>
             <div class="config-group color-picker-group">
-                <label for="customTeamName5">Time 5:</label>
+                <label for="customTeamName5">Time 5:</slabel>
                 <input type="text" id="customTeamName5" value="" onchange="saveSettings()" style="flex:1;">
                 <input type="color" id="customTeamColor5" value="#6f42c1" onchange="saveSettings()">
             </div>
@@ -1284,6 +1310,10 @@
     <div class="config-group" style="margin-top: 20px; text-align: center; padding: 15px; border-radius: 10px; background-color: var(--setting-section-bg); border: 1px solid var(--setting-item-border);">
         <label style="font-size: 1.1em; margin-bottom: 5px; color: var(--text-color);">Versão do Sistema:</label>
         <span id="systemVersionDisplay" style="font-weight: bold; font-size: 1.2em; color: var(--text-color);">Carregando...</span>
+    </div>
+    <div class="config-group" style="margin-top: 20px; text-align: center; padding: 15px; border-radius: 10px; background-color: var(--setting-section-bg); border: 1px solid var(--setting-item-border);">
+        <label style="font-size: 1.1em; margin-bottom: 5px; color: var(--text-color);">ID do Usuário:</label>
+        <span id="userIdDisplay" style="font-weight: bold; font-size: 1.2em; color: var(--text-color);">Carregando...</span>
     </div>
   </div>
   <div id="gameOverModal" class="game-over-modal">
@@ -1344,18 +1374,55 @@
       </div>
     </div>
   </div>
-  <script>
+
+  <div id="authModal" class="auth-modal show">
+    <div class="modal-content auth-content">
+      <h3>Bem-vindo ao Placar Vôlei!</h3>
+      <p>Escolha como deseja continuar:</p>
+      <div class="modal-buttons">
+        <button class="google-button" onclick="signInWithGoogle()"><i class="fa-brands fa-google"></i> Entrar com Google</button>
+        <button onclick="continueAnonymously()">Entrar sem Logar (usuário temporário)</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, deleteDoc, query, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Global variables provided by Canvas environment (or fallback for local testing)
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : JSON.stringify({
+        apiKey: "AIzaSyBeu7H2Us7FYNb0yhGx8pkYj_aeTgnndUA",
+        authDomain: "voleizinho-das-ruas.firebaseapp.com",
+        databaseURL: "https://voleizinho-das-ruas-default-rtdb.firebaseio.com",
+        projectId: "voleizinho-das-ruas",
+        storageBucket: "voleizinho-das-ruas.firebasestorage.app",
+        messagingSenderId: "394754605937",
+        appId: "1:394754605937:web:e97314f6c48373c8dc2cd0"
+    }));
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+    let app;
+    let db;
+    let auth;
+    let userId;
+    let isAuthReady = false; // Flag to ensure Firestore operations only happen after auth
+    let isUserAuthenticated = false; // Flag to track if user is logged in (not anonymous fallback)
+
     const DEFAULT_CUSTOM_TEAM_COLORS = ["#007bff", "#dc3545", "#28a745", "#ffc107", "#6f42c1"];
-    let players = JSON.parse(localStorage.getItem('players') || '[]');
-    let checkedState = JSON.parse(localStorage.getItem('checkedPlayers') || '{}');
+    let players = [];
+    let checkedState = {};
     let generatedTeams = []; 
-    let winningScore;
-    let setsToWin;
-    let playersPerTeam; 
-    let customTeamNames;
-    let currentTheme;
-    let vibrationEnabled;
-    let showPlayersOnScoreboard;
+    let winningScore = 15;
+    let setsToWin = 0;
+    let playersPerTeam = 4; 
+    let customTeamNames = [];
+    let currentTheme = 'dark';
+    let vibrationEnabled = true;
+    let showPlayersOnScoreboard = true;
     let scoreA = 0, scoreB = 0;
     let setsA = 0, setsB = 0;
     let gameEnded = false;
@@ -1370,6 +1437,393 @@
     let setTimeInSeconds = 0;
     let isTimerRunning = false;
     let appointments = [];
+
+    // Initialize Firebase and set up authentication listener
+    async function initializeFirebase() {
+      try {
+        app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+
+        // Listen for auth state changes
+        onAuthStateChanged(auth, async (user) => {
+          if (user) {
+            userId = user.uid;
+            isUserAuthenticated = !user.isAnonymous; // True if not anonymous
+            document.getElementById('userIdDisplay').textContent = userId;
+            document.getElementById('logoutButton').style.display = 'block'; // Show logout button
+            isAuthReady = true;
+            console.log("Firebase Auth Ready. User ID:", userId, "Authenticated:", isUserAuthenticated);
+            
+            // Hide auth modal and show main content
+            document.getElementById('authModal').classList.remove('show');
+            document.querySelectorAll('.section').forEach(s => {
+                if (s.id === 'pontuacao') { // Only show pontuacao initially
+                    s.classList.add('active');
+                } else {
+                    s.classList.remove('active');
+                }
+            });
+
+            // Now that auth is ready, load settings and appointments from Firestore
+            loadSettings();
+            setupAppointmentsListener(); // Set up real-time listener for appointments
+            displaySystemVersion(); 
+          } else {
+            // User is signed out or not yet signed in
+            userId = null;
+            isUserAuthenticated = false;
+            document.getElementById('userIdDisplay').textContent = 'Não logado';
+            document.getElementById('logoutButton').style.display = 'none'; // Hide logout button
+            isAuthReady = false; // Mark as not ready for Firestore ops until signed in
+
+            // Hide all sections and show auth modal
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById('authModal').classList.add('show');
+            console.log("User signed out or not authenticated. Showing auth modal.");
+          }
+        });
+
+        // No initial sign-in here. onAuthStateChanged will handle displaying the modal.
+      } catch (error) {
+        console.error("Error initializing Firebase:", error);
+        displayMessage("Erro ao iniciar o Firebase. Tente recarregar a página.", "error");
+        // Fallback to localStorage if Firebase fails to initialize or authenticate
+        isAuthReady = true; // Mark as ready even if failed, to proceed with local storage
+        loadSettingsFromLocalStorage(); // Use localStorage fallback
+        loadAppointmentsFromLocalStorage(); // Use localStorage fallback
+        renderAppointments();
+        displaySystemVersion();
+        // Hide auth modal and show main content if using local storage
+        document.getElementById('authModal').classList.remove('show');
+        document.getElementById('pontuacao').classList.add('active');
+      }
+    }
+
+    // Function to sign in with Google
+    async function signInWithGoogle() {
+        const provider = new GoogleAuthProvider();
+        try {
+            // Check if initialAuthToken exists and sign in with it first
+            if (initialAuthToken) {
+                await signInWithCustomToken(auth, initialAuthToken);
+                console.log("Signed in with custom token before Google.");
+            }
+            const result = await signInWithPopup(auth, provider);
+            console.log("Login com Google bem-sucedido:", result.user);
+            displayMessage("Login com Google bem-sucedido!", "success");
+            // The onAuthStateChanged listener will handle UI updates
+        } catch (error) {
+            console.error("Erro no login com Google:", error.message);
+            displayMessage("Erro no login com Google: " + error.message, "error");
+        }
+    }
+
+    // Function to continue anonymously
+    async function continueAnonymously() {
+        try {
+            await signInAnonymously(auth);
+            console.log("Login anónimo bem-sucedido.");
+            displayMessage("Entrou como usuário temporário.", "info");
+            // The onAuthStateChanged listener will handle UI updates
+        } catch (error) {
+            console.error("Erro no login anónimo:", error.message);
+            displayMessage("Erro no login anónimo: " + error.message, "error");
+        }
+    }
+
+    // Function to log out
+    async function logoutUser() {
+        showConfirmationModal("Tem certeza que deseja sair? Seus dados serão salvos, mas você precisará fazer login novamente para acessá-los.", async (confirmed) => {
+            if (confirmed) {
+                try {
+                    await signOut(auth);
+                    console.log("Usuário deslogado.");
+                    displayMessage("Logout bem-sucedido!", "info");
+                    // onAuthStateChanged will handle showing the auth modal and resetting UI
+                } catch (error) {
+                    console.error("Erro no logout:", error.message);
+                    displayMessage("Erro no logout: " + error.message, "error");
+                }
+            }
+        });
+    }
+
+    // --- Firebase Data Operations ---
+
+    // Load settings from Firestore
+    function loadSettings() {
+      if (!isAuthReady) {
+        console.log("Firestore not ready, skipping loadSettings.");
+        return;
+      }
+      const settingsDocRef = doc(db, 'artifacts', appId, 'users', userId, 'app_data', 'settings');
+      onSnapshot(settingsDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          players = data.players || [];
+          checkedState = data.checkedState || {};
+          winningScore = data.winningScore !== undefined ? data.winningScore : 15;
+          setsToWin = data.setsToWin !== undefined ? data.setsToWin : 0;
+          playersPerTeam = data.playersPerTeam !== undefined ? data.playersPerTeam : 4;
+          customTeamNames = data.customTeamNames || DEFAULT_CUSTOM_TEAM_COLORS.map((color, index) => ({ name: "", color }));
+          currentTheme = data.currentTheme || 'dark';
+          vibrationEnabled = data.vibrationEnabled !== undefined ? data.vibrationEnabled : true;
+          showPlayersOnScoreboard = data.showPlayersOnScoreboard !== undefined ? data.showPlayersOnScoreboard : true;
+          
+          // Ensure customTeamNames has 5 entries with default colors if missing
+          while (customTeamNames.length < 5) {
+              customTeamNames.push({ name: "", color: DEFAULT_CUSTOM_TEAM_COLORS[customTeamNames.length] || '#cccccc' });
+          }
+
+          document.getElementById('winningScore').value = winningScore;
+          document.getElementById('setsToWinConfig').value = setsToWin;
+          document.getElementById('playersPerTeam').value = playersPerTeam;
+          document.getElementById('vibrationEnabled').checked = vibrationEnabled;
+          document.getElementById('showPlayersOnScoreboard').checked = showPlayersOnScoreboard;
+          for (let i = 0; i < 5; i++) {
+            document.getElementById(`customTeamName${i + 1}`).value = customTeamNames[i].name;
+            document.getElementById(`customTeamColor${i + 1}`).value = customTeamNames[i].color;
+          }
+          document.getElementById('themeSelect').value = currentTheme;
+          setTheme(currentTheme, false);
+          updatePlayerDisplayOnScoreboard();
+          updatePlayerList(); // Update player list in UI
+          updateScoreboardTeamsDisplay(); // Update playing teams display
+        } else {
+          // Document does not exist, initialize with default values and save to Firestore
+          console.log("No settings document found, initializing with defaults.");
+          saveSettings(); 
+        }
+      }, (error) => {
+        console.error("Error listening to settings:", error);
+        displayMessage("Erro ao carregar configurações do Firebase. Carregando dados locais.", "error");
+        loadSettingsFromLocalStorage(); // Fallback to localStorage on error
+      });
+    }
+
+    // Save settings to Firestore
+    async function saveSettings() {
+      if (!isAuthReady) {
+        console.log("Firestore not ready, skipping saveSettings.");
+        saveSettingsToLocalStorage(); // Save to local storage as fallback
+        return;
+      }
+      try {
+        winningScore = parseInt(document.getElementById('winningScore').value);
+        setsToWin = parseInt(document.getElementById('setsToWinConfig').value);
+        playersPerTeam = parseInt(document.getElementById('playersPerTeam').value); 
+        vibrationEnabled = document.getElementById('vibrationEnabled').checked;
+        showPlayersOnScoreboard = document.getElementById('showPlayersOnScoreboard').checked;
+
+        if (isNaN(winningScore) || winningScore <= 0) winningScore = 15;
+        if (isNaN(setsToWin) || setsToWin < 0) setsToWin = 0;
+        if (isNaN(playersPerTeam) || playersPerTeam <= 0) playersPerTeam = 4;
+
+        for (let i = 0; i < 5; i++) {
+          customTeamNames[i] = {
+              name: document.getElementById(`customTeamName${i + 1}`).value.trim(),
+              color: document.getElementById(`customTeamColor${i + 1}`).value
+          };
+        }
+
+        const settingsData = {
+          players: players,
+          checkedState: checkedState,
+          winningScore: winningScore,
+          setsToWin: setsToWin,
+          playersPerTeam: playersPerTeam,
+          customTeamNames: customTeamNames,
+          currentTheme: currentTheme,
+          vibrationEnabled: vibrationEnabled,
+          showPlayersOnScoreboard: showPlayersOnScoreboard,
+          scoreA: scoreA, // Include current game state
+          scoreB: scoreB,
+          setsA: setsA,
+          setsB: setsB,
+          gameEnded: gameEnded,
+          gameStarted: gameStarted,
+          lastWinningTeam: lastWinningTeam,
+          currentPlayingTeamA: currentPlayingTeamA,
+          currentPlayingTeamB: currentPlayingTeamB,
+          gameTimeInSeconds: gameTimeInSeconds,
+          setTimeInSeconds: setTimeInSeconds,
+          isTimerRunning: isTimerRunning,
+        };
+        await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'app_data', 'settings'), settingsData, { merge: true });
+        updatePlayerDisplayOnScoreboard();
+        applyTeamColorsToScoreboard();
+      } catch (error) {
+        console.error("Error saving settings to Firestore:", error);
+        displayMessage("Erro ao salvar configurações no Firebase. Salvando dados locais.", "error");
+        saveSettingsToLocalStorage(); // Fallback to localStorage on error
+      }
+    }
+
+    // Set up real-time listener for appointments from Firestore
+    function setupAppointmentsListener() {
+        if (!isAuthReady) {
+            console.log("Firestore not ready, skipping setupAppointmentsListener.");
+            return;
+        }
+        const appointmentsColRef = collection(db, 'artifacts', appId, 'users', userId, 'app_data', 'appointments');
+        onSnapshot(appointmentsColRef, (querySnapshot) => {
+            appointments = [];
+            querySnapshot.forEach((doc) => {
+                appointments.push({ id: doc.id, ...doc.data() });
+            });
+            renderAppointments();
+        }, (error) => {
+            console.error("Error listening to appointments:", error);
+            displayMessage("Erro ao carregar agendamentos do Firebase. Carregando dados locais.", "error");
+            loadAppointmentsFromLocalStorage(); // Fallback to localStorage on error
+        });
+    }
+
+    // Add an appointment to Firestore
+    async function addAppointment() {
+        if (!isAuthReady) {
+            displayMessage("O Firebase não está pronto. Tente novamente.", "warning");
+            return;
+        }
+        const gameDateInput = document.getElementById('gameDate');
+        const gameTimeInput = document.getElementById('gameTime');
+        const gameLocationInput = document.getElementById('gameLocation');
+
+        const date = gameDateInput.value;
+        const time = gameTimeInput.value;
+        const location = gameLocationInput.value.trim();
+
+        if (!date || !time || !location) {
+            displayMessage("Por favor, preencha todos os campos do agendamento (Data, Hora, Local).", "error");
+            return;
+        }
+
+        try {
+            const newAppointment = { date, time, location };
+            await addDoc(collection(db, 'artifacts', appId, 'users', userId, 'app_data', 'appointments'), newAppointment);
+            displayMessage("Agendamento adicionado com sucesso!", "success");
+            gameDateInput.value = '';
+            gameTimeInput.value = '';
+            gameLocationInput.value = '';
+        } catch (error) {
+            console.error("Error adding appointment to Firestore:", error);
+            displayMessage("Erro ao adicionar agendamento ao Firebase.", "error");
+        }
+    }
+
+    // Delete an appointment from Firestore
+    async function deleteAppointment(id) {
+        if (!isAuthReady) {
+            displayMessage("O Firebase não está pronto. Tente novamente.", "warning");
+            return;
+        }
+        showConfirmationModal("Tem certeza que deseja remover este agendamento?", async (confirmed) => {
+            if (confirmed) {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'app_data', 'appointments', id));
+                    displayMessage("Agendamento removido!", "info");
+                } catch (error) {
+                    console.error("Error deleting appointment from Firestore:", error);
+                    displayMessage("Erro ao remover agendamento do Firebase.", "error");
+                }
+            }
+        });
+    }
+
+    // --- Local Storage Fallback Functions (for when Firebase is not ready or fails) ---
+
+    function loadSettingsFromLocalStorage() {
+        players = JSON.parse(localStorage.getItem('players') || '[]');
+        checkedState = JSON.parse(localStorage.getItem('checkedPlayers') || '{}');
+        winningScore = parseInt(localStorage.getItem('winningScore') || '15');
+        setsToWin = parseInt(localStorage.getItem('setsToWin') || '0');
+        playersPerTeam = parseInt(localStorage.getItem('playersPerTeam') || '4'); 
+        customTeamNames = JSON.parse(localStorage.getItem('customTeamNames') || '[]').map((team, index) => ({
+            name: team.name || "",
+            color: team.color || DEFAULT_CUSTOM_TEAM_COLORS[index] || '#cccccc'
+        }));
+        while (customTeamNames.length < 5) {
+            customTeamNames.push({ name: "", color: DEFAULT_CUSTOM_TEAM_COLORS[customTeamNames.length] || '#cccccc' });
+        }
+        currentTheme = localStorage.getItem('theme') || 'dark';
+        vibrationEnabled = JSON.parse(localStorage.getItem('vibrationEnabled') || 'true');
+        showPlayersOnScoreboard = JSON.parse(localStorage.getItem('showPlayersOnScoreboard') || 'true');
+
+        // Load game state from local storage as well
+        scoreA = parseInt(localStorage.getItem('scoreA') || '0');
+        scoreB = parseInt(localStorage.getItem('scoreB') || '0');
+        setsA = parseInt(localStorage.getItem('setsA') || '0');
+        setsB = parseInt(localStorage.getItem('setsB') || '0');
+        gameEnded = JSON.parse(localStorage.getItem('gameEnded') || 'false');
+        gameStarted = JSON.parse(localStorage.getItem('gameStarted') || 'false');
+        lastWinningTeam = localStorage.getItem('lastWinningTeam') || null;
+        currentPlayingTeamA = JSON.parse(localStorage.getItem('currentPlayingTeamA') || JSON.stringify({ name: 'Time A', players: [], color: '#007bff' }));
+        currentPlayingTeamB = JSON.parse(localStorage.getItem('currentPlayingTeamB') || JSON.stringify({ name: 'Time B', players: [], color: '#dc3545' }));
+        gameTimeInSeconds = parseInt(localStorage.getItem('gameTimeInSeconds') || '0');
+        setTimeInSeconds = parseInt(localStorage.getItem('setTimeInSeconds') || '0');
+        isTimerRunning = JSON.parse(localStorage.getItem('isTimerRunning') || 'false');
+
+        document.getElementById('winningScore').value = winningScore;
+        document.getElementById('setsToWinConfig').value = setsToWin;
+        document.getElementById('playersPerTeam').value = playersPerTeam; 
+        document.getElementById('vibrationEnabled').checked = vibrationEnabled;
+        document.getElementById('showPlayersOnScoreboard').checked = showPlayersOnScoreboard;
+        for (let i = 0; i < 5; i++) {
+            document.getElementById(`customTeamName${i + 1}`).value = customTeamNames[i].name;
+            document.getElementById(`customTeamColor${i + 1}`).value = customTeamNames[i].color;
+        }
+        document.getElementById('themeSelect').value = currentTheme;
+        setTheme(currentTheme, false);
+        updatePlayerDisplayOnScoreboard();
+        updatePlayerList();
+        updateScoreboardTeamsDisplay();
+        document.getElementById("scoreA").textContent = scoreA;
+        document.getElementById("scoreB").textContent = scoreB;
+        updateSetsDisplay();
+        updateTimerDisplay();
+        if (gameStarted && isTimerRunning) {
+            startAllTimers();
+        } else {
+            stopAllTimers();
+        }
+    }
+
+    function saveSettingsToLocalStorage() {
+        localStorage.setItem('players', JSON.stringify(players));
+        localStorage.setItem('checkedPlayers', JSON.stringify(checkedState));
+        localStorage.setItem('winningScore', winningScore.toString());
+        localStorage.setItem('setsToWin', setsToWin.toString());
+        localStorage.setItem('playersPerTeam', playersPerTeam.toString()); 
+        localStorage.setItem('vibrationEnabled', JSON.stringify(vibrationEnabled));
+        localStorage.setItem('showPlayersOnScoreboard', JSON.stringify(showPlayersOnScoreboard));
+        localStorage.setItem('customTeamNames', JSON.stringify(customTeamNames));
+        localStorage.setItem('theme', currentTheme);
+
+        // Save game state to local storage
+        localStorage.setItem('scoreA', scoreA.toString());
+        localStorage.setItem('scoreB', scoreB.toString());
+        localStorage.setItem('setsA', setsA.toString());
+        localStorage.setItem('setsB', setsB.toString());
+        localStorage.setItem('gameEnded', JSON.stringify(gameEnded));
+        localStorage.setItem('gameStarted', JSON.stringify(gameStarted));
+        localStorage.setItem('lastWinningTeam', lastWinningTeam);
+        localStorage.setItem('currentPlayingTeamA', JSON.stringify(currentPlayingTeamA));
+        localStorage.setItem('currentPlayingTeamB', JSON.stringify(currentPlayingTeamB));
+        localStorage.setItem('gameTimeInSeconds', gameTimeInSeconds.toString());
+        localStorage.setItem('setTimeInSeconds', setTimeInSeconds.toString());
+        localStorage.setItem('isTimerRunning', JSON.stringify(isTimerRunning));
+    }
+
+    function loadAppointmentsFromLocalStorage() {
+        appointments = JSON.parse(localStorage.getItem('appointments') || '[]');
+    }
+
+    function saveAppointmentsToLocalStorage() {
+        localStorage.setItem('appointments', JSON.stringify(appointments));
+    }
+
+    // --- Existing Functions (adapted for Firebase/local storage) ---
 
     function toggleMenu() {
       const menu = document.getElementById("gearMenu");
@@ -1397,7 +1851,8 @@
     }
 
     function navigateTo(id) {
-      showSection(id);
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
       document.getElementById("gearMenu").classList.remove("show");
       document.getElementById("menuOverlay").classList.remove("show");
       updateResetButtonVisibility();
@@ -1406,12 +1861,6 @@
       } else if (id === 'agendamentos') {
           renderAppointments();
       }
-    }
-
-    function showSection(id) {
-      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-      updateResetButtonVisibility();
     }
 
     function updateResetButtonVisibility() {
@@ -1424,20 +1873,15 @@
         }
     }
 
-    function saveCheckedState() {
-      localStorage.setItem('checkedPlayers', JSON.stringify(checkedState));
-    }
-
-    function addPlayer() {
+    async function addPlayer() {
       const input = document.getElementById("playerName");
       const name = input.value.trim();
       if (name && !players.includes(name)) {
         players.push(name);
         checkedState[name] = true;
         input.value = "";
+        await saveSettings(); // Save updated players and checkedState to Firestore
         updatePlayerList();
-        localStorage.setItem('players', JSON.stringify(players));
-        saveCheckedState();
       } else if (players.includes(name)) {
         displayMessage("Este nome já está na lista.", "warning");
       }
@@ -1454,9 +1898,9 @@
         checkbox.checked = checkedState[p] !== false;
         checkbox.style.marginRight = '.5rem';
         checkbox.style.width = '1rem';
-        checkbox.onchange = () => {
+        checkbox.onchange = async () => {
           checkedState[p] = checkbox.checked;
-          saveCheckedState();
+          await saveSettings(); // Save updated checkedState to Firestore
           updatePlayerCounter();
           updateToggleSelectAllButtonText();
         };
@@ -1466,13 +1910,12 @@
         btn.textContent = "Remover";
         btn.className = "btn";
         btn.onclick = () => {
-            showConfirmationModal("Tem certeza que deseja remover este jogador?", (confirmed) => {
+            showConfirmationModal("Tem certeza que deseja remover este jogador?", async (confirmed) => {
                 if (confirmed) {
                     players.splice(i, 1);
                     delete checkedState[p];
+                    await saveSettings(); // Save updated players and checkedState to Firestore
                     updatePlayerList();
-                    localStorage.setItem('players', JSON.stringify(players));
-                    saveCheckedState();
                     generatedTeams = [];
                     renderGeneratedTeams();
                     resetGame();
@@ -1505,10 +1948,10 @@
         confirmationMessage = "Tem certeza que deseja selecionar todos os jogadores?";
         action = true;
       }
-      showConfirmationModal(confirmationMessage, (confirmed) => {
+      showConfirmationModal(confirmationMessage, async (confirmed) => {
           if (confirmed) {
               players.forEach(p => checkedState[p] = action);
-              saveCheckedState();
+              await saveSettings(); // Save updated checkedState to Firestore
               updatePlayerList();
           }
       });
@@ -1531,16 +1974,16 @@
         if (resetButton.classList.contains('disabled')) {
             return;
         }
-        showConfirmationModal("Tem certeza que deseja reiniciar a pontuação? Isso irá zerar os pontos e sets de ambos os times.", (confirmed) => {
+        showConfirmationModal("Tem certeza que deseja reiniciar a pontuação? Isso irá zerar os pontos e sets de ambos os times.", async (confirmed) => {
             if (confirmed) {
-                resetGame();
+                await resetGame();
                 document.getElementById("gearMenu").classList.remove("show");
                 document.getElementById("menuOverlay").classList.remove("show");
             }
         });
     }
 
-    function resetGame() {
+    async function resetGame() {
       scoreA = 0;
       scoreB = 0;
       setsA = 0;
@@ -1556,16 +1999,39 @@
       updateSwapTeamsButtonVisibility(); 
       showStartGameModal();
       generatedTeams = [];
+      renderGeneratedTeams();
       stopAllTimers();
       gameTimeInSeconds = 0;
       setTimeInSeconds = 0;
       updateTimerDisplay();
       document.getElementById('gameTimer').classList.remove('show');
+      await saveSettings(); // Save reset game state to Firestore
     }
 
-    function resetAllData() {
-        showConfirmationModal("Tem certeza que deseja resetar TODOS os dados? Isso apagará jogadores, times gerados, configurações e o estado atual do jogo.", (confirmed) => {
+    async function resetAllData() {
+        showConfirmationModal("Tem certeza que deseja resetar TODOS os dados? Isso apagará jogadores, times gerados, configurações e o estado atual do jogo.", async (confirmed) => {
             if (confirmed) {
+                if (isAuthReady) {
+                    try {
+                        // Delete settings document
+                        await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'app_data', 'settings'));
+                        
+                        // Delete all appointments in the subcollection
+                        const q = query(collection(db, 'artifacts', appId, 'users', userId, 'app_data', 'appointments'));
+                        const querySnapshot = await getDocs(q);
+                        const deletePromises = [];
+                        querySnapshot.forEach((doc) => {
+                            deletePromises.push(deleteDoc(doc.ref));
+                        });
+                        await Promise.all(deletePromises);
+                        console.log("All Firestore data deleted.");
+                    } catch (error) {
+                        console.error("Error deleting Firestore data:", error);
+                        displayMessage("Erro ao apagar dados do Firebase. Tente novamente.", "error");
+                        return;
+                    }
+                }
+                // Clear local storage as a fallback/cleanup
                 localStorage.clear();
                 location.reload();
             }
@@ -1583,7 +2049,7 @@
       }
     }
 
-    function generateCustomTeams() {
+    async function generateCustomTeams() {
       const perTeam = parseInt(document.getElementById("playersPerTeam").value);
 
       if (isNaN(perTeam) || perTeam <= 0) {
@@ -1611,6 +2077,7 @@
       }
       renderGeneratedTeams();
       displayMessage(`${teamCount} time(s) gerado(s) com sucesso!`, "success");
+      await saveSettings(); // Save generated teams to Firestore
       return true;
     }
 
@@ -1683,7 +2150,7 @@
       }
     }
 
-    function changeScore(team, delta) {
+    async function changeScore(team, delta) {
       if (!gameStarted) {
         if (delta > 0) displayMessage("Inicie uma partida primeiro!", "warning");
         return;
@@ -1706,10 +2173,11 @@
         scoreElement.classList.add('decrease-anim');
         triggerVibration();
       }
+      await saveSettings(); // Save updated scores to Firestore
       checkWinCondition();
     }
 
-    function checkWinCondition() {
+    async function checkWinCondition() {
       if (gameEnded) return;
       let winner = null;
       if (scoreA >= winningScore && scoreA - scoreB >= 2) {
@@ -1724,7 +2192,8 @@
         const winningTeamName = winner === 'A' ? currentPlayingTeamA.name : currentPlayingTeamB.name;
         showVictoryAnimation(winner, winningTeamName);
         updateSwapTeamsButtonVisibility(); 
-        setTimeout(() => {
+        await saveSettings(); // Save gameEnded and lastWinningTeam to Firestore
+        setTimeout(async () => {
           let currentSetsA = setsA;
           let currentSetsB = setsB;
           if (winner === 'A') {
@@ -1813,7 +2282,7 @@
       document.getElementById('increaseScoreModal').classList.remove('show');
     }
 
-    function confirmIncreaseWinningScore() {
+    async function confirmIncreaseWinningScore() {
       const newScore = parseInt(document.getElementById('newWinningScoreInput').value);
       if (isNaN(newScore) || newScore <= 0) {
         displayMessage("Por favor, insira um número de pontos válido.", "error");
@@ -1824,12 +2293,12 @@
         return;
       }
       winningScore = newScore;
-      localStorage.setItem('winningScore', winningScore.toString());
       document.getElementById('winningScore').value = winningScore;
       displayMessage(`Pontuação para vencer aumentada para ${winningScore}!`, "success");
       hideIncreaseScoreModal();
       gameEnded = false;
       startAllTimers();
+      await saveSettings(); // Save updated winningScore to Firestore
     }
 
     function showStartGameModal() {
@@ -1847,7 +2316,7 @@
       }
     }
 
-    function confirmStartGame() {
+    async function confirmStartGame() {
       const newWinningScore = parseInt(document.getElementById('initialWinningScore').value);
       const newSetsToWin = parseInt(document.getElementById('initialNumberOfSets').value);
       if (isNaN(newWinningScore) || newWinningScore <= 0) {
@@ -1860,32 +2329,31 @@
       }
       winningScore = newWinningScore;
       setsToWin = newSetsToWin;
-      localStorage.setItem('winningScore', winningScore.toString());
-      localStorage.setItem('setsToWin', setsToWin.toString());
       
       hideStartGameModal();
 
       if (generatedTeams.length === 0) {
-          showConfirmationModal("Não há times gerados. Deseja gerar times automaticamente com o número de jogadores por time definido nas configurações?", (confirmed) => { 
+          showConfirmationModal("Não há times gerados. Deseja gerar times automaticamente com o número de jogadores por time definido nas configurações?", async (confirmed) => { 
               if (confirmed) {
-                  const success = generateCustomTeams(); 
+                  const success = await generateCustomTeams(); 
                   if (!success) {
                       displayMessage("Não foi possível gerar times automaticamente. Por favor, adicione mais jogadores ou gere os times manualmente.", "error");
                       document.getElementById('startGameButton').style.display = 'block';
                       document.getElementById('scoreboardOverlay').classList.remove('hidden');
                       return; 
                   }
-                  selectAndInitializeTeams();
+                  await selectAndInitializeTeams();
               } else {
                   showStartGameModal(); 
               }
           });
       } else {
-          selectAndInitializeTeams();
+          await selectAndInitializeTeams();
       }
+      await saveSettings(); // Save updated winningScore and setsToWin to Firestore
     }
 
-    function selectAndInitializeTeams() {
+    async function selectAndInitializeTeams() {
       if (generatedTeams.length >= 2) {
           currentPlayingTeamA = { ...generatedTeams[0] };
           currentPlayingTeamB = { ...generatedTeams[1] };
@@ -1897,10 +2365,10 @@
           currentPlayingTeamB = { name: 'Time B', players: [], color: '#dc3545' };
       }
 
-      initializeGameAndTeams(false);
+      await initializeGameAndTeams(false);
     }
 
-    function initializeGameAndTeams(teamsJustGenerated = false) {
+    async function initializeGameAndTeams(teamsJustGenerated = false) {
       scoreA = 0;
       scoreB = 0;
       setsA = 0;
@@ -1920,9 +2388,10 @@
       gameTimeInSeconds = 0;
       setTimeInSeconds = 0;
       startAllTimers();
+      await saveSettings(); // Save initial game state to Firestore
     }
 
-    function startNewGame() {
+    async function startNewGame() {
       hideGameOverModal();
 
       scoreA = 0;
@@ -1987,9 +2456,10 @@
       gameTimeInSeconds = 0;
       setTimeInSeconds = 0;
       startAllTimers();
+      await saveSettings(); // Save new game state to Firestore
     }
 
-    function startNewSet() {
+    async function startNewSet() {
       hideGameOverModal();
 
       let winnerId = lastWinningTeam;
@@ -2011,6 +2481,7 @@
       updateSwapTeamsButtonVisibility(); 
       setTimeInSeconds = 0;
       startAllTimers();
+      await saveSettings(); // Save new set state to Firestore
     }
 
     function showSuperVictoryAnimation(winningTeamName) {
@@ -2069,41 +2540,7 @@
       }
     }
 
-    function saveSettings() {
-      winningScore = parseInt(document.getElementById('winningScore').value);
-      setsToWin = parseInt(document.getElementById('setsToWinConfig').value);
-      playersPerTeam = parseInt(document.getElementById('playersPerTeam').value); 
-      vibrationEnabled = document.getElementById('vibrationEnabled').checked;
-      showPlayersOnScoreboard = document.getElementById('showPlayersOnScoreboard').checked;
-      if (isNaN(winningScore) || winningScore <= 0) {
-        winningScore = 15;
-        document.getElementById('winningScore').value = 15;
-      }
-      if (isNaN(setsToWin) || setsToWin < 0) {
-        setsToWin = 0;
-        document.getElementById('setsToWinConfig').value = 0;
-      }
-      if (isNaN(playersPerTeam) || playersPerTeam <= 0) { 
-        playersPerTeam = 4;
-        document.getElementById('playersPerTeam').value = 4;
-      }
-      for (let i = 0; i < 5; i++) {
-        customTeamNames[i] = {
-            name: document.getElementById(`customTeamName${i + 1}`).value.trim(),
-            color: document.getElementById(`customTeamColor${i + 1}`).value
-        };
-      }
-      localStorage.setItem('winningScore', winningScore.toString());
-      localStorage.setItem('setsToWin', setsToWin.toString());
-      localStorage.setItem('playersPerTeam', playersPerTeam.toString()); 
-      localStorage.setItem('vibrationEnabled', JSON.stringify(vibrationEnabled));
-      localStorage.setItem('showPlayersOnScoreboard', JSON.stringify(showPlayersOnScoreboard));
-      localStorage.setItem('customTeamNames', JSON.stringify(customTeamNames));
-      updatePlayerDisplayOnScoreboard();
-      applyTeamColorsToScoreboard();
-    }
-
-    function setTheme(themeName, save = true) {
+    async function setTheme(themeName, save = true) {
       if (themeName === 'light') {
         document.body.classList.add('light-theme');
       } else {
@@ -2111,43 +2548,9 @@
       }
       currentTheme = themeName;
       if (save) {
-        localStorage.setItem('theme', themeName);
+        await saveSettings(); // Save updated theme to Firestore
         displayMessage('Tema alterado para ' + (themeName === 'dark' ? 'Escuro' : 'Claro') + '!', "info");
       }
-    }
-
-    function loadSettings() {
-      winningScore = parseInt(localStorage.getItem('winningScore') || '15');
-      setsToWin = parseInt(localStorage.getItem('setsToWin') || '0');
-      playersPerTeam = parseInt(localStorage.getItem('playersPerTeam') || '4'); 
-      vibrationEnabled = JSON.parse(localStorage.getItem('vibrationEnabled') || 'true');
-      showPlayersOnScoreboard = JSON.parse(localStorage.getItem('showPlayersOnScoreboard') || 'true');
-      currentTheme = localStorage.getItem('theme') || 'dark';
-
-      players = JSON.parse(localStorage.getItem('players') || '[]');
-      checkedState = JSON.parse(localStorage.getItem('checkedPlayers') || '{}');
-      generatedTeams = []; 
-
-      customTeamNames = JSON.parse(localStorage.getItem('customTeamNames') || '[]').map((team, index) => ({
-          name: team.name || "",
-          color: team.color || DEFAULT_CUSTOM_TEAM_COLORS[index] || '#cccccc'
-      }));
-      while (customTeamNames.length < 5) {
-          customTeamNames.push({ name: "", color: DEFAULT_CUSTOM_TEAM_COLORS[customTeamNames.length] || '#cccccc' });
-      }
-
-      document.getElementById('winningScore').value = winningScore;
-      document.getElementById('setsToWinConfig').value = setsToWin;
-      document.getElementById('playersPerTeam').value = playersPerTeam; 
-      document.getElementById('vibrationEnabled').checked = vibrationEnabled;
-      document.getElementById('showPlayersOnScoreboard').checked = showPlayersOnScoreboard;
-      for (let i = 0; i < 5; i++) {
-        document.getElementById(`customTeamName${i + 1}`).value = customTeamNames[i].name;
-        document.getElementById(`customTeamColor${i + 1}`).value = customTeamNames[i].color;
-      }
-      document.getElementById('themeSelect').value = currentTheme;
-      setTheme(currentTheme, false);
-      updatePlayerDisplayOnScoreboard();
     }
 
     function applyTeamColorsToScoreboard() {
@@ -2166,6 +2569,7 @@
             document.getElementById("customMessageModal").classList.contains("show") || 
             document.getElementById("customConfirmationModal").classList.contains("show") || 
             document.getElementById("manageTeamModal").classList.contains("show") ||
+            document.getElementById("authModal").classList.contains("show") || // Added authModal check
             e.target.closest('#startGameButton') || e.target.closest('#swapTeamsButton')) {
             touchStartX = null;
             return;
@@ -2217,6 +2621,7 @@
             document.getElementById("customMessageModal").classList.contains("show") || 
             document.getElementById("customConfirmationModal").classList.contains("show") || 
             document.getElementById("manageTeamModal").classList.contains("show") ||
+            document.getElementById("authModal").classList.contains("show") || // Added authModal check
             e.target.closest('#startGameButton') || e.target.closest('#swapTeamsButton') ||
             document.getElementById("gearMenu").classList.contains("show")
             ) {
@@ -2235,13 +2640,13 @@
         }
         
         if (nextIndex !== currentIndex) {
-            showSection(sections[nextIndex]);
+            navigateTo(sections[nextIndex]); // Changed to navigateTo to ensure menu closes
         }
         touchStartX = null;
       });
     }
 
-    function swapTeams() {
+    async function swapTeams() {
       if (!gameStarted) {
         displayMessage("Inicie uma partida para inverter os times.", "warning");
         return;
@@ -2254,7 +2659,7 @@
       const animationDuration = 300;
       sectionA.classList.add('fade-out');
       sectionB.classList.add('fade-out');
-      setTimeout(() => {
+      setTimeout(async () => {
         let tempScore = scoreA;
         scoreA = scoreB;
         scoreB = tempScore;
@@ -2272,6 +2677,7 @@
         sectionB.classList.remove('fade-out');
         sectionA.classList.add('fade-in');
         sectionB.classList.add('fade-in');
+        await saveSettings(); // Save swapped teams and scores to Firestore
         setTimeout(() => {
           sectionA.classList.remove('fade-in');
           sectionB.classList.remove('fade-in');
@@ -2361,13 +2767,27 @@
         window.currentConfirmationCallback = null;
     }
 
-    function showManageTeamModal(teamId) {
+    async function showManageTeamModal(teamId) {
         activeManageTeamId = teamId;
         const modal = document.getElementById('manageTeamModal');
         const selectElement = document.getElementById('selectTeamForManagement');
         document.getElementById('manageTeamModalTitle').textContent = `Selecionar Time`;
         const currentTeam = (teamId === 'A' ? currentPlayingTeamA : currentPlayingTeamB);
         selectElement.innerHTML = '<option value="">Selecione um time</option>';
+        
+        // Fetch generated teams from Firestore to ensure latest data
+        if (isAuthReady) {
+            try {
+                const settingsDoc = await getDoc(doc(db, 'artifacts', appId, 'users', userId, 'app_data', 'settings'));
+                if (settingsDoc.exists()) {
+                    generatedTeams = settingsDoc.data().generatedTeams || [];
+                }
+            } catch (error) {
+                console.error("Error fetching generated teams for manage modal:", error);
+                displayMessage("Erro ao carregar times gerados.", "error");
+            }
+        }
+
         if (generatedTeams.length === 0) {
             selectElement.innerHTML += '<option value="" disabled>Nenhum time gerado</option>';
         } else {
@@ -2412,7 +2832,7 @@
         document.removeEventListener('click', closeManageTeamModalOnOutsideClick);
     }
 
-    function saveTeamNameAndPlayers() {
+    async function saveTeamNameAndPlayers() {
         const selectedDropdownValue = document.getElementById('selectTeamForManagement').value;
         let targetTeam = (activeManageTeamId === 'A' ? currentPlayingTeamA : currentPlayingTeamB);
         let otherTeam = (activeManageTeamId === 'A' ? currentPlayingTeamB : currentPlayingTeamA);
@@ -2446,6 +2866,7 @@
 
         updateScoreboardTeamsDisplay();
         hideManageTeamModal();
+        await saveSettings(); // Save updated current playing teams to Firestore
     }
 
     function toggleCustomTeamNamesSection() {
@@ -2488,44 +2909,85 @@
         }
     }
 
-    function exportSettings() {
-        const appStateToExport = {
-            players: players,
-            checkedState: checkedState,
-            winningScore: winningScore,
-            setsToWin: setsToWin,
-            playersPerTeam: playersPerTeam, 
-            customTeamNames: customTeamNames,
-            currentTheme: currentTheme,
-            vibrationEnabled: vibrationEnabled,
-            showPlayersOnScoreboard: showPlayersOnScoreboard,
-            appointments: appointments
-        };
-        const dataStr = JSON.stringify(appStateToExport, null, 2);
-        const blob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'placar_volei_config.json';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        displayMessage("Configurações exportadas com sucesso!", "success");
+    async function exportSettings() {
+        if (!isAuthReady) {
+            displayMessage("O Firebase não está pronto. Exportando dados locais.", "warning");
+            const appStateToExport = {
+                players: players,
+                checkedState: checkedState,
+                winningScore: winningScore,
+                setsToWin: setsToWin,
+                playersPerTeam: playersPerTeam, 
+                customTeamNames: customTeamNames,
+                currentTheme: currentTheme,
+                vibrationEnabled: vibrationEnabled,
+                showPlayersOnScoreboard: showPlayersOnScoreboard,
+                appointments: appointments // Current local appointments
+            };
+            const dataStr = JSON.stringify(appStateToExport, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'placar_volei_config_local.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            displayMessage("Configurações locais exportadas com sucesso!", "success");
+            return;
+        }
+
+        try {
+            const settingsDoc = await getDoc(doc(db, 'artifacts', appId, 'users', userId, 'app_data', 'settings'));
+            const settingsData = settingsDoc.exists() ? settingsDoc.data() : {};
+
+            const appointmentsQuery = query(collection(db, 'artifacts', appId, 'users', userId, 'app_data', 'appointments'));
+            const appointmentsSnapshot = await getDocs(appointmentsQuery);
+            const firebaseAppointments = appointmentsSnapshot.docs.map(doc => doc.data());
+
+            const appStateToExport = {
+                players: settingsData.players || [],
+                checkedState: settingsData.checkedState || {},
+                winningScore: settingsData.winningScore !== undefined ? settingsData.winningScore : 15,
+                setsToWin: settingsData.setsToWin !== undefined ? settingsData.setsToWin : 0,
+                playersPerTeam: settingsData.playersPerTeam !== undefined ? settingsData.playersPerTeam : 4,
+                customTeamNames: settingsData.customTeamNames || DEFAULT_CUSTOM_TEAM_COLORS.map((color, index) => ({ name: "", color })),
+                currentTheme: settingsData.currentTheme || 'dark',
+                vibrationEnabled: settingsData.vibrationEnabled !== undefined ? settingsData.vibrationEnabled : true,
+                showPlayersOnScoreboard: settingsData.showPlayersOnScoreboard !== undefined ? settingsData.showPlayersOnScoreboard : true,
+                appointments: firebaseAppointments
+            };
+
+            const dataStr = JSON.stringify(appStateToExport, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'placar_volei_config_firebase.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            displayMessage("Configurações do Firebase exportadas com sucesso!", "success");
+        } catch (error) {
+            console.error("Erro ao exportar configurações do Firebase:", error);
+            displayMessage("Erro ao exportar configurações do Firebase. Tente novamente.", "error");
+        }
     }
 
     function importSettings(event) {
         const file = event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
             try {
                 const importedAppState = JSON.parse(e.target.result);
                 
+                // Update local state first
                 players = importedAppState.players || [];
                 checkedState = importedAppState.checkedState || {};
-                generatedTeams = []; 
-                winningScore = importedAppState.winningScore || 15;
+                winningScore = importedAppState.winningScore !== undefined ? importedAppState.winningScore : 15;
                 setsToWin = importedAppState.setsToWin !== undefined ? importedAppState.setsToWin : 0;
                 playersPerTeam = importedAppState.playersPerTeam !== undefined ? importedAppState.playersPerTeam : 4; 
                 customTeamNames = importedAppState.customTeamNames || DEFAULT_CUSTOM_TEAM_COLORS.map((color, index) => ({ name: "", color }));
@@ -2533,18 +2995,8 @@
                 vibrationEnabled = importedAppState.vibrationEnabled !== undefined ? importedAppState.vibrationEnabled : true;
                 showPlayersOnScoreboard = importedAppState.showPlayersOnScoreboard !== undefined ? importedAppState.showPlayersOnScoreboard : true;
                 appointments = importedAppState.appointments || [];
-                
-                localStorage.setItem('players', JSON.stringify(players));
-                localStorage.setItem('checkedPlayers', JSON.stringify(checkedState));
-                localStorage.setItem('winningScore', winningScore.toString());
-                localStorage.setItem('setsToWin', setsToWin.toString());
-                localStorage.setItem('playersPerTeam', playersPerTeam.toString()); 
-                localStorage.setItem('customTeamNames', JSON.stringify(customTeamNames));
-                localStorage.setItem('theme', currentTheme);
-                localStorage.setItem('vibrationEnabled', JSON.stringify(vibrationEnabled));
-                localStorage.setItem('showPlayersOnScoreboard', JSON.stringify(showPlayersOnScoreboard));
-                localStorage.setItem('appointments', JSON.stringify(appointments));
 
+                // Reset game state on import
                 scoreA = 0;
                 scoreB = 0;
                 setsA = 0;
@@ -2554,7 +3006,12 @@
                 lastWinningTeam = null;
                 currentPlayingTeamA = { name: 'Time A', players: [], color: '#007bff' };
                 currentPlayingTeamB = { name: 'Time B', players: [], color: '#dc3545' };
+                gameTimeInSeconds = 0;
+                setTimeInSeconds = 0;
+                isTimerRunning = false;
+                stopAllTimers(); // Ensure timers are stopped
 
+                // Update UI
                 document.getElementById('winningScore').value = winningScore;
                 document.getElementById('setsToWinConfig').value = setsToWin;
                 document.getElementById('playersPerTeam').value = playersPerTeam; 
@@ -2573,12 +3030,60 @@
                 updateScoreboardTeamsDisplay();
                 updateSwapTeamsButtonVisibility();
                 updateResetButtonVisibility(); 
-
                 document.getElementById('startGameButton').style.display = 'block';
                 document.getElementById('scoreboardOverlay').classList.remove('hidden');
+                updateTimerDisplay();
 
-                displayMessage("Configurações importadas com sucesso!", "success");
-                renderAppointments();
+                // Save to Firestore (if ready)
+                if (isAuthReady) {
+                    try {
+                        const settingsData = {
+                            players: players,
+                            checkedState: checkedState,
+                            winningScore: winningScore,
+                            setsToWin: setsToWin,
+                            playersPerTeam: playersPerTeam,
+                            customTeamNames: customTeamNames,
+                            currentTheme: currentTheme,
+                            vibrationEnabled: vibrationEnabled,
+                            showPlayersOnScoreboard: showPlayersOnScoreboard,
+                            scoreA: scoreA,
+                            scoreB: scoreB,
+                            setsA: setsA,
+                            setsB: setsB,
+                            gameEnded: gameEnded,
+                            gameStarted: gameStarted,
+                            lastWinningTeam: lastWinningTeam,
+                            currentPlayingTeamA: currentPlayingTeamA,
+                            currentPlayingTeamB: currentPlayingTeamB,
+                            gameTimeInSeconds: gameTimeInSeconds,
+                            setTimeInSeconds: setTimeInSeconds,
+                            isTimerRunning: isTimerRunning,
+                        };
+                        await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'app_data', 'settings'), settingsData);
+
+                        // Clear existing appointments in Firestore and add new ones
+                        const q = query(collection(db, 'artifacts', appId, 'users', userId, 'app_data', 'appointments'));
+                        const querySnapshot = await getDocs(q);
+                        const deletePromises = [];
+                        querySnapshot.forEach((doc) => {
+                            deletePromises.push(deleteDoc(doc.ref));
+                        });
+                        await Promise.all(deletePromises);
+
+                        const addPromises = importedAppState.appointments.map(app => addDoc(collection(db, 'artifacts', appId, 'users', userId, 'app_data', 'appointments'), app));
+                        await Promise.all(addPromises);
+                        displayMessage("Configurações importadas para o Firebase com sucesso!", "success");
+                    } catch (firebaseError) {
+                        console.error("Erro ao importar dados para o Firebase:", firebaseError);
+                        displayMessage("Erro ao salvar dados importados no Firebase. Os dados foram carregados localmente.", "error");
+                    }
+                } else {
+                    // If Firebase not ready, save to local storage (already done above)
+                    saveSettingsToLocalStorage();
+                    saveAppointmentsToLocalStorage();
+                    displayMessage("Configurações importadas localmente com sucesso!", "success");
+                }
             } catch (error) {
                 console.error("Erro ao importar configurações:", error);
                 displayMessage("Erro ao importar arquivo. Verifique se é um arquivo de configurações válido.", "error");
@@ -2612,7 +3117,7 @@
         applyTeamColorsToScoreboard();
     }
 
-    function updateTimerDisplay() {
+    async function updateTimerDisplay() {
       const minutesGame = Math.floor(gameTimeInSeconds / 60);
       const secondsGame = gameTimeInSeconds % 60;
       const formattedGameTime = 
@@ -2633,6 +3138,7 @@
           timerIcon.classList.remove('fa-pause');
           timerIcon.classList.add('fa-play');
       }
+      await saveSettings(); // Save timer state to Firestore
     }
 
     function startAllTimers() {
@@ -2684,50 +3190,6 @@
         }
     }
 
-    function loadAppointments() {
-        appointments = JSON.parse(localStorage.getItem('appointments') || '[]');
-    }
-
-    function saveAppointments() {
-        localStorage.setItem('appointments', JSON.stringify(appointments));
-    }
-
-    function addAppointment() {
-        const gameDateInput = document.getElementById('gameDate');
-        const gameTimeInput = document.getElementById('gameTime');
-        const gameLocationInput = document.getElementById('gameLocation');
-
-        const date = gameDateInput.value;
-        const time = gameTimeInput.value;
-        const location = gameLocationInput.value.trim();
-
-        if (!date || !time || !location) {
-            displayMessage("Por favor, preencha todos os campos do agendamento (Data, Hora, Local).", "error");
-            return;
-        }
-
-        const newAppointment = { date, time, location };
-        appointments.push(newAppointment);
-        saveAppointments();
-        renderAppointments();
-
-        gameDateInput.value = '';
-        gameTimeInput.value = '';
-        gameLocationInput.value = '';
-        displayMessage("Agendamento adicionado com sucesso!", "success");
-    }
-
-    function deleteAppointment(index) {
-        showConfirmationModal("Tem certeza que deseja remover este agendamento?", (confirmed) => {
-            if (confirmed) {
-                appointments.splice(index, 1);
-                saveAppointments();
-                renderAppointments();
-                displayMessage("Agendamento removido!", "info");
-            }
-        });
-    }
-
     function formatDate(dateString) {
         const [year, month, day] = dateString.split('-');
         return `${day}/${month}/${year}`;
@@ -2740,14 +3202,7 @@
         upcomingAppointmentsList.innerHTML = '';
         pastAppointmentsList.innerHTML = '';
 
-        const appointments = JSON.parse(localStorage.getItem('appointments') || '[]');
-
-        if (appointments.length === 0) {
-            upcomingAppointmentsList.innerHTML = '<p style="text-align: center; color: var(--text-color);">Nenhum agendamento futuro. Adicione um para começar!</p>';
-            pastAppointmentsList.innerHTML = '<p style="text-align: center; color: var(--text-color);">Nenhum jogo anterior registrado.</p>';
-            return;
-        }
-
+        // Sort appointments in memory as orderBy() is not used
         appointments.sort((a, b) => {
             const dateTimeA = new Date(`${a.date}T${a.time}`);
             const dateTimeB = new Date(`${b.date}T${b.time}`);
@@ -2758,9 +3213,9 @@
         let hasUpcoming = false;
         let hasPast = false;
 
-        appointments.forEach((appointment, index) => {
+        appointments.forEach((appointment) => { // Removed index as it's not needed for Firestore ID
             const li = document.createElement('li');
-            li.dataset.index = index;
+            li.dataset.id = appointment.id; // Use Firestore document ID
 
             const appointmentDateTime = new Date(`${appointment.date}T${appointment.time}`);
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -2779,7 +3234,7 @@
                     <div class="card-body">
                         <p class="card-location"><i class="fas fa-map-marker-alt"></i> <strong>Local:</strong> ${appointment.location}</p>
                     </div>
-                    <button class="delete-appointment-btn" data-index="${index}" title="Excluir agendamento"><i class="fas fa-trash-alt"></i></button>
+                    <button class="delete-appointment-btn" data-id="${appointment.id}" title="Excluir agendamento"><i class="fas fa-trash-alt"></i></button>
                 </div>
             `;
 
@@ -2801,8 +3256,8 @@
 
         document.querySelectorAll('.delete-appointment-btn').forEach(button => {
             button.addEventListener('click', (event) => {
-                const indexToDelete = event.currentTarget.dataset.index;
-                deleteAppointment(indexToDelete);
+                const idToDelete = event.currentTarget.dataset.id;
+                deleteAppointment(idToDelete);
             });
         });
     }
@@ -2827,27 +3282,21 @@
         }
     }
 
-    window.onload = () => {
+    window.onload = async () => {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./service-worker.js')
           .then(() => {})
           .catch(error => {});
       }
-      loadSettings();
-      loadAppointments();
-      renderAppointments();
-      displaySystemVersion();
+      
+      // Initially hide all main sections
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      // Show the authentication modal by default
+      document.getElementById('authModal').classList.add('show');
 
-      scoreA = 0;
-      scoreB = 0;
-      setsA = 0;
-      setsB = 0;
-      gameEnded = false;
-      gameStarted = false;
-      lastWinningTeam = null; 
-      currentPlayingTeamA = { name: 'Time A', players: [], color: '#007bff' };
-      currentPlayingTeamB = { name: 'Time B', players: [], color: '#dc3545' };
+      await initializeFirebase(); // Initialize Firebase and let onAuthStateChanged handle UI visibility
 
+      // Initial UI updates (will be overwritten by Firestore data once loaded or after auth)
       document.getElementById("scoreA").textContent = scoreA;
       document.getElementById("scoreB").textContent = scoreB;
       updateSetsDisplay();
@@ -2882,10 +3331,44 @@
       });
       updateTimerDisplay();
 
-      window.addEventListener('beforeunload', () => {
-          saveAppointments();
+      window.addEventListener('beforeunload', async () => {
+          // Save current state to Firestore before unload
+          await saveSettings();
       });
     }
+
+    // Make functions globally accessible for inline onclick attributes
+    window.signInWithGoogle = signInWithGoogle;
+    window.continueAnonymously = continueAnonymously;
+    window.logoutUser = logoutUser; // Also make logoutUser global if it's called from HTML
+    window.toggleMenu = toggleMenu; // Ensure menu toggle is global
+    window.navigateTo = navigateTo; // Ensure navigation is global
+    window.confirmReset = confirmReset; // Ensure reset confirmation is global
+    window.addPlayer = addPlayer; // Ensure addPlayer is global
+    window.toggleSelectAllPlayers = toggleSelectAllPlayers; // Ensure toggleSelectAllPlayers is global
+    window.generateCustomTeams = generateCustomTeams; // Ensure generateCustomTeams is global
+    window.showStartGameModal = showStartGameModal; // Ensure showStartGameModal is global
+    window.swapTeams = swapTeams; // Ensure swapTeams is global
+    window.toggleTimer = toggleTimer; // Ensure toggleTimer is global
+    window.addAppointment = addAppointment; // Ensure addAppointment is global
+    window.togglePastAppointmentsSection = togglePastAppointmentsSection; // Ensure togglePastAppointmentsSection is global
+    window.toggleGeneralSettingsSection = toggleGeneralSettingsSection; // Ensure toggleGeneralSettingsSection is global
+    window.toggleCustomTeamNamesSection = toggleCustomTeamNamesSection; // Ensure toggleCustomTeamNamesSection is global
+    window.toggleDataManagementSection = toggleDataManagementSection; // Ensure toggleDataManagementSection is global
+    window.exportSettings = exportSettings; // Ensure exportSettings is global
+    window.importSettings = importSettings; // Ensure importSettings is global
+    window.confirmResetAllData = confirmResetAllData; // Ensure confirmResetAllData is global
+    window.confirmIncreaseWinningScore = confirmIncreaseWinningScore; // Ensure confirmIncreaseWinningScore is global
+    window.hideIncreaseScoreModal = hideIncreaseScoreModal; // Ensure hideIncreaseScoreModal is global
+    window.confirmStartGame = confirmStartGame; // Ensure confirmStartGame is global
+    window.hideStartGameModal = hideStartGameModal; // Ensure hideStartGameModal is global
+    window.startNewGame = startNewGame; // Ensure startNewGame is global
+    window.startNewSet = startNewSet; // Ensure startNewSet is global
+    window.increaseWinningScoreModal = increaseWinningScoreModal; // Ensure increaseWinningScoreModal is global
+    window.showManageTeamModal = showManageTeamModal; // Ensure showManageTeamModal is global
+    window.saveTeamNameAndPlayers = saveTeamNameAndPlayers; // Ensure saveTeamNameAndPlayers is global
+    window.hideCustomMessageModal = hideCustomMessageModal; // Ensure hideCustomMessageModal is global
+    window.hideCustomConfirmationModal = hideCustomConfirmationModal; // Ensure hideCustomConfirmationModal is global
   </script>
 </body>
 </html>
