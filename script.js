@@ -1,10 +1,14 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, collection, doc, getDocs, getDoc, setDoc, updateDoc, addDoc, deleteDoc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
 const DEFAULT_CUSTOM_TEAM_COLORS = ["#007bff", "#dc3545", "#28a745", "#ffc107", "#6f42c1"];
 let players = [];
 let checkedState = {};
-let generatedTeams = []; 
+let generatedTeams = [];
 let winningScore = 15;
 let setsToWin = 0;
-let playersPerTeam = 4; 
+let playersPerTeam = 4;
 let customTeamNames = [];
 let currentTheme = 'dark';
 let vibrationEnabled = true;
@@ -12,7 +16,7 @@ let showPlayersOnScoreboard = true;
 let scoreA = 0, scoreB = 0;
 let setsA = 0, setsB = 0;
 let gameEnded = false;
-let gameStarted = false; 
+let gameStarted = false;
 let lastWinningTeam = null;
 let currentPlayingTeamA = { name: 'Time A', players: [], color: '#007bff' };
 let currentPlayingTeamB = { name: 'Time B', players: [], color: '#dc3545' };
@@ -25,21 +29,55 @@ let isTimerRunning = false;
 let appointments = [];
 let newWorker = null;
 
-// Loads settings from local storage.
-function loadSettings() {
-    players = JSON.parse(localStorage.getItem('players') || '[]');
-    checkedState = JSON.parse(localStorage.getItem('checkedPlayers') || '{}');
+let db;
+let auth;
+let userId;
+let isAuthReady = false;
+
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : `{
+  "apiKey": "AIzaSyBeu7H2Us7FYNb0yhGx8pkYj_aeTgnndUA",
+  "authDomain": "voleizinho-das-ruas.firebaseapp.com",
+  "databaseURL": "https://voleizinho-das-ruas-default-rtdb.firebaseio.com",
+  "projectId": "voleizinho-das-ruas",
+  "storageBucket": "voleizinho-das-ruas.firebasestorage.app",
+  "messagingSenderId": "394754605937",
+  "appId": "1:394754605937:web:e97314f6c48373c8dc2cd0"
+}`);
+
+async function initFirebase() {
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    auth = getAuth(app);
+
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            userId = user.uid;
+            document.getElementById('userIdDisplay').textContent = `ID do Usuário: ${userId}`;
+        } else {
+            userId = crypto.randomUUID();
+            document.getElementById('userIdDisplay').textContent = `ID do Usuário: ${userId} (Anônimo)`;
+        }
+        isAuthReady = true;
+        loadLocalSettings();
+        setupFirestoreListeners();
+    });
+
+    if (typeof __initial_auth_token !== 'undefined') {
+        try {
+            await signInWithCustomToken(auth, __initial_auth_token);
+        } catch (error) {
+            await signInAnonymously(auth);
+        }
+    } else {
+        await signInAnonymously(auth);
+    }
+}
+
+function loadLocalSettings() {
     winningScore = parseInt(localStorage.getItem('winningScore') || '15');
     setsToWin = parseInt(localStorage.getItem('setsToWin') || '0');
-    playersPerTeam = parseInt(localStorage.getItem('playersPerTeam') || '4'); 
-    customTeamNames = JSON.parse(localStorage.getItem('customTeamNames') || '[]').map((team, index) => ({
-        name: team.name || "",
-        color: team.color || DEFAULT_CUSTOM_TEAM_COLORS[index] || '#cccccc'
-    }));
-    // Ensure there are always 5 custom team name entries.
-    while (customTeamNames.length < 5) {
-        customTeamNames.push({ name: "", color: DEFAULT_CUSTOM_TEAM_COLORS[customTeamNames.length] || '#cccccc' });
-    }
+    playersPerTeam = parseInt(localStorage.getItem('playersPerTeam') || '4');
     currentTheme = localStorage.getItem('theme') || 'dark';
     vibrationEnabled = JSON.parse(localStorage.getItem('vibrationEnabled') || 'true');
     showPlayersOnScoreboard = JSON.parse(localStorage.getItem('showPlayersOnScoreboard') || 'true');
@@ -57,20 +95,15 @@ function loadSettings() {
     setTimeInSeconds = parseInt(localStorage.getItem('setTimeInSeconds') || '0');
     isTimerRunning = JSON.parse(localStorage.getItem('isTimerRunning') || 'false');
 
-    // Update UI elements with loaded settings.
     document.getElementById('winningScore').value = winningScore;
     document.getElementById('setsToWinConfig').value = setsToWin;
-    document.getElementById('playersPerTeam').value = playersPerTeam; 
+    document.getElementById('playersPerTeam').value = playersPerTeam;
     document.getElementById('vibrationEnabled').checked = vibrationEnabled;
     document.getElementById('showPlayersOnScoreboard').checked = showPlayersOnScoreboard;
-    for (let i = 0; i < 5; i++) {
-        document.getElementById(`customTeamName${i + 1}`).value = customTeamNames[i].name;
-        document.getElementById(`customTeamColor${i + 1}`).value = customTeamNames[i].color;
-    }
+
     document.getElementById('themeSelect').value = currentTheme;
-    setTheme(currentTheme, false); // Apply theme without saving again.
+    setTheme(currentTheme, false);
     updatePlayerDisplayOnScoreboard();
-    updatePlayerList();
     updateScoreboardTeamsDisplay();
     document.getElementById("scoreA").textContent = scoreA;
     document.getElementById("scoreB").textContent = scoreB;
@@ -83,16 +116,12 @@ function loadSettings() {
     }
 }
 
-// Saves current settings to local storage.
-async function saveSettings() {
-    localStorage.setItem('players', JSON.stringify(players));
-    localStorage.setItem('checkedPlayers', JSON.stringify(checkedState));
+async function saveLocalSettings() {
     localStorage.setItem('winningScore', winningScore.toString());
     localStorage.setItem('setsToWin', setsToWin.toString());
-    localStorage.setItem('playersPerTeam', playersPerTeam.toString()); 
+    localStorage.setItem('playersPerTeam', playersPerTeam.toString());
     localStorage.setItem('vibrationEnabled', JSON.stringify(vibrationEnabled));
     localStorage.setItem('showPlayersOnScoreboard', JSON.stringify(showPlayersOnScoreboard));
-    localStorage.setItem('customTeamNames', JSON.stringify(customTeamNames));
     localStorage.setItem('theme', currentTheme);
 
     localStorage.setItem('scoreA', scoreA.toString());
@@ -112,17 +141,53 @@ async function saveSettings() {
     applyTeamColorsToScoreboard();
 }
 
-// Loads appointments from local storage.
-function loadAppointmentsFromLocalStorage() {
-    appointments = JSON.parse(localStorage.getItem('appointments') || '[]');
+async function setupFirestoreListeners() {
+    if (!isAuthReady) return;
+
+    onSnapshot(collection(db, `artifacts/${appId}/public/data/players`), (snapshot) => {
+        const fetchedPlayers = [];
+        const fetchedCheckedState = {};
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            fetchedPlayers.push(data.name);
+            fetchedCheckedState[data.name] = data.checked;
+        });
+        players = fetchedPlayers;
+        checkedState = fetchedCheckedState;
+        updatePlayerList();
+    }, (error) => {
+        console.error("Erro ao carregar jogadores:", error);
+    });
+
+    onSnapshot(collection(db, `artifacts/${appId}/public/data/appointments`), (snapshot) => {
+        const fetchedAppointments = [];
+        snapshot.forEach(doc => {
+            fetchedAppointments.push({ id: doc.id, ...doc.data() });
+        });
+        appointments = fetchedAppointments;
+        renderAppointments();
+    }, (error) => {
+        console.error("Erro ao carregar agendamentos:", error);
+    });
+
+    onSnapshot(collection(db, `artifacts/${appId}/public/data/customTeamNames`), (snapshot) => {
+        const fetchedCustomTeamNames = [];
+        snapshot.forEach(doc => {
+            fetchedCustomTeamNames.push(doc.data());
+        });
+        customTeamNames = fetchedCustomTeamNames;
+        while (customTeamNames.length < 5) {
+            customTeamNames.push({ name: "", color: DEFAULT_CUSTOM_TEAM_COLORS[customTeamNames.length] || '#cccccc' });
+        }
+        for (let i = 0; i < 5; i++) {
+            document.getElementById(`customTeamName${i + 1}`).value = customTeamNames[i].name;
+            document.getElementById(`customTeamColor${i + 1}`).value = customTeamNames[i].color;
+        }
+    }, (error) => {
+        console.error("Erro ao carregar nomes de times personalizados:", error);
+    });
 }
 
-// Saves appointments to local storage.
-function saveAppointmentsToLocalStorage() {
-    localStorage.setItem('appointments', JSON.stringify(appointments));
-}
-
-// Toggles the visibility of the gear menu and its overlay.
 function toggleMenu() {
   const menu = document.getElementById("gearMenu");
   const overlay = document.getElementById("menuOverlay");
@@ -136,7 +201,6 @@ function toggleMenu() {
   }
 }
 
-// Closes the menu if a click occurs outside of it.
 function closeMenuOnOutsideClick(e) {
   const menu = document.getElementById("gearMenu");
   const button = document.querySelector(".gear-button");
@@ -149,7 +213,6 @@ function closeMenuOnOutsideClick(e) {
   }
 }
 
-// Navigates to a different section of the app.
 function navigateTo(id) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -163,7 +226,6 @@ function navigateTo(id) {
   }
 }
 
-// Updates the visibility of the reset game button.
 function updateResetButtonVisibility() {
     const resetButton = document.getElementById('resetGameButton');
     const pontuacaoSection = document.getElementById('pontuacao');
@@ -174,27 +236,27 @@ function updateResetButtonVisibility() {
     }
 }
 
-// Adds a new player to the list.
 async function addPlayer() {
+  if (!isAuthReady) return;
   const input = document.getElementById("playerName");
   const name = input.value.trim();
   if (name && !players.includes(name)) {
-    players.push(name);
-    checkedState[name] = true;
-    input.value = "";
-    await saveSettings();
-    updatePlayerList();
+    try {
+        await addDoc(collection(db, `artifacts/${appId}/public/data/players`), { name: name, checked: true });
+        input.value = "";
+    } catch (e) {
+        displayMessage("Erro ao adicionar jogador.", "error");
+    }
   } else if (players.includes(name)) {
     displayMessage("Este nome já está na lista.", "warning");
   }
 }
 
-// Updates the displayed list of players.
 function updatePlayerList() {
   players.sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' }));
   const list = document.getElementById("playerList");
   list.innerHTML = "";
-  players.forEach((p, i) => {
+  players.forEach((p) => {
     const li = document.createElement("li");
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
@@ -202,8 +264,18 @@ function updatePlayerList() {
     checkbox.style.marginRight = '.5rem';
     checkbox.style.width = '1rem';
     checkbox.onchange = async () => {
+      if (!isAuthReady) return;
       checkedState[p] = checkbox.checked;
-      await saveSettings();
+      try {
+          const q = query(collection(db, `artifacts/${appId}/public/data/players`), where("name", "==", p));
+          const querySnapshot = await getDocs(q);
+          if (!querySnapshot.empty) {
+              const playerDoc = querySnapshot.docs[0];
+              await updateDoc(doc(db, `artifacts/${appId}/public/data/players`, playerDoc.id), { checked: checkbox.checked });
+          }
+      } catch (e) {
+          displayMessage("Erro ao atualizar status do jogador.", "error");
+      }
       updatePlayerCounter();
       updateToggleSelectAllButtonText();
     };
@@ -215,13 +287,20 @@ function updatePlayerList() {
     btn.onclick = () => {
         showConfirmationModal("Tem certeza que deseja remover este jogador?", async (confirmed) => {
             if (confirmed) {
-                players.splice(i, 1);
-                delete checkedState[p];
-                await saveSettings();
-                updatePlayerList();
-                generatedTeams = []; // Clear generated teams as player list changed.
-                renderGeneratedTeams();
-                resetGame(); // Reset game state if players change.
+                if (!isAuthReady) return;
+                try {
+                    const q = query(collection(db, `artifacts/${appId}/public/data/players`), where("name", "==", p));
+                    const querySnapshot = await getDocs(q);
+                    if (!querySnapshot.empty) {
+                        const playerDoc = querySnapshot.docs[0];
+                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/players`, playerDoc.id));
+                    }
+                    generatedTeams = [];
+                    renderGeneratedTeams();
+                    resetGame();
+                } catch (e) {
+                    displayMessage("Erro ao remover jogador.", "error");
+                }
             }
         });
     };
@@ -234,23 +313,28 @@ function updatePlayerList() {
   updateToggleSelectAllButtonText();
 }
 
-// Updates the player counter display.
 function updatePlayerCounter() {
   const selected = players.filter(p => checkedState[p] !== false).length;
   const total = players.length;
   document.getElementById("playerCounter").textContent = `${selected}/${total}`;
 }
 
-// Toggles the selection of all players.
 async function toggleSelectAllPlayers() {
+  if (!isAuthReady) return;
   const allSelected = players.every(p => checkedState[p] !== false);
-  // No confirmation needed for this action now.
-  players.forEach(p => checkedState[p] = !allSelected);
-  await saveSettings();
-  updatePlayerList();
+  try {
+      const playersCollectionRef = collection(db, `artifacts/${appId}/public/data/players`);
+      const querySnapshot = await getDocs(playersCollectionRef);
+      const batch = [];
+      querySnapshot.forEach(playerDoc => {
+          batch.push(updateDoc(doc(db, `artifacts/${appId}/public/data/players`, playerDoc.id), { checked: !allSelected }));
+      });
+      await Promise.all(batch);
+  } catch (e) {
+      displayMessage("Erro ao alternar seleção de jogadores.", "error");
+  }
 }
 
-// Updates the text of the "Toggle Select All" button.
 function updateToggleSelectAllButtonText() {
   const toggleButton = document.getElementById('toggleSelectAllButton');
   if (toggleButton) {
@@ -263,7 +347,6 @@ function updateToggleSelectAllButtonText() {
   }
 }
 
-// Confirms and resets the current game score.
 function confirmReset() {
     const resetButton = document.getElementById('resetGameButton');
     if (resetButton.classList.contains('disabled')) {
@@ -278,48 +361,63 @@ function confirmReset() {
     });
 }
 
-// Resets the game state.
 async function resetGame() {
   scoreA = 0;
   scoreB = 0;
   setsA = 0;
   setsB = 0;
   gameEnded = false;
-  gameStarted = false; 
-  lastWinningTeam = null; 
+  gameStarted = false;
+  lastWinningTeam = null;
   document.getElementById("scoreA").textContent = 0;
   document.getElementById("scoreB").textContent = 0;
   updateSetsDisplay();
   updateScoreboardTeamsDisplay();
   updateResetButtonVisibility();
-  updateSwapTeamsButtonVisibility(); 
+  updateSwapTeamsButtonVisibility();
   showStartGameModal();
-  generatedTeams = []; // Clear generated teams on game reset.
+  generatedTeams = [];
   renderGeneratedTeams();
   stopAllTimers();
   gameTimeInSeconds = 0;
   setTimeInSeconds = 0;
   updateTimerDisplay();
-  document.getElementById('gameTimer').classList.remove('show');
-  await saveSettings();
+  await saveLocalSettings();
 }
 
-// Resets all stored data in local storage.
 async function resetAllData() {
-    showConfirmationModal("Tem certeza que deseja resetar TODOS os dados? Isso apagará jogadores, times gerados, configurações e o estado atual do jogo.", (confirmed) => {
+    showConfirmationModal("Tem certeza que deseja resetar TODOS os dados? Isso apagará jogadores, times gerados, configurações e o estado atual do jogo.", async (confirmed) => {
         if (confirmed) {
-            localStorage.clear();
-            location.reload(); // Reload the page to reset the app.
+            if (!isAuthReady) return;
+            try {
+                const playersCollectionRef = collection(db, `artifacts/${appId}/public/data/players`);
+                const appointmentsCollectionRef = collection(db, `artifacts/${appId}/public/data/appointments`);
+                const customTeamNamesCollectionRef = collection(db, `artifacts/${appId}/public/data/customTeamNames`);
+
+                const playerDocs = await getDocs(playersCollectionRef);
+                const appointmentDocs = await getDocs(appointmentsCollectionRef);
+                const customTeamNameDocs = await getDocs(customTeamNamesCollectionRef);
+
+                const deletePromises = [];
+                playerDocs.forEach(d => deletePromises.push(deleteDoc(doc(db, `artifacts/${appId}/public/data/players`, d.id))));
+                appointmentDocs.forEach(d => deletePromises.push(deleteDoc(doc(db, `artifacts/${appId}/public/data/appointments`, d.id))));
+                customTeamNameDocs.forEach(d => deletePromises.push(deleteDoc(doc(db, `artifacts/${appId}/public/data/customTeamNames`, d.id))));
+
+                await Promise.all(deletePromises);
+
+                localStorage.clear();
+                location.reload();
+            } catch (e) {
+                displayMessage("Erro ao resetar todos os dados.", "error");
+            }
         }
     });
 }
 
-// Wrapper for confirming reset of all data.
 function confirmResetAllData() {
     resetAllData();
 }
 
-// Shuffles an array in place.
 function shuffle(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -327,7 +425,6 @@ function shuffle(array) {
   }
 }
 
-// Generates custom teams based on selected players and settings.
 async function generateCustomTeams() {
   const perTeam = parseInt(document.getElementById("playersPerTeam").value);
 
@@ -356,11 +453,10 @@ async function generateCustomTeams() {
   }
   renderGeneratedTeams();
   displayMessage(`${teamCount} time(s) gerado(s) com sucesso!`, "success");
-  await saveSettings();
+  await saveLocalSettings();
   return true;
 }
 
-// Renders the generated teams in the 'times' section.
 function renderGeneratedTeams() {
     const container = document.getElementById("teamsContainer");
     container.innerHTML = "";
@@ -400,14 +496,13 @@ function renderGeneratedTeams() {
     });
 }
 
-// Sets up swipe gesture to decrease score.
 function setupSwipeToDecrease(id, team) {
   const el = document.getElementById(id);
   let startY = null;
   el.addEventListener('touchstart', e => {
     const playerInfoContainer = el.querySelector('.player-info-container');
     if (playerInfoContainer && playerInfoContainer.contains(e.target)) {
-        startY = null; // Ignore if touch starts on player info.
+        startY = null;
         return;
     }
     if (e.touches.length === 1) {
@@ -417,7 +512,7 @@ function setupSwipeToDecrease(id, team) {
   el.addEventListener('touchend', e => {
     if (startY !== null && e.changedTouches.length === 1) {
       const endY = e.changedTouches[0].clientY;
-      if (endY - startY > 30) { // Swipe down to decrease score.
+      if (endY - startY > 30) {
         changeScore(team, -1);
       }
       startY = null;
@@ -425,23 +520,21 @@ function setupSwipeToDecrease(id, team) {
   });
 }
 
-// Triggers a short vibration if enabled.
 function triggerVibration() {
   if (vibrationEnabled && navigator.vibrate) {
     navigator.vibrate(100);
   }
 }
 
-// Changes the score for a given team.
 async function changeScore(team, delta) {
   if (!gameStarted) {
     if (delta > 0) displayMessage("Inicie uma partida primeiro!", "warning");
     return;
   }
-  if (gameEnded) return; // Prevent score changes if game has ended.
+  if (gameEnded) return;
   const scoreElement = document.getElementById('score' + team);
   scoreElement.classList.remove('increase-anim', 'decrease-anim');
-  void scoreElement.offsetWidth; // Trigger reflow to restart animation.
+  void scoreElement.offsetWidth;
   if (team === 'A') {
     scoreA = Math.max(0, scoreA + delta);
     scoreElement.textContent = scoreA;
@@ -456,11 +549,10 @@ async function changeScore(team, delta) {
     scoreElement.classList.add('decrease-anim');
     triggerVibration();
   }
-  await saveSettings();
+  await saveLocalSettings();
   checkWinCondition();
 }
 
-// Checks if a team has met the win conditions for the current set.
 async function checkWinCondition() {
   if (gameEnded) return;
   let winner = null;
@@ -475,8 +567,8 @@ async function checkWinCondition() {
     stopAllTimers();
     const winningTeamName = winner === 'A' ? currentPlayingTeamA.name : currentPlayingTeamB.name;
     showVictoryAnimation(winner, winningTeamName);
-    updateSwapTeamsButtonVisibility(); 
-    await saveSettings();
+    updateSwapTeamsButtonVisibility();
+    await saveLocalSettings();
     setTimeout(async () => {
       let currentSetsA = setsA;
       let currentSetsB = setsB;
@@ -490,21 +582,20 @@ async function checkWinCondition() {
       } else {
         showGameOverModal(winningTeamName, 'set_won');
       }
-    }, 3000); // Delay showing modal after victory animation.
+    }, 3000);
   }
 }
 
-// Shows a visual victory animation for the winning team.
 function showVictoryAnimation(teamId, winningTeamName) {
   const teamSection = document.getElementById('section' + teamId);
   const victoryElements = teamSection.querySelector('.victory-elements');
   const crownContainer = victoryElements.querySelector('.crown-container');
   const confettiContainer = victoryElements.querySelector('.confetti-container');
-  confettiContainer.innerHTML = ''; // Clear previous confetti.
+  confettiContainer.innerHTML = '';
   victoryElements.classList.add('show');
   crownContainer.style.opacity = 0;
   crownContainer.style.animation = 'none';
-  void crownContainer.offsetWidth; // Trigger reflow.
+  void crownContainer.offsetWidth;
   crownContainer.style.animation = 'crownAppear 1.5s ease-out forwards';
   const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f', '#ffa500'];
   for (let i = 0; i < 100; i++) {
@@ -537,7 +628,6 @@ function showVictoryAnimation(teamId, winningTeamName) {
   }, 3000);
 }
 
-// Displays the game over modal.
 function showGameOverModal(winningTeamName, gameStatus) {
   const modal = document.getElementById('gameOverModal');
   const modalWinningTeamName = document.getElementById('modalWinningTeamName');
@@ -554,24 +644,20 @@ function showGameOverModal(winningTeamName, gameStatus) {
   modal.classList.add('show');
 }
 
-// Hides the game over modal.
 function hideGameOverModal() {
   document.getElementById('gameOverModal').classList.remove('show');
 }
 
-// Shows the modal to increase the winning score.
 function increaseWinningScoreModal() {
   hideGameOverModal();
   document.getElementById('increaseScoreModal').classList.add('show');
   document.getElementById('newWinningScoreInput').value = winningScore + 5;
 }
 
-// Hides the increase score modal.
 function hideIncreaseScoreModal() {
   document.getElementById('increaseScoreModal').classList.remove('show');
 }
 
-// Confirms and applies the new winning score.
 async function confirmIncreaseWinningScore() {
   const newScore = parseInt(document.getElementById('newWinningScoreInput').value);
   if (isNaN(newScore) || newScore <= 0) {
@@ -588,10 +674,9 @@ async function confirmIncreaseWinningScore() {
   hideIncreaseScoreModal();
   gameEnded = false;
   startAllTimers();
-  await saveSettings();
+  await saveLocalSettings();
 }
 
-// Shows the start game modal.
 function showStartGameModal() {
   document.getElementById('startGameModal').classList.add('show');
   document.getElementById('initialWinningScore').value = winningScore;
@@ -599,16 +684,14 @@ function showStartGameModal() {
   document.getElementById('startGameButton').style.display = 'none';
 }
 
-// Hides the start game modal.
 function hideStartGameModal() {
   document.getElementById('startGameModal').classList.remove('show');
-  if (!gameStarted) { 
+  if (!gameStarted) {
       document.getElementById('startGameButton').style.display = 'block';
       document.getElementById('scoreboardOverlay').classList.remove('hidden');
   }
 }
 
-// Confirms and starts a new game.
 async function confirmStartGame() {
   const newWinningScore = parseInt(document.getElementById('initialWinningScore').value);
   const newSetsToWin = parseInt(document.getElementById('initialNumberOfSets').value);
@@ -622,31 +705,30 @@ async function confirmStartGame() {
   }
   winningScore = newWinningScore;
   setsToWin = newSetsToWin;
-  
+
   hideStartGameModal();
 
   if (generatedTeams.length === 0) {
-      showConfirmationModal("Não há times gerados. Deseja gerar times automaticamente com o número de jogadores por time definido nas configurações?", async (confirmed) => { 
+      showConfirmationModal("Não há times gerados. Deseja gerar times automaticamente com o número de jogadores por time definido nas configurações?", async (confirmed) => {
           if (confirmed) {
-              const success = await generateCustomTeams(); 
+              const success = await generateCustomTeams();
               if (!success) {
                   displayMessage("Não foi possível gerar times automaticamente. Por favor, adicione mais jogadores ou gere os times manualmente.", "error");
                   document.getElementById('startGameButton').style.display = 'block';
                   document.getElementById('scoreboardOverlay').classList.remove('hidden');
-                  return; 
+                  return;
               }
               await selectAndInitializeTeams();
           } else {
-              showStartGameModal(); 
+              showStartGameModal();
           }
       });
   } else {
       await selectAndInitializeTeams();
   }
-  await saveSettings();
+  await saveLocalSettings();
 }
 
-// Selects and initializes teams for a new game.
 async function selectAndInitializeTeams() {
   if (generatedTeams.length >= 2) {
       currentPlayingTeamA = { ...generatedTeams[0] };
@@ -662,14 +744,13 @@ async function selectAndInitializeTeams() {
   await initializeGameAndTeams();
 }
 
-// Initializes game state and teams.
 async function initializeGameAndTeams() {
   scoreA = 0;
   scoreB = 0;
   setsA = 0;
   setsB = 0;
   gameEnded = false;
-  gameStarted = true; 
+  gameStarted = true;
   lastWinningTeam = null;
 
   document.getElementById("scoreA").textContent = scoreA;
@@ -683,10 +764,9 @@ async function initializeGameAndTeams() {
   gameTimeInSeconds = 0;
   setTimeInSeconds = 0;
   startAllTimers();
-  await saveSettings();
+  await saveLocalSettings();
 }
 
-// Starts a new game, potentially substituting a losing team.
 async function startNewGame() {
   hideGameOverModal();
 
@@ -703,14 +783,13 @@ async function startNewGame() {
   document.getElementById('scoreboardOverlay').classList.add('hidden');
   document.getElementById('startGameButton').style.display = 'none';
 
-  let nextTeamA = { ...currentPlayingTeamA }; 
+  let nextTeamA = { ...currentPlayingTeamA };
   let nextTeamB = { ...currentPlayingTeamB };
 
-  if (lastWinningTeam !== null) { 
+  if (lastWinningTeam !== null) {
       const losingTeam = (lastWinningTeam === 'A' ? currentPlayingTeamB : currentPlayingTeamA);
       const winningTeam = (lastWinningTeam === 'A' ? currentPlayingTeamA : currentPlayingTeamB);
 
-      // Find available teams for substitution (not the current winning or losing team).
       const availableTeamsForSubstitution = generatedTeams.filter(team => {
           const teamIdentifier = JSON.stringify({ name: team.name, players: team.players });
           const winningTeamIdentifier = JSON.stringify({ name: winningTeam.name, players: winningTeam.players });
@@ -722,17 +801,17 @@ async function startNewGame() {
           const randomIndex = Math.floor(Math.random() * availableTeamsForSubstitution.length);
           const newTeam = availableTeamsForSubstitution[randomIndex];
 
-          if (lastWinningTeam === 'A') { // If Team A won, substitute Team B.
+          if (lastWinningTeam === 'A') {
               nextTeamB = { ...newTeam };
               displayMessage(`Time ${losingTeam.name} foi substituído por ${newTeam.name} para a nova partida!`, "info");
-          } else { // If Team B won, substitute Team A.
+          } else {
               nextTeamA = { ...newTeam };
               displayMessage(`Time ${losingTeam.name} foi substituído por ${newTeam.name} para a nova partida!`, "info");
           }
       } else {
           displayMessage("Não há times disponíveis para substituição. Os times atuais continuarão na nova partida.", "info");
       }
-  } else { // If no previous winning team (first game or reset).
+  } else {
       if (generatedTeams.length >= 2) {
           nextTeamA = { ...generatedTeams[0] };
           nextTeamB = { ...generatedTeams[1] };
@@ -749,14 +828,13 @@ async function startNewGame() {
   currentPlayingTeamB = nextTeamB;
 
   updateScoreboardTeamsDisplay();
-  lastWinningTeam = null; 
+  lastWinningTeam = null;
   gameTimeInSeconds = 0;
   setTimeInSeconds = 0;
   startAllTimers();
-  await saveSettings();
+  await saveLocalSettings();
 }
 
-// Starts a new set within the current game.
 async function startNewSet() {
   hideGameOverModal();
 
@@ -776,13 +854,12 @@ async function startNewSet() {
   updateSetsDisplay();
 
   updateScoreboardTeamsDisplay();
-  updateSwapTeamsButtonVisibility(); 
+  updateSwapTeamsButtonVisibility();
   setTimeInSeconds = 0;
   startAllTimers();
-  await saveSettings();
+  await saveLocalSettings();
 }
 
-// Displays a "Super Victory" animation when a team wins the entire match.
 function showSuperVictoryAnimation(winningTeamName) {
   const superVictoryModal = document.getElementById('superVictoryModal');
   const superVictoryTeamName = document.getElementById('superVictoryTeamName');
@@ -822,7 +899,6 @@ function showSuperVictoryAnimation(winningTeamName) {
   }, 5000);
 }
 
-// Updates the display of sets won by each team.
 function updateSetsDisplay() {
   const setIndicatorA = document.getElementById('setIndicatorA');
   const setIndicatorB = document.getElementById('setIndicatorB');
@@ -840,7 +916,6 @@ function updateSetsDisplay() {
   }
 }
 
-// Sets the application theme (dark or light).
 async function setTheme(themeName, save = true) {
   if (themeName === 'light') {
     document.body.classList.add('light-theme');
@@ -849,29 +924,26 @@ async function setTheme(themeName, save = true) {
   }
   currentTheme = themeName;
   if (save) {
-    await saveSettings();
+    await saveLocalSettings();
     displayMessage('Tema alterado para ' + (themeName === 'dark' ? 'Escuro' : 'Claro') + '!', "info");
   }
 }
 
-// Applies the selected team colors to the scoreboard sections.
 function applyTeamColorsToScoreboard() {
     document.getElementById('sectionA').style.backgroundColor = currentPlayingTeamA.color;
     document.getElementById('sectionB').style.backgroundColor = currentPlayingTeamB.color;
 }
 
-// Sets up swipe gestures for navigating between sections.
 function setupSwipeBetweenSections() {
   let touchStartX = null;
   document.body.addEventListener('touchstart', e => {
-    // Prevent swipe if a modal or menu is open, or on specific buttons.
     if (document.getElementById("gearMenu").classList.contains("show") ||
         document.getElementById("gameOverModal").classList.contains("show") ||
         document.getElementById("increaseScoreModal").classList.contains("show") ||
         document.getElementById("startGameModal").classList.contains("show") ||
         document.getElementById("superVictoryModal").classList.contains("show") ||
-        document.getElementById("customMessageModal").classList.contains("show") || 
-        document.getElementById("customConfirmationModal").classList.contains("show") || 
+        document.getElementById("customMessageModal").classList.contains("show") ||
+        document.getElementById("customConfirmationModal").classList.contains("show") ||
         document.getElementById("manageTeamModal").classList.contains("show") ||
         e.target.closest('#startGameButton') || e.target.closest('#swapTeamsButton')) {
         touchStartX = null;
@@ -893,8 +965,8 @@ function setupSwipeBetweenSections() {
                 isScrollingVertically = true;
             }
 
-            if (isScrollingVertically && 
-                ((deltaY > 0 && scrollableElement.scrollTop === 0) || 
+            if (isScrollingVertically &&
+                ((deltaY > 0 && scrollableElement.scrollTop === 0) ||
                  (deltaY < 0 && scrollableElement.scrollTop + scrollableElement.clientHeight >= scrollableElement.scrollHeight - 1))) {
                 moveEvent.preventDefault();
             }
@@ -916,14 +988,13 @@ function setupSwipeBetweenSections() {
     const touchEndX = e.changedTouches[0].clientX;
     const dx = touchStartX - touchEndX;
     const threshold = 50;
-    
-    // Prevent swipe if a modal or menu is open, or on specific buttons.
+
     if (document.getElementById("gameOverModal").classList.contains("show") ||
         document.getElementById("increaseScoreModal").classList.contains("show") ||
         document.getElementById("startGameModal").classList.contains("show") ||
         document.getElementById("superVictoryModal").classList.contains("show") ||
-        document.getElementById("customMessageModal").classList.contains("show") || 
-        document.getElementById("customConfirmationModal").classList.contains("show") || 
+        document.getElementById("customMessageModal").classList.contains("show") ||
+        document.getElementById("customConfirmationModal").classList.contains("show") ||
         document.getElementById("manageTeamModal").classList.contains("show") ||
         e.target.closest('#startGameButton') || e.target.closest('#swapTeamsButton') ||
         document.getElementById("gearMenu").classList.contains("show")
@@ -936,12 +1007,12 @@ function setupSwipeBetweenSections() {
     const currentIndex = sections.findIndex(id => document.getElementById(id).classList.contains('active'));
     let nextIndex = currentIndex;
 
-    if (dx > threshold) { // Swipe left
+    if (dx > threshold) {
       nextIndex = (currentIndex + 1) % sections.length;
-    } else if (dx < -threshold) { // Swipe right
+    } else if (dx < -threshold) {
       nextIndex = (currentIndex - 1 + sections.length) % sections.length;
     }
-    
+
     if (nextIndex !== currentIndex) {
         navigateTo(sections[nextIndex]);
     }
@@ -949,7 +1020,6 @@ function setupSwipeBetweenSections() {
   });
 }
 
-// Swaps the current playing teams and their scores/sets.
 async function swapTeams() {
   if (!gameStarted) {
     displayMessage("Inicie uma partida para inverter os times.", "warning");
@@ -957,47 +1027,43 @@ async function swapTeams() {
   }
   const sectionA = document.getElementById('sectionA');
   const sectionB = document.getElementById('sectionB');
-  sectionA.style.pointerEvents = 'none'; // Disable interaction during animation.
+  sectionA.style.pointerEvents = 'none';
   sectionB.style.pointerEvents = 'none';
   document.getElementById('swapTeamsButton').style.pointerEvents = 'none';
   const animationDuration = 300;
   sectionA.classList.add('fade-out');
   sectionB.classList.add('fade-out');
   setTimeout(async () => {
-    // Swap scores
     let tempScore = scoreA;
     scoreA = scoreB;
     scoreB = tempScore;
-    // Swap sets
     let tempSets = setsA;
     setsA = setsB;
     setsB = tempSets;
-    // Swap current playing teams
     let tempTeam = currentPlayingTeamA;
     currentPlayingTeamA = currentPlayingTeamB;
     currentPlayingTeamB = tempTeam;
-    
+
     document.getElementById("scoreA").textContent = scoreA;
     document.getElementById("scoreB").textContent = scoreB;
     updateSetsDisplay();
     updateScoreboardTeamsDisplay();
-    
+
     sectionA.classList.remove('fade-out');
     sectionB.classList.remove('fade-out');
     sectionA.classList.add('fade-in');
     sectionB.classList.add('fade-in');
-    await saveSettings();
+    await saveLocalSettings();
     setTimeout(() => {
       sectionA.classList.remove('fade-in');
       sectionB.classList.remove('fade-in');
-      sectionA.style.pointerEvents = 'auto'; // Re-enable interaction.
+      sectionA.style.pointerEvents = 'auto';
       sectionB.style.pointerEvents = 'auto';
       document.getElementById('swapTeamsButton').style.pointerEvents = 'auto';
     }, animationDuration);
   }, animationDuration);
 }
 
-// Updates the visibility of the swap teams button.
 function updateSwapTeamsButtonVisibility() {
     const swapButton = document.getElementById('swapTeamsButton');
     if (gameStarted && !gameEnded) {
@@ -1007,7 +1073,6 @@ function updateSwapTeamsButtonVisibility() {
     }
 }
 
-// Adds custom message and confirmation modals to the DOM.
 document.addEventListener('DOMContentLoaded', () => {
     const customModalHTML = `
         <div id="customMessageModal" class="custom-message-modal">
@@ -1045,7 +1110,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// Displays a custom message modal.
 function displayMessage(message, type = 'info') {
     const modal = document.getElementById('customMessageModal');
     const titleElement = document.getElementById('customMessageTitle');
@@ -1062,27 +1126,23 @@ function displayMessage(message, type = 'info') {
     modal.classList.add('show');
 }
 
-// Hides the custom message modal.
 function hideCustomMessageModal() {
     document.getElementById('customMessageModal').classList.remove('show');
 }
 
-// Displays a custom confirmation modal.
 function showConfirmationModal(message, callback) {
     const modal = document.getElementById('customConfirmationModal');
     const textElement = document.getElementById('customConfirmationText');
     textElement.textContent = message;
-    window.currentConfirmationCallback = callback; // Store callback for button clicks.
+    window.currentConfirmationCallback = callback;
     modal.classList.add('show');
 }
 
-// Hides the custom confirmation modal.
 function hideCustomConfirmationModal() {
     document.getElementById('customConfirmationModal').classList.remove('show');
     window.currentConfirmationCallback = null;
 }
 
-// Shows the modal to manage a team (select from generated teams).
 async function showManageTeamModal(teamId) {
     activeManageTeamId = teamId;
     const modal = document.getElementById('manageTeamModal');
@@ -1090,7 +1150,7 @@ async function showManageTeamModal(teamId) {
     document.getElementById('manageTeamModalTitle').textContent = `Selecionar Time`;
     const currentTeam = (teamId === 'A' ? currentPlayingTeamA : currentPlayingTeamB);
     selectElement.innerHTML = '<option value="">Selecione um time</option>';
-    
+
     if (generatedTeams.length === 0) {
         selectElement.innerHTML += '<option value="" disabled>Nenhum time gerado</option>';
     } else {
@@ -1098,33 +1158,29 @@ async function showManageTeamModal(teamId) {
             const option = document.createElement('option');
             option.value = `generated-${index}`;
             option.textContent = `${team.name}`;
-            // Pre-select the current team if it matches a generated team.
             if (currentTeam.name === team.name && currentTeam.players.length === team.players.length && currentTeam.players.every((p, i) => p === team.players[i])) {
-              option.selected = true; 
+              option.selected = true;
             }
             selectElement.appendChild(option);
         });
     }
-    
-    // Ensure dropdown reflects selected team correctly, or resets if current team isn't generated.
+
     const selectedValue = selectElement.value;
     const isCurrentTeamGenerated = selectedValue.startsWith('generated-');
     const currentTeamIndex = isCurrentTeamGenerated ? parseInt(selectedValue.split('-')[1]) : -1;
 
-    if (currentTeamIndex === -1 || 
-        (generatedTeams[currentTeamIndex].name !== currentTeam.name || 
+    if (currentTeamIndex === -1 ||
+        (generatedTeams[currentTeamIndex].name !== currentTeam.name ||
          !generatedTeams[currentTeamIndex].players.every((p, i) => p === currentTeam.players[i])) ) {
-          selectElement.value = ""; 
+          selectElement.value = "";
     }
 
     modal.classList.add('show');
-    // Add event listener to close modal on outside click.
     setTimeout(() => {
         document.addEventListener('click', closeManageTeamModalOnOutsideClick);
     }, 0);
 }
 
-// Closes the manage team modal if a click occurs outside of it.
 function closeManageTeamModalOnOutsideClick(e) {
   const modal = document.getElementById("manageTeamModal");
   const modalContent = modal.querySelector(".modal-content");
@@ -1133,14 +1189,12 @@ function closeManageTeamModalOnOutsideClick(e) {
   }
 }
 
-// Hides the manage team modal.
 function hideManageTeamModal() {
     document.getElementById('manageTeamModal').classList.remove('show');
     activeManageTeamId = null;
     document.removeEventListener('click', closeManageTeamModalOnOutsideClick);
 }
 
-// Saves the selected team name and players to the current playing team.
 async function saveTeamNameAndPlayers() {
     const selectedDropdownValue = document.getElementById('selectTeamForManagement').value;
     let targetTeam = (activeManageTeamId === 'A' ? currentPlayingTeamA : currentPlayingTeamB);
@@ -1149,45 +1203,75 @@ async function saveTeamNameAndPlayers() {
     let finalTeamPlayers;
     let finalTeamColor;
 
-    if (selectedDropdownValue === "") { // If no team selected, revert to default.
+    if (selectedDropdownValue === "") {
         finalTeamName = (activeManageTeamId === 'A' ? 'Time A' : 'Time B');
         finalTeamPlayers = [];
         finalTeamColor = (activeManageTeamId === 'A' ? '#007bff' : '#dc3545');
     } else if (selectedDropdownValue.startsWith('generated-')) {
         const index = parseInt(selectedDropdownValue.split('-')[1]);
         const selectedGeneratedTeam = generatedTeams[index];
-        
-        // Prevent selecting the same team as the other playing team.
-        if (otherTeam.name === selectedGeneratedTeam.name && 
-            otherTeam.players.length === selectedGeneratedTeam.players.length && 
+
+        if (otherTeam.name === selectedGeneratedTeam.name &&
+            otherTeam.players.length === selectedGeneratedTeam.players.length &&
             otherTeam.players.every((p, i) => p === selectedGeneratedTeam.players[i])) {
             displayMessage("Este time gerado já está atribuído ao outro time. Por favor, selecione um time diferente.", "warning");
-            document.getElementById('selectTeamForManagement').value = ""; // Reset dropdown.
+            document.getElementById('selectTeamForManagement').value = "";
             return;
         }
         finalTeamName = selectedGeneratedTeam.name;
         finalTeamPlayers = selectedGeneratedTeam.players;
         finalTeamColor = selectedGeneratedTeam.color;
     }
-    
+
     targetTeam.name = finalTeamName;
     targetTeam.players = finalTeamPlayers;
     targetTeam.color = finalTeamColor;
 
     updateScoreboardTeamsDisplay();
     hideManageTeamModal();
-    await saveSettings();
+    await saveLocalSettings();
 }
 
-// Toggles the visibility of the custom team names section.
+async function saveCustomTeamNamesToFirestore() {
+    if (!isAuthReady) return;
+    try {
+        const customTeamNamesCollectionRef = collection(db, `artifacts/${appId}/public/data/customTeamNames`);
+        const existingDocs = await getDocs(customTeamNamesCollectionRef);
+        const batch = [];
+        existingDocs.forEach(d => batch.push(deleteDoc(doc(db, `artifacts/${appId}/public/data/customTeamNames`, d.id))));
+        await Promise.all(batch);
+
+        const addPromises = [];
+        for (let i = 0; i < 5; i++) {
+            const name = document.getElementById(`customTeamName${i + 1}`).value;
+            const color = document.getElementById(`customTeamColor${i + 1}`).value;
+            addPromises.push(addDoc(customTeamNamesCollectionRef, { name: name, color: color, order: i }));
+        }
+        await Promise.all(addPromises);
+    } catch (e) {
+        console.error("Erro ao salvar times personalizados:", e);
+        displayMessage("Erro ao salvar times personalizados.", "error");
+    }
+}
+
 function toggleCustomTeamNamesSection() {
     const content = document.getElementById('customTeamNamesContent');
     const arrow = document.getElementById('customTeamNamesArrow');
     content.classList.toggle('show');
     arrow.classList.toggle('rotated');
+    if (content.classList.contains('show')) {
+        for (let i = 0; i < 5; i++) {
+            document.getElementById(`customTeamName${i + 1}`).addEventListener('change', saveCustomTeamNamesToFirestore);
+            document.getElementById(`customTeamColor${i + 1}`).addEventListener('change', saveCustomTeamNamesToFirestore);
+        }
+    } else {
+        for (let i = 0; i < 5; i++) {
+            document.getElementById(`customTeamName${i + 1}`).removeEventListener('change', saveCustomTeamNamesToFirestore);
+            document.getElementById(`customTeamColor${i + 1}`).removeEventListener('change', saveCustomTeamNamesToFirestore);
+        }
+    }
 }
 
-// Toggles the visibility of the general settings section.
 function toggleGeneralSettingsSection() {
     const content = document.getElementById('generalSettingsContent');
     const arrow = document.getElementById('generalSettingsArrow');
@@ -1195,7 +1279,6 @@ function toggleGeneralSettingsSection() {
     arrow.classList.toggle('rotated');
 }
 
-// Toggles the visibility of the data management section.
 function toggleDataManagementSection() {
     const content = document.getElementById('dataManagementContent');
     const arrow = document.getElementById('dataManagementArrow');
@@ -1203,7 +1286,6 @@ function toggleDataManagementSection() {
     arrow.classList.toggle('rotated');
 }
 
-// Toggles the visibility of the past appointments section.
 function togglePastAppointmentsSection() {
     const content = document.getElementById('pastAppointmentsContent');
     const arrow = document.getElementById('pastAppointmentsArrow');
@@ -1211,7 +1293,6 @@ function togglePastAppointmentsSection() {
     arrow.classList.toggle('rotated');
 }
 
-// Updates whether player lists are shown on the scoreboard.
 function updatePlayerDisplayOnScoreboard() {
     const playerInfoContainerA = document.querySelector('#sectionA .player-info-container');
     const playerInfoContainerB = document.querySelector('#sectionB .player-info-container');
@@ -1224,35 +1305,29 @@ function updatePlayerDisplayOnScoreboard() {
     }
 }
 
-// Exports all application settings and data to a JSON file.
 async function exportSettings() {
     const appStateToExport = {
-        players: players,
-        checkedState: checkedState,
         winningScore: winningScore,
         setsToWin: setsToWin,
-        playersPerTeam: playersPerTeam, 
-        customTeamNames: customTeamNames,
+        playersPerTeam: playersPerTeam,
         currentTheme: currentTheme,
         vibrationEnabled: vibrationEnabled,
         showPlayersOnScoreboard: showPlayersOnScoreboard,
-        appointments: appointments,
-        generatedTeams: generatedTeams // Include generatedTeams in export
+        generatedTeams: generatedTeams
     };
     const dataStr = JSON.stringify(appStateToExport, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'placar_volei_config.json';
+    a.download = 'placar_volei_config_local.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    displayMessage("Configurações exportadas com sucesso!", "success");
+    displayMessage("Configurações locais exportadas com sucesso!", "success");
 }
 
-// Imports application settings and data from a JSON file.
 function importSettings(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -1260,21 +1335,15 @@ function importSettings(event) {
     reader.onload = async (e) => {
         try {
             const importedAppState = JSON.parse(e.target.result);
-            
-            // Load all settings from the imported file.
-            players = importedAppState.players || [];
-            checkedState = importedAppState.checkedState || {};
+
             winningScore = importedAppState.winningScore !== undefined ? importedAppState.winningScore : 15;
             setsToWin = importedAppState.setsToWin !== undefined ? importedAppState.setsToWin : 0;
-            playersPerTeam = importedAppState.playersPerTeam !== undefined ? importedAppState.playersPerTeam : 4; 
-            customTeamNames = importedAppState.customTeamNames || DEFAULT_CUSTOM_TEAM_COLORS.map((color, index) => ({ name: "", color }));
+            playersPerTeam = importedAppState.playersPerTeam !== undefined ? importedAppState.playersPerTeam : 4;
             currentTheme = importedAppState.currentTheme || 'dark';
             vibrationEnabled = importedAppState.vibrationEnabled !== undefined ? importedAppState.vibrationEnabled : true;
             showPlayersOnScoreboard = importedAppState.showPlayersOnScoreboard !== undefined ? importedAppState.showPlayersOnScoreboard : true;
-            appointments = importedAppState.appointments || [];
             generatedTeams = importedAppState.generatedTeams || [];
 
-            // Reset game state to default after import.
             scoreA = 0;
             scoreB = 0;
             setsA = 0;
@@ -1289,47 +1358,40 @@ function importSettings(event) {
             isTimerRunning = false;
             stopAllTimers();
 
-            // Update UI with imported settings.
             document.getElementById('winningScore').value = winningScore;
             document.getElementById('setsToWinConfig').value = setsToWin;
-            document.getElementById('playersPerTeam').value = playersPerTeam; 
+            document.getElementById('playersPerTeam').value = playersPerTeam;
             document.getElementById('vibrationEnabled').checked = vibrationEnabled;
             document.getElementById('showPlayersOnScoreboard').checked = showPlayersOnScoreboard;
             document.getElementById('themeSelect').value = currentTheme;
             setTheme(currentTheme, false);
-            for (let i = 0; i < 5; i++) {
-                document.getElementById(`customTeamName${i + 1}`).value = customTeamNames[i].name;
-                document.getElementById(`customTeamColor${i + 1}`).value = customTeamNames[i].color;
-            }
-            updatePlayerList();
+
             updateSetsDisplay();
-            document.getElementById("scoreA").textContent = scoreA; 
-            document.getElementById("scoreB").textContent = scoreB; 
+            document.getElementById("scoreA").textContent = scoreA;
+            document.getElementById("scoreB").textContent = scoreB;
             updateScoreboardTeamsDisplay();
             updateSwapTeamsButtonVisibility();
-            updateResetButtonVisibility(); 
+            updateResetButtonVisibility();
             document.getElementById('startGameButton').style.display = 'block';
             document.getElementById('scoreboardOverlay').classList.remove('hidden');
             updateTimerDisplay();
 
-            saveSettingsToLocalStorage(); // Save imported settings to local storage.
-            saveAppointmentsToLocalStorage(); // Save imported appointments to local storage.
-            displayMessage("Configurações importadas localmente com sucesso!", "success");
-            
+            await saveLocalSettings();
+            displayMessage("Configurações locais importadas com sucesso!", "success");
+
         } catch (error) {
             displayMessage("Erro ao importar arquivo. Verifique se é um arquivo de configurações válido.", "error");
         } finally {
-            event.target.value = ''; // Clear file input.
+            event.target.value = '';
         }
     };
     reader.readAsText(file);
 }
 
-// Updates the team names and player lists on the scoreboard.
 function updateScoreboardTeamsDisplay() {
     document.getElementById('teamNameA').textContent = currentPlayingTeamA.name;
     document.getElementById('teamNameB').textContent = currentPlayingTeamB.name;
-    
+
     const playerListA = document.getElementById('playerListA');
     const playerListB = document.getElementById('playerListB');
     playerListA.innerHTML = '';
@@ -1349,17 +1411,16 @@ function updateScoreboardTeamsDisplay() {
     applyTeamColorsToScoreboard();
 }
 
-// Updates the game and set timer displays.
 async function updateTimerDisplay() {
   const minutesGame = Math.floor(gameTimeInSeconds / 60);
   const secondsGame = gameTimeInSeconds % 60;
-  const formattedGameTime = 
+  const formattedGameTime =
     `${minutesGame.toString().padStart(2, '0')}:${secondsGame.toString().padStart(2, '0')}`;
   document.getElementById('timerDisplay').textContent = formattedGameTime;
 
   const minutesSet = Math.floor(setTimeInSeconds / 60);
   const secondsSet = setTimeInSeconds % 60;
-  const formattedSetTime = 
+  const formattedSetTime =
     `${minutesSet.toString().padStart(2, '0')}:${secondsSet.toString().padStart(2, '0')}`;
   document.getElementById('setTimerDisplay').textContent = formattedSetTime;
 
@@ -1371,10 +1432,9 @@ async function updateTimerDisplay() {
       timerIcon.classList.remove('fa-pause');
       timerIcon.classList.add('fa-play');
   }
-  await saveSettings(); // Save timer state.
+  await saveLocalSettings();
 }
 
-// Starts both game and set timers.
 function startAllTimers() {
   if (gameTimerInterval) {
     clearInterval(gameTimerInterval);
@@ -1399,7 +1459,6 @@ function startAllTimers() {
   updateTimerDisplay();
 }
 
-// Stops both game and set timers.
 function stopAllTimers() {
   if (gameTimerInterval) {
     clearInterval(gameTimerInterval);
@@ -1413,7 +1472,6 @@ function stopAllTimers() {
   updateTimerDisplay();
 }
 
-// Toggles the timer (play/pause).
 function toggleTimer() {
     if (!gameStarted || gameEnded) {
         displayMessage("O cronômetro só pode ser pausado/retomado durante uma partida ativa.", "warning");
@@ -1426,8 +1484,8 @@ function toggleTimer() {
     }
 }
 
-// Adds a new appointment.
-function addAppointment() {
+async function addAppointment() {
+    if (!isAuthReady) return;
     const gameDateInput = document.getElementById('gameDate');
     const gameTimeInput = document.getElementById('gameTime');
     const gameLocationInput = document.getElementById('gameLocation');
@@ -1442,49 +1500,48 @@ function addAppointment() {
     }
 
     const newAppointment = {
-        id: Date.now().toString(), // Simple unique ID
         date: date,
         time: time,
         location: location
     };
 
-    appointments.push(newAppointment);
-    saveAppointmentsToLocalStorage();
-    renderAppointments();
-
-    gameDateInput.value = '';
-    gameTimeInput.value = '';
-    gameLocationInput.value = '';
-    displayMessage("Agendamento adicionado com sucesso!", "success");
+    try {
+        await addDoc(collection(db, `artifacts/${appId}/public/data/appointments`), newAppointment);
+        gameDateInput.value = '';
+        gameTimeInput.value = '';
+        gameLocationInput.value = '';
+        displayMessage("Agendamento adicionado com sucesso!", "success");
+    } catch (e) {
+        displayMessage("Erro ao adicionar agendamento.", "error");
+    }
 }
 
-// Deletes an appointment by ID.
 function deleteAppointment(idToDelete) {
-    showConfirmationModal("Tem certeza que deseja excluir este agendamento?", (confirmed) => {
+    showConfirmationModal("Tem certeza que deseja excluir este agendamento?", async (confirmed) => {
         if (confirmed) {
-            appointments = appointments.filter(appointment => appointment.id !== idToDelete);
-            saveAppointmentsToLocalStorage();
-            renderAppointments();
-            displayMessage("Agendamento excluído com sucesso!", "success");
+            if (!isAuthReady) return;
+            try {
+                await deleteDoc(doc(db, `artifacts/${appId}/public/data/appointments`, idToDelete));
+                displayMessage("Agendamento excluído com sucesso!", "success");
+            } catch (e) {
+                displayMessage("Erro ao excluir agendamento.", "error");
+            }
         }
     });
 }
 
-// Formats a date string to dd/mm/yyyy.
 function formatDate(dateString) {
     const [year, month, day] = dateString.split('-');
     return `${day}/${month}/${year}`;
 }
 
-// Renders the list of upcoming and past appointments.
 function renderAppointments() {
     const upcomingAppointmentsList = document.getElementById('upcomingAppointmentsList');
     const pastAppointmentsList = document.getElementById('pastAppointmentsList');
-    
+
     upcomingAppointmentsList.innerHTML = '';
     pastAppointmentsList.innerHTML = '';
 
-    // Sort appointments by date and time.
     appointments.sort((a, b) => {
         const dateTimeA = new Date(`${a.date}T${a.time}`);
         const dateTimeB = new Date(`${b.date}T${b.time}`);
@@ -1536,7 +1593,6 @@ function renderAppointments() {
         pastAppointmentsList.innerHTML = '<p style="text-align: center; color: var(--text-color);">Nenhum jogo anterior registrado.</p>';
     }
 
-    // Add event listeners to delete buttons.
     document.querySelectorAll('.delete-appointment-btn').forEach(button => {
         button.addEventListener('click', (event) => {
             const idToDelete = event.currentTarget.dataset.id;
@@ -1545,7 +1601,6 @@ function renderAppointments() {
     });
 }
 
-// Displays the system version from the service worker.
 async function displaySystemVersion() {
     try {
         const response = await fetch('./service-worker.js');
@@ -1555,7 +1610,7 @@ async function displaySystemVersion() {
         }
         const text = await response.text();
         const match = text.match(/const CACHE_NAME = '(volei-das-ruas-v[^']+)';/);
-        
+
         if (match && match[1]) {
             document.getElementById('systemVersionDisplay').textContent = match[1];
         } else {
@@ -1566,7 +1621,6 @@ async function displaySystemVersion() {
     }
 }
 
-// Reloads the application, potentially triggering a service worker update.
 function reloadApp() {
     if (newWorker) {
         newWorker.postMessage({ action: 'skipWaiting' });
@@ -1574,9 +1628,7 @@ function reloadApp() {
     window.location.reload();
 }
 
-// Initializes the application when the window loads.
 window.onload = async () => {
-  // Register service worker for PWA functionality.
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./service-worker.js')
       .then(reg => {
@@ -1591,40 +1643,29 @@ window.onload = async () => {
       })
       .catch(error => console.error('Service Worker registration failed:', error));
   }
-  
-  // Set 'pontuacao' section as active by default.
+
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('pontuacao').classList.add('active');
 
-  // Load all settings and appointments from local storage.
-  loadSettings(); 
-  loadAppointmentsFromLocalStorage(); 
-  renderAppointments(); 
+  await initFirebase();
 
-  // Update scoreboard and game state displays.
   document.getElementById("scoreA").textContent = scoreA;
   document.getElementById("scoreB").textContent = scoreB;
   updateSetsDisplay();
   updateScoreboardTeamsDisplay();
 
-  // Show start game button and overlay initially.
   document.getElementById('startGameButton').style.display = 'block';
   document.getElementById('scoreboardOverlay').classList.remove('hidden');
 
-  // Update button visibilities.
   updateSwapTeamsButtonVisibility();
   updateResetButtonVisibility();
 
-  // Initialize player list and generated teams display.
-  updatePlayerList();
   renderGeneratedTeams();
 
-  // Set up touch interactions for score and section navigation.
   setupSwipeToDecrease('sectionA', 'A');
   setupSwipeToDecrease('sectionB', 'B');
   setupSwipeBetweenSections();
 
-  // Add click listeners for score sections and team management.
   document.getElementById('sectionA').addEventListener('click', (e) => {
     if (e.target.closest('.team-name') || e.target.closest('.player-info-container')) {
         showManageTeamModal('A');
@@ -1642,13 +1683,11 @@ window.onload = async () => {
   updateTimerDisplay();
   displaySystemVersion();
 
-  // Save settings to local storage before unloading the page.
   window.addEventListener('beforeunload', async () => {
-      await saveSettings();
+      await saveLocalSettings();
   });
 }
 
-// Expose functions to the global window object for HTML event handlers.
 window.toggleMenu = toggleMenu;
 window.navigateTo = navigateTo;
 window.confirmReset = confirmReset;
@@ -1659,7 +1698,7 @@ window.showStartGameModal = showStartGameModal;
 window.swapTeams = swapTeams;
 window.toggleTimer = toggleTimer;
 window.addAppointment = addAppointment;
-window.deleteAppointment = deleteAppointment; // Expose delete function
+window.deleteAppointment = deleteAppointment;
 window.togglePastAppointmentsSection = togglePastAppointmentsSection;
 window.toggleGeneralSettingsSection = toggleGeneralSettingsSection;
 window.toggleCustomTeamNamesSection = toggleCustomTeamNamesSection;
@@ -1679,4 +1718,4 @@ window.saveTeamNameAndPlayers = saveTeamNameAndPlayers;
 window.hideCustomMessageModal = hideCustomMessageModal;
 window.hideCustomConfirmationModal = hideCustomConfirmationModal;
 window.reloadApp = reloadApp;
-window.setTheme = setTheme; // Expose setTheme
+window.setTheme = setTheme;

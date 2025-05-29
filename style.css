@@ -208,7 +208,7 @@ html, body {
   transition: background-color .3s ease, color .3s ease;
 }
 .gear-button {
-  position: fixed;     
+  position: fixed;
   background-color: var(--gear-button-bg);
   border-radius: .4rem;
   border-style: unset;
