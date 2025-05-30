@@ -30,6 +30,8 @@ let setTimeInSeconds = 0;
 let isTimerRunning = false;
 // appointments agora será um array de objetos com id, date, time, location, lastModified
 let appointments = [];
+// gameHistory agora será um array de objetos com id, teamA, teamB, winner, date, time, totalGameTime, totalSets, setDetails, lastModified
+let gameHistory = [];
 let newWorker = null;
 
 let db;
@@ -121,7 +123,7 @@ function loadLocalSettings() {
     setTimeInSeconds = parseInt(localStorage.getItem('setTimeInSeconds') || '0');
     isTimerRunning = JSON.parse(localStorage.getItem('isTimerRunning') || 'false');
 
-    // Carrega dados específicos que agora são objetos com ID e lastModified
+    // Carrega dados específicos que agora são objetos com id e lastModified
     players = JSON.parse(localStorage.getItem('players') || '[]');
     // Recria checkedState a partir dos players carregados
     checkedState = {};
@@ -131,6 +133,7 @@ function loadLocalSettings() {
 
     appointments = JSON.parse(localStorage.getItem('appointments') || '[]');
     customTeamNames = JSON.parse(localStorage.getItem('customTeamNames') || '[]');
+    gameHistory = JSON.parse(localStorage.getItem('gameHistory') || '[]'); // Carrega o histórico de jogos
 
     // Atualiza a UI com os dados carregados
     document.getElementById('winningScore').value = winningScore;
@@ -156,6 +159,7 @@ function loadLocalSettings() {
     renderAppointments();
     renderCustomTeamNamesConfig(); // Nova função para renderizar configs de times
     renderGeneratedTeams(); // Garante que times gerados (se houver) sejam exibidos
+    renderGameHistory(); // Renderiza o histórico de jogos ao carregar
 }
 
 /**
@@ -182,18 +186,19 @@ async function saveLocalSettings() {
     localStorage.setItem('isTimerRunning', JSON.stringify(isTimerRunning));
     localStorage.setItem('generatedTeams', JSON.stringify(generatedTeams)); // Salva times gerados
 
-    // Salva os arrays de objetos com ID e lastModified
+    // Salva os arrays de objetos com id e lastModified
     localStorage.setItem('players', JSON.stringify(players));
     localStorage.setItem('checkedState', JSON.stringify(checkedState)); // Salva o estado de checked separadamente
     localStorage.setItem('appointments', JSON.stringify(appointments));
     localStorage.setItem('customTeamNames', JSON.stringify(customTeamNames));
+    localStorage.setItem('gameHistory', JSON.stringify(gameHistory)); // Salva o histórico de jogos
 
     updatePlayerDisplayOnScoreboard();
     applyTeamColorsToScoreboard();
 }
 
 /**
- * Configura os listeners em tempo real do Firestore para jogadores, agendamentos e nomes de times personalizados.
+ * Configura os listeners em tempo real do Firestore para jogadores, agendamentos, nomes de times personalizados e histórico de jogos.
  * Realiza a fusão de dados com base no timestamp lastModified.
  */
 function setupFirestoreListeners() {
@@ -320,6 +325,35 @@ function setupFirestoreListeners() {
     }, (error) => {
         console.error("Erro ao carregar nomes de times personalizados do Firestore:", error);
         displayMessage("Erro ao carregar nomes de times personalizados do servidor.", "error");
+    });
+
+    // Listener para Histórico de Jogos
+    onSnapshot(collection(db, `artifacts/${appId}/public/data/gameHistory`), (snapshot) => {
+        const fetchedGameHistory = [];
+        snapshot.forEach(doc => {
+            fetchedGameHistory.push({ id: doc.id, ...doc.data() });
+        });
+
+        const newGameHistory = [];
+        fetchedGameHistory.forEach(fbGame => {
+            const localGame = gameHistory.find(g => g.id === fbGame.id);
+            if (localGame) {
+                if (fbGame.lastModified >= localGame.lastModified) {
+                    newGameHistory.push(fbGame);
+                } else {
+                    newGameHistory.push(localGame);
+                }
+            } else {
+                newGameHistory.push(fbGame);
+            }
+        });
+
+        gameHistory = newGameHistory;
+        saveLocalSettings();
+        renderGameHistory();
+    }, (error) => {
+        console.error("Erro ao carregar histórico de jogos do Firestore:", error);
+        displayMessage("Erro ao carregar histórico de jogos do servidor.", "error");
     });
 }
 
@@ -466,6 +500,46 @@ async function syncLocalToFirestore() {
             }
         }
     }
+
+    // Sincronizar Histórico de Jogos
+    const gameHistoryCollectionRef = collection(db, `artifacts/${appId}/public/data/gameHistory`);
+    const firebaseGameHistorySnapshot = await getDocs(gameHistoryCollectionRef);
+    const firebaseGameHistory = firebaseGameHistorySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    for (const localGame of gameHistory) {
+        const fbGame = firebaseGameHistory.find(g => g.id === localGame.id);
+
+        if (!fbGame) {
+            if (!localGame.id) { // Novo jogo sem ID do Firebase
+                try {
+                    const docRef = await addDoc(gameHistoryCollectionRef, {
+                        ...localGame, // Copia todos os dados do jogo
+                        lastModified: localGame.lastModified // Garante que o timestamp esteja correto
+                    });
+                    localGame.id = docRef.id; // Atualiza o ID do jogo local
+                    console.log(`Jogo em '${localGame.date}' adicionado ao Firestore.`);
+                } catch (e) {
+                    console.error(`Erro ao adicionar jogo em '${localGame.date}' ao Firestore:`, e);
+                }
+            } else {
+                console.log(`Jogo (ID: ${localGame.id}) não encontrado no Firestore, removendo localmente.`);
+                gameHistory = gameHistory.filter(g => g.id !== localGame.id);
+            }
+        } else {
+            if (localGame.lastModified > fbGame.lastModified) {
+                try {
+                    await updateDoc(doc(gameHistoryCollectionRef, localGame.id), {
+                        ...localGame, // Copia todos os dados do jogo
+                        lastModified: localGame.lastModified
+                    });
+                    console.log(`Jogo em '${localGame.date}' atualizado no Firestore.`);
+                } catch (e) {
+                    console.error(`Erro ao atualizar jogo em '${localGame.date}' no Firestore:`, e);
+                }
+            }
+        }
+    }
+
     saveLocalSettings(); // Salva todas as alterações após a sincronização
     console.log("Sincronização local para Firestore concluída.");
 }
@@ -518,6 +592,8 @@ function navigateTo(id) {
       renderGeneratedTeams();
   } else if (id === 'agendamentos') {
       renderAppointments();
+  } else if (id === 'historico') { // Adiciona a chamada para renderizar o histórico
+      renderGameHistory();
   }
 }
 
@@ -926,6 +1002,48 @@ async function checkWinCondition() {
       } else {
         currentSetsB++;
       }
+
+      // Salva o histórico do set
+      const setDetails = {
+          teamAscore: scoreA,
+          teamBscore: scoreB,
+          setTime: formatTime(setTimeInSeconds),
+          winner: winner
+      };
+
+      // Verifica se o jogo já existe no histórico para adicionar o set ou cria um novo
+      let currentGameIndex = gameHistory.findIndex(game => game.gameStartedTimestamp === window.currentGameStartedTimestamp);
+      if (currentGameIndex === -1) {
+          // Isso não deve acontecer se a partida foi iniciada corretamente, mas como fallback
+          const now = new Date();
+          const gameData = {
+              id: null, // Será preenchido pelo Firestore
+              teamA: { name: currentPlayingTeamA.name, players: currentPlayingTeamA.players, color: currentPlayingTeamA.color },
+              teamB: { name: currentPlayingTeamB.name, players: currentPlayingTeamB.players, color: currentPlayingTeamB.color },
+              winner: winner,
+              date: now.toISOString().split('T')[0],
+              time: now.toTimeString().split(' ')[0].substring(0, 5),
+              totalGameTime: formatTime(gameTimeInSeconds),
+              totalSetsA: currentSetsA, // Adicionado para o placar geral
+              totalSetsB: currentSetsB, // Adicionado para o placar geral
+              setDetails: [setDetails],
+              lastModified: Date.now(),
+              gameStartedTimestamp: window.currentGameStartedTimestamp || Date.now() // Usa o timestamp de início do jogo
+          };
+          gameHistory.push(gameData);
+          await saveGameHistory(gameData);
+      } else {
+          // Atualiza o jogo existente com o novo set e o vencedor da partida se aplicável
+          gameHistory[currentGameIndex].setDetails.push(setDetails);
+          gameHistory[currentGameIndex].winner = winner; // Atualiza o vencedor da partida
+          gameHistory[currentGameIndex].totalSetsA = currentSetsA; // Atualiza o placar geral
+          gameHistory[currentGameIndex].totalSetsB = currentSetsB; // Atualiza o placar geral
+          gameHistory[currentGameIndex].totalGameTime = formatTime(gameTimeInSeconds);
+          gameHistory[currentGameIndex].lastModified = Date.now();
+          await saveGameHistory(gameHistory[currentGameIndex]);
+      }
+
+
       if (setsToWin > 0 && (currentSetsA >= setsToWin || currentSetsB >= setsToWin)) {
         showSuperVictoryAnimation(winningTeamName);
       } else {
@@ -933,6 +1051,41 @@ async function checkWinCondition() {
       }
     }, 3000);
   }
+}
+
+/**
+ * Salva um item do histórico de jogos no Firestore.
+ * Se o item já tiver um ID, ele é atualizado. Caso contrário, é adicionado.
+ * @param {object} gameData - Os dados do jogo a serem salvos.
+ */
+async function saveGameHistory(gameData) {
+    if (!isOnline || !isAuthReady) {
+        console.log("Offline ou Auth não pronto, não salvando histórico no Firestore.");
+        return;
+    }
+    try {
+        const collectionRef = collection(db, `artifacts/${appId}/public/data/gameHistory`);
+        if (gameData.id) {
+            // Atualiza um documento existente
+            await updateDoc(doc(collectionRef, gameData.id), {
+                ...gameData,
+                lastModified: Date.now()
+            });
+            console.log(`Histórico de jogo (ID: ${gameData.id}) atualizado no Firestore.`);
+        } else {
+            // Adiciona um novo documento
+            const docRef = await addDoc(collectionRef, {
+                ...gameData,
+                lastModified: Date.now()
+            });
+            gameData.id = docRef.id; // Atribui o ID do Firestore ao objeto local
+            console.log(`Novo histórico de jogo adicionado ao Firestore com ID: ${docRef.id}`);
+        }
+        await saveLocalSettings(); // Garante que o ID do Firestore seja persistido localmente
+    } catch (e) {
+        console.error("Erro ao salvar histórico de jogo no Firestore:", e);
+        displayMessage("Erro ao sincronizar histórico de jogo. Salvo localmente.", "error");
+    }
 }
 
 function showVictoryAnimation(teamId, winningTeamName) {
@@ -1102,6 +1255,7 @@ async function initializeGameAndTeams() {
   gameEnded = false;
   gameStarted = true;
   lastWinningTeam = null;
+  window.currentGameStartedTimestamp = Date.now(); // Salva o timestamp de início do jogo
 
   document.getElementById("scoreA").textContent = scoreA;
   document.getElementById("scoreB").textContent = scoreB;
@@ -1127,6 +1281,7 @@ async function startNewGame() {
   setsB = 0;
   gameEnded = false;
   gameStarted = true;
+  window.currentGameStartedTimestamp = Date.now(); // Novo timestamp para a nova partida
 
   document.getElementById("scoreA").textContent = 0;
   document.getElementById("scoreB").textContent = 0;
@@ -1332,7 +1487,7 @@ function setupSwipeBetweenSections() {
     const dx = touchStartX - touchEndX;
     const threshold = 50;
     
-    const sections = ['pontuacao', 'times', 'jogadores', 'agendamentos', 'configuracoes'];
+    const sections = ['pontuacao', 'times', 'jogadores', 'agendamentos', 'historico', 'configuracoes']; // Adicionado 'historico'
     const currentIndex = sections.findIndex(id => document.getElementById(id).classList.contains('active'));
     let nextIndex = currentIndex;
     if (dx > threshold) {
@@ -1722,6 +1877,12 @@ function updateScoreboardTeamsDisplay() {
     applyTeamColorsToScoreboard();
 }
 
+function formatTime(totalSeconds) {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
+
 async function updateTimerDisplay() {
   const minutesGame = Math.floor(gameTimeInSeconds / 60);
   const secondsGame = gameTimeInSeconds % 60;
@@ -1934,6 +2095,162 @@ function renderAppointments() {
         });
     });
 }
+
+/**
+ * Renderiza o histórico de jogos na seção 'historico'.
+ */
+function renderGameHistory() {
+    const gameHistoryList = document.getElementById('gameHistoryList');
+    if (!gameHistoryList) {
+        console.error("Elemento #gameHistoryList não encontrado.");
+        return;
+    }
+    gameHistoryList.innerHTML = '';
+
+    if (gameHistory.length === 0) {
+        gameHistoryList.innerHTML = '<p style="text-align: center; color: var(--text-color);">Nenhum jogo registrado ainda.</p>';
+        return;
+    }
+
+    // Ordena os jogos do mais recente para o mais antigo
+    const sortedHistory = [...gameHistory].sort((a, b) => b.lastModified - a.lastModified);
+
+    sortedHistory.forEach((game) => {
+        const li = document.createElement('li');
+        li.dataset.id = game.id;
+
+        const teamAClass = game.winner === 'A' ? 'team-name-winner' : 'team-name-loser';
+        const teamBClass = game.winner === 'B' ? 'team-name-winner' : 'team-name-loser';
+
+        let setDetailsHtml = '';
+        if (game.setDetails && game.setDetails.length > 0) {
+            game.setDetails.forEach(set => {
+                const setWinnerClassA = set.winner === 'A' ? 'set-score-winner' : 'set-score-loser';
+                const setWinnerClassB = set.winner === 'B' ? 'set-score-winner' : 'set-score-loser';
+                setDetailsHtml += `
+                    <p>
+                        <span class="${setWinnerClassA}">${game.teamA.name} ${set.teamAscore}</span> x <span class="${setWinnerClassB}">${set.teamBscore} ${game.teamB.name}</span>
+                        <span>${set.setTime}</span>
+                    </p>
+                `;
+            });
+        } else {
+            setDetailsHtml = '<p style="font-style: italic; color: var(--history-date-color);">Sem detalhes de sets.</p>';
+        }
+
+        let playersAHtml = '';
+        if (game.teamA && game.teamA.players && game.teamA.players.length > 0) {
+            playersAHtml = game.teamA.players.map(p => `<li>- ${p}</li>`).join('');
+        } else {
+            playersAHtml = '<li style="font-style: italic; color: var(--history-date-color);">Sem jogadores</li>';
+        }
+
+        let playersBHtml = '';
+        if (game.teamB && game.teamB.players && game.teamB.players.length > 0) {
+            playersBHtml = game.teamB.players.map(p => `<li>- ${p}</li>`).join('');
+        } else {
+            playersBHtml = '<li style="font-style: italic; color: var(--history-date-color);">Sem jogadores</li>';
+        }
+
+        li.innerHTML = `
+            <details class="game-history-card">
+                <summary class="card-header">
+                    <div class="main-info">
+                        <span class="${teamAClass}">${game.teamA.name}</span>
+                        <span class="score-separator">${game.totalSetsA || 0} x ${game.totalSetsB || 0}</span>
+                        <span class="${teamBClass}">${game.teamB.name}</span>
+                    </div>
+                    <div class="date-and-arrow" style="display:flex; align-items: center;
+                    ">
+                        <span class="game-date">${formatDate(game.date)}<br>${game.time}</span>
+                        <i class="fas fa-chevron-up collapsible-arrow"></i>
+                    </div>
+                </summary>
+                <div class="card-body">
+                    <div class="content-columns" style=" display: flex; flex-direction: row;justify-content:space-around">                    
+                        <div class="column players-column" style=" width: 45%; display: flex;flex-direction: column;" justify-content:space-between> 
+                            <h4 style=" padding-bottom: 10px; text-align: center; border-bottom: 1px solid;
+                            margin-bottom: 10px;">
+                                Jogadores:
+                            </h4> 
+                            <div style=" display: flex; flex-direction: row;">                         
+                                <ul class="player-list-history">${playersAHtml}</ul>
+                                <ul class="player-list-history">${playersBHtml}</ul>
+                            </div>
+                            <p class="location-info" style=" border-top: 1px solid; padding-top: 10px;    margin-top: 10px;"><i class="fas fa-map-marker-alt"></i> Local: <strong>${game.location || 'Não informado'}</strong></p>
+                        </div>
+                        
+                        <div class="column sets-column" style=" width: 45%; display: flex; flex-direction: column;    justify-content: space-between;"> 
+                            <span style=" display: flex; justify-content: space-between; padding-bottom: 10px; text-align: center; border-bottom: 1px solid; margin-bottom: 10px;">
+                                <span></span>
+                                <h4>
+                                    Sets: 
+                                </h4>
+                                <i class="fas fa-clock"></i>   
+                            </span>                       
+                            <div class="sets-details">
+                                ${setDetailsHtml}
+                            </div>
+                            <p class="time-info" style=" border-top: 1px solid; padding-top: 10px;    margin-top: 10px;"><i class="fas fa-stopwatch"></i> Tempo de jogo: <strong>${game.totalGameTime}</strong></p>
+                        </div>
+                    </div>
+                        <button class="delete-game-btn" data-id="${game.id}" title="Excluir jogo"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                </div>
+            </details>
+        `;
+        gameHistoryList.appendChild(li);
+    });
+
+    // Adiciona o event listener para a seta de colapsar/expandir
+    document.querySelectorAll('.game-history-card summary').forEach(summary => {
+        summary.addEventListener('click', () => {
+            const arrow = summary.querySelector('.collapsible-arrow');
+            if (summary.parentElement.open) { // Se o details vai fechar
+                arrow.classList.remove('rotated');
+            } else { // Se o details vai abrir
+                arrow.classList.add('rotated');
+            }
+        });
+    });
+
+    document.querySelectorAll('.delete-game-btn').forEach(button => {
+        button.addEventListener('click', (event) => {
+            const idToDelete = event.currentTarget.dataset.id;
+            deleteGameHistory(idToDelete);
+        });
+    });
+}
+
+/**
+ * Exclui um item do histórico de jogos. Remove localmente e, se online, do Firestore.
+ * @param {string} idToDelete - O ID do jogo a ser excluído.
+ */
+function deleteGameHistory(idToDelete) {
+    showConfirmationModal("Tem certeza que deseja excluir este jogo do histórico?", async (confirmed) => {
+        if (confirmed) {
+            const initialLength = gameHistory.length;
+            gameHistory = gameHistory.filter(game => game.id !== idToDelete);
+            if (gameHistory.length < initialLength) {
+                renderGameHistory();
+                await saveLocalSettings();
+
+                if (isOnline && isAuthReady && idToDelete) {
+                    try {
+                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/gameHistory`, idToDelete));
+                        displayMessage("Jogo excluído do histórico e sincronizado!", "success");
+                    } catch (e) {
+                        displayMessage("Erro ao excluir jogo do histórico do servidor. Excluído localmente.", "error");
+                        console.error("Erro ao excluir jogo do Firestore:", e);
+                    }
+                } else {
+                    displayMessage("Jogo excluído do histórico localmente. Sincronizará quando online.", "info");
+                }
+            }
+        }
+    });
+}
+
 
 async function displaySystemVersion() {
     try {
