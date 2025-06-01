@@ -36,6 +36,20 @@
   --update-banner-text: #fff;
   --update-button-bg: #007bff;
   --update-button-hover-bg: #0056b3;
+
+  /* Variáveis para o histórico de jogos - Tema Escuro */
+  --history-card-bg: #282828;
+  --history-card-border: #3a3a3a;
+  --history-header-bg: #1f1f1f;
+  --history-text-color: #e0e0e0;
+  --history-date-color: rgba(255, 255, 255, 0.6);
+  --history-detail-bg: #333333;
+  --history-detail-border: rgba(255, 255, 255, 0.1);
+  --history-winner-color: gold; /* Dourado para vencedor */
+  --history-loser-color: #888; /* Cinza para perdedor */
+  --history-player-list-item-border: rgba(255, 255, 255, 0.05);
+  --history-delete-btn-color: rgba(255, 0, 0, 0.7);
+  --history-delete-btn-hover-bg: rgba(255, 0, 0, 0.1);
 }
 body.light-theme {
   --bg-color: #f0f0f0;
@@ -75,6 +89,20 @@ body.light-theme {
   --update-banner-text: #1a1a1a;
   --update-button-bg: #4682B4;
   --update-button-hover-bg: #32628C;
+
+  /* Variáveis para o histórico de jogos - Tema Claro */
+  --history-card-bg: #ffffff;
+  --history-card-border: #e0e0e0;
+  --history-header-bg: #f5f5f5;
+  --history-text-color: #333333;
+  --history-date-color: rgba(0, 0, 0, 0.5);
+  --history-detail-bg: #f8f8f8;
+  --history-detail-border: rgba(0, 0, 0, 0.1);
+  --history-winner-color: #DAA520; /* Dourado para vencedor */
+  --history-loser-color: #666; /* Cinza para perdedor */
+  --history-player-list-item-border: rgba(0, 0, 0, 0.05);
+  --history-delete-btn-color: rgba(255, 0, 0, 0.7);
+  --history-delete-btn-hover-bg: rgba(255, 0, 0, 0.1);
 }
 * {
   margin: 0;
@@ -160,7 +188,6 @@ html, body {
   padding: 2px;
   background-color: rgba(0,0,0,.1);
   border-radius: 6px;
-  max-width: 120px;
   box-shadow: none;
   transition: background-color .3s ease;
 }
@@ -208,7 +235,7 @@ html, body {
   transition: background-color .3s ease, color .3s ease;
 }
 .gear-button {
-  position: fixed;     
+  position: fixed;
   background-color: var(--gear-button-bg);
   border-radius: .4rem;
   border-style: unset;
@@ -315,9 +342,7 @@ ul li {
   gap: 1rem;
   transition: background-color .3s ease;
 }
-ul li span {
-  flex: 1;
-}
+
 .start-game-button {
   position: absolute;
   top: 50%;
@@ -574,12 +599,12 @@ ul li span {
   animation-fill-mode: forwards;
 }
 @keyframes scaleIn {
-  from { transform: scale(.5); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  0% { transform: scale(.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  0% { opacity: 0; }
+  100% { opacity: 1; }
 }
 @keyframes crownAppear {
   0% { transform: translate(-50%,-100px) scale(.5); opacity: 0; }
@@ -748,7 +773,7 @@ ul li span {
   background: linear-gradient(45deg,#FFD700,#FFA500,#FF4500);
   animation: gradientAnimation 5s ease infinite alternate;
   color: #fff;
-  text-shadow: 3px 3px 6px rgba(0,0,0,.6);
+  text-shadow: 3px 33px 6px rgba(0,0,0,.6);
   font-weight: bold;
   z-index: 4000;
 }
@@ -918,7 +943,7 @@ ul li span {
 }
 @keyframes fadeInAndGrow {
   0% { opacity: 0; transform: scale(.8); }
-  100% { opacity: 1; transform: scale(1); }
+  100% { transform: scale(1); }
 }
 .team-section.fade-out {
   animation: fadeOutAndShrink .3s ease-out forwards;
@@ -1106,4 +1131,277 @@ ul li span {
 }
 .update-banner button:hover {
   background-color: var(--update-button-hover-bg);
+}
+
+/* Novo estilo para o Histórico de Jogos */
+#historico ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0px 20px; /* Mais espaçamento entre os cartões */
+  padding: 0;  
+}
+
+#historico ul li {
+  background: none;
+  padding: 0;
+  margin-bottom: 0;
+  border-radius: 0;
+  display: block;
+  width: 100%;
+}
+
+.game-history-card {
+    background-color: var(--history-card-bg);
+    border-radius: 16px; /* Cantos mais arredondados */
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); /* Sombra mais pronunciada, mas suave */
+    overflow: hidden;
+    position: relative;
+    border: none; /* Remove a borda para um look mais limpo */
+    color: var(--history-text-color);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.game-history-card:hover {
+    transform: translateY(-5px); /* Elevação mais notável no hover */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25); /* Sombra mais intensa no hover */
+}
+
+.game-history-card .card-header {
+    background-color: var(--history-header-bg);
+    padding: 10px 20px;
+    display: flex;
+    justify-content: space-between; /* Alinha itens nas extremidades */
+    align-items: center;
+    border-bottom: 0px var(--history-card-border);
+    position: relative; /* Para posicionar a lixeira */
+}
+
+.game-history-card .card-header .main-info {
+    display: flex;
+    align-items: baseline;
+    gap: 5px; /* Espaçamento entre nome do time e placar */
+    flex-grow: 1; /* Permite que ocupe espaço */
+    flex-wrap: wrap; /* Permite quebrar linha em telas pequenas */
+}
+
+.game-history-card .card-header h3 {
+    margin: 0;
+    font-size: 1.1rem; /* Tamanho da fonte do título principal */
+    color: var(--text-color);
+    font-weight: 700;
+    line-height: 1.3;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+}
+
+.game-history-card .card-header h3 .team-name-winner {
+    color: var(--history-winner-color);
+    font-size: 1.1em; /* Levemente maior para o vencedor */
+}
+
+.game-history-card .card-header h3 .team-name-loser {
+    color: var(--history-loser-color);
+    font-size: 1em;
+}
+
+.game-history-card .card-header .score-separator {
+    font-size: 0.9em; /* Tamanho do "x" */
+    margin: 0 5px;
+    color: var(--history-text-color);
+    font-weight: normal;
+}
+
+.game-history-card .card-header .game-date {
+    margin-right: 20px;
+    font-size: 0.75em; /* Tamanho da fonte da data */
+    color: var(--history-date-color);
+    font-weight: 500;
+    text-align: right; /* Alinha a data/hora à direita */
+    white-space: nowrap; /* Evita quebra de linha na data/hora */
+}
+
+.game-history-card .card-body {
+    padding: 12px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.game-history-card .card-body p {
+    margin: 0;
+    font-size: 0.85em;
+    color: var(--history-text-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.game-history-card .card-body p strong {
+    font-weight: 700;
+}
+
+.game-history-card .card-body p.winner-text {
+    color: var(--history-winner-color);
+    font-weight: bold;
+    font-size: 0.95em;
+}
+
+.game-details-collapsible {
+    border: none;
+    border-radius: 12px;
+    margin-top: 15px;
+    background-color: var(--history-detail-bg);
+    overflow: hidden;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.game-details-collapsible summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    cursor: pointer;
+    font-weight: 600;
+    background-color: var(--collapsible-header-bg);
+    color: var(--text-color);
+    transition: background-color .3s ease;
+    font-size: 0.85em;
+    border-radius: 12px;
+}
+
+.game-details-collapsible summary:hover {
+    background-color: var(--collapsible-header-hover-bg);
+}
+
+.game-details-collapsible summary i {
+    transition: transform 0.3s ease;
+    font-size: 0.75em;
+}
+
+.game-details-collapsible[open] summary {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.game-details-collapsible[open] summary i {
+    transform: rotate(180deg);
+}
+
+.game-details-collapsible .collapsible-content {
+    padding: 10px 15px;
+    border-top: 1px solid var(--history-detail-border);
+    background-color: var(--history-detail-bg);
+    display: flex;
+    flex-direction: column; /* Padrão para mobile */
+    gap: 8px;
+    max-height: 5000px;
+    transition: max-height 0.7s ease-out;
+    overflow-y: auto;
+}
+
+.game-history-card .sets-details h4,
+.game-history-card .team-players h4 {
+    margin-top: 0;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+    color: var(--history-text-color);
+    border-bottom: 1px dashed var(--history-detail-border);
+    padding-bottom: 2px;
+    font-weight: 600;
+}
+
+.game-history-card .sets-details p {
+    margin-bottom: 2px;
+    font-size: 0.75em;
+    color: var(--history-text-color);
+}
+
+.game-history-card .sets-details .set-score-winner {
+    color: var(--history-winner-color);
+    font-weight: bold;
+}
+
+.game-history-card .sets-details .set-score-loser {
+    color: var(--history-loser-color);
+}
+
+.game-history-card .team-players {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.game-history-card .team-players-a,
+.game-history-card .team-players-b {
+    flex: 1;
+    min-width: 90px;
+}
+
+.game-history-card .team-players ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.game-history-card .team-players li {
+    background: none;
+    padding: 1px 0;
+    font-size: 0.7em;
+    color: var(--history-text-color);
+    display: block;
+    border-bottom: 1px dotted var(--history-player-list-item-border);
+}
+.game-history-card .team-players li:last-child {
+    border-bottom: none;
+}
+
+.delete-game-btn {
+    position: absolute;
+    bottom: 10px; /* Ajustado para a posição da imagem */
+    right: 10px; /* Ajustado para a posição da imagem */
+    background: none;
+    border: none;
+    color: var(--history-delete-btn-color);
+    font-size: 1.1em; /* Tamanho do ícone */
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    z-index: 10; /* Garante que fique acima do texto */
+}
+.delete-game-btn:hover {
+    background-color: var(--history-delete-btn-hover-bg);
+    color: red;
+}
+
+@media (min-width: 600px) {
+    .game-history-card .card-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    #historico ul {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+    #historico ul li {
+        width: 100%;
+    }
+    .game-details-collapsible .collapsible-content {
+        flex-direction: row; /* Volta para linha em telas maiores */
+        justify-content: space-between;
+    }
+    .game-history-card .team-players-a,
+    .game-history-card .team-players-b {
+        flex: 1;
+    }
+}
+
+@media (min-width: 900px) {
+    #historico ul li {
+        width: calc(33.33% - 14px);
+    }
 }
