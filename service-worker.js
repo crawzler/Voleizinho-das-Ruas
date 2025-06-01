@@ -1,4 +1,4 @@
-const CACHE_NAME = 'volei-das-ruas-v0.5.5'; // **IMPORTANTE: Mude este nome a cada nova versão do seu app**
+const CACHE_NAME = 'volei-das-ruas-v0.5.6'; // **IMPORTANTE: Mude este nome a cada nova versão do seu app**
 
 const urlsToCache = [
   './',
@@ -68,4 +68,10 @@ self.addEventListener('fetch', event => {
         });
     })
   );
+});
+
+self.addEventListener('message', event => {
+  if (event.data && event.data.action === 'skipWaiting') {
+    self.skipWaiting();
+  }
 });

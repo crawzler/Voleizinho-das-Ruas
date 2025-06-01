@@ -18,10 +18,10 @@
     <button onclick="navigateTo('times')"><i class="fa-solid fa-shuffle" style="margin-right:.5rem;"></i>Times</button>
     <button onclick="navigateTo('jogadores')"><i class="fa-solid fa-users" style="margin-right:.5rem;"></i>Jogadores</button>
     <button onclick="navigateTo('agendamentos')"><i class="fa-solid fa-calendar-alt" style="margin-right:.5rem;"></i>Agendamentos</button>
-    <button onclick="navigateTo('historico')"><i class="fa-solid fa-history" style="margin-right:.5rem;"></i>Histórico de Jogos</button> <button onclick="navigateTo('configuracoes')"><i class="fa-solid fa-gear" style="margin-right:.5rem;"></i>Configurações</button>
+    <button onclick="navigateTo('configuracoes')"><i class="fa-solid fa-gear" style="margin-right:.5rem;"></i>Configurações</button>
     <button id="resetGameButton" class="disabled" onclick="confirmReset()"><i class="fa-solid fa-rotate-right" style="margin-right:.5rem;"></i>Reiniciar Partida</button>
   </div>
-  <div id="pontuacao" class="section active">
+  <div id="pontuacao" class="section">
     <div class="scoreboard-overlay" id="scoreboardOverlay"></div>
     <div class="scoreboard">
       <div class="team-section" id="sectionA">
@@ -71,7 +71,7 @@
     <h2 style="margin: 0px 0px 10px 0px;">Gerar Times</h2>
     <span class="adicionar">
       <button class="btn" onclick="generateCustomTeams()" style="width: 100%;">Gerar</button>
-    </span>
+    </span>    
     <div class="teams-display-container" id="teamsContainer"></div>
   </div>
   <div id="jogadores" class="section">
@@ -118,11 +118,6 @@
         </div>
     </div>
   </div>
-  <div id="historico" class="section">
-    <h2 style="margin: 0px 0px 20px 0px;">Histórico de Jogos</h2>
-    <ul id="gameHistoryList" style=" gap: 10px;"></ul>
-    <p id="noGameHistoryMessage" style="text-align: center; color: var(--text-color); font-style: italic; margin-top: 20px; display: none;">Nenhum jogo registrado ainda.</p>
-  </div>
   <div id="configuracoes" class="section">
     <h2 style="margin-bottom:20px;">Configurações</h2>
     <div class="collapsible-container">
@@ -133,15 +128,15 @@
         <div class="collapsible-content" id="generalSettingsContent">
           <div class="config-group">
             <label for="playersPerTeam">Jogadores por time:</label>
-            <input type="number" id="playersPerTeam" min="1" value="4" onchange="saveLocalSettings()">
+            <input type="number" id="playersPerTeam" min="1" value="4" onchange="saveSettings()">
           </div>
           <div class="config-group">
             <label for="winningScore">Pontos para Vencer (Set):</label>
-            <input type="number" id="winningScore" min="1" value="15" onchange="saveLocalSettings()">
+            <input type="number" id="winningScore" min="1" value="15" onchange="saveSettings()">
           </div>
           <div class="config-group">
             <label for="setsToWinConfig">Número de Sets para Vencer a Partida (0 para ilimitado):</label>
-            <input type="number" id="setsToWinConfig" min="0" value="0" onchange="saveLocalSettings()">
+            <input type="number" id="setsToWinConfig" min="0" value="0" onchange="saveSettings()">
           </div>
           <div class="config-group">
             <label for="themeSelect">Tema:</label>
@@ -153,11 +148,11 @@
           <span style="display:flex;">
             <div class="checkbox-group">
               <label for="vibrationEnabled">Vibração ao Pontuar:</label>
-              <input type="checkbox" id="vibrationEnabled" onchange="saveLocalSettings()">
+              <input type="checkbox" id="vibrationEnabled" onchange="saveSettings()">
             </div>
             <div class="checkbox-group" style="margin-left:20px;">
               <label for="showPlayersOnScoreboard">Exibir Jogadores no Placar:</label>
-              <input type="checkbox" id="showPlayersOnScoreboard" onchange="saveLocalSettings()">
+              <input type="checkbox" id="showPlayersOnScoreboard" onchange="saveSettings()">
             </div>
           </span>
         </div>
@@ -170,38 +165,54 @@
             <p style="font-size:.9em;color:var(--text-color);opacity:.8;margin-bottom:.5rem;">Defina nomes e cores para seus times favoritos. Eles aparecerão nas opções de seleção e ao gerar times.</p>
             <div class="config-group color-picker-group">
                 <label for="customTeamName1">Time 1:</label>
-                <input type="text" id="customTeamName1" value="" onchange="saveCustomTeamNamesToFirestore()" style="flex:1;">
-                <input type="color" id="customTeamColor1" value="#007bff" onchange="saveCustomTeamNamesToFirestore()">
+                <input type="text" id="customTeamName1" value="" onchange="saveSettings()" style="flex:1;">
+                <input type="color" id="customTeamColor1" value="#007bff" onchange="saveSettings()">
             </div>
             <div class="config-group color-picker-group">
                 <label for="customTeamName2">Time 2:</label>
-                <input type="text" id="customTeamName2" value="" onchange="saveCustomTeamNamesToFirestore()" style="flex:1;">
-                <input type="color" id="customTeamColor2" value="#dc3545" onchange="saveCustomTeamNamesToFirestore()">
+                <input type="text" id="customTeamName2" value="" onchange="saveSettings()" style="flex:1;">
+                <input type="color" id="customTeamColor2" value="#dc3545" onchange="saveSettings()">
             </div>
             <div class="config-group color-picker-group">
                 <label for="customTeamName3">Time 3:</label>
-                <input type="text" id="customTeamName3" value="" onchange="saveCustomTeamNamesToFirestore()" style="flex:1;">
-                <input type="color" id="customTeamColor3" value="#28a745" onchange="saveCustomTeamNamesToFirestore()">
+                <input type="text" id="customTeamName3" value="" onchange="saveSettings()" style="flex:1;">
+                <input type="color" id="customTeamColor3" value="#28a745" onchange="saveSettings()">
             </div>
             <div class="config-group color-picker-group">
                 <label for="customTeamName4">Time 4:</label>
-                <input type="text" id="customTeamName4" value="" onchange="saveCustomTeamNamesToFirestore()" style="flex:1;">
-                <input type="color" id="customTeamColor4" value="#ffc107" onchange="saveCustomTeamNamesToFirestore()">
+                <input type="text" id="customTeamName4" value="" onchange="saveSettings()" style="flex:1;">
+                <input type="color" id="customTeamColor4" value="#ffc107" onchange="saveSettings()">
             </div>
             <div class="config-group color-picker-group">
                 <label for="customTeamName5">Time 5:</label>
-                <input type="text" id="customTeamName5" value="" onchange="saveCustomTeamNamesToFirestore()" style="flex:1;">
-                <input type="color" id="customTeamColor5" value="#6f42c1" onchange="saveCustomTeamNamesToFirestore()">
+                <input type="text" id="customTeamName5" value="" onchange="saveSettings()" style="flex:1;">
+                <input type="color" id="customTeamColor5" value="#6f42c1" onchange="saveSettings()">
+            </div>
+        </div>
+    </div>
+    <div class="collapsible-container">
+        <div class="collapsible-header" onclick="toggleDataManagementSection()">
+            <h3>Gerenciamento de Dados</h3> <i class="fa-solid fa-chevron-right collapsible-arrow" id="dataManagementArrow"></i>
+        </div>
+        <div class="collapsible-content" id="dataManagementContent">
+            <div class="config-group">
+                <label>Exportar Dados:</label>
+                <button class="btn" onclick="exportSettings()">Exportar Configurações</button>
+            </div>
+            <div class="config-group">
+                <label>Importar Dados:</label>
+                <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="importSettings(event)">
+                <button class="btn" onclick="document.getElementById('importFileInput').click()">Importar Configurações</button>
+            </div>
+            <div class="config-group">
+                <label>Resetar Tudo:</label>
+                <button class="btn" onclick="confirmResetAllData()" style="background-color: #dc3545;">Resetar Todos os Dados</button>
             </div>
         </div>
     </div>
     <div class="config-group" style="margin-top: 20px; text-align: center; padding: 15px; border-radius: 10px; background-color: var(--setting-section-bg); border: 1px solid var(--setting-item-border);">
         <label style="font-size: 1.1em; margin-bottom: 5px; color: var(--text-color);">Versão do Sistema:</label>
         <span id="systemVersionDisplay" style="font-weight: bold; font-size: 1.2em; color: var(--text-color);">Carregando...</span>
-    </div>
-    <div class="config-group" style="margin-top: 20px; text-align: center; padding: 15px; border-radius: 10px; background-color: var(--setting-section-bg); border: 1px solid var(--setting-item-border);">
-        <label style="font-size: 1.1em; margin-bottom: 5px; color: var(--text-color);">ID do Usuário:</label>
-        <span id="userIdDisplay" style="font-weight: bold; font-size: 0.9em; color: var(--text-color);">Carregando...</span>
     </div>
   </div>
   <div id="gameOverModal" class="game-over-modal">
@@ -241,8 +252,8 @@
         </div>
       </div>
       <div class="modal-buttons">
-        <button id="modalStartGameButton">Iniciar Partida</button>
-        <button id="modalCancelGameButton" style="background-color:#dc3545;--modal-button-hover-bg:#c82333;">Cancelar</button>
+        <button id="modalStartGameButton" onclick="confirmStartGame()">Iniciar Partida</button>
+        <button onclick="hideStartGameModal()" style="background-color:#dc3545;--modal-button-hover-bg:#c82333;">Cancelar</button>
       </div>
     </div>
   </div>
@@ -268,6 +279,6 @@
     <button onclick="reloadApp()">Atualizar</button>
   </div>
 
-  <script type="module" src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
