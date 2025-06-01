@@ -14,15 +14,14 @@
   </button>
   <div class="overlay" id="menuOverlay"></div>
   <div class="menu" id="gearMenu">
-    <button onclick="navigateTo('pontuacao')"><i class="fa-solid fa-medal icon-margin-right"></i>Pontuação</button>
-    <button onclick="navigateTo('times')"><i class="fa-solid fa-shuffle icon-margin-right"></i>Times</button>
-    <button onclick="navigateTo('jogadores')"><i class="fa-solid fa-users icon-margin-right"></i>Jogadores</button>
-    <button onclick="navigateTo('agendamentos')"><i class="fa-solid fa-calendar-alt icon-margin-right"></i>Agendamentos</button>
-    <button onclick="navigateTo('configuracoes')"><i class="fa-solid fa-gear icon-margin-right"></i>Configurações</button>
-    <button onclick="navigateTo('historico')"><i class="fa-solid fa-clock-rotate-left icon-margin-right"></i>Histórico</button>
-    <button id="resetGameButton" class="disabled" onclick="confirmReset()"><i class="fa-solid fa-rotate-right icon-margin-right"></i>Reiniciar Partida</button>
+    <button onclick="navigateTo('pontuacao')"><i class="fa-solid fa-medal" style="margin-right:.5rem;"></i>Pontuação</button>
+    <button onclick="navigateTo('times')"><i class="fa-solid fa-shuffle" style="margin-right:.5rem;"></i>Times</button>
+    <button onclick="navigateTo('jogadores')"><i class="fa-solid fa-users" style="margin-right:.5rem;"></i>Jogadores</button>
+    <button onclick="navigateTo('agendamentos')"><i class="fa-solid fa-calendar-alt" style="margin-right:.5rem;"></i>Agendamentos</button>
+    <button onclick="navigateTo('historico')"><i class="fa-solid fa-history" style="margin-right:.5rem;"></i>Histórico de Jogos</button> <button onclick="navigateTo('configuracoes')"><i class="fa-solid fa-gear" style="margin-right:.5rem;"></i>Configurações</button>
+    <button id="resetGameButton" class="disabled" onclick="confirmReset()"><i class="fa-solid fa-rotate-right" style="margin-right:.5rem;"></i>Reiniciar Partida</button>
   </div>
-  <div id="pontuacao" class="section">
+  <div id="pontuacao" class="section active">
     <div class="scoreboard-overlay" id="scoreboardOverlay"></div>
     <div class="scoreboard">
       <div class="team-section" id="sectionA">
@@ -69,28 +68,28 @@
     </div>
   </div>
   <div id="times" class="section">
-    <h2 class="section-title">Gerar Times</h2>
-    <span class="add-button-container">
-      <button class="btn full-width-button" onclick="generateCustomTeams()">Gerar</button>
+    <h2 style="margin: 0px 0px 10px 0px;">Gerar Times</h2>
+    <span class="adicionar">
+      <button class="btn" onclick="generateCustomTeams()" style="width: 100%;">Gerar</button>
     </span>
     <div class="teams-display-container" id="teamsContainer"></div>
   </div>
   <div id="jogadores" class="section">
     <h2>Jogadores</h2>
-    <span class="add-button-container">
+    <span class="adicionar">
       <input type="text" id="playerName" placeholder="Nome do jogador" />
       <button class="btn" onclick="addPlayer()">Adicionar</button>
     </span>
-    <span class="player-controls">
+    <span style="display:flex;flex-direction:row-reverse;justify-content:space-between;">
       <div id="playerCounter">0/0</div>
-      <div class="player-action-buttons">
+      <div style="display:flex;gap:1rem;margin-bottom:1rem;">
         <button class="btn" id="toggleSelectAllButton" onclick="toggleSelectAllPlayers()">Alternar Seleção</button>
       </div>
     </span>
     <ul id="playerList"></ul>
   </div>
   <div id="agendamentos" class="section">
-    <h2 class="section-title">Agendamentos de Jogos</h2>
+    <h2 style="margin-bottom:10px;">Agendamentos de Jogos</h2>
     <div class="input-row">
       <div class="input-group">
         <label for="gameDate">Data:</label>
@@ -102,12 +101,12 @@
       </div>
     </div>
     <div class="input-row">
-      <div class="input-group full-width-input"> <label for="gameLocation">Local:</label>
+      <div class="input-group" style="flex: 100%;"> <label for="gameLocation">Local:</label>
         <input type="text" id="gameLocation" placeholder="Ex: Praia, Ginásio X">
       </div>
     </div>
     <button class="btn" onclick="addAppointment()">Adicionar Agendamento</button>
-    <h3 class="section-subtitle">Próximos Jogos</h3>
+    <h3 style="margin: 20px 0px 10px 0px;">Próximos Jogos</h3>
     <ul id="upcomingAppointmentsList"></ul>
     <div class="collapsible-container">
         <div class="collapsible-header" onclick="togglePastAppointmentsSection()">
@@ -120,52 +119,47 @@
     </div>
   </div>
   <div id="historico" class="section">
-    <h2 class="section-title">Histórico de Partidas</h2>
-    <p class="no-history-message">Nenhum histórico de partida disponível ainda.</p>
-    <ul id="historyList"></ul>
+    <h2 style="margin: 0px 0px 20px 0px;">Histórico de Jogos</h2>
+    <ul id="gameHistoryList" style=" gap: 10px;"></ul>
+    <p id="noGameHistoryMessage" style="text-align: center; color: var(--text-color); font-style: italic; margin-top: 20px; display: none;">Nenhum jogo registrado ainda.</p>
   </div>
   <div id="configuracoes" class="section">
-    <h2 class="section-title">Configurações</h2>
-      <div class="collapsible-container">
+    <h2 style="margin-bottom:20px;">Configurações</h2>
+    <div class="collapsible-container">
         <div class="collapsible-header" onclick="toggleGeneralSettingsSection()">
-            <h3>GERAL</h3>
+            <h3>Geral</h3>
             <i class="fa-solid fa-chevron-right collapsible-arrow" id="generalSettingsArrow"></i>
         </div>
         <div class="collapsible-content" id="generalSettingsContent">
-          <span class="config-display">
-            <div class="config-group">
-              <label for="playersPerTeam">Jogadores por time:</label>
-              <input type="number" id="playersPerTeam" min="1" value="4" onchange="saveLocalSettings()">
+          <div class="config-group">
+            <label for="playersPerTeam">Jogadores por time:</label>
+            <input type="number" id="playersPerTeam" min="1" value="4" onchange="saveLocalSettings()">
+          </div>
+          <div class="config-group">
+            <label for="winningScore">Pontos para Vencer (Set):</label>
+            <input type="number" id="winningScore" min="1" value="15" onchange="saveLocalSettings()">
+          </div>
+          <div class="config-group">
+            <label for="setsToWinConfig">Número de Sets para Vencer a Partida (0 para ilimitado):</label>
+            <input type="number" id="setsToWinConfig" min="0" value="0" onchange="saveLocalSettings()">
+          </div>
+          <div class="config-group">
+            <label for="themeSelect">Tema:</label>
+            <select id="themeSelect" onchange="setTheme(this.value)">
+              <option value="dark">Escuro</option>
+              <option value="light">Claro</option>
+            </select>
+          </div>
+          <span style="display:flex;">
+            <div class="checkbox-group">
+              <label for="vibrationEnabled">Vibração ao Pontuar:</label>
+              <input type="checkbox" id="vibrationEnabled" onchange="saveLocalSettings()">
             </div>
-            <div class="config-group">
-              <label for="winningScore">Pontos para Vencer (Set):</label>
-              <input type="number" id="winningScore" min="1" value="15" onchange="saveLocalSettings()">
+            <div class="checkbox-group" style="margin-left:20px;">
+              <label for="showPlayersOnScoreboard">Exibir Jogadores no Placar:</label>
+              <input type="checkbox" id="showPlayersOnScoreboard" onchange="saveLocalSettings()">
             </div>
           </span>
-
-          <span class="config-display"> 
-            <div class="config-group">
-              <label for="setsToWinConfig">Sets para Vencer(0 para ilimitado):</label>
-              <input type="number" id="setsToWinConfig" min="0" value="0" onchange="saveLocalSettings()">
-            </div>       
-            <div class="config-group">
-              <label for="themeSelect">Tema:</label>
-              <select id="themeSelect" onchange="setTheme(this.value)">
-                <option value="dark">Escuro</option>
-                <option value="light">Claro</option>
-              </select>
-            </div>
-          </span>  
-            <span class="config-display">
-              <div class="checkbox-group">
-                <label for="vibrationEnabled">Vibração ao Pontuar:</label>
-                <input type="checkbox" id="vibrationEnabled" onchange="saveLocalSettings()">
-              </div>
-              <div class="checkbox-group">
-                  <label for="showPlayersOnScoreboard">Exibir Jogadores no Placar:</label>
-                  <input type="checkbox" id="showPlayersOnScoreboard" onchange="saveLocalSettings()">
-              </div>
-            </span>    
         </div>
     </div>
     <div class="collapsible-container">
@@ -173,45 +167,43 @@
             <h3>Times Personalizados</h3> <i class="fa-solid fa-chevron-right collapsible-arrow" id="customTeamNamesArrow"></i>
         </div>
         <div class="collapsible-content" id="customTeamNamesContent">
-            <p class="custom-team-names-info">Defina nomes e cores para seus times favoritos. Eles aparecerão nas opções de seleção e ao gerar times.</p>
+            <p style="font-size:.9em;color:var(--text-color);opacity:.8;margin-bottom:.5rem;">Defina nomes e cores para seus times favoritos. Eles aparecerão nas opções de seleção e ao gerar times.</p>
             <div class="config-group color-picker-group">
                 <label for="customTeamName1">Time 1:</label>
-                <input type="text" id="customTeamName1" value="" onchange="saveCustomTeamNamesToFirestore()" class="flex-1-input">
+                <input type="text" id="customTeamName1" value="" onchange="saveCustomTeamNamesToFirestore()" style="flex:1;">
                 <input type="color" id="customTeamColor1" value="#007bff" onchange="saveCustomTeamNamesToFirestore()">
             </div>
             <div class="config-group color-picker-group">
                 <label for="customTeamName2">Time 2:</label>
-                <input type="text" id="customTeamName2" value="" onchange="saveCustomTeamNamesToFirestore()" class="flex-1-input">
+                <input type="text" id="customTeamName2" value="" onchange="saveCustomTeamNamesToFirestore()" style="flex:1;">
                 <input type="color" id="customTeamColor2" value="#dc3545" onchange="saveCustomTeamNamesToFirestore()">
             </div>
             <div class="config-group color-picker-group">
                 <label for="customTeamName3">Time 3:</label>
-                <input type="text" id="customTeamName3" value="" onchange="saveCustomTeamNamesToFirestore()" class="flex-1-input">
+                <input type="text" id="customTeamName3" value="" onchange="saveCustomTeamNamesToFirestore()" style="flex:1;">
                 <input type="color" id="customTeamColor3" value="#28a745" onchange="saveCustomTeamNamesToFirestore()">
             </div>
             <div class="config-group color-picker-group">
                 <label for="customTeamName4">Time 4:</label>
-                <input type="text" id="customTeamName4" value="" onchange="saveCustomTeamNamesToFirestore()" class="flex-1-input">
+                <input type="text" id="customTeamName4" value="" onchange="saveCustomTeamNamesToFirestore()" style="flex:1;">
                 <input type="color" id="customTeamColor4" value="#ffc107" onchange="saveCustomTeamNamesToFirestore()">
             </div>
             <div class="config-group color-picker-group">
                 <label for="customTeamName5">Time 5:</label>
-                <input type="text" id="customTeamName5" value="" onchange="saveCustomTeamNamesToFirestore()" class="flex-1-input">
+                <input type="text" id="customTeamName5" value="" onchange="saveCustomTeamNamesToFirestore()" style="flex:1;">
                 <input type="color" id="customTeamColor5" value="#6f42c1" onchange="saveCustomTeamNamesToFirestore()">
             </div>
         </div>
-    
+    </div>
+    <div class="config-group" style="margin-top: 20px; text-align: center; padding: 15px; border-radius: 10px; background-color: var(--setting-section-bg); border: 1px solid var(--setting-item-border);">
+        <label style="font-size: 1.1em; margin-bottom: 5px; color: var(--text-color);">Versão do Sistema:</label>
+        <span id="systemVersionDisplay" style="font-weight: bold; font-size: 1.2em; color: var(--text-color);">Carregando...</span>
+    </div>
+    <div class="config-group" style="margin-top: 20px; text-align: center; padding: 15px; border-radius: 10px; background-color: var(--setting-section-bg); border: 1px solid var(--setting-item-border);">
+        <label style="font-size: 1.1em; margin-bottom: 5px; color: var(--text-color);">ID do Usuário:</label>
+        <span id="userIdDisplay" style="font-weight: bold; font-size: 0.9em; color: var(--text-color);">Carregando...</span>
+    </div>
   </div>
-  <span class="config-display">
-    <div class="config-group">
-      <label>ID do Usuário:</label>
-      <span id="userIdDisplay">Carregando...</span>
-    </div>
-    <div class="config-group">
-      <label>Versão do sitema</label>
-      <span id="systemVersionDisplay">Carregando...</span>
-    </div>
-  </span>
   <div id="gameOverModal" class="game-over-modal">
     <div class="modal-content">
       <h3 id="modalWinningTeamName"></h3>
@@ -250,7 +242,7 @@
       </div>
       <div class="modal-buttons">
         <button id="modalStartGameButton">Iniciar Partida</button>
-        <button id="modalCancelGameButton" class="cancel-button">Cancelar</button>
+        <button id="modalCancelGameButton" style="background-color:#dc3545;--modal-button-hover-bg:#c82333;">Cancelar</button>
       </div>
     </div>
   </div>
@@ -258,18 +250,24 @@
     <div class="super-victory-content">
       <h3 id="superVictoryTeamName"></h3>
       <p>VENCEU A PARTIDA!</p>
-      <div class="confetti-container"></div>
+      <div class="confetti-container" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>
     </div>
   </div>
   <div id="manageTeamModal" class="manage-team-modal">
     <div class="modal-content manage-team-content">
       <h3 id="manageTeamModalTitle">Selecionar Time</h3>
-      <div class="input-group full-width-input">
+      <div class="input-group" style="width:100%;">
         <label for="selectTeamForManagement">Selecione um time:</label>
         <select id="selectTeamForManagement" onchange="saveTeamNameAndPlayers()"></select>
       </div>
     </div>
   </div>
+
+  <div id="updateBanner" class="update-banner">
+    <span>Nova versão disponível!</span>
+    <button onclick="reloadApp()">Atualizar</button>
+  </div>
+
   <script type="module" src="script.js"></script>
 </body>
 </html>
