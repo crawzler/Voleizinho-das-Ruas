@@ -88,6 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
             timerInterval = null;
             setTimerInterval = null;
 
+            // allGeneratedTeams NÃO é mais resetado aqui
+            // currentTeam1 e currentTeam2 NÃO são mais resetados aqui
+
             const config = JSON.parse(localStorage.getItem('volleyballConfig')) || {};
             activeTeam1Name = config.customTeam1Name || 'Time 1';
             activeTeam2Name = config.customTeam2Name || 'Time 2';
@@ -175,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     isGameInProgress = false;
                     currentTeam1 = [];
                     currentTeam2 = [];
-                    allGeneratedTeams = [];
+                    // allGeneratedTeams NÃO é mais resetado aqui
                     renderScoringPagePlayers([], []);
 
                     const config = JSON.parse(localStorage.getItem('volleyballConfig')) || {};
@@ -219,6 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
             activeTeam2Name = config[`customTeam2Name`] || `Time 2`;
             activeTeam2Color = config[`customTeam2Color`] || '#f03737';
         } else {
+            // Removido o console.warn para não exibir a mensagem se os times não foram gerados
             currentTeam1 = [];
             currentTeam2 = [];
             const config = JSON.parse(localStorage.getItem('volleyballConfig')) || {};
@@ -816,7 +820,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            // Caminho ajustado para o service worker
             navigator.serviceWorker.register('../service-worker.js')
                 .then(registration => {
                     console.log('Service Worker registrado com sucesso:', registration);
