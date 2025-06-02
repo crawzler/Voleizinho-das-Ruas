@@ -1,3 +1,24 @@
+// Import Firebase SDKs
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+// Global Firebase variables (will be initialized in DOMContentLoaded)
+let app;
+let db;
+let auth;
+let userId;
+let isAuthReady = false; // Flag para garantir que as operações do Firestore ocorram após a autenticação
+let players = []; // Array para armazenar objetos de jogadores: { id: 'local_uuid', name: 'Nome do Jogador', firestoreId: 'firestore_doc_id' }
+
+// Provedor de autenticação Google
+const googleLoginProvider = new GoogleAuthProvider();
+
+// Função para gerar um ID único para jogadores apenas locais (offline)
+function generateLocalId() {
+    return `local-${crypto.randomUUID()}`;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const pages = document.querySelectorAll('.app-page');
     const sidebar = document.getElementById('sidebar');
@@ -48,6 +69,126 @@ document.addEventListener('DOMContentLoaded', () => {
     let touchStartY = 0;
     const DRAG_THRESHOLD = 30;
 
+    // Determine appId and firebaseConfig
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    console.log("App ID (do ambiente ou padrão):", appId); // Log de depuração
+
+    let firebaseConfig;
+    try {
+        if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+            firebaseConfig = JSON.parse(__firebase_config);
+            console.log("Firebase Config (do ambiente):", firebaseConfig); // Log de depuração
+        } else {
+            // Fallback para a configuração fornecida pelo usuário se __firebase_config não estiver definido ou for vazio
+            firebaseConfig = {
+                apiKey: "AIzaSyDNnPPdQziILeX9HjjJg5oW_hp6hDRCrB0",
+                authDomain: "volei-das-ruas-dz.firebaseapp.com",
+                projectId: "volei-das-ruas-dz",
+                storageBucket: "volei-das-ruas-dz.firebasestorage.app",
+                messagingSenderId: "318529125182",
+                appId: "1:318529125182:web:5f77edf287bbd749948a6f"
+            };
+            console.log("Firebase Config (fallback do usuário):", firebaseConfig); // Log de depuração
+        }
+    } catch (e) {
+        console.error("Erro ao analisar __firebase_config, usando fallback:", e);
+        // Fallback para a configuração fornecida pelo usuário se __firebase_config falhar
+        firebaseConfig = {
+            apiKey: "AIzaSyDNnPPdQziILeX9HjjJg5oW_hp6hDRCrB0",
+            authDomain: "volei-das-ruas-dz.firebaseapp.com",
+            projectId: "volei-das-ruas-dz",
+            storageBucket: "volei-das-ruas-dz.firebasestorage.app",
+            messagingSenderId: "318529125182",
+            appId: "1:318529125182:web:5f77edf287bbd749948a6f"
+        };
+    }
+
+    // Initialize Firebase
+    app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    auth = getAuth(app);
+
+    // Authenticate user
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            userId = user.uid;
+            console.log("Usuário autenticado:", userId);
+            if (!user.isAnonymous) {
+                console.log(`Bem-vindo, ${user.displayName || user.email}! Você pode adicionar/remover jogadores.`);
+            } else {
+                console.log("Logado como usuário anônimo. Apenas leitura de jogadores permitida. Faça login com o Google para adicionar/remover.");
+            }
+        } else {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    console.log("Tentando autenticar com token personalizado..."); // Log de depuração
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                    userId = auth.currentUser.uid;
+                    console.log("Autenticado com token personalizado:", userId);
+                } else {
+                    console.log("Tentando autenticar anonimamente (token personalizado não disponível)..."); // Log de depuração
+                    await signInAnonymously(auth);
+                    userId = auth.currentUser.uid;
+                    console.log("Autenticado anonimamente:", userId);
+                }
+            } catch (error) {
+                console.error("Erro na autenticação:", error);
+                userId = crypto.randomUUID();
+                console.warn("Usando ID de usuário aleatório devido a falha na autenticação. Os dados podem não persistir no Firestore.");
+            }
+        }
+        isAuthReady = true;
+        // Agora que a autenticação está pronta, carrega os jogadores e configura o listener do Firestore
+        loadPlayers(); // Carrega do localStorage primeiro
+        setupFirestorePlayersListener(); // Configura o listener para sincronização com Firestore
+        updatePlayerModificationAbility(); // Atualiza a UI e estado dos botões
+    });
+
+    // Função para logar com o Google
+    window.loginWithGoogle = async () => {
+        try {
+            await signInWithPopup(auth, googleLoginProvider);
+            console.log("Login com Google realizado com sucesso!");
+            // A função onAuthStateChanged cuidará da atualização do estado
+        } catch (error) {
+            console.error("Erro no login com Google:", error);
+            // Handle specific errors, e.g., popup closed by user
+            if (error.code === 'auth/popup-closed-by-user') {
+                console.warn("Login com Google cancelado pelo usuário.");
+            }
+        }
+    };
+
+    // Função para fazer logout
+    window.logout = async () => {
+        try {
+            await signOut(auth);
+            console.log("Logout realizado com sucesso!");
+            // A função onAuthStateChanged cuidará da atualização do estado
+        } catch (error) {
+            console.error("Erro ao fazer logout:", error);
+        }
+    };
+
+    // Função para atualizar a capacidade de modificação de jogadores na UI
+    function updatePlayerModificationAbility() {
+        const canModify = auth.currentUser && !auth.currentUser.isAnonymous;
+        playerNameInput.disabled = !canModify;
+        addPlayerButton.disabled = !canModify;
+
+        const removeButtons = document.querySelectorAll('.remove-player-button');
+        removeButtons.forEach(button => {
+            button.disabled = !canModify;
+        });
+
+        if (canModify) {
+            console.log("Modificação de jogadores habilitada (usuário logado com Google/Email).");
+        } else {
+            console.log("Modificação de jogadores desabilitada (usuário anônimo ou não logado).");
+        }
+    }
+
+
     function updateNavScoringButton() {
         const isScoringPageActive = document.getElementById('scoring-page').classList.contains('app-page--active');
         if (isGameInProgress && isScoringPageActive) {
@@ -87,9 +228,6 @@ document.addEventListener('DOMContentLoaded', () => {
             clearInterval(setTimerInterval);
             timerInterval = null;
             setTimerInterval = null;
-
-            // allGeneratedTeams NÃO é mais resetado aqui
-            // currentTeam1 e currentTeam2 NÃO são mais resetados aqui
 
             const config = JSON.parse(localStorage.getItem('volleyballConfig')) || {};
             activeTeam1Name = config.customTeam1Name || 'Time 1';
@@ -178,7 +316,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     isGameInProgress = false;
                     currentTeam1 = [];
                     currentTeam2 = [];
-                    // allGeneratedTeams NÃO é mais resetado aqui
                     renderScoringPagePlayers([], []);
 
                     const config = JSON.parse(localStorage.getItem('volleyballConfig')) || {};
@@ -222,7 +359,6 @@ document.addEventListener('DOMContentLoaded', () => {
             activeTeam2Name = config[`customTeam2Name`] || `Time 2`;
             activeTeam2Color = config[`customTeam2Color`] || '#f03737';
         } else {
-            // Removido o console.warn para não exibir a mensagem se os times não foram gerados
             currentTeam1 = [];
             currentTeam2 = [];
             const config = JSON.parse(localStorage.getItem('volleyballConfig')) || {};
@@ -241,45 +377,129 @@ document.addEventListener('DOMContentLoaded', () => {
     const playersListContainer = document.getElementById('players-list-container');
     const playerCountSpan = document.getElementById('player-count');
     const selectAllPlayersToggle = document.getElementById('select-all-players-toggle');
-    const deselectAllButton = document.getElementById('deselect-all-button');
+    const deselectAllButton = document.getElementById('deselect-all-button'); // Este botão está comentado no HTML, mas mantido aqui.
 
-    let players = [];
+    // Função para salvar jogadores no localStorage
+    async function savePlayers() {
+        try {
+            localStorage.setItem('volleyballPlayers', JSON.stringify(players));
+            console.log("Jogadores salvos no localStorage.");
+            // A sincronização com o Firestore para mudanças de entrada é feita pelo onSnapshot.
+            // Para mudanças de saída (adição/remoção), é feita explicitamente nos event listeners.
+        } catch (e) {
+            console.error('Erro ao salvar jogadores no localStorage:', e);
+        }
+    }
 
+    // Função para carregar jogadores do localStorage
     function loadPlayers() {
         try {
             const storedPlayers = localStorage.getItem('volleyballPlayers');
             if (storedPlayers) {
                 players = JSON.parse(storedPlayers);
+                console.log("Jogadores carregados do localStorage.");
             }
         } catch (e) {
+            console.error('Erro ao carregar jogadores do localStorage:', e);
             players = [];
         }
+        renderPlayersList(); // Renderiza imediatamente a partir do localStorage
     }
 
-    function savePlayers() {
-        try {
-            localStorage.setItem('volleyballPlayers', JSON.stringify(players));
-        } catch (e) {
+    // Configura o listener em tempo real para jogadores do Firestore
+    function setupFirestorePlayersListener() {
+        if (!isAuthReady || !db) {
+            console.log("Não é possível configurar o listener do Firestore: autenticação não pronta ou DB não inicializado.");
+            return;
         }
+
+        const playersCollectionRef = collection(db, `artifacts/${appId}/public/data/players`);
+        const q = query(playersCollectionRef);
+
+        onSnapshot(q, (snapshot) => {
+            console.log("Atualização do Firestore recebida.");
+            const firestorePlayers = [];
+            snapshot.forEach((doc) => {
+                firestorePlayers.push({ id: doc.id, name: doc.data().name, firestoreId: doc.id });
+            });
+
+            const newPlayersState = [];
+            const firestoreIdSet = new Set(firestorePlayers.map(p => p.firestoreId));
+            
+            // Cria um mapa para acesso rápido aos jogadores locais pelo ID
+            const localPlayerMap = new Map(players.map(p => [p.id, p]));
+
+            // Processa jogadores locais
+            players.forEach(localPlayer => {
+                if (localPlayer.firestoreId && firestoreIdSet.has(localPlayer.firestoreId)) {
+                    // Jogador existe no Firestore e localmente com um firestoreId correspondente
+                    const firestoreVersion = firestorePlayers.find(fp => fp.firestoreId === localPlayer.firestoreId);
+                    localPlayer.name = firestoreVersion.name; // Garante que o nome esteja atualizado
+                    newPlayersState.push(localPlayer);
+                    firestoreIdSet.delete(localPlayer.firestoreId); // Remove do conjunto para não adicionar novamente
+                } else if (!localPlayer.firestoreId) {
+                    // Jogador é apenas local (adicionado offline)
+                    // Verifica se um jogador com o mesmo nome já existe no Firestore (para evitar duplicatas na ressincronização)
+                    const existingInFirestoreByName = firestorePlayers.find(fp => fp.name === localPlayer.name);
+                    if (existingInFirestoreByName) {
+                        // Se existe pelo nome, atualiza o jogador local com o ID do Firestore
+                        localPlayer.firestoreId = existingInFirestoreByName.id;
+                        newPlayersState.push(localPlayer);
+                        firestoreIdSet.delete(existingInFirestoreByName.id); // Remove do conjunto do Firestore
+                    } else {
+                        // Jogador local verdadeiramente novo, adiciona à lista mesclada
+                        newPlayersState.push(localPlayer);
+                    }
+                }
+            });
+
+            // Adiciona quaisquer jogadores restantes do Firestore (aqueles que não foram encontrados localmente)
+            firestorePlayers.forEach(fp => {
+                if (firestoreIdSet.has(fp.firestoreId)) { // Se ainda estiver no conjunto, significa que não foi processado
+                    newPlayersState.push(fp);
+                }
+            });
+
+            // Ordena newPlayersState por nome para exibição consistente
+            newPlayersState.sort((a, b) => a.name.localeCompare(b.name));
+
+            // Deduplicação final por nome (em caso de condições de corrida raras ou problemas de entrada manual)
+            const finalPlayers = [];
+            const seenNames = new Set();
+            for (const player of newPlayersState) {
+                if (!seenNames.has(player.name)) {
+                    finalPlayers.push(player);
+                    seenNames.add(player.name);
+                } else {
+                    console.warn(`Duplicata de jogador "${player.name}" detectada e removida durante a mesclagem.`);
+                }
+            }
+
+            players = finalPlayers;
+            savePlayers(); // Salva o estado mesclado de volta no localStorage
+            renderPlayersList();
+            console.log("Jogadores mesclados e lista renderizada.");
+        }, (error) => {
+            console.error("Erro ao ouvir atualizações do Firestore:", error);
+        });
     }
 
     function renderPlayersList() {
         playersListContainer.innerHTML = '';
 
-        players.sort((a, b) => a.localeCompare(b));
-
-        players.forEach((player, index) => {
+        players.forEach((player) => {
             const playerDiv = document.createElement('div');
             playerDiv.className = 'player-list-item';
+            // Usa player.id para data-player-id, que pode ser firestoreId ou um UUID local
             playerDiv.innerHTML = `
                 <div class="player-info">
                     <label class="switch">
-                        <input type="checkbox" checked="checked" class="player-checkbox" data-player-name="${player}">
+                        <input type="checkbox" checked="checked" class="player-checkbox" data-player-id="${player.id}">
                         <span class="slider round"></span>
                     </label>
-                    <span class="player-name-display">${player}</span>
+                    <span class="player-name-display">${player.name}</span>
                 </div>
-                <button class="remove-player-button" data-index="${index}">
+                <button class="remove-player-button" data-player-id="${player.id}">
                     <span class="material-icons">delete</span>
                 </button>
             `;
@@ -287,6 +507,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         updatePlayerCount();
         updateSelectAllToggle();
+        updatePlayerModificationAbility(); // Garante que os botões de remover estejam no estado correto
     }
 
     function updatePlayerCount() {
@@ -301,23 +522,84 @@ document.addEventListener('DOMContentLoaded', () => {
         selectAllPlayersToggle.checked = allChecked;
     }
 
-    addPlayerButton.addEventListener('click', () => {
+    addPlayerButton.addEventListener('click', async () => {
+        // Verifica se o usuário tem permissão para modificar jogadores
+        if (!auth.currentUser || auth.currentUser.isAnonymous) {
+            console.warn("Ação não permitida: Você precisa estar logado com uma conta não anônima para adicionar jogadores.");
+            // Você pode adicionar uma mensagem visual para o usuário aqui, sem usar alert().
+            return;
+        }
+
         const playerName = playerNameInput.value.trim();
-        if (playerName && !players.includes(playerName)) {
-            players.push(playerName);
-            savePlayers();
-            renderPlayersList();
-            playerNameInput.value = '';
+        if (playerName) {
+            // Verifica duplicatas antes de adicionar localmente
+            if (!players.some(p => p.name === playerName)) {
+                const newPlayer = { id: generateLocalId(), name: playerName, firestoreId: null };
+                players.push(newPlayer);
+                playerNameInput.value = '';
+                renderPlayersList(); // Renderiza imediatamente com o novo jogador local
+                savePlayers(); // Salva no localStorage
+
+                // Tenta adicionar ao Firestore se estiver online e autenticado
+                if (navigator.onLine && isAuthReady) {
+                    const playersCollectionRef = collection(db, `artifacts/${appId}/public/data/players`);
+                    try {
+                        const docRef = await addDoc(playersCollectionRef, { name: playerName });
+                        // Atualiza o objeto do jogador local com o ID do Firestore
+                        const addedPlayer = players.find(p => p.id === newPlayer.id);
+                        if (addedPlayer) {
+                            addedPlayer.firestoreId = docRef.id;
+                            savePlayers(); // Salva o localStorage atualizado com o ID do Firestore
+                            console.log(`Jogador "${playerName}" adicionado ao Firestore com ID: ${docRef.id}`);
+                        }
+                    } catch (error) {
+                        console.error(`Erro ao adicionar jogador "${playerName}" ao Firestore:`, error);
+                        // Se a adição ao Firestore falhar, o jogador permanece como apenas local (firestoreId: null)
+                    }
+                } else {
+                    console.log("Offline ou autenticação não pronta, jogador adicionado apenas localmente.");
+                }
+            } else {
+                console.warn(`Jogador "${playerName}" já existe na lista.`);
+            }
         }
     });
 
-    playersListContainer.addEventListener('click', (event) => {
+    playersListContainer.addEventListener('click', async (event) => {
         if (event.target.closest('.remove-player-button')) {
+            // Verifica se o usuário tem permissão para modificar jogadores
+            if (!auth.currentUser || auth.currentUser.isAnonymous) {
+                console.warn("Ação não permitida: Você precisa estar logado com uma conta não anônima para remover jogadores.");
+                // Você pode adicionar uma mensagem visual para o usuário aqui, sem usar alert().
+                return;
+            }
+
             const button = event.target.closest('.remove-player-button');
-            const indexToRemove = parseInt(button.dataset.index);
-            players.splice(indexToRemove, 1);
-            savePlayers();
-            renderPlayersList();
+            const playerIdToRemove = button.dataset.playerId; // Obtém o ID único do jogador
+
+            const indexToRemove = players.findIndex(p => p.id === playerIdToRemove);
+
+            if (indexToRemove !== -1) {
+                const playerToRemove = players[indexToRemove];
+
+                // Remove do array local
+                players.splice(indexToRemove, 1);
+                renderPlayersList(); // Renderiza imediatamente após a remoção local
+                savePlayers(); // Salva no localStorage
+
+                // Se o jogador tinha um ID do Firestore, tenta remover do Firestore
+                if (playerToRemove.firestoreId && navigator.onLine && isAuthReady) {
+                    const playerDocRef = doc(db, `artifacts/${appId}/public/data/players`, playerToRemove.firestoreId);
+                    try {
+                        await deleteDoc(playerDocRef);
+                        console.log(`Jogador "${playerToRemove.name}" (ID: ${playerToRemove.firestoreId}) removido do Firestore.`);
+                    } catch (error) {
+                        console.error(`Erro ao remover jogador "${playerToRemove.name}" do Firestore:`, error);
+                    }
+                } else {
+                    console.log("Offline ou autenticação não pronta, jogador removido apenas localmente.");
+                }
+            }
         } else if (event.target.classList.contains('player-checkbox')) {
             updatePlayerCount();
             updateSelectAllToggle();
@@ -341,9 +623,6 @@ document.addEventListener('DOMContentLoaded', () => {
             updatePlayerCount();
         });
     }
-    
-    loadPlayers();
-    renderPlayersList();
 
     const generateTeamsButton = document.getElementById('generate-teams-button');
     const teamsGridLayout = document.getElementById('teams-grid-layout');
@@ -357,14 +636,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function generateTeams() {
         const selectedPlayerElements = document.querySelectorAll('#players-list-container .player-checkbox:checked');
-        const selectedPlayers = Array.from(selectedPlayerElements).map(checkbox => checkbox.dataset.playerName);
+        // Obtém os IDs dos jogadores selecionados dos checkboxes
+        const selectedPlayerIds = Array.from(selectedPlayerElements).map(checkbox => checkbox.dataset.playerId);
 
-        if (selectedPlayers.length < 1) {
+        // Mapeia os IDs de volta para os nomes dos jogadores usando o array 'players'
+        const selectedPlayersNames = players
+            .filter(player => selectedPlayerIds.includes(player.id))
+            .map(player => player.name);
+
+        if (selectedPlayersNames.length < 1) {
             console.warn('Por favor, selecione pelo menos 1 jogador para gerar times.');
             return;
         }
 
-        const shuffledPlayers = [...selectedPlayers];
+        const shuffledPlayers = [...selectedPlayersNames]; // Embaralha os nomes, não os objetos completos
         shuffleArray(shuffledPlayers);
 
         const config = JSON.parse(localStorage.getItem('volleyballConfig')) || {};
@@ -385,8 +670,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const configLoaded = JSON.parse(localStorage.getItem('volleyballConfig')) || {};
         activeTeam1Name = configLoaded[`customTeam1Name`] || `Time 1`;
-        activeTeam2Name = configLoaded[`customTeam2Name`] || `Time 2`;
         activeTeam1Color = configLoaded[`customTeam1Color`] || '#325fda';
+        activeTeam2Name = configLoaded[`customTeam2Name`] || `Time 2`;
         activeTeam2Color = configLoaded[`customTeam2Color`] || '#f03737';
 
         renderTeams(allGeneratedTeams);
@@ -408,22 +693,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const defaultTeamName = `Time ${index + 1}`;
             const defaultTeamColor = (index % 2 === 0) ? '#325fda' : '#f03737';
 
-            const teamName = config[teamNameKey] || defaultTeamName;
-            const teamColor = config[teamColorKey] || defaultTeamColor;
+            const teamDisplayName = config[teamNameKey] || defaultTeamName;
+            const teamDisplayColor = config[teamColorKey] || defaultTeamColor;
 
             if (index === 0) {
                 teamCard.classList.add('team-card--blue-border');
             } else if (index === 1) {
                 teamCard.classList.add('team-card--red-border');
             } else {
-                teamCard.style.borderLeft = `0.25rem solid ${teamColor}`;
+                teamCard.style.borderLeft = `0.25rem solid ${teamDisplayColor}`;
             }
-            teamCard.style.borderLeftColor = teamColor;
+            teamCard.style.borderLeftColor = teamDisplayColor;
 
 
             const teamTitle = document.createElement('h3');
             teamTitle.className = 'team-card-title';
-            teamTitle.textContent = teamName;
+            teamTitle.textContent = teamDisplayName;
             teamCard.appendChild(teamTitle);
 
             const teamList = document.createElement('ul');
@@ -813,10 +1098,32 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     loadConfig();
-    loadPlayers();
-    renderPlayersList();
+    // loadPlayers() e setupFirestorePlayersListener() são chamados após a autenticação estar pronta.
+    // renderPlayersList() é chamado por loadPlayers() e setupFirestorePlayersListener().
 
     showPage('start-page');
+
+    const appVersionDisplay = document.getElementById('app-version-display');
+
+    async function loadAppVersion() {
+        if (appVersionDisplay) {
+            try {
+                const response = await fetch('../service-worker.js');
+                const text = await response.text();
+                const match = text.match(/const CACHE_NAME = '(.*?)';/);
+                if (match && match[1]) {
+                    appVersionDisplay.textContent = match[1];
+                } else {
+                    appVersionDisplay.textContent = 'Não disponível';
+                }
+            } catch (error) {
+                console.error('Erro ao carregar a versão do app:', error);
+                appVersionDisplay.textContent = 'Erro ao carregar';
+            }
+        }
+    }
+
+    loadAppVersion();
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
