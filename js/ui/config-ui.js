@@ -1,9 +1,9 @@
 // js/ui/config-ui.js
 // Lógica de interface para a tela de configurações.
 
-import * as Elements from './elements.js';
-import { updateTeamDisplayNamesAndColors, renderScoringPagePlayers } from './game-ui.js';
-import { getCurrentTeam1, getCurrentTeam2, getActiveTeam1Name, getActiveTeam2Name, getActiveTeam1Color, getActiveTeam2Color } from '../game/logic.js';
+import * as Elements from './elements.js'; // Caminho corrigido
+import { updateTeamDisplayNamesAndColors, renderScoringPagePlayers } from './game-ui.js'; // Caminho corrigido
+import { getCurrentTeam1, getCurrentTeam2, getActiveTeam1Name, getActiveTeam2Name, getActiveTeam1Color, getActiveTeam2Color } from '../game/logic.js'; // Caminho corrigido
 
 
 /**
@@ -22,12 +22,22 @@ export function loadConfig() {
 
         Elements.customTeamInputs.forEach((input, index) => {
             if (input.name) input.name.value = config[`customTeam${index + 1}Name`] ?? `Time ${index + 1}`;
-            if (input.color) input.color.value = config[`customTeam${index + 1}Color`] ?? ((index % 2 === 0) ? '#325fda' : '#f03737');
+            // Cores padrão para os primeiros times, se não configuradas
+            const defaultColors = ['#325fda', '#f03737', '#28a745', '#ffc107', '#6f42c1', '#17a2b8'];
+            if (input.color) input.color.value = config[`customTeam${index + 1}Color`] ?? defaultColors[index];
         });
+
+        // Aplica o modo escuro imediatamente
+        if (config.darkMode) {
+            document.body.classList.add('dark');
+        } else {
+            document.body.classList.remove('dark');
+        }
+
         return config;
     } catch (e) {
         console.error('Erro ao carregar configurações:', e);
-        return {}; // Retorna um objeto vazio em caso de erro
+        return {};
     }
 }
 
@@ -37,24 +47,31 @@ export function loadConfig() {
 export function saveConfig() {
     try {
         const config = {
-            playersPerTeam: Elements.playersPerTeamInput ? parseInt(Elements.playersPerTeamInput.value) : 4,
-            pointsPerSet: Elements.pointsPerSetInput ? parseInt(Elements.pointsPerSetInput.value) : 15,
-            numberOfSets: Elements.numberOfSetsInput ? parseInt(Elements.numberOfSetsInput.value) : 1,
-            darkMode: Elements.darkModeToggle ? Elements.darkModeToggle.checked : true,
-            vibration: Elements.vibrationToggle ? Elements.vibrationToggle.checked : true,
-            displayPlayers: Elements.displayPlayersToggle ? Elements.displayPlayersToggle.checked : true,
+            playersPerTeam: parseInt(Elements.playersPerTeamInput.value, 10),
+            pointsPerSet: parseInt(Elements.pointsPerSetInput.value, 10),
+            numberOfSets: parseInt(Elements.numberOfSetsInput.value, 10),
+            darkMode: Elements.darkModeToggle.checked,
+            vibration: Elements.vibrationToggle.checked,
+            displayPlayers: Elements.displayPlayersToggle.checked,
         };
 
         Elements.customTeamInputs.forEach((input, index) => {
-            if (input.name) config[`customTeam${index + 1}Name`] = input.name.value;
-            if (input.color) config[`customTeam${index + 1}Color`] = input.color.value;
+            config[`customTeam${index + 1}Name`] = input.name.value;
+            config[`customTeam${index + 1}Color`] = input.color.value;
         });
 
         localStorage.setItem('volleyballConfig', JSON.stringify(config));
-        console.log("Configurações salvas.");
+        console.log('Configurações salvas:', config);
 
-        // Atualiza os nomes e cores dos times no placar imediatamente após salvar
-        const currentConfig = loadConfig(); // Recarrega para garantir que os valores mais recentes sejam usados
+        // Atualiza o modo escuro imediatamente
+        if (config.darkMode) {
+            document.body.classList.add('dark');
+        } else {
+            document.body.classList.remove('dark');
+        }
+
+        // Atualiza os nomes e cores dos times no placar
+        const currentConfig = loadConfig(); // Carrega a config atualizada
         const team1Name = currentConfig.customTeam1Name || 'Time 1';
         const team1Color = currentConfig.customTeam1Color || '#325fda';
         const team2Name = currentConfig.customTeam2Name || 'Time 2';
@@ -72,6 +89,9 @@ export function saveConfig() {
  * Configura os event listeners para os inputs de configuração.
  */
 export function setupConfigUI() {
+    // Carrega as configurações ao iniciar a UI de configuração
+    loadConfig();
+
     if (Elements.playersPerTeamInput) Elements.playersPerTeamInput.addEventListener('change', saveConfig);
     if (Elements.pointsPerSetInput) Elements.pointsPerSetInput.addEventListener('change', saveConfig);
     if (Elements.numberOfSetsInput) Elements.numberOfSetsInput.addEventListener('change', saveConfig);
@@ -84,6 +104,12 @@ export function setupConfigUI() {
         if (input.color) input.color.addEventListener('change', saveConfig);
     });
 
-    // Carrega as configurações ao iniciar a UI de configurações
-    loadConfig();
+    // Adiciona listener para o botão de reset de configurações
+    if (Elements.resetConfigButton) {
+        Elements.resetConfigButton.addEventListener('click', () => {
+            localStorage.removeItem('volleyballConfig');
+            loadConfig(); // Recarrega as configurações padrão
+            console.log('Configurações resetadas para o padrão.');
+        });
+    }
 }

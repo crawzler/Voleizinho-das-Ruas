@@ -4,7 +4,8 @@
 import { db, auth } from '../firebase/config.js';
 import { collection, addDoc, deleteDoc, doc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getCurrentUser } from '../firebase/auth.js';
-import { renderPlayersList } from '../ui/players-ui.js'; // Removido updatePlayerModificationAbility, pois não é exportado por players-ui.js
+import { renderPlayersList } from '../ui/players-ui.js';
+import { displayMessage } from '../ui/messages.js'; // NOVO: Importa a função de exibição de mensagens
 
 let players = []; // Array para armazenar objetos de jogadores: { id: 'local_uuid', name: 'Nome do Jogador', firestoreId: 'firestore_doc_id' }
 let currentAppId = null; // Para armazenar o appId uma vez que ele é passado
@@ -30,103 +31,161 @@ async function savePlayers() {
 }
 
 /**
- * Carrega a lista de jogadores do localStorage.
+ * Carrega a lista de jogadores do localStorage e configura um listener para sincronizar com o Firestore.
  * @param {string} appId - O ID do aplicativo.
  */
 export async function loadPlayers(appId) {
-    currentAppId = appId; // Define o appId para uso em outras funções
+    currentAppId = appId;
     try {
         const storedPlayers = localStorage.getItem('volleyballPlayers');
         if (storedPlayers) {
             players = JSON.parse(storedPlayers);
-            console.log("Jogadores carregados do localStorage.");
-            renderPlayersList(players); // Renderiza a lista de jogadores carregada
+            console.log("[loadPlayers] Jogadores carregados do localStorage:", players);
         } else {
-            players = []; // Inicializa como vazio se não houver dados
+            players = [];
+            console.log("[loadPlayers] Nenhum jogador encontrado no localStorage.");
         }
+        renderPlayersList(players); 
     } catch (e) {
-        console.error('Erro ao carregar jogadores do localStorage:', e);
-        players = []; // Garante que players seja um array mesmo em caso de erro
+        console.error('[loadPlayers] Erro ao carregar jogadores do localStorage:', e);
+        players = [];
+    }
+
+    const currentUser = getCurrentUser();
+    // Configura o listener do Firestore para a coleção pública se houver um usuário autenticado (incluindo anônimos)
+    if (currentUser) {
+        console.log("[loadPlayers] Usuário autenticado (anônimo ou não). Configurando listener do Firestore para dados PÚBLICOS.");
+        setupFirestorePlayersListener(appId); // Não passa currentUser, pois a coleção é pública
+    } else {
+        console.log("[loadPlayers] Nenhum usuário autenticado. Não configurando listener do Firestore.");
+        // Garante que a lista local seja renderizada para usuários não autenticados
+        renderPlayersList(players);
     }
 }
 
 /**
- * Adiciona um novo jogador à lista e, se autenticado, ao Firestore.
+ * Adiciona um novo jogador à lista e ao Firestore (se o usuário tiver permissão).
  * @param {string} playerName - O nome do jogador a ser adicionado.
  */
 export async function addPlayer(playerName) {
-    const currentUser = getCurrentUser();
-    if (!currentUser || currentUser.isAnonymous) {
-        console.warn("Ação não permitida: Você precisa estar logado com uma conta não anônima para adicionar jogadores.");
-        // Opcional: exibir uma mensagem na UI para o usuário
-        return;
-    }
-
-    if (!playerName || playerName.trim() === '') {
-        console.warn("Nome do jogador não pode ser vazio.");
-        return;
-    }
-
     const newPlayer = {
         id: generateLocalId(), // ID local para uso imediato na UI
-        name: playerName.trim(),
-        firestoreId: null // Será preenchido se salvo no Firestore
+        name: playerName
     };
 
+    // Adiciona ao array local
     players.push(newPlayer);
-    savePlayers();
-    renderPlayersList(players); // Renderiza imediatamente após a adição local
+    savePlayers(); // Salva no localStorage
 
-    if (currentUser && !currentUser.isAnonymous && navigator.onLine && db && currentAppId) {
+    // Renderiza a lista atualizada
+    renderPlayersList(players);
+
+    const currentUser = getCurrentUser();
+    console.log("[addPlayer] currentUser:", currentUser);
+    
+    // Apenas tenta adicionar ao Firestore se o usuário estiver autenticado e NÃO for anônimo (para UX)
+    // A segurança final é garantida pelas regras do Firestore.
+    if (currentUser && !currentUser.isAnonymous) {
+        console.log(`[addPlayer] Usuário autenticado (${currentUser.uid}) e NÃO anônimo. Tentando adicionar ao Firestore na coleção PÚBLICA.`);
         try {
-            const docRef = await addDoc(collection(db, `artifacts/${currentAppId}/public/data/players`), {
-                name: newPlayer.name,
-                userId: currentUser.uid, // Associa o jogador ao UID do usuário
-                createdAt: new Date()
-            });
-            newPlayer.firestoreId = docRef.id; // Atualiza o objeto com o ID do Firestore
-            savePlayers(); // Salva novamente para persistir o firestoreId
-            console.log(`Jogador \"${newPlayer.name}\" adicionado ao Firestore com ID: ${docRef.id}`);
-        } catch (error) {
-            console.error("Erro ao adicionar jogador ao Firestore:", error);
-            // Se falhar no Firestore, o jogador ainda estará no localStorage
+            if (!db) {
+                console.error("[addPlayer] Erro: Firestore DB não inicializado.");
+                displayMessage("Erro interno: Banco de dados não inicializado.", "error");
+                return;
+            }
+            if (!currentAppId) {
+                console.error("[addPlayer] Erro: App ID não definido. loadPlayers deve ser chamado primeiro.");
+                displayMessage("Erro interno: ID do aplicativo não definido.", "error");
+                return;
+            }
+
+            // Altera o caminho da coleção para a coleção pública de jogadores
+            const publicPlayersCollectionRef = collection(db, `artifacts/${currentAppId}/public/data/players`);
+            console.log(`[addPlayer] Caminho da coleção Firestore: artifacts/${currentAppId}/public/data/players`);
+            console.log(`[addPlayer] Adicionando jogador '${playerName}' ao Firestore.`);
+
+            const docRef = await addDoc(publicPlayersCollectionRef, { name: playerName, createdAt: new Date() });
+            // Atualiza o jogador local com o firestoreId
+            const playerIndex = players.findIndex(p => p.id === newPlayer.id);
+            if (playerIndex !== -1) {
+                players[playerIndex].firestoreId = docRef.id;
+                savePlayers(); // Salva novamente com o firestoreId
+            }
+            displayMessage("Jogador adicionado com sucesso!", "success");
+            console.log("[addPlayer] Jogador adicionado ao Firestore com ID:", docRef.id);
+        } catch (e) {
+            console.error("[addPlayer] ERRO ao adicionar jogador ao Firestore:", e);
+            displayMessage("Erro ao adicionar jogador. Verifique suas permissões.", "error");
+            // Opcional: remover o jogador do array local se a adição ao Firestore falhar
+            players = players.filter(p => p.id !== newPlayer.id);
+            savePlayers();
+            renderPlayersList(players);
         }
     } else {
-        console.log("Offline ou usuário anônimo/DB não inicializado, jogador adicionado apenas localmente.");
+        // Substitui console.warn por displayMessage para o usuário
+        displayMessage("Você não tem permissão para adicionar jogadores.", "error");
+        console.warn("[addPlayer] Apenas usuários autenticados (não anônimos) podem salvar jogadores no Firestore. Operação bloqueada no frontend.");
     }
 }
 
 /**
- * Remove um jogador da lista e, se aplicável, do Firestore.
- * @param {string} playerIdToRemove - O ID do jogador a ser removido (local ou Firestore ID).
+ * Remove um jogador da lista e do Firestore (se o usuário tiver permissão).
+ * @param {string} playerIdToRemove - O ID local do jogador a ser removido.
  */
 export async function removePlayer(playerIdToRemove) {
-    const currentUser = getCurrentUser();
-    if (!currentUser || currentUser.isAnonymous) {
-        console.warn("Ação não permitida: Você precisa estar logado com uma conta não anônima para remover jogadores.");
+    const playerToRemove = players.find(p => p.id === playerIdToRemove);
+
+    if (!playerToRemove) {
+        console.warn("[removePlayer] Jogador não encontrado para remoção:", playerIdToRemove);
+        displayMessage("Jogador não encontrado.", "error");
         return;
     }
 
-    const indexToRemove = players.findIndex(p => p.id === playerIdToRemove);
+    // Remove do array local
+    players = players.filter(p => p.id !== playerIdToRemove);
+    savePlayers(); // Salva no localStorage
 
-    if (indexToRemove !== -1) {
-        const playerToRemove = players[indexToRemove];
+    // Renderiza a lista atualizada
+    renderPlayersList(players);
 
-        players.splice(indexToRemove, 1);
-        savePlayers();
-        renderPlayersList(players); // Renderiza imediatamente após a remoção local
+    const currentUser = getCurrentUser();
+    console.log("[removePlayer] currentUser:", currentUser);
 
-        if (playerToRemove.firestoreId && navigator.onLine && db && currentAppId) {
-            const playerDocRef = doc(db, `artifacts/${currentAppId}/public/data/players`, playerToRemove.firestoreId);
-            try {
-                await deleteDoc(playerDocRef);
-                console.log(`Jogador \"${playerToRemove.name}\" (ID: ${playerToRemove.firestoreId}) removido do Firestore.`);
-            } catch (error) {
-                console.error(`Erro ao remover jogador \"${playerToRemove.name}\" do Firestore:`, error);
+    // Apenas tenta remover do Firestore se o jogador tiver um firestoreId e o usuário estiver autenticado E NÃO for anônimo (para UX)
+    // A segurança final é garantida pelas regras do Firestore.
+    if (currentUser && !currentUser.isAnonymous && playerToRemove.firestoreId) {
+        console.log(`[removePlayer] Usuário autenticado (${currentUser.uid}) e NÃO anônimo. Tentando remover do Firestore da coleção PÚBLICA.`);
+        try {
+            if (!db) {
+                console.error("[removePlayer] Erro: Firestore DB não inicializado.");
+                displayMessage("Erro interno: Banco de dados não inicializado.", "error");
+                return;
             }
-        } else {
-            console.log("Offline ou DB não inicializado, jogador removido apenas localmente.");
+            if (!currentAppId) {
+                console.error("[removePlayer] Erro: App ID não definido. loadPlayers deve ser chamado primeiro.");
+                displayMessage("Erro interno: ID do aplicativo não definido.", "error");
+                return;
+            }
+
+            // Altera o caminho do documento para a coleção pública de jogadores
+            const playerDocRef = doc(db, `artifacts/${currentAppId}/public/data/players`, playerToRemove.firestoreId);
+            console.log(`[removePlayer] Caminho do documento Firestore para remover: artifacts/${currentAppId}/public/data/players/${playerToRemove.firestoreId}`);
+
+            await deleteDoc(playerDocRef);
+            displayMessage("Jogador removido com sucesso!", "success");
+            console.log("[removePlayer] Jogador removido do Firestore:", playerToRemove.firestoreId);
+        } catch (e) {
+            console.error("[removePlayer] ERRO ao remover jogador do Firestore:", e);
+            displayMessage("Erro ao remover jogador. Verifique suas permissões.", "error");
+            // Opcional: readicionar o jogador ao array local se a remoção do Firestore falhar
+            players.push(playerToRemove);
+            savePlayers();
+            renderPlayersList(players);
         }
+    } else {
+        // Substitui console.warn por displayMessage para o usuário
+        displayMessage("Você não tem permissão para remover jogadores.", "error");
+        console.warn("[removePlayer] Apenas usuários autenticados (não anônimos) podem remover jogadores do Firestore. Operação bloqueada no frontend.");
     }
 }
 
@@ -139,27 +198,26 @@ export function getPlayers() {
 }
 
 /**
- * Configura um listener em tempo real para a coleção de jogadores no Firestore.
+ * Configura um listener em tempo real para a coleção de jogadores PÚBLICA no Firestore.
  * @param {string} appId - O ID do aplicativo.
  */
 export function setupFirestorePlayersListener(appId) {
-    currentAppId = appId;
-    const currentUser = getCurrentUser();
-
-    if (!db || !currentUser || currentUser.isAnonymous) {
-        console.log("Firestore ou usuário anônimo/não autenticado. Listener de jogadores não será configurado.");
+    // Não verifica mais o currentUser aqui, pois a coleção é pública e acessível a qualquer autenticado.
+    if (!db) {
+        console.error("[setupFirestorePlayersListener] Erro: Firestore DB não inicializado.");
+        return;
+    }
+    if (!appId) {
+        console.error("[setupFirestorePlayersListener] Erro: App ID não definido.");
         return;
     }
 
-    const playersCollectionRef = collection(db, `artifacts/${currentAppId}/public/data/players`);
-    const q = query(playersCollectionRef); // Não filtra por userId aqui, pois é uma coleção pública
-
-    onSnapshot(q, (snapshot) => {
+    console.log(`[setupFirestorePlayersListener] Configurando onSnapshot para a coleção PÚBLICA: artifacts/${appId}/public/data/players`);
+    const publicPlayersCollectionRef = collection(db, `artifacts/${appId}/public/data/players`);
+    onSnapshot(publicPlayersCollectionRef, (snapshot) => {
         const firestorePlayers = [];
         snapshot.forEach((doc) => {
             const data = doc.data();
-            // Apenas adiciona jogadores que pertencem ao usuário atual ou que são públicos
-            // No caso de dados públicos, todos os jogadores são visíveis
             firestorePlayers.push({
                 id: doc.id, // Usar o ID do Firestore como ID principal
                 name: data.name,
@@ -186,8 +244,9 @@ export function setupFirestorePlayersListener(appId) {
         players = Object.values(mergedPlayers); // Converte de volta para array
         savePlayers(); // Salva a lista mesclada no localStorage
         renderPlayersList(players); // Renderiza a lista atualizada
-        console.log("Jogadores atualizados via Firestore snapshot.");
+        console.log("[setupFirestorePlayersListener] Jogadores atualizados via Firestore snapshot.");
     }, (error) => {
-        console.error("Erro ao ouvir jogadores do Firestore:", error);
+        console.error("[setupFirestorePlayersListener] Erro ao ouvir jogadores do Firestore:", error);
+        displayMessage("Erro ao carregar jogadores do Firestore.", "error");
     });
 }

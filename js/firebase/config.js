@@ -44,14 +44,13 @@ export async function initFirebaseApp() {
         };
     }
 
-    // Inicializa o Firebase
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db = getFirestore(app);
+    if (!app) {
+        app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+    }
 
-    return { app, auth, db, appId, firebaseConfig };
+    return { app, db, auth, appId, firebaseConfig };
 }
 
-// Exporta as instâncias para que outros módulos possam usá-las
-export { app, auth, db, appId, firebaseConfig };
-
+export { app, db, auth };

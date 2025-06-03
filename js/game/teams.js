@@ -6,13 +6,14 @@ import { shuffleArray } from '../utils/helpers.js';
 import { loadConfig } from '../ui/config-ui.js';
 import { renderTeams, renderScoringPagePlayers, updateTeamDisplayNamesAndColors } from '../ui/game-ui.js';
 import { getCurrentTeam1, getCurrentTeam2, getActiveTeam1Name, getActiveTeam2Name, getActiveTeam1Color, getActiveTeam2Color, setAllGeneratedTeams } from './logic.js';
-
+import { displayMessage } from '../ui/messages.js'; // Importa a função de exibição de mensagens
 
 /**
  * Gera novos times com base nos jogadores selecionados.
  * @param {string} appId - O ID do aplicativo.
  */
 export function generateTeams(appId) {
+    console.log("[generateTeams] Iniciando geração de times.");
     const players = getPlayers(); // Obtém a lista atual de jogadores
     const selectedPlayerElements = document.querySelectorAll('#players-list-container .player-checkbox:checked');
     const selectedPlayerIds = Array.from(selectedPlayerElements).map(checkbox => checkbox.dataset.playerId);
@@ -21,7 +22,10 @@ export function generateTeams(appId) {
         .filter(player => selectedPlayerIds.includes(player.id))
         .map(player => player.name);
 
+    console.log("[generateTeams] Jogadores selecionados:", selectedPlayersNames);
+
     if (selectedPlayersNames.length < 1) {
+        displayMessage('Por favor, selecione pelo menos 1 jogador para gerar times.', 'info');
         console.warn('Por favor, selecione pelo menos 1 jogador para gerar times.');
         return;
     }
@@ -30,80 +34,65 @@ export function generateTeams(appId) {
     shuffleArray(shuffledPlayers);
 
     const config = loadConfig();
-    const playersPerTeam = parseInt(config.playersPerTeam) || 4;
+    const playersPerTeam = parseInt(config.playersPerTeam, 10) || 4; // Padrão para 4 se não configurado
 
-    const newGeneratedTeams = [];
-    let teamCount = 0;
-    for (let i = 0; i < shuffledPlayers.length; i++) {
-        if (i % playersPerTeam === 0) {
-            newGeneratedTeams.push([]);
-            teamCount++;
-        }
-        newGeneratedTeams[teamCount - 1].push(shuffledPlayers[i]);
+    const generatedTeams = [];
+    let teamIndex = 0;
+    while (shuffledPlayers.length > 0) {
+        const teamNameKey = `customTeam${teamIndex + 1}Name`;
+        const teamDisplayName = config[teamNameKey] || `Time ${teamIndex + 1}`;
+        
+        const teamPlayers = shuffledPlayers.splice(0, playersPerTeam);
+        generatedTeams.push({
+            name: teamDisplayName,
+            players: teamPlayers,
+            // A cor será aplicada na renderização em game-ui.js
+        });
+        teamIndex++;
     }
 
-    setAllGeneratedTeams(newGeneratedTeams); // Atualiza o estado global de times gerados
-
-    const configLoaded = loadConfig();
-    const team1Name = configLoaded[`customTeam1Name`] || `Time 1`;
-    const team1Color = configLoaded[`customTeam1Color`] || '#325fda';
-    const team2Name = configLoaded[`customTeam2Name`] || `Time 2`;
-    const team2Color = configLoaded[`customTeam2Color`] || '#f03737';
-
-    // Chama a função de UI para renderizar os times
-    const teamsGridLayout = document.getElementById('teams-grid-layout');
-    if (teamsGridLayout) {
-        renderTeams(newGeneratedTeams, teamsGridLayout);
-    }
-    renderScoringPagePlayers(getCurrentTeam1(), getCurrentTeam2());
-    updateTeamDisplayNamesAndColors(getActiveTeam1Name(), getActiveTeam2Name(), getActiveTeam1Color(), getActiveTeam2Color());
+    setAllGeneratedTeams(generatedTeams); // Salva os times gerados no estado global da lógica do jogo
+    console.log("[generateTeams] Times gerados:", generatedTeams);
+    displayMessage('Times gerados com sucesso!', 'success');
+    renderTeams(generatedTeams); // Renderiza os times na UI
+    console.log("[generateTeams] Função renderTeams chamada.");
 }
 
 /**
- * Abre o modal de seleção de time.
- * @param {string} panelId - O ID do painel do time que está sendo selecionado ('team1-players-column' ou 'team2-players-column').
+ * Abre o modal de seleção de time e renderiza os times gerados.
+ * @param {string} panelId - O ID do painel de time que está a ser configurado ('team1-players-column' ou 'team2-players-column').
  */
 export function openTeamSelectionModal(panelId) {
-    const teamSelectionModal = document.getElementById('team-selection-modal');
+    selectingTeamPanelId = panelId;
+    const allTeams = getAllGeneratedTeams(); // Obtém todos os times gerados
     const modalTeamList = document.getElementById('modal-team-list');
-    const allGeneratedTeams = getAllGeneratedTeams(); // Obtém os times gerados
 
-    if (!teamSelectionModal || !modalTeamList) return;
+    if (!modalTeamList) return;
 
-    modalTeamList.innerHTML = '';
+    modalTeamList.innerHTML = ''; // Limpa a lista existente
 
-    if (allGeneratedTeams.length === 0) {
-        const noTeamsMessage = document.createElement('li');
-        noTeamsMessage.textContent = 'Nenhum time gerado ainda. Vá para a tela "Times" para gerar.';
-        noTeamsMessage.style.padding = '10px';
-        noTeamsMessage.style.color = '#9CA3AF';
-        modalTeamList.appendChild(noTeamsMessage);
-    } else {
-        const config = loadConfig();
-
-        allGeneratedTeams.forEach((team, index) => {
-            const teamNameKey = `customTeam${index + 1}Name`;
-            const teamColorKey = `customTeam${index + 1}Color`;
-            const defaultTeamName = `Time ${index + 1}`;
-            const defaultTeamColor = (index % 2 === 0) ? '#325fda' : '#f03737';
-
-            const teamDisplayName = config[teamNameKey] || defaultTeamName;
-            const teamDisplayColor = config[teamColorKey] || defaultTeamColor;
-
-            const listItem = document.createElement('li');
-            listItem.classList.add('modal-team-item');
-            listItem.dataset.teamIndex = index;
-
-            listItem.innerHTML = `
-                <span class="modal-team-item-name">${teamDisplayName}</span>
-                <div class="modal-team-item-color-box" style="background-color: ${teamDisplayColor};"></div>
-            `;
-            
-            listItem.addEventListener('click', () => selectTeamFromModal(index, panelId)); // Passa panelId
-            modalTeamList.appendChild(listItem);
-        });
+    if (allTeams.length === 0) {
+        modalTeamList.innerHTML = '<p class="text-gray-400 text-center">Nenhum time gerado. Vá para a tela de Jogadores e gere alguns times.</p>';
+        return;
     }
-    teamSelectionModal.style.display = 'flex';
+
+    allTeams.forEach((team, index) => {
+        const teamItem = document.createElement('div');
+        teamItem.className = 'team-list-item';
+        teamItem.dataset.teamIndex = index; // Armazena o índice do time
+        teamItem.innerHTML = `
+            <h4 class="team-list-item-title">${team.name}</h4>
+            <ul class="team-list-item-players">
+                ${team.players.map(player => `<li>${player}</li>`).join('')}
+            </ul>
+        `;
+        modalTeamList.appendChild(teamItem);
+    });
+
+    const teamSelectionModal = document.getElementById('team-selection-modal');
+    if (teamSelectionModal) {
+        teamSelectionModal.classList.add('active');
+    }
 }
 
 /**
@@ -112,18 +101,19 @@ export function openTeamSelectionModal(panelId) {
 export function closeTeamSelectionModal() {
     const teamSelectionModal = document.getElementById('team-selection-modal');
     if (teamSelectionModal) {
-        teamSelectionModal.style.display = 'none';
+        teamSelectionModal.classList.remove('active');
     }
+    selectingTeamPanelId = null; // Limpa o ID do painel selecionado
 }
 
 /**
- * Seleciona um time do modal e o atribui a um painel.
- * @param {number} teamIndex - O índice do time selecionado.
- * @param {string} panelId - O ID do painel do time a ser atualizado.
+ * Seleciona um time para um painel específico (Time A ou Time B).
+ * @param {string} panelId - O ID do painel de time ('team1-players-column' ou 'team2-players-column').
+ * @param {number} teamIndex - O índice do time selecionado no array de times gerados.
  */
-function selectTeamFromModal(teamIndex, panelId) {
-    const allGeneratedTeams = getAllGeneratedTeams();
-    const selectedTeamPlayers = allGeneratedTeams[teamIndex] || [];
+export function selectTeamForPanel(panelId, teamIndex) {
+    const allTeams = getAllGeneratedTeams();
+    const selectedTeamPlayers = allTeams[teamIndex] ? allTeams[teamIndex].players : [];
     const config = loadConfig();
 
     const teamNameKey = `customTeam${teamIndex + 1}Name`;
@@ -136,17 +126,12 @@ function selectTeamFromModal(teamIndex, panelId) {
 
     // Atualiza o estado dos times ativos na lógica do jogo
     if (panelId === 'team1-players-column') {
-        // Isso é um pouco complicado. Idealmente, teríamos setters para currentTeam1/2 e activeTeam1/2Name/Color
-        // Por simplicidade e para evitar refatorar game/logic.js profundamente agora:
-        // A lógica de game-logic.js precisa ser capaz de receber esses updates.
-        // Por enquanto, vamos apenas renderizar e atualizar a UI.
-        // Em uma refatoração mais profunda, game/logic.js teria setters para estes estados.
         renderScoringPagePlayers(selectedTeamPlayers, getCurrentTeam2());
         updateTeamDisplayNamesAndColors(selectedTeamName, getActiveTeam2Name(), selectedTeamColor, getActiveTeam2Color());
     } else if (panelId === 'team2-players-column') {
         renderScoringPagePlayers(getCurrentTeam1(), selectedTeamPlayers);
         updateTeamDisplayNamesAndColors(getActiveTeam1Name(), selectedTeamName, getActiveTeam1Color(), selectedTeamColor);
     }
-
     closeTeamSelectionModal();
 }
+

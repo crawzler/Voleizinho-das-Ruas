@@ -75,8 +75,8 @@ input:focus + .slider {
 }
 
 input:checked + .slider:before {
-  -webkit-transform: translateX(26px);
-  -ms-transform: translateX(26px);
+  -webkit-transform: translateX(20px);
+  -ms-transform: translateX(20px);
   transform: translateX(20px);
 }
 
@@ -107,7 +107,7 @@ input:checked + .slider:before {
     position: fixed;
     top: 5px;
     right: 5px;
-    z-index: 60;
+    z-index: 900; /* Z-index alto para estar sempre no topo, inclusive sobre o sidebar */
 }
 
 .header-button {
@@ -128,15 +128,15 @@ input:checked + .slider:before {
     top: 0;
     right: 0;
     height: 100vh;
-    width: 12rem;
+    max-width: 14rem;
     background-color: #222;
     transform: translateX(100%);
     transition: transform 0.3s ease-in-out;
-    z-index: 50;
+    z-index: 950; /* Z-index alto para estar acima das páginas, mas abaixo do botão de menu */
     display: flex;
     flex-direction: column;
-    padding: 1rem;
-    z-index: 70;
+    padding: 10px 1rem 1rem 1rem;
+    overflow: auto;
 }
 
 .sidebar-menu.active {
@@ -147,40 +147,39 @@ input:checked + .slider:before {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #444;
 }
 
 .sidebar-title {
-    color: white;
-    font-size: 1.5rem;
+    color: #ddd;
+    font-size: 1rem;
     margin: 0;
 }
 
 .sidebar-nav {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    flex-grow: 1; /* Permite que a navegação ocupe o espaço disponível */
+    padding: 10px;
+    flex-grow: 1;
 }
 
 .sidebar-nav-item {
+    font-size: 0.1rem;
+    font-weight: 100;
     display: flex;
     align-items: center;
     gap: 0.75rem;
     background-color: transparent;
     border: none;
-    color: #D1D5DB;
-    padding: 0.75rem 1rem;
+    color: white;
     border-radius: 0.5rem;
     font-size: 1rem;
     cursor: pointer;
     transition: background-color 0.2s ease, color 0.2s ease;
     text-align: left;
-}
-
-.sidebar-nav-item:hover {
-    background-color: #333;
-    color: white;
+    padding: 5px 0px;
+    box-shadow: inherit;
 }
 
 .sidebar-nav-icon {
@@ -206,44 +205,49 @@ input:checked + .slider:before {
 
 /* Main Content */
 .app-main-content {
+    position: relative; /* Essencial para que .app-page com position: absolute funcione */
+    width: 100%;
+    height: 100vh; /* Ocupa a altura total da viewport */
+    overflow: hidden; /* Esconde o overflow para evitar barras de rolagem indesejadas */
 }
 
+/* Estilos base para todas as páginas */
 .app-page {
     width: 100%;
-    display: none !important; 
-}
-
-.app-page.app-page--active { /* Usa a classe combinada para maior especificidade */
-    display: flex !important; /* CRÍTICO: Exibido como flexbox quando ativo, com !important para garantir */
-}
-
-/* Login Page Styles - É também um .app-page, então herdará os estilos .app-page inicialmente */
-.login-page-layout {
-    flex-direction: column;
-    align-items: center;
-    justify-content: center; /* Centraliza o conteúdo verticalmente */
-    height: 100vh; /* Ocupa a altura total da viewport para centralizar */
-    width: 100%; /* Ocupa a largura total */
-    text-align: center;
-    background-color: #1a1a1a; /* Cor de fundo para a página de login */
-    box-shadow: none; /* Remove a sombra padrão para a tela de login */
-    padding: 2rem;
-}
-
-/* Regra específica para a página de login ativa ser fixa e cobrir a tela inteira */
-.login-page-layout.app-page--active {
-    position: fixed; /* Sobrescreve o display:none e posiciona fixo */
+    height: 100%; /* Ocupa a altura total do .app-main-content */
+    position: absolute; /* Permite que as páginas se sobreponham */
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100vh;
-    z-index: 90;
-    background-color: #1a1a1a; /* Garante que cubra o fundo */
-    display: flex !important; /* Garante que seja flex quando ativa, com !important */
-    justify-content: center; /* Centraliza o conteúdo verticalmente */
-    align-items: center; /* Centraliza o conteúdo horizontalmente */
+    display: none; /* Esconde todas as páginas por padrão */
+    overflow-y: auto; /* Permite rolagem se o conteúdo exceder a altura da tela */
+    padding: 1rem;
+    box-sizing: border-box;
+    background-color: #1a1a1a;
+    color: #E5E7EB;
+    flex-direction: column; /* Padrão para as páginas, pode ser sobrescrito */
+    align-items: center; /* Padrão para as páginas, pode ser sobrescrito */
+    justify-content: flex-start; /* Padrão para as páginas, pode ser sobrescrito */
+    z-index: 1; /* Z-index padrão para páginas inativas */
 }
 
+/* Estilo para a página ativa (geral) */
+.app-page.app-page--active {
+    display: flex !important;
+    z-index: 500; /* Z-index para páginas ativas (abaixo do sidebar) */
+}
+
+/* Login Page Styles - Z-index mais alto quando ativa */
+.login-page-layout {
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background-color: #1a1a1a;
+    box-shadow: none;
+}
+
+.login-page-layout.app-page--active {
+    z-index: 999 !important; /* CRÍTICO: Z-index mais alto para a tela de login quando ativa, acima do sidebar */
+}
 
 .login-content {
     background-color: #222;
@@ -298,18 +302,17 @@ input:checked + .slider:before {
 }
 
 
-/* Start Page */
+/* Start Page - AGORA TRANSLÚCIDA E SOBREPOSTA */
 .start-page-layout {
-    display: flex;
     justify-content: center;
     align-items: center;
-    background-color: #2229;
-    position: absolute;
-    top: 0px;
-    left: 0px;
+    background-color: rgba(26, 26, 26, 0.8); /* Fundo translúcido */
+    position: absolute; /* Essencial para sobrepor */
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
-    z-index: 50;
+    z-index: 200; /* Acima da página de pontuação (z-index: 100), mas abaixo do sidebar (900) */
 }
 
 .start-game-button {
@@ -323,7 +326,7 @@ input:checked + .slider:before {
     border-radius: 8px;
     border: none;
     cursor: pointer;
-    transition: background-color 0.3sease;
+    transition: background-color 0.3s ease;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
@@ -341,26 +344,25 @@ input:checked + .slider:before {
 
 /* Scoring Page */
 .scoring-page-layout {
-    /* Removido display: flex !important; e outras propriedades de posicionamento e tamanho */
-    /* Elas serão aplicadas apenas quando a página estiver ativa */
-    background-color: transparent; /* Sem fundo para o layout em si */
-    box-shadow: none; /* Sem sombra */
-    border-radius: 0; /* Sem borda arredondada */
+    background-color: transparent; /* Fundo transparente para permitir a visualização por trás */
+    box-shadow: none;
+    border-radius: 0;
     margin: 0;
     padding: 0;
+    z-index: 100; /* Z-index base para a tela de pontuação */
 }
 
 .scoring-page-layout.app-page--active { /* Aplicado apenas quando a página de pontuação está ativa */
-    width: 100vw; /* Ocupa a largura total da viewport */
-    height: 100vh; /* Ocupa a altura total da viewport */
+    width: 100vw;
+    height: 100vh;
     position: fixed; /* Posição fixa para cobrir a tela inteira */
     top: 0;
     left: 0;
-    z-index: 1; /* Garante que esteja acima de outras páginas, mas abaixo da barra lateral/modal */
-    display: flex; /* Garante que seja flex e cubra a tela */
-    flex-direction: row; /* Organiza os filhos lado a lado */
-    align-items: stretch; /* Estica os filhos para preencher a altura */
-    justify-content: stretch; /* Estica os filhos para preencher a largura */
+    z-index: 100; /* Garante que esteja acima de outras páginas inativas, mas abaixo do sidebar/start-page */
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: stretch;
 }
 
 
@@ -370,7 +372,10 @@ input:checked + .slider:before {
 }
 
 .page-heading {
-    margin: 20px 20px 0px;
+    width: 100%;
+    left: 0px;
+    top: 0px;
+    margin: 0px;
     left: 0px;
     top: 0px;
 }
@@ -390,43 +395,104 @@ input:checked + .slider:before {
     align-items: center;
     justify-content: center; /* Centraliza o conteúdo verticalmente */
     padding: 1rem;
-    color: white; /* Garante que o texto seja visível no fundo colorido */
-    box-shadow: none; /* Sem sombra para os painéis em si */
-    border-radius: 0; /* Sem borda arredondada para os painéis */
+    color: white;
+    box-shadow: none;
+    border-radius: 0;
     cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.1s ease;
+    transition: background-color 0.3s ease; /* Removido transform para evitar animação */
 }
 
-.score-panel:active {
-    transform: scale(0.98);
-}
+/* Removido: .score-panel:active { transform: scale(0.98); } */
 
 .team1-panel {
     background-color: #325fda; /* Azul */
-    border-left: none; /* Remove borda anterior */
+    border-left: none;
 }
 
 .team2-panel {
     background-color: #f03737; /* Vermelho */
-    border-left: none; /* Remove borda anterior */
+    border-left: none;
 }
 
 .team-name {
-    font-size: 2.5rem; /* Nome do time maior */
+    font-size: 2.5rem;
     margin-bottom: 1rem;
 }
 
 .score-number {
-    font-size: 10rem; /* Número do placar muito maior */
+    font-size: 10rem;
     font-weight: bold;
-    color: white; /* Placar branco no fundo colorido */
-    margin-bottom: 0; /* Ajusta margem */
-    line-height: 1; /* Ajusta altura da linha para melhor centralização */
+    color: white;
+    margin-bottom: 0;
+    line-height: 1;
+}
+
+.teams-page-layout {
+    display: flex;
+    flex-direction: column;
+}
+
+.teams-page-layout-sub {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    gap: 1rem;
+    padding: 0px 20px 20px 20px;
 }
 
 .players-page-layout {
     display: flex;
     flex-direction: column;
+    z-index: 30; /* Z-index para a página de jogadores, abaixo do sidebar */
+}
+
+.teams-action {
+    padding: 20px;
+    width: 100%;
+    flex: 1;
+    width: 100%;
+}
+
+.generate-teams-button {
+    width: 100%;
+}
+
+.teams-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.team-card {
+    flex: 1;
+    background-color: #222;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.team-card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: white;
+    padding-bottom: 10px;
+    margin: 0px;
+    border-bottom: 1px solid #666;
+}
+
+.team-card-list {
+    color: #D1D5DB;
+    list-style: inside;
+    padding: 0px;
+    margin: 0px;
+    margin-top: 10px;
+}
+
+.team-card-list li {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px dashed #444;
 }
 
 .players-page-layout-add {
@@ -479,10 +545,6 @@ input:checked + .slider:before {
     display: none; /* Esconde os jogadores por enquanto, pois não estão na imagem */
 }
 
-
-
-
-
 /* Botão de Trocar Times */
 #swap-teams-button {
     position: absolute;
@@ -510,7 +572,7 @@ input:checked + .slider:before {
     bottom: 0px;
     left: 50%;
     transform: translate(-50%, -0%);
-    display: flex;
+    display: none; /* Alterado para 'none' para que fique oculto por padrão */
     background-color: #2229; /* Fundo mais escuro para legibilidade */
     padding: 0.75rem 1.5rem;
     border-radius: 8px 8px 0px 0px;
@@ -546,8 +608,58 @@ input:checked + .slider:before {
     gap: 0.5rem;
 }
 
+/* Container para mensagens de notificação */
+.message-container {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000; /* Acima de tudo */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 90%;
+    max-width: 400px;
+}
+
+.message-box {
+    padding: 15px;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    opacity: 0; /* Começa invisível */
+    transform: translateY(-20px); /* Começa um pouco acima */
+    animation: fadeInOut 4s forwards; /* Animação de fade in e fade out */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.message-box.error {
+    background-color: #DC2626; /* Vermelho */
+}
+
+.message-box.success {
+    background-color: #10B981; /* Verde */
+}
+
+.message-box.info {
+    background-color: #2563EB; /* Azul */
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(-20px); }
+    10% { opacity: 1; transform: translateY(0); }
+    90% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-20px); }
+}
+
+
 /* Media Queries for Responsiveness */
 @media (min-width: 600px) {
+    .sidebar-menu {
+        max-width: 14rem;
+    }
+
     .score-display-container {
         flex-direction: row; /* Lado a lado em telas maiores */
         justify-content: space-between;
@@ -555,6 +667,10 @@ input:checked + .slider:before {
 
     .score-panel {
         flex: 1; /* Ocupa espaço igual */
+    }
+
+    .teams-grid {
+        grid-template-columns: 1fr 1fr 1fr 1fr;
     }
 
     .player-input-section {
@@ -565,7 +681,4 @@ input:checked + .slider:before {
         min-width: 250px; /* Aumenta o tamanho mínimo do input */
     }
 
-    .sidebar-menu {
-        width: 15rem; /* Aumenta a largura da sidebar em telas maiores */
-    }
 }

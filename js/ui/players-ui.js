@@ -2,6 +2,8 @@
 // Lógica de interface para a lista de jogadores.
 
 import * as Elements from './elements.js';
+import { updatePlayerModificationAbility } from './pages.js'; // Importa a função de pages.js
+import { getCurrentUser } from '../firebase/auth.js'; // Importa para verificar o estado de autenticação
 
 /**
  * Renderiza a lista de jogadores na UI.
@@ -31,7 +33,11 @@ export function renderPlayersList(players) {
     });
     updatePlayerCount();
     updateSelectAllToggle();
-    // A habilitação/desabilitação dos botões de remover é feita em ui/pages.js via updatePlayerModificationAbility
+
+    // CORREÇÃO: Sempre exibe os elementos de modificação para fins de UX.
+    // A segurança para adicionar/remover do Firestore é garantida pelas regras do Firebase
+    // e pela lógica de verificação em addPlayer/removePlayer.
+    updatePlayerModificationAbility(true);
 }
 
 /**

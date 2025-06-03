@@ -1,10 +1,13 @@
 // js/game/logic.js
 // Contém a lógica principal do jogo: pontuação, timer e gerenciamento de estado.
 
-import { updateScoreDisplay, updateTimerDisplay, updateSetTimerDisplay, renderScoringPagePlayers, updateTeamDisplayNamesAndColors, updateNavScoringButton } from '../ui/game-ui.js';
+// Importa funções de UI e dados.
+import { updateScoreDisplay, updateTimerDisplay, updateSetTimerDisplay, renderScoringPagePlayers, updateTeamDisplayNamesAndColors, updateNavScoringButton, renderTeams } from '../ui/game-ui.js';
 import { getPlayers } from '../data/players.js';
 import { shuffleArray } from '../utils/helpers.js';
-import { loadConfig } from '../ui/config-ui.js'; // Importa loadConfig para obter playersPerTeam
+import { loadConfig } from '../ui/config-ui.js';
+import { showPage } from '../ui/pages.js';
+import * as Elements from '../ui/elements.js'; // Importa Elements para depuração
 
 let team1Score = 0;
 let team2Score = 0;
@@ -16,7 +19,7 @@ let setTimerInterval = null;
 let currentTeam1 = [];
 let currentTeam2 = [];
 let isGameInProgress = false;
-let allGeneratedTeams = []; // Mover para cá, pois é estado do jogo
+let allGeneratedTeams = [];
 
 let activeTeam1Name = 'Time 1';
 let activeTeam2Name = 'Time 2';
@@ -24,272 +27,292 @@ let activeTeam1Color = '#325fda';
 let activeTeam2Color = '#f03737';
 
 /**
- * Inicia uma nova partida.
- * @param {string} appId - O ID do aplicativo.
- */
-export function startGame(appId) {
-    isGameInProgress = true;
-    team1Score = 0;
-    team2Score = 0;
-    timeElapsed = 0;
-    setElapsedTime = 0;
-    updateTimerDisplay(timeElapsed);
-    updateSetTimerDisplay(setElapsedTime);
-    toggleTimer(true); // Inicia o timer automaticamente
-
-    // Gerar times se houver jogadores selecionados, ou usar times padrão
-    const players = getPlayers(); // Obtém a lista atual de jogadores
-    const selectedPlayerElements = document.querySelectorAll('#players-list-container .player-checkbox:checked');
-    const selectedPlayerIds = Array.from(selectedPlayerElements).map(checkbox => checkbox.dataset.playerId);
-    const selectedPlayersNames = players
-        .filter(player => selectedPlayerIds.includes(player.id))
-        .map(player => player.name);
-
-    if (selectedPlayersNames.length >= 2) { // Se houver pelo menos 2 jogadores selecionados
-        allGeneratedTeams = []; // Limpa times gerados anteriores
-        const config = loadConfig(); // Carrega configurações para playersPerTeam
-        const playersPerTeam = parseInt(config.playersPerTeam) || 4;
-
-        const shuffledPlayers = [...selectedPlayersNames];
-        shuffleArray(shuffledPlayers);
-
-        let teamCount = 0;
-        for (let i = 0; i < shuffledPlayers.length; i++) {
-            if (i % playersPerTeam === 0) {
-                allGeneratedTeams.push([]);
-                teamCount++;
-            }
-            allGeneratedTeams[teamCount - 1].push(shuffledPlayers[i]);
-        }
-        currentTeam1 = allGeneratedTeams[0] || [];
-        currentTeam2 = allGeneratedTeams[1] || [];
-    } else {
-        currentTeam1 = [];
-        currentTeam2 = [];
-        allGeneratedTeams = []; // Garante que esteja vazio se não há times gerados
-    }
-
-    const config = loadConfig();
-    activeTeam1Name = config.customTeam1Name || 'Time 1';
-    activeTeam2Name = config.customTeam2Name || 'Time 2';
-    activeTeam1Color = config.customTeam1Color || '#325fda';
-    activeTeam2Color = config.customTeam2Color || '#f03737';
-
-    updateScoreDisplay(team1Score, team2Score); // Atualiza o placar inicial
-    renderScoringPagePlayers(currentTeam1, currentTeam2);
-    updateTeamDisplayNamesAndColors(activeTeam1Name, activeTeam2Name, activeTeam1Color, activeTeam2Color);
-
-    // Mudar para a página de pontuação
-    document.getElementById('scoring-page').classList.add('app-page--active');
-    document.getElementById('scoring-page').style.display = 'flex';
-    document.getElementById('start-page').classList.remove('app-page--active');
-    document.getElementById('start-page').style.display = 'none';
-
-    updateNavScoringButton(isGameInProgress);
-}
-
-
-/**
- * Alterna o estado do timer (iniciar/pausar).
- * @param {boolean} [forceStart=false] - Se true, força o timer a iniciar.
- */
-export function toggleTimer(forceStart = false) {
-    const timerToggleButton = document.querySelector('.timer-toggle-button');
-    const timerWrapper = document.querySelector('.timer-wrapper');
-
-    if (isTimerRunning && !forceStart) { // Se estiver rodando e não for para forçar o início
-        clearInterval(timerInterval);
-        clearInterval(setTimerInterval);
-        timerInterval = null;
-        setTimerInterval = null;
-        timerToggleButton.innerHTML = '<span class="material-icons">play_arrow</span>';
-    } else if (!isTimerRunning) { // Se não estiver rodando
-        timerInterval = setInterval(() => {
-            timeElapsed++;
-            updateTimerDisplay(timeElapsed);
-        }, 1000);
-        setTimerInterval = setInterval(() => {
-            setElapsedTime++;
-            updateSetTimerDisplay(setElapsedTime);
-        }, 1000);
-        timerToggleButton.innerHTML = '<span class="material-icons">pause</span>';
-        if (timerWrapper) timerWrapper.style.display = 'flex'; // Garante que o timer esteja visível
-    }
-    isTimerRunning = !isTimerRunning;
-    updateNavScoringButton(isGameInProgress);
-}
-
-/**
- * Incrementa a pontuação do time especificado.
- * @param {string} teamId - O ID do painel do time ('team1-panel' ou 'team2-panel').
- */
-export function incrementScore(teamId) {
-    if (teamId === 'team1-panel') {
-        team1Score++;
-    } else {
-        team2Score++;
-    }
-    updateScoreDisplay(team1Score, team2Score);
-}
-
-/**
- * Decrementa a pontuação do time especificado (mínimo 0).
- * @param {string} teamId - O ID do painel do time ('team1-panel' ou 'team2-panel').
- */
-export function decrementScore(teamId) {
-    if (teamId === 'team1-panel' && team1Score > 0) {
-        team1Score--;
-    } else if (teamId === 'team2-panel' && team2Score > 0) {
-        team2Score--;
-    }
-    updateScoreDisplay(team1Score, team2Score);
-}
-
-/**
- * Troca os times ativos e seus placares.
- */
-export function swapTeams() {
-    [team1Score, team2Score] = [team2Score, team1Score];
-    updateScoreDisplay(team1Score, team2Score);
-
-    [currentTeam1, currentTeam2] = [currentTeam2, currentTeam1];
-    [activeTeam1Name, activeTeam2Name] = [activeTeam2Name, activeTeam1Name];
-    [activeTeam1Color, activeTeam2Color] = [activeTeam2Color, activeTeam1Color];
-
-    renderScoringPagePlayers(currentTeam1, currentTeam2);
-    updateTeamDisplayNamesAndColors(activeTeam1Name, activeTeam2Name, activeTeam1Color, activeTeam2Color);
-}
-
-/**
- * Gera novos times com base nos jogadores selecionados.
- * @param {string} appId - O ID do aplicativo.
- */
-export function generateTeams(appId) {
-    const players = getPlayers(); // Obtém a lista atual de jogadores
-    const selectedPlayerElements = document.querySelectorAll('#players-list-container .player-checkbox:checked');
-    const selectedPlayerIds = Array.from(selectedPlayerElements).map(checkbox => checkbox.dataset.playerId);
-
-    const selectedPlayersNames = players
-        .filter(player => selectedPlayerIds.includes(player.id))
-        .map(player => player.name);
-
-    if (selectedPlayersNames.length < 1) {
-        console.warn('Por favor, selecione pelo menos 1 jogador para gerar times.');
-        return;
-    }
-
-    const shuffledPlayers = [...selectedPlayersNames];
-    shuffleArray(shuffledPlayers);
-
-    const config = loadConfig();
-    const playersPerTeam = parseInt(config.playersPerTeam) || 4;
-
-    allGeneratedTeams = [];
-    let teamCount = 0;
-    for (let i = 0; i < shuffledPlayers.length; i++) {
-        if (i % playersPerTeam === 0) {
-            allGeneratedTeams.push([]);
-            teamCount++;
-        }
-        allGeneratedTeams[teamCount - 1].push(shuffledPlayers[i]);
-    }
-
-    currentTeam1 = allGeneratedTeams[0] || [];
-    currentTeam2 = allGeneratedTeams[1] || [];
-
-    const configLoaded = loadConfig();
-    activeTeam1Name = configLoaded[`customTeam1Name`] || `Time 1`;
-    activeTeam1Color = configLoaded[`customTeam1Color`] || '#325fda';
-    activeTeam2Name = configLoaded[`customTeam2Name`] || `Time 2`;
-    activeTeam2Color = configLoaded[`customTeam2Color`] || '#f03737';
-
-    // Chama a função de UI para renderizar os times
-    const teamsGridLayout = document.getElementById('teams-grid-layout');
-    if (teamsGridLayout) {
-        renderTeams(allGeneratedTeams, teamsGridLayout);
-    }
-    renderScoringPagePlayers(currentTeam1, currentTeam2);
-    updateTeamDisplayNamesAndColors(activeTeam1Name, activeTeam2Name, activeTeam1Color, activeTeam2Color);
-}
-
-/**
- * Retorna o estado de jogo atual.
- * @returns {boolean} True se o jogo estiver em progresso, false caso contrário.
+ * Retorna o estado atual do jogo (se está em andamento ou não).
+ * @returns {boolean} True se o jogo estiver em andamento, false caso contrário.
  */
 export function getIsGameInProgress() {
     return isGameInProgress;
 }
 
 /**
- * Define o estado de jogo.
- * @param {boolean} state - O novo estado do jogo.
+ * Incrementa a pontuação de um time.
+ * @param {string} teamId - O ID do time ('team1' ou 'team2').
  */
-export function setIsGameInProgress(state) {
-    isGameInProgress = state;
+export function incrementScore(teamId) {
+    const config = loadConfig();
+    const pointsPerSet = parseInt(config.pointsPerSet, 10);
+    const vibrationEnabled = config.vibration ?? true;
+
+    if (!isGameInProgress) {
+        console.warn('Jogo não está em andamento. Não é possível pontuar.');
+        return;
+    }
+
+    if (teamId === 'team1') {
+        team1Score++;
+        if (vibrationEnabled) navigator.vibrate(50);
+    } else if (teamId === 'team2') {
+        team2Score++;
+        if (vibrationEnabled) navigator.vibrate(50);
+    }
+    updateScoreDisplay(team1Score, team2Score);
+    checkSetEnd(pointsPerSet);
 }
 
 /**
- * Retorna os times gerados atualmente.
- * @returns {Array<Array<string>>} A lista de times gerados.
+ * Decrementa a pontuação de um time.
+ * @param {string} teamId - O ID do time ('team1' ou 'team2').
  */
-export function getAllGeneratedTeams() {
-    return allGeneratedTeams;
+export function decrementScore(teamId) {
+    if (!isGameInProgress) {
+        console.warn('Jogo não está em andamento. Não é possível decrementar pontuação.');
+        return;
+    }
+
+    if (teamId === 'team1' && team1Score > 0) {
+        team1Score--;
+    } else if (teamId === 'team2' && team2Score > 0) {
+        team2Score--;
+    }
+    updateScoreDisplay(team1Score, team2Score);
 }
 
 /**
- * Define os times gerados.
- * @param {Array<Array<string>>} teams - A nova lista de times gerados.
+ * Inicia o timer geral do jogo.
  */
-export function setAllGeneratedTeams(teams) {
-    allGeneratedTeams = teams;
+function startTimer() {
+    if (!timerInterval) {
+        timerInterval = setInterval(() => {
+            timeElapsed++;
+            updateTimerDisplay(timeElapsed);
+        }, 1000);
+        isTimerRunning = true;
+    }
 }
 
 /**
- * Retorna os jogadores do Time 1 atual.
- * @returns {Array<string>} A lista de jogadores do Time 1.
+ * Inicia o timer do set atual.
+ */
+function startSetTimer() {
+    if (!setTimerInterval) {
+        setTimerInterval = setInterval(() => {
+            setElapsedTime++;
+            updateSetTimerDisplay(setElapsedTime);
+        }, 1000);
+    }
+}
+
+/**
+ * Alterna o estado do timer (iniciar/pausar).
+ */
+export function toggleTimer() {
+    if (!isGameInProgress) {
+        console.warn('Não é possível controlar o timer: jogo não está em andamento.');
+        return;
+    }
+
+    if (isTimerRunning) {
+        clearInterval(timerInterval);
+        clearInterval(setTimerInterval);
+        timerInterval = null;
+        setTimerInterval = null;
+        isTimerRunning = false;
+        document.querySelector('.timer-toggle-button').textContent = 'play_arrow';
+    } else {
+        startTimer();
+        startSetTimer();
+        document.querySelector('.timer-toggle-button').textContent = 'pause';
+    }
+}
+
+/**
+ * Verifica se um set terminou e o reinicia se necessário.
+ * @param {number} pointsPerSet - Pontos necessários para vencer o set.
+ */
+function checkSetEnd(pointsPerSet) {
+    if (team1Score >= pointsPerSet && team1Score - team2Score >= 2) {
+        console.log('Time 1 venceu o set!');
+        resetSet();
+    } else if (team2Score >= pointsPerSet && team2Score - team1Score >= 2) {
+        console.log('Time 2 venceu o set!');
+        resetSet();
+    }
+}
+
+/**
+ * Reinicia o placar e o timer do set.
+ */
+function resetSet() {
+    team1Score = 0;
+    team2Score = 0;
+    setElapsedTime = 0;
+    updateScoreDisplay(team1Score, team2Score);
+    updateSetTimerDisplay(setElapsedTime);
+    clearInterval(setTimerInterval);
+    setTimerInterval = null;
+    startSetTimer();
+}
+
+/**
+ * Troca os times de posição no placar.
+ */
+export function swapTeams() {
+    if (!isGameInProgress) {
+        console.warn('Não é possível trocar os times: jogo não está em andamento.');
+        return;
+    }
+
+    const tempTeam = currentTeam1;
+    currentTeam1 = currentTeam2;
+    currentTeam2 = tempTeam;
+
+    const tempName = activeTeam1Name;
+    activeTeam1Name = activeTeam2Name;
+    activeTeam2Name = tempName;
+
+    const tempColor = activeTeam1Color;
+    activeTeam1Color = activeTeam2Color;
+    activeTeam2Color = tempColor;
+
+    updateTeamDisplayNamesAndColors(activeTeam1Name, activeTeam2Name, activeTeam1Color, activeTeam2Color);
+    const config = loadConfig();
+    if (config.displayPlayers) {
+        renderScoringPagePlayers(currentTeam1, currentTeam2);
+    }
+    console.log('Times trocados!');
+}
+
+/**
+ * Esta função não deve ser chamada diretamente. A geração de times é gerenciada em teams.js.
+ * @param {string} appId - O ID do aplicativo.
+ */
+export function generateTeams(appId) {
+    console.warn("A função logic.js/generateTeams não deve ser chamada diretamente. Use teams.js/generateTeams.");
+}
+
+/**
+ * Inicia uma nova partida.
+ * @param {string} appId - O ID do aplicativo.
+ */
+export function startGame(appId) {
+    if (isGameInProgress) {
+        console.warn('Jogo já está em andamento!');
+        return;
+    }
+
+    const config = loadConfig();
+    const playersPerTeam = parseInt(config.playersPerTeam, 10);
+    const displayPlayers = config.displayPlayers ?? true;
+
+    const players = getPlayers();
+    const selectedPlayerElements = document.querySelectorAll('#players-list-container .player-checkbox:checked');
+    const selectedPlayerIds = Array.from(selectedPlayerElements).map(checkbox => checkbox.dataset.playerId);
+
+    const selectedPlayersNames = players
+        .filter(player => selectedPlayerIds.includes(player.id))
+        .map(player => player.name);
+
+    if (selectedPlayersNames.length < (playersPerTeam * 2)) {
+        console.warn(`Selecione pelo menos ${playersPerTeam * 2} jogadores para iniciar a partida.`);
+        return;
+    }
+
+    resetGameForNewMatch(); // Reseta o jogo antes de iniciar um novo
+
+    const shuffledPlayers = [...selectedPlayersNames];
+    shuffleArray(shuffledPlayers);
+
+    currentTeam1 = shuffledPlayers.slice(0, playersPerTeam);
+    currentTeam2 = shuffledPlayers.slice(playersPerTeam, playersPerTeam * 2);
+
+    const team1Name = config.customTeam1Name || 'Time 1';
+    const team2Name = config.customTeam2Name || 'Time 2';
+    const team1Color = config.customTeam1Color || '#325fda';
+    const team2Color = config.customTeam2Color || '#f03737';
+
+    updateTeamDisplayNamesAndColors(team1Name, team2Name, team1Color, team2Color);
+
+    if (displayPlayers) {
+        renderScoringPagePlayers(currentTeam1, currentTeam2);
+    } else {
+        renderScoringPagePlayers([], []);
+    }
+
+    isGameInProgress = true;
+    console.log('DEBUG: Chamando updateNavScoringButton(true) em startGame.');
+    updateNavScoringButton(true); // Atualiza o botão de navegação e MOSTRA o timer
+    console.log('DEBUG: Elements.timerAndSetTimerWrapper no startGame:', Elements.timerAndSetTimerWrapper);
+    if (Elements.timerAndSetTimerWrapper) {
+        console.log('DEBUG: Current display style of timerAndSetTimerWrapper:', Elements.timerAndSetTimerWrapper.style.display);
+    }
+    showPage('scoring-page');
+    startTimer();
+    startSetTimer();
+    console.log('Partida iniciada!');
+}
+
+/**
+ * Retorna os jogadores do Time 1 atualmente em jogo.
+ * @returns {Array<string>} Array de nomes de jogadores do Time 1.
  */
 export function getCurrentTeam1() {
     return currentTeam1;
 }
 
 /**
- * Retorna os jogadores do Time 2 atual.
- * @returns {Array<string>} A lista de jogadores do Time 2.
+ * Retorna os jogadores do Time 2 atualmente em jogo.
+ * @returns {Array<string>} Array de nomes de jogadores do Time 2.
  */
 export function getCurrentTeam2() {
     return currentTeam2;
 }
 
 /**
- * Retorna o nome do Time 1 ativo.
- * @returns {string} O nome do Time 1.
+ * Retorna o nome ativo do Time 1.
+ * @returns {string} Nome do Time 1.
  */
 export function getActiveTeam1Name() {
     return activeTeam1Name;
 }
 
 /**
- * Retorna o nome do Time 2 ativo.
- * @returns {string} O nome do Time 2.
+ * Retorna o nome ativo do Time 2.
+ * @returns {string} Nome do Time 2.
  */
 export function getActiveTeam2Name() {
     return activeTeam2Name;
 }
 
 /**
- * Retorna a cor do Time 1 ativo.
- * @returns {string} A cor do Time 1.
+ * Retorna a cor ativa do Time 1.
+ * @returns {string} Cor do Time 1 (hex).
  */
 export function getActiveTeam1Color() {
     return activeTeam1Color;
 }
 
 /**
- * Retorna a cor do Time 2 ativo.
- * @returns {string} A cor do Time 2.
+ * Retorna a cor ativa do Time 2.
+ * @returns {string} Cor do Time 2 (hex).
  */
 export function getActiveTeam2Color() {
     return activeTeam2Color;
+}
+
+/**
+ * Define todos os times gerados.
+ * @param {Array<Array<string>>} teams - Array de todos os times gerados.
+ */
+export function setAllGeneratedTeams(teams) {
+    allGeneratedTeams = teams;
+}
+
+/**
+ * Retorna todos os times gerados.
+ * @returns {Array<Array<string>>} Todos os times gerados.
+ */
+export function getAllGeneratedTeams() {
+    return allGeneratedTeams;
 }
 
 /**
@@ -320,8 +343,7 @@ export function resetGameForNewMatch() {
     updateScoreDisplay(team1Score, team2Score);
     updateTimerDisplay(timeElapsed);
     updateSetTimerDisplay(setElapsedTime);
-    renderScoringPagePlayers(currentTeam1, currentTeam2);
     updateTeamDisplayNamesAndColors(activeTeam1Name, activeTeam2Name, activeTeam1Color, activeTeam2Color);
-    document.querySelector('.timer-wrapper').style.display = 'none'; // Esconde o timer
-    updateNavScoringButton(isGameInProgress);
+    console.log('DEBUG: Chamando updateNavScoringButton(false) em resetGameForNewMatch.');
+    updateNavScoringButton(false); // Atualiza o botão de navegação e ESCONDE o timer
 }

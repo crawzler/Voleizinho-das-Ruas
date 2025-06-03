@@ -4,6 +4,7 @@
 import * as Elements from './elements.js';
 import { formatTime } from '../utils/helpers.js';
 import { getIsGameInProgress } from '../game/logic.js';
+import { loadConfig } from './config-ui.js'; // Importa loadConfig para obter nomes e cores personalizados
 
 /**
  * Atualiza o placar exibido na tela.
@@ -33,47 +34,35 @@ export function updateSetTimerDisplay(setElapsedTime) {
 
 /**
  * Renderiza os jogadores nas colunas da tela de pontuação.
- * @param {Array<string>} team1 - Nomes dos jogadores do Time 1.
- * @param {Array<string>} team2 - Nomes dos jogadores do Time 2.
+ * @param {Array<string>} team1Players - Nomes dos jogadores do Time 1.
+ * @param {Array<string>} team2Players - Nomes dos jogadores do Time 2.
  */
-export function renderScoringPagePlayers(team1, team2) {
-    if (Elements.team1PlayersScoringTop) {
-        Elements.team1PlayersScoringTop.innerHTML = '';
-        team1.forEach(player => {
-            const li = document.createElement('li');
-            li.textContent = player;
-            Elements.team1PlayersScoringTop.appendChild(li);
-        });
-    }
+export function renderScoringPagePlayers(team1Players, team2Players) {
+    const team1Column = document.getElementById('team1-players-column');
+    const team2Column = document.getElementById('team2-players-column');
+    const config = loadConfig(); // Carrega a configuração para verificar displayPlayers
 
-    if (Elements.team2PlayersScoringTop) {
-        Elements.team2PlayersScoringTop.innerHTML = '';
-        team2.forEach(player => {
-            const li = document.createElement('li');
-            li.textContent = player;
-            Elements.team2PlayersScoringTop.appendChild(li);
-        });
-    }
+    if (!team1Column || !team2Column) return;
 
-    const shouldDisplayPlayers = Elements.displayPlayersToggle ? Elements.displayPlayersToggle.checked : true;
-
-    if (Elements.teamPlayersColumnGroup) {
-        if ((team1.length > 0 || team2.length > 0) && shouldDisplayPlayers) {
-            Elements.teamPlayersColumnGroup.style.display = 'flex';
-        } else {
-            Elements.teamPlayersColumnGroup.style.display = 'none';
-        }
+    if (config.displayPlayers) {
+        team1Column.innerHTML = team1Players.length > 0 ? `<ul>${team1Players.map(p => `<li>${p}</li>`).join('')}</ul>` : '<p>Nenhum jogador</p>';
+        team2Column.innerHTML = team2Players.length > 0 ? `<ul>${team2Players.map(p => `<li>${p}</li>`).join('')}</ul>` : '<p>Nenhum jogador</p>';
+        team1Column.style.display = 'block'; // Mostra a coluna
+        team2Column.style.display = 'block'; // Mostra a coluna
+    } else {
+        team1Column.innerHTML = '';
+        team2Column.innerHTML = '';
+        team1Column.style.display = 'none'; // Esconde a coluna
+        team2Column.style.display = 'none'; // Esconde a coluna
     }
-    if (Elements.team1PlayersColumn) Elements.team1PlayersColumn.style.display = 'block';
-    if (Elements.team2PlayersColumn) Elements.team2PlayersColumn.style.display = 'block';
 }
 
 /**
- * Atualiza os nomes e cores dos times exibidos na tela de pontuação.
+ * Atualiza os nomes e cores dos times exibidos no placar.
  * @param {string} team1Name - Nome do Time 1.
  * @param {string} team2Name - Nome do Time 2.
- * @param {string} team1Color - Cor do Time 1.
- * @param {string} team2Color - Cor do Time 2.
+ * @param {string} team1Color - Cor do Time 1 (hex).
+ * @param {string} team2Color - Cor do Time 2 (hex).
  */
 export function updateTeamDisplayNamesAndColors(team1Name, team2Name, team1Color, team2Color) {
     if (Elements.team1NameDisplay) Elements.team1NameDisplay.textContent = team1Name;
@@ -84,50 +73,71 @@ export function updateTeamDisplayNamesAndColors(team1Name, team2Name, team1Color
 }
 
 /**
- * Atualiza o texto do botão de navegação "Pontuação" para "Novo Jogo" se o jogo estiver em progresso.
- * @param {boolean} isGameInProgress - Indica se o jogo está em progresso.
+ * Atualiza o estado do botão de navegação para a página de pontuação
+ * e a visibilidade do timer.
+ * @param {boolean} isGameInProgress - Se o jogo está em andamento.
  */
 export function updateNavScoringButton(isGameInProgress) {
-    const isScoringPageActive = Elements.scoringPage.classList.contains('app-page--active');
-    if (isGameInProgress && isScoringPageActive) {
-        Elements.navScoringButton.innerHTML = '<span class="material-icons sidebar-nav-icon">add_circle</span> Novo Jogo';
+    if (Elements.navScoringButton) {
+        if (isGameInProgress) {
+            Elements.navScoringButton.classList.add('active-game'); // Adiciona uma classe para indicar jogo em andamento
+        } else {
+            Elements.navScoringButton.classList.remove('active-game');
+        }
+    }
+    // NOVO: Controla a visibilidade do wrapper do timer
+    updateTimerWrapperVisibility(isGameInProgress);
+}
+
+/**
+ * Controla a visibilidade do wrapper do timer.
+ * @param {boolean} isVisible - True para mostrar, false para esconder.
+ */
+function updateTimerWrapperVisibility(isVisible) {
+    console.log('DEBUG: updateTimerWrapperVisibility chamada com isVisible:', isVisible);
+    // Garante que o elemento seja selecionado novamente para ter a referência mais atualizada
+    const timerWrapper = document.querySelector('.timer-and-set-timer-wrapper');
+    if (timerWrapper) {
+        timerWrapper.style.display = isVisible ? 'flex' : 'none';
+        console.log('DEBUG: timerAndSetTimerWrapper display set to:', timerWrapper.style.display);
     } else {
-        Elements.navScoringButton.innerHTML = '<span class="material-icons sidebar-nav-icon">sports_volleyball</span> Pontuação';
+        console.log('DEBUG: Elements.timerAndSetTimerWrapper é nulo ou indefinido.');
     }
 }
 
 /**
- * Renderiza os times na grade de layout de times.
- * @param {Array<Array<string>>} teams - Array de arrays de nomes de jogadores, representando os times.
- * @param {HTMLElement} teamsGridLayout - O elemento DOM onde os times serão renderizados.
+ * Renderiza os times gerados na página de times.
+ * @param {Array<Object>} generatedTeams - Array de objetos de time.
  */
-export function renderTeams(teams, teamsGridLayout) {
-    if (!teamsGridLayout) return;
-    teamsGridLayout.innerHTML = '';
+export function renderTeams(generatedTeams) {
+    if (!Elements.teamsGridLayout) return;
 
-    const config = JSON.parse(localStorage.getItem('volleyballConfig')) || {};
+    Elements.teamsGridLayout.innerHTML = ''; // Limpa o layout existente
 
-    teams.forEach((team, index) => {
+    if (generatedTeams.length === 0) {
+        Elements.teamsGridLayout.innerHTML = '<p class="text-gray-400 text-center">Nenhum time gerado ainda. Selecione jogadores e clique em "Gerar Times".</p>';
+        return;
+    }
+
+    const config = loadConfig(); // Carrega a configuração para nomes e cores personalizados
+
+    generatedTeams.forEach((team, index) => {
         const teamCard = document.createElement('div');
         teamCard.className = 'team-card';
 
+        // Pega nomes e cores personalizados das configurações, ou usa padrões
         const teamNameKey = `customTeam${index + 1}Name`;
         const teamColorKey = `customTeam${index + 1}Color`;
         const defaultTeamName = `Time ${index + 1}`;
-        const defaultTeamColor = (index % 2 === 0) ? '#325fda' : '#f03737';
+        // Cores padrão para os primeiros times, se não configuradas
+        const defaultColors = ['#325fda', '#f03737', '#28a745', '#ffc107', '#6f42c1', '#17a2b8'];
+        const defaultTeamColor = defaultColors[index] || '#6c757d'; // Cor padrão genérica se exceder 6 times
 
         const teamDisplayName = config[teamNameKey] || defaultTeamName;
         const teamDisplayColor = config[teamColorKey] || defaultTeamColor;
 
-        if (index === 0) {
-            teamCard.classList.add('team-card--blue-border');
-        } else if (index === 1) {
-            teamCard.classList.add('team-card--red-border');
-        } else {
-            teamCard.style.borderLeft = `0.25rem solid ${teamDisplayColor}`;
-        }
-        teamCard.style.borderLeftColor = teamDisplayColor;
-
+        // Aplica a cor da borda esquerda do card
+        teamCard.style.borderLeft = `0.25rem solid ${teamDisplayColor}`;
 
         const teamTitle = document.createElement('h3');
         teamTitle.className = 'team-card-title';
@@ -136,13 +146,13 @@ export function renderTeams(teams, teamsGridLayout) {
 
         const teamList = document.createElement('ul');
         teamList.className = 'team-card-list';
-        team.forEach(player => {
-            const li = document.createElement('li');
-            li.textContent = player;
-            teamList.appendChild(li);
+        team.players.forEach(player => {
+            const playerItem = document.createElement('li');
+            playerItem.textContent = player;
+            teamList.appendChild(playerItem);
         });
         teamCard.appendChild(teamList);
 
-        teamsGridLayout.appendChild(teamCard);
+        Elements.teamsGridLayout.appendChild(teamCard);
     });
 }

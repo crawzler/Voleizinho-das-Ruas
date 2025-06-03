@@ -32,7 +32,7 @@
                 <span class="material-icons sidebar-nav-icon">groups</span> Times
             </button>
             <button id="nav-players" class="sidebar-nav-item">
-                <span class="material-icons sidebar-nav-icon">person_add</span> Jogadores
+                <span class="material-icons sidebar-nav-icon">person</span> Jogadores
             </button>
             <button id="nav-history" class="sidebar-nav-item">
                 <span class="material-icons sidebar-nav-icon">history</span> Histórico
@@ -41,7 +41,7 @@
                 <span class="material-icons sidebar-nav-icon">calendar_month</span> Agendamentos
             </button>
             <button id="nav-stats" class="sidebar-nav-item">
-                <span class="material-icons sidebar-nav-icon">bar_chart</span> Estatísticas
+                <span class="material-icons sidebar-nav-icon">insights</span> Estatísticas
             </button>
             <button id="nav-config" class="sidebar-nav-item">
                 <span class="material-icons sidebar-nav-icon">settings</span> Configurações
@@ -51,119 +51,117 @@
             </button>
         </nav>
         <div class="sidebar-footer">
-            <span id="app-version-display" class="app-version"></span>
-            <span id="user-id-display" class="user-id-display"></span>
+            <span id="user-id-display">ID: Carregando...</span>
+            <span id="app-version-display">Versão: Carregando...</span>
         </div>
     </div>
 
     <main class="app-main-content">
-        <section id="login-page" class="app-page login-page-layout">
+        <!-- Página de Login -->
+        <section id="login-page" class="app-page login-page-layout app-page--active">
             <div class="login-content">
-                <h2 class="login-title">Bem-vindo ao Vôleizinho das Ruas!</h2>
-                <p class="login-description">Gerencie seus jogos de vôlei com facilidade. Faça login para salvar seus jogadores e times.</p>
+                <h1 class="login-title">Vôlei Score App</h1>
+                <p class="login-description">Faça login para gerenciar seus times e pontuações de vôlei.</p>
                 <button id="google-login-button" class="google-login-button">
-                    <img src="https://img.icons8.com/color/48/000000/google-logo.png" alt="Google logo" class="google-logo">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo" class="google-logo">
                     Entrar com Google
                 </button>
+                <button id="anonymous-login-button" class="button button--secondary">Entrar como Anônimo</button>
             </div>
         </section>
 
-        <section id="start-page" class="start-page-layout app-page">
-            <button id="start-game-button" class="start-game-button">Iniciar Partida</button>
+        <!-- Página Inicial (Start Page) -->
+        <section id="start-page" class="app-page start-page-layout">
+            <h2 class="welcome-message">Bem-vindo ao Vôlei Score App!</h2>
+            <p class="instructions">Clique no botão abaixo para começar uma nova partida.</p>
+            <button id="start-game-button" class="start-game-button">Começar Jogo</button>
         </section>
 
+        <!-- Página de Pontuação -->
         <section id="scoring-page" class="app-page scoring-page-layout">
-            </div>
             <div class="score-display-container">
                 <div id="team1-panel" class="score-panel team1-panel">
-                    <h3 id="team1-name-display" class="team-name">Time 1</h3>
-                    <div id="team1-score-display" class="score-number">0</div>
+                    <h3 id="team1-name" class="team-name">Time 1</h3>
+                    <div id="team1-score" class="score-number">0</div>
                     <div id="team1-players-column" class="team-players-column"></div>
                 </div>
+                <button id="swap-teams-button" class="button">
+                    <span class="material-icons">swap_horiz</span>
+                </button>
                 <div id="team2-panel" class="score-panel team2-panel">
-                    <h3 id="team2-name-display" class="team-name">Time 2</h3>
-                    <div id="team2-score-display" class="score-number">0</div>
+                    <h3 id="team2-name" class="team-name">Time 2</h3>
+                    <div id="team2-score" class="score-number">0</div>
                     <div id="team2-players-column" class="team-players-column"></div>
                 </div>
             </div>
-            <button id="swap-teams-button" class="button button--secondary">
-                <span class="material-icons">swap_horiz</span>
-            </button>
-
             <div class="timer-and-set-timer-wrapper">
                 <div class="timer-wrapper">
+                    <span id="timer-text">00:00</span>
                     <span class="material-icons timer-toggle-button">play_arrow</span>
-                    <span class="timer-text">00:00</span>
                 </div>
-            <div class="set-timer-wrapper">
-                <span class="material-icons">timer</span>
-                <span id="set-timer-text" class="timer-text">00:00</span>
+                <div class="set-timer-wrapper">
+                    <span class="material-icons">timer</span>
+                    <span id="set-timer-text">00:00</span>
+                </div>
             </div>
         </section>
 
+        <!-- Página de Times -->
         <section id="teams-page" class="app-page teams-page-layout">
-            <h2 class="page-heading">Times</h2>
-            <div class="teams-actions">
-                <button id="generate-teams-button" class="button button--primary">Gerar Times</button>
-                <button id="select-team1-button" class="button button--secondary">Selecionar Time 1</button>
-                <button id="select-team2-button" class="button button--secondary">Selecionar Time 2</button>
-            </div>
-            <div id="teams-grid-layout" class="teams-grid">
+            <h2 class="page-heading">Gerenciar Times</h2>
+                <div class="teams-action ">
+                    <button id="generate-teams-button" class="button button--primary form-button--full-width generate-teams-button">Gerar Times Aleatórios</button>
                 </div>
+            <div class="teams-page-layout-sub">
+                <div id="teams-grid-layout" class="teams-grid">
+                    <!-- Times gerados serão renderizados aqui -->
+                </div>
+            </div>
         </section>
 
+        <!-- Página de Jogadores -->
         <section id="players-page" class="app-page players-page-layout">
-            <h2 class="page-heading">Jogadores</h2>
-            <div class=" players-page-layout-sub">
-                <div class="player-input-section">
-                    <span class="players-page-layout-add">
-                        <input type="text" id="new-player-name-input" placeholder="Nome do novo jogador" class="form-input">
-                        <button id="add-player-button" class="button button--primary">Adicionar</button>
-                    </span>
+            <h2 class="page-heading">Gerenciar Jogadores</h2>
+            <div class="players-page-layout-sub">
+                <div id="players-page-layout-add" class="players-page-layout-add">
+                    <input type="text" id="new-player-name-input" placeholder="Nome do Jogador" class="form-input">
+                    <button id="add-player-button" class="button button--primary">Adicionar</button>
                 </div>
                 <div class="player-list-controls">
+                    <span class="player-count-display">Jogadores: <span id="player-count">0/0</span></span>
                     <label class="switch">
-                        <input type="checkbox" id="select-all-players-toggle" checked>
+                        <input type="checkbox" id="select-all-players-toggle">
                         <span class="slider round"></span>
                     </label>
-                    <span class="player-count-display">Todos</span>
-                    <span class="player-count" id="player-count-span">0/0</span>
+                    <span>Selecionar Todos</span>
                 </div>
                 <div id="players-list-container" class="players-list-container">
+                    <!-- Jogadores serão renderizados aqui -->
                 </div>
             </div>
         </section>
 
+        <!-- Página de Configurações -->
         <section id="config-page" class="app-page config-page-layout">
             <h2 class="page-heading">Configurações</h2>
-
             <div class="accordion-item">
                 <div class="accordion-header">
-                    <h3>Configurações de Jogo</h3>
-                    <span class="material-icons accordion-icon">expand_more</span>
+                    <h3>Configurações Gerais</h3>
+                    <span class="material-icons">expand_more</span>
                 </div>
                 <div class="accordion-content">
                     <div class="form-group">
                         <label for="players-per-team" class="form-label">Jogadores por Time:</label>
-                        <input type="number" id="players-per-team" min="1" value="4" class="form-input">
+                        <input type="number" id="players-per-team" class="form-input" value="4" min="1" max="10">
                     </div>
                     <div class="form-group">
                         <label for="points-per-set" class="form-label">Pontos por Set:</label>
-                        <input type="number" id="points-per-set" min="1" value="15" class="form-input">
+                        <input type="number" id="points-per-set" class="form-input" value="15" min="5" max="30">
                     </div>
                     <div class="form-group">
                         <label for="number-of-sets" class="form-label">Número de Sets:</label>
-                        <input type="number" id="number-of-sets" min="1" value="1" class="form-input">
+                        <input type="number" id="number-of-sets" class="form-input" value="1" min="1" max="5">
                     </div>
-                </div>
-            </div>
-
-            <div class="accordion-item">
-                <div class="accordion-header">
-                    <h3>Configurações de Interface</h3>
-                    <span class="material-icons accordion-icon">expand_more</span>
-                </div>
-                <div class="accordion-content">
                     <div class="form-group form-group--toggle">
                         <label for="dark-mode-toggle" class="form-label">Modo Escuro:</label>
                         <label class="switch">
@@ -190,77 +188,61 @@
 
             <div class="accordion-item">
                 <div class="accordion-header">
-                    <h3>Nomes e Cores dos Times Personalizados</h3>
-                    <span class="material-icons accordion-icon">expand_more</span>
+                    <h3>Nomes Personalizados dos Times</h3>
+                    <span class="material-icons">expand_more</span>
                 </div>
                 <div class="accordion-content">
-                    <div class="custom-team-inputs-grid">
-                        <div class="form-group">
-                            <label for="custom-team-1-name" class="form-label">Nome Time 1:</label>
-                            <input type="text" id="custom-team-1-name" placeholder="Time 1" class="form-input">
-                        </div>
-                        <div class="form-group">
-                            <label for="custom-team-1-color" class="form-label">Cor Time 1:</label>
-                            <input type="color" id="custom-team-1-color" value="#325fda" class="form-input form-input--color">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="custom-team-2-name" class="form-label">Nome Time 2:</label>
-                            <input type="text" id="custom-team-2-name" placeholder="Time 2" class="form-input">
-                        </div>
-                        <div class="form-group">
-                            <label for="custom-team-2-color" class="form-label">Cor Time 2:</label>
-                            <input type="color" id="custom-team-2-color" value="#f03737" class="form-input form-input--color">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="custom-team-3-name" class="form-label">Nome Time 3:</label>
-                            <input type="text" id="custom-team-3-name" placeholder="Time 3" class="form-input">
-                        </div>
-                        <div class="form-group">
-                            <label for="custom-team-3-color" class="form-label">Cor Time 3:</label>
-                            <input type="color" id="custom-team-3-color" value="#28a745" class="form-input form-input--color">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="custom-team-4-name" class="form-label">Nome Time 4:</label>
-                            <input type="text" id="custom-team-4-name" placeholder="Time 4" class="form-input">
-                        </div>
-                        <div class="form-group">
-                            <label for="custom-team-4-color" class="form-label">Cor Time 4:</label>
-                            <input type="color" id="custom-team-4-color" value="#ffc107" class="form-input form-input--color">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="custom-team-5-name" class="form-label">Nome Time 5:</label>
-                            <input type="text" id="custom-team-5-name" placeholder="Time 5" class="form-input">
-                        </div>
-                        <div class="form-group">
-                            <label for="custom-team-5-color" class="form-label">Cor Time 5:</label>
-                            <input type="color" id="custom-team-5-5-color" value="#6f42c1" class="form-input form-input--color">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="custom-team-6-name" class="form-label">Nome Time 6:</label>
-                            <input type="text" id="custom-team-6-name" placeholder="Time 6" class="form-input">
-                        </div>
-                        <div class="form-group">
-                            <label for="custom-team-6-color" class="form-label">Cor Time 6:</label>
-                            <input type="color" id="custom-team-6-color" value="#17a2b8" class="form-input form-input--color">
-                        </div>
+                    <!-- Inputs para nomes e cores de times personalizados -->
+                    <div class="form-group">
+                        <label for="custom-team-1-name" class="form-label">Time 1 Nome:</label>
+                        <input type="text" id="custom-team-1-name" class="form-input" value="Time 1">
+                        <label for="custom-team-1-color" class="form-label">Cor:</label>
+                        <input type="color" id="custom-team-1-color" class="form-input-color" value="#325fda">
+                    </div>
+                    <div class="form-group">
+                        <label for="custom-team-2-name" class="form-label">Time 2 Nome:</label>
+                        <input type="text" id="custom-team-2-name" class="form-input" value="Time 2">
+                        <label for="custom-team-2-color" class="form-label">Cor:</label>
+                        <input type="color" id="custom-team-2-color" class="form-input-color" value="#f03737">
+                    </div>
+                    <div class="form-group">
+                        <label for="custom-team-3-name" class="form-label">Time 3 Nome:</label>
+                        <input type="text" id="custom-team-3-name" class="form-input" value="Time 3">
+                        <label for="custom-team-3-color" class="form-label">Cor:</label>
+                        <input type="color" id="custom-team-3-color" class="form-input-color" value="#28a745">
+                    </div>
+                    <div class="form-group">
+                        <label for="custom-team-4-name" class="form-label">Time 4 Nome:</label>
+                        <input type="text" id="custom-team-4-name" class="form-input" value="Time 4">
+                        <label for="custom-team-4-color" class="form-label">Cor:</label>
+                        <input type="color" id="custom-team-4-color" class="form-input-color" value="#ffc107">
+                    </div>
+                    <div class="form-group">
+                        <label for="custom-team-5-name" class="form-label">Time 5 Nome:</label>
+                        <input type="text" id="custom-team-5-name" class="form-input" value="Time 5">
+                        <label for="custom-team-5-color" class="form-label">Cor:</label>
+                        <input type="color" id="custom-team-5-color" class="form-input-color" value="#6f42c1">
+                    </div>
+                    <div class="form-group">
+                        <label for="custom-team-6-name" class="form-label">Time 6 Nome:</label>
+                        <input type="text" id="custom-team-6-name" class="form-input" value="Time 6">
+                        <label for="custom-team-6-color" class="form-label">Cor:</label>
+                        <input type="color" id="custom-team-6-color" class="form-input-color" value="#17a2b8">
                     </div>
                 </div>
             </div>
+            <button id="reset-config-button" class="button button--secondary form-button--full-width">Redefinir Configurações</button>
         </section>
 
+        <!-- Página de Histórico -->
         <section id="history-page" class="app-page history-page-layout">
             <h2 class="page-heading">Histórico de Jogos</h2>
             <h4>Em desenvolvimento...</h4>
-            <!--
+            <!-- Conteúdo do histórico, por exemplo:
             <div class="history-card">
                 <div class="history-card-header">
-                    <h3 class="history-card-title">Jogo 1 - 20/05/2024</h3>
-                    <span class="history-card-score">15 - 12</span>
+                    <span class="history-date">25/05/2024</span>
+                    <span class="history-score">Time A 21 x 18 Time B</span>
                 </div>
                 <div class="history-players-layout">
                     <div>
@@ -295,6 +277,7 @@
             -->
         </section>
 
+        <!-- Página de Agendamentos -->
         <section id="scheduling-page" class="app-page scheduling-page-layout">
             <h2 class="page-heading">Agendamentos de Jogos</h2>
             <h4>Em Desenvolvimento...</h4>
@@ -331,6 +314,9 @@
         </section>
     </main>
 
-    <script src="js/main.js" type="module"></script>
+    <!-- Container para mensagens de notificação -->
+    <div id="message-container" class="message-container"></div>
+
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>
