@@ -1,0 +1,55 @@
+// js/ui/players-ui.js
+// Lógica de interface para a lista de jogadores.
+
+import * as Elements from './elements.js';
+
+/**
+ * Renderiza a lista de jogadores na UI.
+ * @param {Array<Object>} players - A lista de jogadores a ser renderizada.
+ */
+export function renderPlayersList(players) {
+    if (!Elements.playersListContainer) return;
+
+    Elements.playersListContainer.innerHTML = '';
+
+    players.forEach((player) => {
+        const playerDiv = document.createElement('div');
+        playerDiv.className = 'player-list-item';
+        playerDiv.innerHTML = `
+            <div class="player-info">
+                <label class="switch">
+                    <input type="checkbox" checked="checked" class="player-checkbox" data-player-id="${player.id}">
+                    <span class="slider round"></span>
+                </label>
+                <span class="player-name-display">${player.name}</span>
+            </div>
+            <button class="remove-button" data-player-id="${player.id}">
+                <span class="material-icons">delete</span>
+            </button>
+        `;
+        Elements.playersListContainer.appendChild(playerDiv);
+    });
+    updatePlayerCount();
+    updateSelectAllToggle();
+    // A habilitação/desabilitação dos botões de remover é feita em ui/pages.js via updatePlayerModificationAbility
+}
+
+/**
+ * Atualiza a contagem de jogadores selecionados/total.
+ */
+export function updatePlayerCount() {
+    if (!Elements.playerCountSpan) return;
+    const checkboxes = document.querySelectorAll('#players-list-container .player-checkbox');
+    const selectedPlayers = Array.from(checkboxes).filter(checkbox => checkbox.checked).length;
+    Elements.playerCountSpan.textContent = `${selectedPlayers}/${checkboxes.length}`;
+}
+
+/**
+ * Atualiza o estado do toggle "Selecionar Todos".
+ */
+export function updateSelectAllToggle() {
+    if (!Elements.selectAllPlayersToggle) return;
+    const checkboxes = document.querySelectorAll('#players-list-container .player-checkbox');
+    const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+    Elements.selectAllPlayersToggle.checked = allChecked;
+}
