@@ -1,0 +1,115 @@
+{
+  "players": [
+    "Budal",
+    "Diego",
+    "ET",
+    "Everton",
+    "Guidão",
+    "Jessica",
+    "Jhonathan",
+    "Ju",
+    "Julia",
+    "Lucas",
+    "Matheus",
+    "Rafaella",
+    "Stefani"
+  ],
+  "checkedState": {
+    "Guidão": true,
+    "Lucas": true,
+    "Rafaella": true,
+    "Budal": true,
+    "Stefani": true,
+    "Jhonathan": true,
+    "Julia": true,
+    "Matheus": true,
+    "Ju": true,
+    "Diego": true,
+    "Jessica": true,
+    "ET": true,
+    "Everton": true
+  },
+  "generatedTeams": [
+    {
+      "name": "Cebrutius",
+      "players": [
+        "Everton",
+        "Matheus",
+        "Julia",
+        "ET"
+      ],
+      "color": "#007bff"
+    },
+    {
+      "name": "BengaBoys",
+      "players": [
+        "Ju",
+        "Jessica",
+        "Lucas",
+        "Guidão"
+      ],
+      "color": "#dc3545"
+    },
+    {
+      "name": "PipaPipa",
+      "players": [
+        "Jhonathan",
+        "Diego",
+        "Rafaella",
+        "Budal"
+      ],
+      "color": "#28a745"
+    },
+    {
+      "name": "Equipe Cão Preto",
+      "players": [
+        "Stefani"
+      ],
+      "color": "#ffc107"
+    }
+  ],
+  "currentPlayingTeamA": {
+    "name": "Time A",
+    "players": [],
+    "color": "#007bff"
+  },
+  "currentPlayingTeamB": {
+    "name": "Time B",
+    "players": [],
+    "color": "#dc3545"
+  },
+  "scoreA": 0,
+  "scoreB": 0,
+  "setsA": 0,
+  "setsB": 0,
+  "gameEnded": false,
+  "gameStarted": false,
+  "lastWinningTeam": null,
+  "winningScore": 15,
+  "setsToWin": 0,
+  "customTeamNames": [
+    {
+      "name": "Cebrutius",
+      "color": "#007bff"
+    },
+    {
+      "name": "BengaBoys",
+      "color": "#dc3545"
+    },
+    {
+      "name": "PipaPipa",
+      "color": "#28a745"
+    },
+    {
+      "name": "Equipe Cão Preto",
+      "color": "#ffc107"
+    },
+    {
+      "name": "Rasgabogas",
+      "color": "#6f42c1"
+    }
+  ],
+  "currentTheme": "dark",
+  "vibrationEnabled": true,
+  "showPlayersOnScoreboard": true
+}
