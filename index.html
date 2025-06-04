@@ -78,6 +78,17 @@
         <!-- Página de Pontuação -->
         <section id="scoring-page" class="app-page scoring-page-layout">
             <div class="score-display-container">
+
+                <!-- #524931  CHAT, AQUI ESSA SESSÃO É PARA UTILIZAR NA CRIAÇÃO DO MODAL PARA SELECIONAR OS TIMES-->
+                <div class="select-team-modal-container">
+                    <h4>Selecione um time:</h4>
+                    <div class="select-team-modal">
+                        <span class="custom-team-1-color select-team-color"></span>
+                        <span class="custom-team-1-name select-team-name">Time 1</span>
+                    </div>
+                </div>
+                <!-- #524932  CHAT, AQUI ESSA SESSÃO É PARA UTILIZAR NA CRIAÇÃO DO MODAL PARA SELECIONAR OS TIMES-->
+
                 <div id="team1-panel" class="score-panel team1-panel">
                     <h3 id="team1-name" class="team-name">Time 1</h3>
                     <div id="team1-score" class="score-number">0</div>
@@ -142,91 +153,103 @@
         <!-- Página de Configurações -->
         <section id="config-page" class="app-page config-page-layout">
             <h2 class="page-heading">Configurações</h2>
-            <div class="accordion-item">
-                <div class="accordion-header">
-                    <h3>Configurações Gerais</h3>
-                    <span class="material-icons">expand_more</span>
-                </div>
-                <div class="accordion-content">
-                    <div class="form-group">
-                        <label for="players-per-team" class="form-label">Jogadores por Time:</label>
-                        <input type="number" id="players-per-team" class="form-input" value="4" min="1" max="10">
-                    </div>
-                    <div class="form-group">
-                        <label for="points-per-set" class="form-label">Pontos por Set:</label>
-                        <input type="number" id="points-per-set" class="form-input" value="15" min="5" max="30">
-                    </div>
-                    <div class="form-group">
-                        <label for="number-of-sets" class="form-label">Número de Sets:</label>
-                        <input type="number" id="number-of-sets" class="form-input" value="1" min="1" max="5">
-                    </div>
-                    <div class="form-group form-group--toggle">
-                        <label for="dark-mode-toggle" class="form-label">Modo Escuro:</label>
-                        <label class="switch">
-                            <input type="checkbox" id="dark-mode-toggle" checked>
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-                    <div class="form-group form-group--toggle">
-                        <label for="vibration-toggle" class="form-label">Vibração ao Pontuar:</label>
-                        <label class="switch">
-                            <input type="checkbox" id="vibration-toggle" checked>
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-                    <div class="form-group form-group--toggle">
-                        <label for="display-players-toggle" class="form-label">Exibir Jogadores no Placar:</label>
-                        <label class="switch">
-                            <input type="checkbox" id="display-players-toggle" checked>
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-                </div>
-            </div>
+            <div class="accordion-container">
+                <div class="accordion-item">
+                    <button class="accordion-header">
+                        <h3>Geral</h3>
+                        <span class="material-icons">expand_more</span>
+                    </button>
+                    <div class="accordion-content">
 
-            <div class="accordion-item">
-                <div class="accordion-header">
-                    <h3>Nomes Personalizados dos Times</h3>
-                    <span class="material-icons">expand_more</span>
+                        <div class="accordion-content-sub">
+                            <div class="form-group">
+                                <label for="players-per-team" class="form-label">Jogadores por Time:</label>
+                                <input type="number" id="players-per-team" class="form-input" value="4" min="1" max="10">
+                            </div>
+                            <div class="form-group">
+                                <label for="points-per-set" class="form-label">Pontos por Set:</label>
+                                <input type="number" id="points-per-set" class="form-input" value="15" min="5" max="30">
+                            </div>
+                            <div class="form-group">
+                                <label for="number-of-sets" class="form-label">Número de Sets:</label>
+                                <input type="number" id="number-of-sets" class="form-input" value="1" min="1" max="5">
+                            </div>
+                            <div class="form-group form-group--toggle">
+                                <label for="dark-mode-toggle" class="form-label">Modo Escuro:</label>
+                                <label class="switch">
+                                    <input type="checkbox" id="dark-mode-toggle" checked>
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <div class="form-group form-group--toggle">
+                                <label for="vibration-toggle" class="form-label">Vibração:</label>
+                                <label class="switch">
+                                    <input type="checkbox" id="vibration-toggle" checked>
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <div class="form-group form-group--toggle">
+                                <label for="display-players-toggle" class="form-label">Exibir Jogadores:</label>
+                                <label class="switch">
+                                    <input type="checkbox" id="display-players-toggle" checked>
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
-                <div class="accordion-content">
-                    <!-- Inputs para nomes e cores de times personalizados -->
-                    <div class="form-group">
-                        <label for="custom-team-1-name" class="form-label">Time 1 Nome:</label>
-                        <input type="text" id="custom-team-1-name" class="form-input" value="Time 1">
-                        <label for="custom-team-1-color" class="form-label">Cor:</label>
-                        <input type="color" id="custom-team-1-color" class="form-input-color" value="#325fda">
+
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <h3>Times Personalizados</h3>
+                        <span class="material-icons">expand_more</span>
                     </div>
-                    <div class="form-group">
-                        <label for="custom-team-2-name" class="form-label">Time 2 Nome:</label>
-                        <input type="text" id="custom-team-2-name" class="form-input" value="Time 2">
-                        <label for="custom-team-2-color" class="form-label">Cor:</label>
-                        <input type="color" id="custom-team-2-color" class="form-input-color" value="#f03737">
-                    </div>
-                    <div class="form-group">
-                        <label for="custom-team-3-name" class="form-label">Time 3 Nome:</label>
-                        <input type="text" id="custom-team-3-name" class="form-input" value="Time 3">
-                        <label for="custom-team-3-color" class="form-label">Cor:</label>
-                        <input type="color" id="custom-team-3-color" class="form-input-color" value="#28a745">
-                    </div>
-                    <div class="form-group">
-                        <label for="custom-team-4-name" class="form-label">Time 4 Nome:</label>
-                        <input type="text" id="custom-team-4-name" class="form-input" value="Time 4">
-                        <label for="custom-team-4-color" class="form-label">Cor:</label>
-                        <input type="color" id="custom-team-4-color" class="form-input-color" value="#ffc107">
-                    </div>
-                    <div class="form-group">
-                        <label for="custom-team-5-name" class="form-label">Time 5 Nome:</label>
-                        <input type="text" id="custom-team-5-name" class="form-input" value="Time 5">
-                        <label for="custom-team-5-color" class="form-label">Cor:</label>
-                        <input type="color" id="custom-team-5-color" class="form-input-color" value="#6f42c1">
-                    </div>
-                    <div class="form-group">
-                        <label for="custom-team-6-name" class="form-label">Time 6 Nome:</label>
-                        <input type="text" id="custom-team-6-name" class="form-input" value="Time 6">
-                        <label for="custom-team-6-color" class="form-label">Cor:</label>
-                        <input type="color" id="custom-team-6-color" class="form-input-color" value="#17a2b8">
-                    </div>
+                    <div class="accordion-content">  
+                        <div class="accordion-content-sub-teams">
+                            <div>
+                                <label for="custom-team-1-name" class="form-label">Time 1:</label>
+                                <div class="config-group personalized-teams">
+                                    <input type="text" id="custom-team-1-name" class="form-input" value="Time Personalizado 1">
+                                    <input type="color" id="custom-team-1-color" class="form-input-color" value="#325fda">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="custom-team-2-name" class="form-label">Time 2:</label>                               
+                                <div class="config-group personalized-teams">
+                                    <input type="text" id="custom-team-2-name" class="form-input" value="Time Personalizado 2">
+                                    <input type="color" id="custom-team-2-color" class="form-input-color" value="#f03737">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="custom-team-3-name" class="form-label">Time 3:</label>
+                                <div class="config-group personalized-teams">
+                                    <input type="text" id="custom-team-3-name" class="form-input" value="Time Personalizado 3">
+                                    <input type="color" id="custom-team-3-color" class="form-input-color" value="#4CAF50">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="custom-team-4-name" class="form-label">Time 4:</label>
+                                <div class="config-group personalized-teams">
+                                    <input type="text" id="custom-team-4-name" class="form-input" value="Time Personalizado 4">
+                                    <input type="color" id="custom-team-4-color" class="form-input-color" value="#FFC107">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="custom-team-5-name" class="form-label">Time 5:</label>
+                                <div class="config-group personalized-teams">
+                                    <input type="text" id="custom-team-5-name" class="form-input" value="Time Personalizado 5">
+                                    <input type="color" id="custom-team-5-color" class="form-input-color" value="#9C27B0">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="custom-team-6-name" class="form-label">Time 6:</label>
+                                <div class="config-group personalized-teams">
+                                    <input type="text" id="custom-team-6-name" class="form-input" value="Time Personalizado 6">
+                                    <input type="color" id="custom-team-6-color" class="form-input-color" value="#00BCD4">
+                                </div>
+                            </div>
+                        </div>
                 </div>
             </div>
             <button id="reset-config-button" class="button button--secondary form-button--full-width">Redefinir Configurações</button>

@@ -35,9 +35,9 @@ export const team1Panel = document.getElementById('team1-panel');
 export const team2Panel = document.getElementById('team2-panel');
 export const timerText = document.getElementById('timer-text');
 export const setTimerText = document.getElementById('set-timer-text');
-export const team1NameDisplay = document.getElementById('team1-name');
-export const team2NameDisplay = document.getElementById('team2-name');
-export const timerAndSetTimerWrapper = document.querySelector('.timer-and-set-timer-wrapper'); // NOVO: Seleciona o wrapper do timer
+export const team1NameDisplay = document.getElementById('team1-name'); // Mantido o ID original
+export const team2NameDisplay = document.getElementById('team2-name'); // Mantido o ID original
+export const timerAndSetTimerWrapper = document.querySelector('.timer-and-set-timer-wrapper');
 
 // Tela de Jogadores
 export const newPlayerNameInput = document.getElementById('new-player-name-input');
@@ -49,11 +49,6 @@ export const selectAllPlayersToggle = document.getElementById('select-all-player
 // Tela de Times
 export const generateTeamsButton = document.getElementById('generate-teams-button');
 export const teamsGridLayout = document.getElementById('teams-grid-layout');
-
-// Modal de Seleção de Time (se ainda for usado em alguma lógica)
-export const teamSelectionModal = document.getElementById('team-selection-modal');
-export const modalTeamList = document.getElementById('modal-team-list');
-export const closeModalButton = document.getElementById('close-modal-button');
 
 // Tela de Configurações
 export const accordionHeaders = document.querySelectorAll('.accordion-header');

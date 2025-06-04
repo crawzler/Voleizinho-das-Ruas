@@ -8,9 +8,12 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase
 let app;
 let db;
 let auth;
-let appId;
+let appId; // Variável para armazenar o appId
 let firebaseConfig;
 
+/**
+ * Inicializa o Firebase App e define as instâncias de Auth e Firestore.
+ */
 export async function initFirebaseApp() {
     // Determine appId e firebaseConfig
     appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -44,13 +47,45 @@ export async function initFirebaseApp() {
         };
     }
 
-    if (!app) {
-        app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        auth = getAuth(app);
-    }
+    // Inicializa o Firebase App
+    app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    auth = getAuth(app);
 
-    return { app, db, auth, appId, firebaseConfig };
+    console.log("Firebase App inicializado.");
 }
 
-export { app, db, auth };
+/**
+ * Retorna a instância do Firebase App.
+ * @returns {object} A instância do Firebase App.
+ */
+export function getFirebaseApp() {
+    return app;
+}
+
+/**
+ * Retorna a instância do Firestore.
+ * @returns {object} A instância do Firestore.
+ */
+export function getFirestoreDb() {
+    return db;
+}
+
+/**
+ * Retorna a instância de autenticação do Firebase.
+ * @returns {object} A instância de autenticação.
+ */
+export function getAuthInstance() {
+    return auth;
+}
+
+/**
+ * Retorna o ID do aplicativo.
+ * @returns {string} O ID do aplicativo.
+ */
+export function getAppId() {
+    return appId;
+}
+
+// Exporta as instâncias diretamente para facilitar o uso em outros módulos
+export { db, auth };

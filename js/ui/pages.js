@@ -2,16 +2,14 @@
 // Gerencia a exibição de páginas e a navegação principal.
 
 import * as Elements from './elements.js';
-import { getIsGameInProgress, resetGameForNewMatch, getCurrentTeam1, getCurrentTeam2, getActiveTeam1Name, getActiveTeam2Name, getActiveTeam1Color, getActiveTeam2Color, incrementScore, decrementScore } from '../game/logic.js';
+import { getIsGameInProgress, resetGameForNewMatch, getCurrentTeam1, getCurrentTeam2, getActiveTeam1Name, getActiveTeam2Name, getActiveTeam1Color, getActiveTeam2Color, incrementScore, decrementScore, cycleTeam, getAllGeneratedTeams } from '../game/logic.js'; // Adicionado cycleTeam e getAllGeneratedTeams
 import { updateScoreDisplay, updateTimerDisplay, updateSetTimerDisplay, renderScoringPagePlayers, updateTeamDisplayNamesAndColors, updateNavScoringButton, renderTeams } from './game-ui.js';
 import { loadConfig, saveConfig } from './config-ui.js';
 import { renderPlayersList, updatePlayerCount, updateSelectAllToggle } from './players-ui.js';
 import { getCurrentUser } from '../firebase/auth.js';
-import { addPlayer, removePlayer } from '../data/players.js';
-import { openTeamSelectionModal, closeTeamSelectionModal, selectTeamForPanel } from '../game/teams.js';
-import { displayMessage } from './messages.js'; // Importa a função de exibição de mensagens
+import { addPlayer, removePlayer } from '../data/players.js'; // Importa addPlayer e removePlayer
+import { displayMessage } from './messages.js';
 
-let selectingTeamPanelId = null;
 let touchStartY = 0; // Declaração única da variável touchStartY
 const DRAG_THRESHOLD = 30; // Limite para diferenciar toque de deslize
 let hasGameBeenStartedExplicitly = false; // Controla se o jogo foi iniciado via botão "Começar Jogo"
@@ -71,13 +69,34 @@ export function showPage(pageIdToShow) {
     // A ordem de z-index no CSS garante a sobreposição correta.
     if (pageIdToShow === 'start-page') {
         Elements.scoringPage.classList.add('app-page--active');
-        // NOVO: Quando a start-page é exibida, garanta que os jogadores na scoring-page estejam ocultos.
+        // Quando a start-page é exibida, garanta que os jogadores na scoring-page estejam ocultos.
         renderScoringPagePlayers([], []);
     }
 
     closeSidebar(); // Fecha a sidebar ao navegar
     // Passa o estado atual do jogo E o ID da página atual para updateNavScoringButton
     updateNavScoringButton(getIsGameInProgress(), currentPageId);
+
+    // Lógica específica para cada página ao ser exibida
+    if (pageIdToShow === 'players-page') {
+        const currentUser = getCurrentUser();
+        // Passa true se houver um usuário logado (anônimo ou Google)
+        updatePlayerModificationAbility(!!currentUser);
+        updatePlayerCount();
+        updateSelectAllToggle();
+    } else if (pageIdToShow === 'teams-page') {
+        renderTeams(getAllGeneratedTeams()); // Renderiza os times gerados
+    } else if (pageIdToShow === 'config-page') {
+        loadConfig(); // Carrega as configurações ao exibir a página
+    } else if (pageIdToShow === 'scoring-page') {
+        // Garante que o placar e os nomes dos times estejam atualizados
+        updateScoreDisplay(0, 0); // Resetar placar ao entrar na página de pontuação
+        updateTeamDisplayNamesAndColors(getActiveTeam1Name(), getActiveTeam2Name(), getActiveTeam1Color(), getActiveTeam2Color());
+        renderScoringPagePlayers(getCurrentTeam1(), getCurrentTeam2());
+    } else if (pageIdToShow === 'start-page') {
+        resetGameForNewMatch(); // Reseta o estado do jogo ao voltar para a página inicial
+        setGameStartedExplicitly(false); // Garante que o estado de jogo iniciado seja falso
+    }
 }
 
 
@@ -88,36 +107,44 @@ export function showPage(pageIdToShow) {
 export function updatePlayerModificationAbility(canModify) {
     console.log(`[updatePlayerModificationAbility] canModify: ${canModify}`);
 
-    const addPlayerSection = document.getElementById('players-page-layout-add');
+    const newPlayerNameInput = Elements.newPlayerNameInput;
+    const addPlayerButton = Elements.addPlayerButton;
     const removeButtons = document.querySelectorAll('#players-list-container .remove-button'); // Seleciona apenas botões dentro do container
-    const selectAllToggle = document.getElementById('select-all-players-toggle');
+    const selectAllToggle = Elements.selectAllPlayersToggle;
 
-    if (addPlayerSection) {
-        addPlayerSection.style.display = canModify ? 'flex' : 'none';
-        console.log(`[updatePlayerModificationAbility] addPlayerSection display: ${addPlayerSection.style.display}`);
-    } else {
-        console.warn('[updatePlayerModificationAbility] addPlayerSection não encontrado.');
-    }
+    // Controla o estado disabled do input e do botão diretamente
+    if (newPlayerNameInput) newPlayerNameInput.disabled = !canModify;
+    if (addPlayerButton) addPlayerButton.disabled = !canModify;
+    if (selectAllToggle) selectAllToggle.disabled = !canModify;
 
+    // Para os botões de remover, controla o estado disabled e a aparência visual
     removeButtons.forEach(button => {
-        button.style.display = canModify ? 'block' : 'none';
-        console.log(`[updatePlayerModificationAbility] removeButton (${button.dataset.playerId}) display: ${button.style.display}`);
+        button.disabled = !canModify;
+        button.style.pointerEvents = canModify ? 'auto' : 'none'; // Desabilita clique visualmente
+        button.style.opacity = canModify ? '1' : '0.5'; // Reduz opacidade
     });
-    if (removeButtons.length === 0) {
-        console.log('[updatePlayerModificationAbility] Nenhum botão de remover encontrado no DOM.');
+
+    // Se o usuário não pode modificar, desmarca o "Selecionar Todos" para evitar confusão
+    if (!canModify && selectAllToggle) {
+        selectAllToggle.checked = false;
+        const checkboxes = document.querySelectorAll('#players-list-container .player-checkbox');
+        checkboxes.forEach(cb => cb.checked = false);
+        updatePlayerCount(); // Atualiza a contagem para 0/total
     }
 
+    // Garante que as seções de adicionar jogador e controles de seleção sempre estejam visíveis
+    // A visibilidade é controlada pelo CSS padrão, não por JS aqui.
+    // Apenas a interatividade é controlada.
+    const addPlayerSection = document.getElementById('players-page-layout-add');
+    if (addPlayerSection) {
+        // Não altera o display, apenas garante que ele não está escondido por uma regra anterior
+        addPlayerSection.style.display = 'flex'; // Garante que a seção de adicionar jogador seja flex
+    }
 
-    if (selectAllToggle) {
-        const parentControls = selectAllToggle.closest('.player-list-controls');
-        if (parentControls) {
-            parentControls.style.display = canModify ? 'flex' : 'none';
-            console.log(`[updatePlayerModificationAbility] selectAllToggle parentControls display: ${parentControls.style.display}`);
-        } else {
-            console.warn('[updatePlayerModificationAbility] Parent controls para selectAllToggle não encontrados.');
-        }
-    } else {
-        console.warn('[updatePlayerModificationAbility] selectAllToggle não encontrado.');
+    const playerListControls = document.querySelector('.player-list-controls');
+    if (playerListControls) {
+        // Não altera o display, apenas garante que ele não está escondido por uma regra anterior
+        playerListControls.style.display = 'flex'; // Garante que a seção de controles de lista seja flex
     }
 }
 
@@ -152,7 +179,7 @@ export function setupSidebar(startGameHandler, getPlayersHandler, logoutHandler)
                 } else {
                     // Cenário: Jogo NÃO está em andamento, OU jogo ESTÁ em andamento mas o usuário está em outra página.
                     // Em ambos os casos, simplesmente navega para a página de pontuação.
-                    // A função showPage já lida com o redirecionamento para a start-page se !hasGameBeenStartedExplicitly.
+                    // A função showPage já lidará com o redirecionamento para a start-page se !hasGameBeenStartedExplicitly.
                     showPage(targetPageId);
                 }
             } else {
@@ -171,11 +198,12 @@ export function setupSidebar(startGameHandler, getPlayersHandler, logoutHandler)
 
 
 /**
- * Configura a navegação entre as páginas.
+ * Configura a navegação entre as páginas e os listeners relacionados à gestão de jogadores.
  * @param {Function} startGameHandler - Função para iniciar o jogo.
  * @param {Function} getPlayersHandler - Função para obter os jogadores.
+ * @param {string} appId - O ID do aplicativo, necessário para addPlayer/removePlayer.
  */
-export function setupPageNavigation(startGameHandler, getPlayersHandler) {
+export function setupPageNavigation(startGameHandler, getPlayersHandler, appId) { // Adicionado appId como parâmetro
     // Listener para o botão "Começar Jogo" na tela inicial
     const startGameButton = document.getElementById('start-game-button');
     if (startGameButton) {
@@ -195,15 +223,15 @@ export function setupPageNavigation(startGameHandler, getPlayersHandler) {
     const addPlayerButton = document.getElementById('add-player-button');
     if (addPlayerButton) {
         addPlayerButton.addEventListener('click', async () => {
-            // Usa Elements.newPlayerNameInput que é importado de elements.js
             const playerNameInput = Elements.newPlayerNameInput;
-            const playerName = playerNameInput ? playerNameInput.value.trim() : ''; // Acesso seguro
+            const playerName = playerNameInput ? playerNameInput.value.trim() : '';
             
             if (playerName) {
                 const currentUser = getCurrentUser();
-                await addPlayer(playerName, currentUser ? currentUser.uid : null); // O userId é usado internamente em players.js para decidir se salva no Firestore
+                // Passa o appId para addPlayer
+                await addPlayer(playerName, currentUser ? currentUser.uid : null, appId); 
                 if (playerNameInput) {
-                    playerNameInput.value = ''; // Limpa o input se ele existe
+                    playerNameInput.value = '';
                 }
             } else {
                 console.warn("O nome do jogador não pode estar vazio.");
@@ -220,6 +248,7 @@ export function setupPageNavigation(startGameHandler, getPlayersHandler) {
                 checkbox.checked = isChecked;
             });
             updatePlayerCount();
+            updateSelectAllToggle(); // Garante que o toggle "Selecionar Todos" seja atualizado
         });
     }
 
@@ -231,8 +260,17 @@ export function setupPageNavigation(startGameHandler, getPlayersHandler) {
                 const playerIdToRemove = button.dataset.playerId;
                 if (playerIdToRemove) {
                     const currentUser = getCurrentUser();
-                    await removePlayer(playerIdToRemove, currentUser ? currentUser.uid : null); // O userId é usado internamente em players.js para decidir se remove do Firestore
+                    // Passa o appId para removePlayer
+                    await removePlayer(playerIdToRemove, currentUser ? currentUser.uid : null, appId); 
                 }
+            }
+        });
+
+        // Adiciona listener para o checkbox do jogador (delegação de eventos)
+        Elements.playersListContainer.addEventListener('change', (event) => {
+            if (event.target.classList.contains('player-checkbox')) {
+                updatePlayerCount();
+                updateSelectAllToggle();
             }
         });
     }
@@ -262,28 +300,6 @@ export function setupAccordion() {
 
 
 /**
- * Configura o modal de seleção de time.
- */
-export function setupTeamSelectionModal() {
-    // Fechar modal
-    if (Elements.closeModalButton) {
-        Elements.closeModalButton.addEventListener('click', closeTeamSelectionModal);
-    }
-    // Seleção de time no modal (listener delegado para a lista)
-    if (Elements.modalTeamList) {
-        Elements.modalTeamList.addEventListener('click', (event) => {
-            const teamItem = event.target.closest('.team-list-item');
-            if (teamItem) {
-                const teamIndex = parseInt(teamItem.dataset.teamIndex);
-                if (!isNaN(teamIndex)) {
-                    selectTeamForPanel(selectingTeamPanelId, teamIndex);
-                }
-            }
-        });
-    }
-}
-
-/**
  * Função para configurar as interações de clique e arrastar na página de pontuação.
  */
 export function setupScoreInteractions() {
@@ -297,6 +313,39 @@ export function setupScoreInteractions() {
         Elements.team2Panel.addEventListener('touchstart', (event) => handleScoreTouch(event, 'team2'));
         Elements.team2Panel.addEventListener('touchend', (event) => handleScoreTouch(event, 'team2'));
         Elements.team2Panel.addEventListener('click', (event) => handleScoreClick(event, 'team2'));
+    }
+
+    // Adiciona listeners para os nomes dos times para ciclar entre os times gerados
+    if (Elements.team1NameDisplay) {
+        // Adiciona listeners de toque para mobile
+        Elements.team1NameDisplay.addEventListener('touchstart', (event) => {
+            event.stopPropagation(); // Impede que o evento de toque se propague para o painel pai
+            // Pode adicionar lógica para detectar arrastar vs. toque simples se necessário
+        });
+        Elements.team1NameDisplay.addEventListener('touchend', (event) => {
+            event.stopPropagation(); // Impede que o evento de toque se propague para o painel pai
+            cycleTeam('team1');
+        });
+        // Mantém o listener de clique para desktop e como fallback
+        Elements.team1NameDisplay.addEventListener('click', (event) => {
+            event.stopPropagation(); // Impede que o evento de clique se propague para o painel pai
+            cycleTeam('team1');
+        });
+    }
+    if (Elements.team2NameDisplay) {
+        // Adiciona listeners de toque para mobile
+        Elements.team2NameDisplay.addEventListener('touchstart', (event) => {
+            event.stopPropagation(); // Impede que o evento de toque se propague para o painel pai
+        });
+        Elements.team2NameDisplay.addEventListener('touchend', (event) => {
+            event.stopPropagation(); // Impede que o evento de toque se propague para o painel pai
+            cycleTeam('team2');
+        });
+        // Mantém o listener de clique para desktop e como fallback
+        Elements.team2NameDisplay.addEventListener('click', (event) => {
+            event.stopPropagation(); // Impede que o evento de clique se propague para o painel pai
+            cycleTeam('team2');
+        });
     }
 }
 

@@ -6,6 +6,12 @@ html {
   box-sizing: inherit;
 }
 
+* {
+    box-sizing: inherit;
+    padding: 0px;
+    margin: 0px;
+}
+
 body {
     font-family: 'Inter', sans-serif;
     background-color: #1a1a1a;
@@ -20,6 +26,7 @@ body {
 }
 
 input {
+    width: 100%;
     flex-grow: 1;
     padding: 0.75rem;
     border-radius: 8px;
@@ -45,7 +52,7 @@ button {
     display: inline-block;
     width: 40px;
     height: 20px;
-    margin-right: 0.5rem;
+    margin: 0rem 0.5rem 0rem 0.5rem;
 }
 
 .switch input {
@@ -53,6 +60,8 @@ button {
     width: 0;
     height: 0;
 }
+
+
 
 .slider {
     position: absolute;
@@ -315,6 +324,18 @@ input:checked + .slider:before {
     z-index: 200; /* Acima da página de pontuação (z-index: 100), mas abaixo do sidebar (900) */
 }
 
+.welcome-message {
+    font-size: 1.5rem;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.instructions {
+    font-size: 1rem;
+    color: #D1D5DB;
+    margin-bottom: 1rem;
+}
+
 .start-game-button {
     background-color: #2563EB;
     color: white;
@@ -328,18 +349,6 @@ input:checked + .slider:before {
     cursor: pointer;
     transition: background-color 0.3s ease;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-.welcome-message {
-    font-size: 1.5rem;
-    color: white;
-    margin-bottom: 0.5rem;
-}
-
-.instructions {
-    font-size: 1rem;
-    color: #D1D5DB;
-    margin-bottom: 1rem;
 }
 
 /* Scoring Page */
@@ -360,9 +369,9 @@ input:checked + .slider:before {
     left: 0;
     z-index: 100; /* Garante que esteja acima de outras páginas inativas, mas abaixo do sidebar/start-page */
     display: flex;
-    flex-direction: row;
-    align-items: stretch;
-    justify-content: stretch;
+    flex-direction: row; /* Times lado a lado */
+    align-items: stretch; /* Estica os painéis para preencher a altura */
+    justify-content: stretch; /* Estica os painéis para preencher a largura */
 }
 
 
@@ -375,17 +384,55 @@ input:checked + .slider:before {
     width: 100%;
     left: 0px;
     top: 0px;
-    margin: 0px;
+    margin: 0px 20px 20px 20px;
     left: 0px;
     top: 0px;
 }
 
+/* #524931  CHAT, AQUI ESSA SESSÃO É PARA UTILIZAR NA CRIAÇÃO DO MODAL PARA SELECIONAR OS TIMES */
+.select-team-modal-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: absolute;
+    background-color: #222;
+    border-radius: 8px;    
+    transform: translate(-50%, -50%);
+    left: 50%;
+    top: 50%;
+    padding: 20px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.select-team-modal {
+    display: flex;    
+    align-items: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
+    margin: 20px;
+    padding: 10px;
+    background-color: #333;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.select-team-color {
+    display: block;
+    background-color: rgb(50, 95, 218);
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    margin-right: 20px;
+}
+/* #524932  CHAT, AQUI ESSA SESSÃO É PARA UTILIZAR NA CRIAÇÃO DO MODAL PARA SELECIONAR OS TIMES */
+
 .score-display-container {
     display: flex;
-    flex-direction: column; /* Organiza os painéis horizontalmente */
+    flex-direction: column; /* Painéis de pontuação em coluna no modo retrato */
     width: 100%;
-    height: 100%; /* Preenche o pai (scoring-page-layout) */
-    position: relative; /* Para posicionamento absoluto dos controles */
+    height: 100%;
+    position: relative;
 }
 
 .score-panel {
@@ -393,7 +440,7 @@ input:checked + .slider:before {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center; /* Centraliza o conteúdo verticalmente */
+    justify-content: center; /* Distribui o espaço entre nome, jogadores e placar */
     padding: 1rem;
     color: white;
     box-shadow: none;
@@ -401,8 +448,6 @@ input:checked + .slider:before {
     cursor: pointer;
     transition: background-color 0.3s ease; /* Removido transform para evitar animação */
 }
-
-/* Removido: .score-panel:active { transform: scale(0.98); } */
 
 .team1-panel {
     background-color: #325fda; /* Azul */
@@ -416,39 +461,7 @@ input:checked + .slider:before {
 
 .team-name {
     font-size: 2.5rem;
-    margin-bottom: 1rem;
-}
-
-.team-players-column {
-    position: absolute;
-    display: block;
-    background-color: #2229;
-    border-radius: 8px;
-    padding: 10px;
-    margin: 5px;
-    min-width: 80px;
-    max-width: 110px;
-}
-
-.team-players-column ul {
-    margin: 0px;
-    padding: 0px;
-}
-
-.team-players-column ul li {
-    list-style: none;
-}
-
-@media (orientation: portrait) { 
-    #team2-players-column {    
-        top: 50%;
-        left: 0px;
-    }
-
-    #team1-players-column {    
-        bottom: 50%;
-        left: 0px;
-    }
+    margin-bottom: 0.5rem; /* Espaço abaixo do nome do time */
 }
 
 .score-number {
@@ -471,12 +484,6 @@ input:checked + .slider:before {
     height: 100%;
     gap: 1rem;
     padding: 0px;
-}
-
-.players-page-layout {
-    display: flex;
-    flex-direction: column;
-    z-index: 30; /* Z-index para a página de jogadores, abaixo do sidebar */
 }
 
 .teams-action {
@@ -542,14 +549,15 @@ input:checked + .slider:before {
 }
 
 .player-list-controls {
-    padding-left: 10px;
     display: flex;
     justify-content: space-between;
-    align-items:center;
+    align-items:center;    
+    flex-direction: row-reverse;
+    padding: 0px 10px;
 }
 
 .player-count-display {
-    margin-right: auto;
+    margin-left: auto;
 }
 
 .players-list-container {
@@ -565,7 +573,16 @@ input:checked + .slider:before {
     border-radius: 8px;
     display: flex;
     align-items: center;
+    justify-content: space-between;    
+    flex-direction: row-reverse;
+}
+
+.player-info {
+    width: 100%;
+    display: flex;
+    flex-direction: row-reverse;    
     justify-content: space-between;
+    margin-left: 20px;
 }
 
 .remove-button {
@@ -573,6 +590,38 @@ input:checked + .slider:before {
     box-shadow: none;
     color: #DC2626;
     padding: 0.25rem;
+}
+
+.team-players-column {
+    position: absolute;
+    display: block;
+    background-color: #2229;
+    border-radius: 8px;
+    padding: 10px;
+    margin: 5px;
+    min-width: 80px;
+    max-width: 110px;
+}
+
+.team-players-column ul {
+    margin: 0px;
+    padding: 0px;
+}
+
+.team-players-column ul li {
+    list-style: none;
+}
+
+@media (orientation: portrait) { 
+    #team2-players-column {    
+        top: 50%;
+        left: 0px;
+    }
+
+    #team1-players-column {    
+        bottom: 50%;
+        left: 0px;
+    }
 }
 
 /* Botão de Trocar Times */
@@ -590,7 +639,8 @@ input:checked + .slider:before {
     align-items: center;
     justify-content: center;
     border: none;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); /* Adiciona sombra para profundidade */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    z-index: 10;
 }
 
 #swap-teams-button .material-icons {
@@ -601,32 +651,33 @@ input:checked + .slider:before {
     position: absolute;
     bottom: 0px;
     left: 50%;
-    transform: translate(-50%, -0%);
+    transform: translateX(-50%); /* Apenas translateX para manter na parte inferior */
     display: none; /* Alterado para 'none' para que fique oculto por padrão */
-    background-color: #2229; /* Fundo mais escuro para legibilidade */
+    background-color: #2229;
     padding: 0.75rem 1.5rem;
     border-radius: 8px 8px 0px 0px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); /* Adiciona sombra para profundidade */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    z-index: 10;
 }
 
 .timer-wrapper {
     color: white;
-    font-size: 2rem; /* Texto do timer maior */
+    font-size: 2rem;
     font-weight: bold;
     cursor: pointer;
     transition: background-color 0.2s ease;
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0; /* Remove preenchimento */
+    padding: 0;
 }
 
 .timer-wrapper:hover {
-    background-color: transparent; /* Sem efeito hover no texto do timer em si */
+    background-color: transparent;
 }
 
 .timer-toggle-button {
-    font-size: 2.5rem; /* Ícone maior */
+    font-size: 2.5rem;
 }
 
 .set-timer-wrapper {
@@ -638,13 +689,126 @@ input:checked + .slider:before {
     gap: 0.5rem;
 }
 
+.config-page-layout {
+    width: 100%;
+}
+
+.accordion-item {
+    width: 100%;
+}
+
+.accordion-container {
+    width: 100%;
+}
+
+.accordion-item {
+    background-color: #222;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.accordion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 1rem;
+    background-color: #222; /* Cor de fundo padrão para o header */
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 1.125rem;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+}
+
+/* NOVO: Estilo para o cabeçalho QUANDO ELE PRÓPRIO TEM A CLASSE active */
+.accordion-header.active {
+    background-color: #333; /* Uma cor ligeiramente diferente para indicar que está ativo */
+    border-bottom: 1px solid #666; /* Adiciona uma borda para separação visual */
+}
+
+.accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    color: #D1D5DB;
+}
+
+.accordion-content-sub {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
+    gap: 20px;
+    padding: 20px;
+    border-top: 1px solid #666;
+}
+
+.accordion-content-sub-teams {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: end;
+    gap: 20px;
+    padding: 20px;
+    border-top: 1px solid #666;
+}
+
+.personalized-teams {
+    display: flex;
+}
+
+.form-input-color {
+    margin-left: 10px;
+    padding: 0px;
+    height: 40px;
+    max-width: 40px;
+    background: transparent; /* Torna o input transparente para que o background do wrapper apareça */
+}
+
+/* Estilos específicos para o seletor de cor interno (para navegadores WebKit) */
+.form-input-color::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.form-input-color::-webkit-color-swatch {
+    border: none;
+    border-radius: 0.375rem;
+}
+
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.form-group--toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: nowrap;
+    flex-direction: row;
+}
+
+.form-label {
+    display: block;
+    color: #D1D5DB;
+    font-size: 0.875rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
 /* Container para mensagens de notificação */
 .message-container {
     position: fixed;
     top: 10px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 1000; /* Acima de tudo */
+    z-index: 1000;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -658,22 +822,22 @@ input:checked + .slider:before {
     color: white;
     font-weight: bold;
     text-align: center;
-    opacity: 0; /* Começa invisível */
-    transform: translateY(-20px); /* Começa um pouco acima */
-    animation: fadeInOut 4s forwards; /* Animação de fade in e fade out */
+    opacity: 0;
+    transform: translateY(-20px);
+    animation: fadeInOut 4s forwards;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .message-box.error {
-    background-color: #DC2626; /* Vermelho */
+    background-color: #DC2626;
 }
 
 .message-box.success {
-    background-color: #10B981; /* Verde */
+    background-color: #10B981;
 }
 
 .message-box.info {
-    background-color: #2563EB; /* Azul */
+    background-color: #2563EB;
 }
 
 @keyframes fadeInOut {
@@ -690,19 +854,19 @@ input:checked + .slider:before {
         max-width: 14rem;
     }
     
+    .score-display-container {
+        flex-direction: row; /* Lado a lado em telas maiores */
+        justify-content: space-between;
+    }
+
     #team2-players-column {    
-        top: 0px;
-        left: 50%;
+    top: 0px;
+    left: 50%;
     }
 
     #team1-players-column {    
         top: 0px;
         right: 50%;
-    }
-
-    .score-display-container {
-        flex-direction: row; /* Lado a lado em telas maiores */
-        justify-content: space-between;
     }
 
     .score-panel {
@@ -720,5 +884,14 @@ input:checked + .slider:before {
     .player-input-section .form-input {
         min-width: 250px; /* Aumenta o tamanho mínimo do input */
     }
+
+    .accordion-content-sub {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .accordion-content-sub-teams {
+        grid-template-columns: 1fr 1fr 1fr;
+
+}
 
 }
