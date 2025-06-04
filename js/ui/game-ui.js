@@ -42,18 +42,35 @@ export function renderScoringPagePlayers(team1Players, team2Players) {
     const team2Column = document.getElementById('team2-players-column');
     const config = loadConfig(); // Carrega a configuração para verificar displayPlayers
 
-    if (!team1Column || !team2Column) return;
+    if (!team1Column || !team2Column) {
+        console.warn('[renderScoringPagePlayers] Elementos de coluna de jogadores não encontrados.');
+        return;
+    }
 
-    if (config.displayPlayers) {
-        team1Column.innerHTML = team1Players.length > 0 ? `<ul>${team1Players.map(p => `<li>${p}</li>`).join('')}</ul>` : '<p>Nenhum jogador</p>';
-        team2Column.innerHTML = team2Players.length > 0 ? `<ul>${team2Players.map(p => `<li>${p}</li>`).join('')}</ul>` : '<p>Nenhum jogador</p>';
-        team1Column.style.display = 'block'; // Mostra a coluna
-        team2Column.style.display = 'block'; // Mostra a coluna
-    } else {
+    // Se ambas as listas de jogadores estiverem vazias, oculta as colunas completamente.
+    if (team1Players.length === 0 && team2Players.length === 0) {
         team1Column.innerHTML = '';
         team2Column.innerHTML = '';
-        team1Column.style.display = 'none'; // Esconde a coluna
-        team2Column.style.display = 'none'; // Esconde a coluna
+        team1Column.style.display = 'none';
+        team2Column.style.display = 'none';
+        console.log('[renderScoringPagePlayers] Times vazios, colunas de jogadores ocultas.');
+        return; // Sai da função, pois não há jogadores para renderizar
+    }
+
+    // Caso contrário, renderiza os jogadores com base na configuração 'displayPlayers'
+    if (config.displayPlayers) {
+        team1Column.innerHTML = `<ul>${team1Players.map(p => `<li>${p}</li>`).join('')}</ul>`;
+        team2Column.innerHTML = `<ul>${team2Players.map(p => `<li>${p}</li>`).join('')}</ul>`;
+        team1Column.style.display = 'block'; // Mostra a coluna
+        team2Column.style.display = 'block'; // Mostra a coluna
+        console.log('[renderScoringPagePlayers] Colunas de jogadores definidas como "block".');
+    } else {
+        // Se a configuração displayPlayers estiver desativada, esconde as colunas
+        team1Column.innerHTML = '';
+        team2Column.innerHTML = '';
+        team1Column.style.display = 'none';
+        team2Column.style.display = 'none';
+        console.log('[renderScoringPagePlayers] Colunas de jogadores definidas como "none" (configuração desativada).');
     }
 }
 
@@ -76,16 +93,21 @@ export function updateTeamDisplayNamesAndColors(team1Name, team2Name, team1Color
  * Atualiza o estado do botão de navegação para a página de pontuação
  * e a visibilidade do timer.
  * @param {boolean} isGameInProgress - Se o jogo está em andamento.
+ * @param {string} currentPageId - O ID da página atualmente ativa.
  */
-export function updateNavScoringButton(isGameInProgress) {
+export function updateNavScoringButton(isGameInProgress, currentPageId) {
     if (Elements.navScoringButton) {
-        if (isGameInProgress) {
+        if (isGameInProgress && currentPageId === 'scoring-page') {
             Elements.navScoringButton.classList.add('active-game'); // Adiciona uma classe para indicar jogo em andamento
+            // Atualiza o texto e o ícone do botão para "Novo Jogo"
+            Elements.navScoringButton.innerHTML = '<span class="material-icons sidebar-nav-icon">refresh</span> Novo Jogo';
         } else {
             Elements.navScoringButton.classList.remove('active-game');
+            // Reverte o texto e o ícone do botão para "Pontuação"
+            Elements.navScoringButton.innerHTML = '<span class="material-icons sidebar-nav-icon">sports_volleyball</span> Pontuação';
         }
     }
-    // NOVO: Controla a visibilidade do wrapper do timer
+    // Controla a visibilidade do wrapper do timer
     updateTimerWrapperVisibility(isGameInProgress);
 }
 

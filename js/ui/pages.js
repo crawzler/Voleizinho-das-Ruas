@@ -9,10 +9,30 @@ import { renderPlayersList, updatePlayerCount, updateSelectAllToggle } from './p
 import { getCurrentUser } from '../firebase/auth.js';
 import { addPlayer, removePlayer } from '../data/players.js';
 import { openTeamSelectionModal, closeTeamSelectionModal, selectTeamForPanel } from '../game/teams.js';
+import { displayMessage } from './messages.js'; // Importa a função de exibição de mensagens
 
 let selectingTeamPanelId = null;
 let touchStartY = 0; // Declaração única da variável touchStartY
 const DRAG_THRESHOLD = 30; // Limite para diferenciar toque de deslize
+let hasGameBeenStartedExplicitly = false; // Controla se o jogo foi iniciado via botão "Começar Jogo"
+let currentPageId = 'login-page'; // Variável para rastrear a página atualmente ativa
+
+/**
+ * Define o estado se o jogo foi iniciado explicitamente.
+ * @param {boolean} status - True se o jogo foi iniciado explicitamente, false caso contrário.
+ */
+export function setGameStartedExplicitly(status) {
+    hasGameBeenStartedExplicitly = status;
+    console.log(`[setGameStartedExplicitly] hasGameBeenStartedExplicitly set to: ${hasGameBeenStartedExplicitly}`);
+}
+
+/**
+ * Retorna o ID da página atualmente ativa.
+ * @returns {string} O ID da página ativa.
+ */
+export function getCurrentPageId() {
+    return currentPageId;
+}
 
 /**
  * Fecha o sidebar.
@@ -28,6 +48,12 @@ function closeSidebar() {
 export function showPage(pageIdToShow) {
     console.log(`[showPage] Tentando exibir a página: ${pageIdToShow}`);
 
+    // Lógica de redirecionamento para a página inicial se tentar ir para o placar sem iniciar o jogo
+    if (pageIdToShow === 'scoring-page' && !hasGameBeenStartedExplicitly) {
+        console.warn('[showPage] Tentativa de acessar a página de pontuação sem iniciar o jogo. Redirecionando para a página inicial.');
+        pageIdToShow = 'start-page'; // Redireciona para a página inicial
+    }
+
     // Primeiro, desativa todas as páginas
     Elements.pages.forEach(page => {
         page.classList.remove('app-page--active');
@@ -37,6 +63,7 @@ export function showPage(pageIdToShow) {
     const targetPage = document.getElementById(pageIdToShow);
     if (targetPage) {
         targetPage.classList.add('app-page--active');
+        currentPageId = pageIdToShow; // Atualiza a página ativa
     }
 
     // Lógica especial: Se a 'start-page' está sendo mostrada,
@@ -44,11 +71,13 @@ export function showPage(pageIdToShow) {
     // A ordem de z-index no CSS garante a sobreposição correta.
     if (pageIdToShow === 'start-page') {
         Elements.scoringPage.classList.add('app-page--active');
+        // NOVO: Quando a start-page é exibida, garanta que os jogadores na scoring-page estejam ocultos.
+        renderScoringPagePlayers([], []);
     }
 
     closeSidebar(); // Fecha a sidebar ao navegar
-    // Passa o estado atual do jogo para updateNavScoringButton
-    updateNavScoringButton(getIsGameInProgress());
+    // Passa o estado atual do jogo E o ID da página atual para updateNavScoringButton
+    updateNavScoringButton(getIsGameInProgress(), currentPageId);
 }
 
 
@@ -111,7 +140,25 @@ export function setupSidebar(startGameHandler, getPlayersHandler, logoutHandler)
     Elements.sidebarNavItems.forEach(item => {
         item.addEventListener('click', () => {
             const pageId = item.id.replace('nav-', ''); // Obtém o ID da página a partir do ID do botão
-            showPage(pageId + '-page'); // Converte para o ID da página (ex: 'scoring-page')
+            const targetPageId = pageId + '-page';
+
+            if (targetPageId === 'scoring-page') {
+                // Se o item clicado é o da página de pontuação (que pode ser "Novo Jogo")
+                if (getIsGameInProgress() && getCurrentPageId() === 'scoring-page') {
+                    // Cenário: Jogo está em andamento E o usuário está atualmente na página de pontuação.
+                    // Isso significa que o botão no menu é "Novo Jogo" e o usuário quer resetar.
+                    resetGameForNewMatch(); // Reseta o jogo
+                    showPage('start-page'); // Vai para a tela inicial
+                } else {
+                    // Cenário: Jogo NÃO está em andamento, OU jogo ESTÁ em andamento mas o usuário está em outra página.
+                    // Em ambos os casos, simplesmente navega para a página de pontuação.
+                    // A função showPage já lida com o redirecionamento para a start-page se !hasGameBeenStartedExplicitly.
+                    showPage(targetPageId);
+                }
+            } else {
+                // Para qualquer outro item de navegação, simplesmente mostra a página.
+                showPage(targetPageId);
+            }
             Elements.sidebar.classList.remove('active'); // Fecha a sidebar
         });
     });
@@ -139,7 +186,7 @@ export function setupPageNavigation(startGameHandler, getPlayersHandler) {
             } else {
                 console.log("Iniciando novo jogo.");
                 startGameHandler(); // Chama a função startGame de logic.js
-                showPage('scoring-page'); // Redireciona para a página de placar
+                // showPage('scoring-page'); // showPage já é chamado dentro de startGame
             }
         });
     }
@@ -252,10 +299,6 @@ export function setupScoreInteractions() {
         Elements.team2Panel.addEventListener('click', (event) => handleScoreClick(event, 'team2'));
     }
 }
-
-// A variável touchStartY já está declarada no topo do ficheiro.
-// Removida a declaração duplicada aqui.
-// let touchStartY = 0; // REMOVER ESTA LINHA SE ESTIVER DUPLICADA NO SEU CÓDIGO
 
 function handleScoreTouch(event, teamId) {
     if (event.type === 'touchstart') {

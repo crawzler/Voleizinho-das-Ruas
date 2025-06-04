@@ -16,9 +16,11 @@ export function loadConfig() {
         if (Elements.playersPerTeamInput) Elements.playersPerTeamInput.value = config.playersPerTeam ?? 4;
         if (Elements.pointsPerSetInput) Elements.pointsPerSetInput.value = config.pointsPerSet ?? 15;
         if (Elements.numberOfSetsInput) Elements.numberOfSetsInput.value = config.numberOfSets ?? 1;
+        // Garante que displayPlayers seja sempre um booleano, com padrão true
         if (Elements.darkModeToggle) Elements.darkModeToggle.checked = config.darkMode ?? true;
         if (Elements.vibrationToggle) Elements.vibrationToggle.checked = config.vibration ?? true;
         if (Elements.displayPlayersToggle) Elements.displayPlayersToggle.checked = config.displayPlayers ?? true;
+
 
         Elements.customTeamInputs.forEach((input, index) => {
             if (input.name) input.name.value = config[`customTeam${index + 1}Name`] ?? `Time ${index + 1}`;
@@ -34,10 +36,40 @@ export function loadConfig() {
             document.body.classList.remove('dark');
         }
 
-        return config;
+        // Retorna o objeto de configuração com valores padrão garantidos
+        return {
+            playersPerTeam: config.playersPerTeam ?? 4,
+            pointsPerSet: config.pointsPerSet ?? 15,
+            numberOfSets: config.numberOfSets ?? 1,
+            darkMode: config.darkMode ?? true,
+            vibration: config.vibration ?? true,
+            displayPlayers: config.displayPlayers ?? true, // Garante que seja true por padrão
+            ...Object.fromEntries(Elements.customTeamInputs.map((input, index) => [
+                `customTeam${index + 1}Name`, input.name ? input.name.value : `Time ${index + 1}`
+            ])),
+            ...Object.fromEntries(Elements.customTeamInputs.map((input, index) => {
+                const defaultColors = ['#325fda', '#f03737', '#28a745', '#ffc107', '#6f42c1', '#17a2b8'];
+                return [`customTeam${index + 1}Color`, input.color ? input.color.value : defaultColors[index]];
+            }))
+        };
+
     } catch (e) {
         console.error('Erro ao carregar configurações:', e);
-        return {};
+        // Retorna um objeto de configuração padrão em caso de erro
+        return {
+            playersPerTeam: 4,
+            pointsPerSet: 15,
+            numberOfSets: 1,
+            darkMode: true,
+            vibration: true,
+            displayPlayers: true,
+            customTeam1Name: 'Time 1', customTeam1Color: '#325fda',
+            customTeam2Name: 'Time 2', customTeam2Color: '#f03737',
+            customTeam3Name: 'Time 3', customTeam3Color: '#28a745',
+            customTeam4Name: 'Time 4', customTeam4Color: '#ffc107',
+            customTeam5Name: 'Time 5', customTeam5Color: '#6f42c1',
+            customTeam6Name: 'Time 6', customTeam6Color: '#17a2b8',
+        };
     }
 }
 

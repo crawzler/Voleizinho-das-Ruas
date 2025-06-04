@@ -72,8 +72,6 @@
 
         <!-- Página Inicial (Start Page) -->
         <section id="start-page" class="app-page start-page-layout">
-            <h2 class="welcome-message">Bem-vindo ao Vôlei Score App!</h2>
-            <p class="instructions">Clique no botão abaixo para começar uma nova partida.</p>
             <button id="start-game-button" class="start-game-button">Começar Jogo</button>
         </section>
 
@@ -128,12 +126,12 @@
                     <button id="add-player-button" class="button button--primary">Adicionar</button>
                 </div>
                 <div class="player-list-controls">
-                    <span class="player-count-display">Jogadores: <span id="player-count">0/0</span></span>
                     <label class="switch">
                         <input type="checkbox" id="select-all-players-toggle">
                         <span class="slider round"></span>
                     </label>
-                    <span>Selecionar Todos</span>
+                    <span  class="player-count-display">Todos</span>
+                    <span>Jogadores: <span id="player-count">0/0</span></span> 
                 </div>
                 <div id="players-list-container" class="players-list-container">
                     <!-- Jogadores serão renderizados aqui -->

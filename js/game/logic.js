@@ -6,8 +6,9 @@ import { updateScoreDisplay, updateTimerDisplay, updateSetTimerDisplay, renderSc
 import { getPlayers } from '../data/players.js';
 import { shuffleArray } from '../utils/helpers.js';
 import { loadConfig } from '../ui/config-ui.js';
-import { showPage } from '../ui/pages.js';
+import { showPage, setGameStartedExplicitly } from '../ui/pages.js'; // Importa showPage e a nova função setGameStartedExplicitly
 import * as Elements from '../ui/elements.js'; // Importa Elements para depuração
+import { displayMessage } from '../ui/messages.js'; // Importa a função de exibição de mensagens
 
 let team1Score = 0;
 let team2Score = 0;
@@ -19,7 +20,7 @@ let setTimerInterval = null;
 let currentTeam1 = [];
 let currentTeam2 = [];
 let isGameInProgress = false;
-let allGeneratedTeams = [];
+let allGeneratedTeams = []; // Array para armazenar os times gerados globalmente
 
 let activeTeam1Name = 'Time 1';
 let activeTeam2Name = 'Time 2';
@@ -103,6 +104,16 @@ function startSetTimer() {
 }
 
 /**
+ * Atualiza o ícone do botão de play/pause do timer.
+ */
+function updateTimerButtonIcon() {
+    const timerToggleButton = document.querySelector('.timer-toggle-button');
+    if (timerToggleButton) {
+        timerToggleButton.textContent = isTimerRunning ? 'pause' : 'play_arrow';
+    }
+}
+
+/**
  * Alterna o estado do timer (iniciar/pausar).
  */
 export function toggleTimer() {
@@ -117,12 +128,11 @@ export function toggleTimer() {
         timerInterval = null;
         setTimerInterval = null;
         isTimerRunning = false;
-        document.querySelector('.timer-toggle-button').textContent = 'play_arrow';
     } else {
         startTimer();
         startSetTimer();
-        document.querySelector('.timer-toggle-button').textContent = 'pause';
     }
+    updateTimerButtonIcon(); // Atualiza o ícone após a mudança de estado
 }
 
 /**
@@ -204,43 +214,47 @@ export function startGame(appId) {
     const playersPerTeam = parseInt(config.playersPerTeam, 10);
     const displayPlayers = config.displayPlayers ?? true;
 
-    const players = getPlayers();
-    const selectedPlayerElements = document.querySelectorAll('#players-list-container .player-checkbox:checked');
-    const selectedPlayerIds = Array.from(selectedPlayerElements).map(checkbox => checkbox.dataset.playerId);
-
-    const selectedPlayersNames = players
-        .filter(player => selectedPlayerIds.includes(player.id))
-        .map(player => player.name);
-
-    if (selectedPlayersNames.length < (playersPerTeam * 2)) {
-        console.warn(`Selecione pelo menos ${playersPerTeam * 2} jogadores para iniciar a partida.`);
-        return;
-    }
-
     resetGameForNewMatch(); // Reseta o jogo antes de iniciar um novo
+    setGameStartedExplicitly(true); // Define que o jogo foi explicitamente iniciado
 
-    const shuffledPlayers = [...selectedPlayersNames];
-    shuffleArray(shuffledPlayers);
+    // Prioriza times gerados se existirem e forem suficientes
+    if (allGeneratedTeams && allGeneratedTeams.length >= 2) {
+        console.log('[startGame] Usando times gerados para a partida.');
+        currentTeam1 = allGeneratedTeams[0].players;
+        currentTeam2 = allGeneratedTeams[1].players;
+        activeTeam1Name = allGeneratedTeams[0].name || 'Time 1';
+        activeTeam2Name = allGeneratedTeams[1].name || 'Time 2';
+        // Cores dos times gerados são definidas em game-ui.js na renderização dos cards.
+        // Para a tela de pontuação, vamos usar as cores padrão ou as customizadas salvas na config.
+        const defaultColors = ['#325fda', '#f03737', '#28a745', '#ffc107', '#6f42c1', '#17a2b8'];
+        activeTeam1Color = config[`customTeam${1}Color`] || defaultColors[0];
+        activeTeam2Color = config[`customTeam${2}Color`] || defaultColors[1];
 
-    currentTeam1 = shuffledPlayers.slice(0, playersPerTeam);
-    currentTeam2 = shuffledPlayers.slice(playersPerTeam, playersPerTeam * 2);
-
-    const team1Name = config.customTeam1Name || 'Time 1';
-    const team2Name = config.customTeam2Name || 'Time 2';
-    const team1Color = config.customTeam1Color || '#325fda';
-    const team2Color = config.customTeam2Color || '#f03737';
-
-    updateTeamDisplayNamesAndColors(team1Name, team2Name, team1Color, team2Color);
-
-    if (displayPlayers) {
-        renderScoringPagePlayers(currentTeam1, currentTeam2);
     } else {
-        renderScoringPagePlayers([], []);
+        // Se não houver times gerados suficientes, inicia a partida sem jogadores visíveis.
+        console.log('[startGame] Nenhum time gerado suficiente. Iniciando partida sem jogadores visíveis.');
+        currentTeam1 = []; // Define times como vazios
+        currentTeam2 = []; // Define times como vazios
+
+        activeTeam1Name = config.customTeam1Name || 'Time 1';
+        activeTeam2Name = config.customTeam2Name || 'Time 2';
+        activeTeam1Color = config.customTeam1Color || '#325fda';
+        activeTeam2Color = config.customTeam2Color || '#f03737';
     }
+
+    console.log('[startGame] currentTeam1 (final):', currentTeam1);
+    console.log('[startGame] currentTeam2 (final):', currentTeam2);
+
+    updateTeamDisplayNamesAndColors(activeTeam1Name, activeTeam2Name, activeTeam1Color, activeTeam2Color);
+
+    // renderScoringPagePlayers será chamado com currentTeam1 e currentTeam2 vazios,
+    // e a lógica em game-ui.js ocultará as colunas se ambas as listas estiverem vazias.
+    renderScoringPagePlayers(currentTeam1, currentTeam2);
 
     isGameInProgress = true;
     console.log('DEBUG: Chamando updateNavScoringButton(true) em startGame.');
-    updateNavScoringButton(true); // Atualiza o botão de navegação e MOSTRA o timer
+    // Passa 'scoring-page' como currentPageId, pois a partida está sendo iniciada e a página de pontuação será exibida.
+    updateNavScoringButton(true, 'scoring-page');
     console.log('DEBUG: Elements.timerAndSetTimerWrapper no startGame:', Elements.timerAndSetTimerWrapper);
     if (Elements.timerAndSetTimerWrapper) {
         console.log('DEBUG: Current display style of timerAndSetTimerWrapper:', Elements.timerAndSetTimerWrapper.style.display);
@@ -248,6 +262,7 @@ export function startGame(appId) {
     showPage('scoring-page');
     startTimer();
     startSetTimer();
+    updateTimerButtonIcon(); // Atualiza o ícone do botão para 'pause' ao iniciar o jogo
     console.log('Partida iniciada!');
 }
 
@@ -301,15 +316,16 @@ export function getActiveTeam2Color() {
 
 /**
  * Define todos os times gerados.
- * @param {Array<Array<string>>} teams - Array de todos os times gerados.
+ * @param {Array<Object>} teams - Array de objetos de time gerados.
  */
 export function setAllGeneratedTeams(teams) {
     allGeneratedTeams = teams;
+    console.log('[setAllGeneratedTeams] Times gerados definidos:', allGeneratedTeams);
 }
 
 /**
  * Retorna todos os times gerados.
- * @returns {Array<Array<string>>} Todos os times gerados.
+ * @returns {Array<Object>} Todos os times gerados.
  */
 export function getAllGeneratedTeams() {
     return allGeneratedTeams;
@@ -327,11 +343,11 @@ export function resetGameForNewMatch() {
     clearInterval(setTimerInterval);
     timerInterval = null;
     setTimerInterval = null;
-    isTimerRunning = false;
+    isTimerRunning = false; // Garante que o timer está parado
     isGameInProgress = false;
     currentTeam1 = [];
     currentTeam2 = [];
-    allGeneratedTeams = []; // Limpa times gerados
+    // allGeneratedTeams = []; // Não limpa allGeneratedTeams aqui para que possam ser usados na próxima partida
 
     // Carrega nomes e cores padrão/configurados
     const config = loadConfig();
@@ -345,5 +361,8 @@ export function resetGameForNewMatch() {
     updateSetTimerDisplay(setElapsedTime);
     updateTeamDisplayNamesAndColors(activeTeam1Name, activeTeam2Name, activeTeam1Color, activeTeam2Color);
     console.log('DEBUG: Chamando updateNavScoringButton(false) em resetGameForNewMatch.');
-    updateNavScoringButton(false); // Atualiza o botão de navegação e ESCONDE o timer
+    // Passa uma string vazia ou null para currentPageId, pois o jogo foi resetado e a página de pontuação não é mais a principal.
+    updateNavScoringButton(false, '');
+    setGameStartedExplicitly(false); // Reseta a flag de jogo iniciado explicitamente
+    updateTimerButtonIcon(); // Atualiza o ícone do botão para 'play_arrow' ao resetar o jogo
 }
