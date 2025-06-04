@@ -1,0 +1,3 @@
+-Botão para resetar os cookies (Só caso tenha internet).
+-Mostrar usuário da google
+-Clicar em sair para deslogar caso esteja logado com chrome.
