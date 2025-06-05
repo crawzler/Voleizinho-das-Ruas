@@ -1,7 +1,6 @@
 html {
   box-sizing: border-box;
   height: 100%; /* Garante que o html ocupe toda a altura da viewport */
-}
 *, *::before, *::after {
   box-sizing: inherit;
 }
@@ -22,7 +21,8 @@ body {
     height: 100%; /* Garante que o body ocupe toda a altura da viewport */
     overflow-x: hidden;
     margin: 0;
-    padding: 0;
+    padding: 0;    
+}
 }
 
 input {
@@ -44,7 +44,7 @@ button {
     padding: 0.75rem 1.25rem;
     border: none;
     border-radius: 8px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 6px -1-px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .switch {
@@ -146,6 +146,7 @@ input:checked + .slider:before {
     flex-direction: column;
     padding: 10px 1rem 1rem 1rem;
     overflow: auto;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .sidebar-menu.active {
@@ -158,12 +159,98 @@ input:checked + .slider:before {
     align-items: center;
     margin-bottom: 10px;
     border-bottom: 1px solid #444;
+    position: relative; /* Para posicionar o mini-menu corretamente */
+    padding-bottom: 10px; /* Adiciona espaço para o mini-menu se ele estiver por baixo */
 }
 
-.sidebar-title {
+/* REMOVIDO: Título do menu */
+/* .sidebar-title {
     color: #ddd;
     font-size: 1rem;
     margin: 0;
+} */
+
+/* NOVO: Estilos para o cabeçalho do perfil do usuário */
+.user-profile-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    flex-grow: 1; /* Permite que ocupe o espaço disponível */
+}
+
+.user-profile-header:hover {
+    background-color: #333;
+    border-radius: 8px;
+}
+
+.user-profile-picture {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #555;
+}
+
+.user-display-name {
+    color: white;
+    font-weight: bold;
+    font-size: 1rem;
+    flex-grow: 1; /* Permite que ocupe o espaço disponível */
+    white-space: nowrap; /* Evita que o nome quebre a linha */
+    overflow: hidden; /* Oculta o texto que excede o contêiner */
+    text-overflow: ellipsis; /* Adiciona reticências se o texto for muito longo */
+}
+
+.profile-menu-arrow {
+    color: #D1D5DB;
+    transition: transform 0.2s ease;
+}
+
+.user-profile-header.active .profile-menu-arrow {
+    transform: rotate(180deg);
+}
+
+
+/* NOVO: Estilos para o mini-menu do perfil */
+.profile-menu {
+    display: none; /* Oculto por padrão */
+    flex-direction: column;
+    position: absolute;
+    top: 100%; /* Posição abaixo do user-profile-header */
+    left: 0;
+    width: 100%;
+    background-color: #333;
+    border-radius: 0 0 8px 8px; /* Apenas as bordas inferiores arredondadas */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 960; /* Acima do sidebar, mas abaixo do botão de fechar */
+    overflow: hidden; /* Garante que o conteúdo não vaze se houver padding/margin */
+}
+
+.profile-menu.active {
+    display: flex; /* Exibir quando ativo */
+}
+
+.profile-menu-item {
+    background-color: transparent;
+    border: none;
+    color: white;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    font-size: 0.9rem;
+    box-shadow: none; /* Remove sombra padrão do botão */
+}
+
+.profile-menu-item:hover {
+    background-color: #444;
 }
 
 .sidebar-nav {
@@ -212,6 +299,23 @@ input:checked + .slider:before {
 }
 
 
+/* NOVO: Estilos para o overlay */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #2229; /* Totalmente transparente */
+    z-index: 940; /* Abaixo do sidebar (950) e acima do resto do conteúdo */
+    display: none; /* Oculto por padrão */
+}
+
+.sidebar-overlay.active {
+    display: block; /* Exibir quando o sidebar estiver ativo */
+}
+
+
 /* Main Content */
 .app-main-content {
     position: relative; /* Essencial para que .app-page com position: absolute funcione */
@@ -238,6 +342,16 @@ input:checked + .slider:before {
     justify-content: flex-start; /* Padrão para as páginas, pode ser sobrescrito */
     z-index: 1; /* Z-index padrão para páginas inativas */
 }
+
+/* NOVO: Garante que as páginas, exceto a de pontuação, não tenham transições horizontais */
+/* Aplica overflow-x: hidden e remove qualquer transição ou transformação horizontal */
+.app-page:not(#scoring-page) {
+    overflow-x: hidden; /* Garante que não haja overflow horizontal dentro da página */
+    transition: left 0s, transform 0s; /* Remove transições para left e transform */
+    left: 0; /* Garante que a página esteja sempre na posição 0 à esquerda */
+    transform: translateX(0); /* Garante que não haja translação horizontal */
+}
+
 
 /* Estilo para a página ativa (geral) */
 .app-page.app-page--active {
@@ -391,41 +505,93 @@ input:checked + .slider:before {
 
 /* #524931  CHAT, AQUI ESSA SESSÃO É PARA UTILIZAR NA CRIAÇÃO DO MODAL PARA SELECIONAR OS TIMES */
 .select-team-modal-container {
-    display: flex;
+    display: none; /* Oculto por padrão */
     flex-direction: column;
     align-items: center;
-    position: absolute;
-    background-color: #222;
-    border-radius: 8px;    
-    transform: translate(-50%, -50%);
-    left: 50%;
-    top: 50%;
-    padding: 20px;
+    position: fixed; /* Alterado para fixed para cobrir toda a viewport */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7); /* Overlay semitransparente */
+    z-index: 1000; /* Acima de tudo */
+    justify-content: center; /* Centraliza o conteúdo verticalmente */
+    padding: 20px; /* Adicionado padding */
+    box-sizing: border-box; /* Garante que o padding não aumente o tamanho total */
+}
+
+.select-team-modal-container.modal-active {
+    display: flex; /* Exibir quando ativo */
+}
+
+.select-team-modal-container h4 {
+    padding-bottom: 1rem;
+    font-size: 1.5rem;
+    color: white; /* Garante que o título seja visível */
+}
+
+.select-team-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Duas colunas para mobile */
+    gap: 1rem;
+    max-height: 70vh; /* Limita a altura para rolagem */
+    overflow-y: auto; /* Adiciona rolagem vertical */
+    background-color: #222; /* Fundo do contêiner do modal */
+    padding: 20px; /* Padding interno */
+    border-radius: 8px; /* Cantos arredondados */
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .select-team-modal {
     display: flex;    
     align-items: center;
-    font-size: 1.5rem;
+    font-size: 1.2rem; /* Ajustado para melhor visualização no mobile */
     font-weight: bold;
     color: white;
-    margin: 20px;
     padding: 10px;
     background-color: #333;
     border-radius: 8px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    cursor: pointer; /* Indica que é clicável */
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.select-team-modal:hover {
+    background-color: #444; /* Efeito hover */
+    transform: translateY(-2px);
 }
 
 .select-team-color {
     display: block;
-    background-color: rgb(50, 95, 218);
-    width: 30px;
+    background-color: rgb(50, 95, 218); /* Cor padrão, será sobrescrita por JS */
+    min-width: 30px;
     height: 30px;
     border-radius: 8px;
-    margin-right: 20px;
+    margin-right: 10px; /* Espaçamento menor */
 }
-/* #524932  CHAT, AQUI ESSA SESSÃO É PARA UTILIZAR NA CRIAÇÃO DO MODAL PARA SELECIONAR OS TIMES */
+
+/* Estilo para o botão de fechar dentro do modal */
+#close-modal-button {
+    margin-top: 1rem; /* Espaçamento acima do botão */
+    background-color: #DC2626; /* Cor vermelha para o botão de fechar */
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+#close-modal-button:hover {
+    background-color: #B91C1C; /* Escurecer no hover */
+}
+
+/* Media Query para telas maiores no modal */
+@media (min-width: 600px) {
+    .select-team-container {
+        grid-template-columns: 1fr 1fr 1fr; /* Três colunas para desktop */
+        max-width: 600px; /* Limita a largura para desktop */
+    }
+}
+/* #524931  CHAT, AQUI ESSA SESSÃO É PARA UTILIZAR NA CRIAÇÃO DO MODAL PARA SELECI ONAR OS TIMES */
 
 .score-display-container {
     display: flex;
@@ -838,13 +1004,6 @@ input:checked + .slider:before {
 
 .message-box.info {
     background-color: #2563EB;
-}
-
-@keyframes fadeInOut {
-    0% { opacity: 0; transform: translateY(-20px); }
-    10% { opacity: 1; transform: translateY(0); }
-    90% { opacity: 1; transform: translateY(0); }
-    100% { opacity: 0; transform: translateY(-20px); }
 }
 
 
