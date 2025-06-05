@@ -45,7 +45,9 @@ export async function logout() {
         await signOut(auth);
         console.log("Logout realizado com sucesso!");
         showPage('login-page');
-        Elements.userIdDisplay.textContent = 'ID: Deslogado';
+        if (Elements.userIdDisplay()) Elements.userIdDisplay().textContent = 'ID: Deslogado';
+        if (Elements.userProfilePicture()) Elements.userProfilePicture().src = "https://placehold.co/40x40/222/FFF?text=?"; // Placeholder
+        if (Elements.userDisplayName()) Elements.userDisplayName().textContent = "Usuário Deslogado";
     } catch (error) {
         console.error("Erro no logout:", error);
         displayMessage("Erro ao fazer logout.", "error");
@@ -56,7 +58,10 @@ export function setupAuthListener(appId) {
     onAuthStateChanged(auth, async (user) => {
         currentUser = user;
         if (user) {
-            Elements.userIdDisplay.textContent = `ID: ${user.isAnonymous ? 'Anônimo' : user.uid}`;
+            if (Elements.userIdDisplay()) Elements.userIdDisplay().textContent = `ID: ${user.isAnonymous ? 'Anônimo' : user.uid}`;
+            // Adicionado verificação de nulidade para userProfilePicture e userDisplayName
+            if (Elements.userProfilePicture()) Elements.userProfilePicture().src = user.photoURL || "https://placehold.co/40x40/222/FFF?text=?";
+            if (Elements.userDisplayName()) Elements.userDisplayName().textContent = user.displayName || (user.isAnonymous ? "Usuário Anônimo" : "Usuário Google");
 
             // Se há um usuário autenticado (anônimo ou Google), navega para a start-page.
             // O Firebase gerencia a persistência da sessão automaticamente.
@@ -68,7 +73,10 @@ export function setupAuthListener(appId) {
         } else {
             // Nenhum usuário autenticado (nem mesmo anônimo automático de sessão anterior)
             console.log("Nenhum usuário autenticado. Exibindo página de login.");
-            Elements.userIdDisplay.textContent = 'ID: Anônimo';
+            if (Elements.userIdDisplay()) Elements.userIdDisplay().textContent = 'ID: Anônimo';
+            // Adicionado verificação de nulidade para userProfilePicture e userDisplayName
+            if (Elements.userProfilePicture()) Elements.userProfilePicture().src = "https://placehold.co/40x40/222/FFF?text=?"; // Placeholder
+            if (Elements.userDisplayName()) Elements.userDisplayName().textContent = "Usuário Anônimo";
             updatePlayerModificationAbility(false); // AGORA: Ninguém logado não pode modificar
             showPage('login-page');
         }

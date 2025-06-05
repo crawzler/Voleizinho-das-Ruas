@@ -4,7 +4,7 @@
 import { auth, initFirebaseApp, getAppId } from './firebase/config.js'; // Importa getAppId
 import { loginWithGoogle, logout, setupAuthListener, signInAnonymouslyUser } from './firebase/auth.js';
 import { loadPlayers, setupFirestorePlayersListener, addPlayer, removePlayer } from './data/players.js'; // Importa addPlayer e removePlayer
-import { showPage, updatePlayerModificationAbility, setupSidebar, setupPageNavigation, setupAccordion, setupScoreInteractions } from './ui/pages.js';
+import { showPage, updatePlayerModificationAbility, setupSidebar, setupPageNavigation, setupAccordion, setupScoreInteractions, setupTeamSelectionModal, closeSidebar } from './ui/pages.js'; // Importa setupTeamSelectionModal e closeSidebar
 import { setupConfigUI } from './ui/config-ui.js';
 import { startGame, toggleTimer, swapTeams, endGame } from './game/logic.js'; // Adicionado endGame
 import { generateTeams } from './game/teams.js';
@@ -16,7 +16,7 @@ import { updatePlayerCount, updateSelectAllToggle } from './ui/players-ui.js'; /
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Esconde todas as páginas inicialmente para garantir que apenas uma seja exibida
-    Elements.pages.forEach(page => {
+    Elements.pages().forEach(page => { // Chamada da função Elements.pages()
         page.classList.remove('app-page--active');
     });
 
@@ -35,54 +35,52 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadPlayers(appId);
 
     // Configura os event listeners da UI
-    setupSidebar();
+    // Passa a função logout para setupSidebar
+    setupSidebar(startGame, getPlayers, logout);
     // Passa o appId para setupPageNavigation, pois é necessário para addPlayer/removePlayer
     setupPageNavigation(startGame, getPlayers, appId); // Passa startGame e getPlayers como handlers
     setupAccordion();
     setupConfigUI();
     setupScoreInteractions();
-    // REMOVIDO: setupTeamSelectionModal(); // Não é mais necessário, pois o modal foi removido
+    setupTeamSelectionModal(); // Configura o modal de seleção de time
 
-    // Removido: Configuração do botão de adicionar jogador (movido para pages.js/setupPageNavigation)
-    // Removido: Configuração do toggle "Selecionar Todos" (movido para pages.js/setupPageNavigation)
-    // Removido: Listeners para remover jogador e checkboxes (movido para pages.js/setupPageNavigation)
 
     // Configura o botão de login com Google
-    if (Elements.googleLoginButton) {
-        Elements.googleLoginButton.addEventListener('click', loginWithGoogle);
+    if (Elements.googleLoginButton()) { // Chamada da função Elements.googleLoginButton()
+        Elements.googleLoginButton().addEventListener('click', loginWithGoogle);
     }
 
     // Configura o botão de login anônimo
-    const anonymousLoginButton = document.getElementById('anonymous-login-button');
+    const anonymousLoginButton = Elements.anonymousLoginButton(); // Chamada da função Elements.anonymousLoginButton()
     if (anonymousLoginButton) {
         anonymousLoginButton.addEventListener('click', () => signInAnonymouslyUser(appId)); // Passa appId
     }
 
     // Configura o botão de iniciar partida
-    const startGameButton = document.getElementById('start-game-button');
+    const startGameButton = document.getElementById('start-game-button'); // Este não é do elements.js
     if (startGameButton) {
         startGameButton.addEventListener('click', () => startGame(appId));
     }
 
     // Configura o botão de gerar times
-    const generateTeamsButton = document.getElementById('generate-teams-button');
+    const generateTeamsButton = Elements.generateTeamsButton(); // Chamada da função Elements.generateTeamsButton()
     if (generateTeamsButton) {
         generateTeamsButton.addEventListener('click', () => generateTeams(appId));
     }
 
     // Configura o botão de trocar times
-    const swapTeamsButton = document.getElementById('swap-teams-button');
+    const swapTeamsButton = document.getElementById('swap-teams-button'); // Este não é do elements.js
     if (swapTeamsButton) {
         swapTeamsButton.addEventListener('click', swapTeams);
     }
 
     // Configura o botão de toggle do timer
-    if (Elements.timerAndSetTimerWrapper) { // Usa o wrapper pai
-        Elements.timerAndSetTimerWrapper.addEventListener('click', toggleTimer);
+    if (Elements.timerAndSetTimerWrapper()) { // Chamada da função Elements.timerAndSetTimerWrapper()
+        Elements.timerAndSetTimerWrapper().addEventListener('click', toggleTimer);
     }
 
     // Configura o botão de encerrar jogo
-    const endGameButton = document.getElementById('end-game-button');
+    const endGameButton = document.getElementById('end-game-button'); // Este não é do elements.js
     if (endGameButton) {
         endGameButton.addEventListener('click', () => {
             // Substituído window.confirm por displayMessage para consistência
@@ -96,4 +94,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Registra o Service Worker
     registerServiceWorker();
+
+    // NOVO: Adiciona um listener de clique ao overlay para fechar o sidebar
+    if (Elements.sidebarOverlay()) {
+        Elements.sidebarOverlay().addEventListener('click', () => {
+            closeSidebar();
+            console.log('Sidebar fechado por clique no overlay.');
+        });
+    }
+    // REMOVIDO: O listener de clique global no document.body
 });

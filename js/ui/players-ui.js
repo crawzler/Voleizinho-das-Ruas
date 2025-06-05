@@ -10,9 +10,9 @@ import { getCurrentUser } from '../firebase/auth.js'; // Importa para verificar 
  * @param {Array<Object>} players - A lista de jogadores a ser renderizada.
  */
 export function renderPlayersList(players) {
-    if (!Elements.playersListContainer) return;
+    if (!Elements.playersListContainer()) return; // Chamada da função
 
-    Elements.playersListContainer.innerHTML = '';
+    Elements.playersListContainer().innerHTML = ''; // Chamada da função
 
     players.forEach((player) => {
         const playerDiv = document.createElement('div');
@@ -29,7 +29,7 @@ export function renderPlayersList(players) {
                 <span class="material-icons">delete</span>
             </button>
         `;
-        Elements.playersListContainer.appendChild(playerDiv);
+        Elements.playersListContainer().appendChild(playerDiv); // Chamada da função
     });
     updatePlayerCount();
     updateSelectAllToggle();
@@ -44,18 +44,18 @@ export function renderPlayersList(players) {
  * Atualiza a contagem de jogadores selecionados/total.
  */
 export function updatePlayerCount() {
-    if (!Elements.playerCountSpan) return;
+    if (!Elements.playerCountSpan()) return; // Chamada da função
     const checkboxes = document.querySelectorAll('#players-list-container .player-checkbox');
     const selectedPlayers = Array.from(checkboxes).filter(checkbox => checkbox.checked).length;
-    Elements.playerCountSpan.textContent = `${selectedPlayers}/${checkboxes.length}`;
+    Elements.playerCountSpan().textContent = `${selectedPlayers}/${checkboxes.length}`; // Chamada da função
 }
 
 /**
  * Atualiza o estado do toggle "Selecionar Todos".
  */
 export function updateSelectAllToggle() {
-    if (!Elements.selectAllPlayersToggle) return;
+    if (!Elements.selectAllPlayersToggle()) return; // Chamada da função
     const checkboxes = document.querySelectorAll('#players-list-container .player-checkbox');
     const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
-    Elements.selectAllPlayersToggle.checked = allChecked;
+    Elements.selectAllPlayersToggle().checked = allChecked; // Chamada da função
 }

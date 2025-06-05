@@ -7,19 +7,19 @@ import * as Elements from '../ui/elements.js'; // Caminho corrigido
  * Carrega e exibe a versão do aplicativo a partir do Service Worker.
  */
 export async function loadAppVersion() {
-    if (Elements.appVersionDisplay) {
+    if (Elements.appVersionDisplay()) { // Chamada da função
         try {
             const response = await fetch('./service-worker.js'); // Caminho relativo ao root do app
             const text = await response.text();
             const match = text.match(/const CACHE_NAME = '(.*?)';/);
             if (match && match[1]) {
-                Elements.appVersionDisplay.textContent = match[1];
+                Elements.appVersionDisplay().textContent = match[1]; // Chamada da função
             } else {
-                Elements.appVersionDisplay.textContent = 'Não disponível';
+                Elements.appVersionDisplay().textContent = 'Não disponível'; // Chamada da função
             }
         } catch (error) {
             console.error('Erro ao carregar a versão do app:', error);
-            Elements.appVersionDisplay.textContent = 'Erro ao carregar';
+            Elements.appVersionDisplay().textContent = 'Erro ao carregar'; // Chamada da função
         }
     }
 }
