@@ -64,10 +64,6 @@
                 <span class="material-icons sidebar-nav-icon">settings</span> Configurações
             </button>
         </nav>
-        <div class="sidebar-footer">
-            <span id="user-id-display">ID: Carregando...</span>
-            <span id="app-version-display">Versão: Carregando...</span>
-        </div>
     </div>
 
     <main class="app-main-content">
@@ -93,13 +89,20 @@
         <section id="scoring-page" class="app-page scoring-page-layout">
             <div class="score-display-container">
 
-                <!-- MODAL DE SELEÇÃO DE TIME - REINSERINDO OS IDs NECESSÁRIOS -->
+                <!-- MODAL DE SELEÇÃO DE TIME -->
                 <div id="team-selection-modal" class="select-team-modal-container">
-                    <h4>Selecione um time:</h4>
-                    <div id="modal-team-list" class="select-team-container">
-                        <!-- Times gerados dinamicamente pelo JavaScript serão inseridos aqui -->
+                    <!-- NOVO: Wrapper para o conteúdo do modal (o botão de fechar foi movido para cá) -->
+                    <div class="select-team-modal-content-wrapper">
+                        <!-- NOVO: Botão de fechar no canto superior direito (AGORA DENTRO DO WRAPPER) -->
+                        <button id="close-modal-button-top-right" class="close-modal-button-top-right">
+                            <span class="material-icons">close</span>
+                        </button>
+                        <!-- REMOVIDO: Título <h4>Selecione um time:</h4> -->
+                         <h3>Selecione um time:</h3>
+                        <div id="modal-team-list" class="select-team-container">
+                            <!-- Times gerados dinamicamente pelo JavaScript serão inseridos aqui -->
+                        </div>
                     </div>
-                    <button id="close-modal-button" class="button button--secondary">Fechar</button>
                 </div>
                 <!-- FIM DO MODAL DE SELEÇÃO DE TIME -->
 
@@ -194,7 +197,7 @@
                                 <label class="switch">
                                     <input type="checkbox" id="dark-mode-toggle" checked>
                                     <span class="slider round"></span>
-                                </label>
+                                &nbsp;</label>
                             </div>
                             <div class="form-group form-group--toggle">
                                 <label for="vibration-toggle" class="form-label">Vibração:</label>
@@ -268,6 +271,12 @@
                 </div>
             </div>
             <button id="reset-config-button" class="button button--secondary form-button--full-width">Redefinir Configurações</button>
+
+            
+            <div class="app-info">
+                <span id="user-id-display">ID: Carregando...</span>
+                <span id="app-version-display">Versão: Carregando...</span>
+            </div>
         </section>
 
         <!-- Página de Histórico -->

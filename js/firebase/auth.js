@@ -4,7 +4,7 @@
 import { auth, db } from './config.js';
 import { signInAnonymously, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { loadPlayers, setupFirestorePlayersListener } from '../data/players.js';
-import { showPage, updatePlayerModificationAbility } from '../ui/pages.js';
+import { showPage, updatePlayerModificationAbility, updateProfileMenuLoginState } from '../ui/pages.js'; // NOVO: Importa updateProfileMenuLoginState
 import * as Elements from '../ui/elements.js';
 import { displayMessage } from '../ui/messages.js';
 
@@ -44,22 +44,30 @@ export async function logout() {
     try {
         await signOut(auth);
         console.log("Logout realizado com sucesso!");
-        showPage('login-page');
-        if (Elements.userIdDisplay()) Elements.userIdDisplay().textContent = 'ID: Deslogado';
-        if (Elements.userProfilePicture()) Elements.userProfilePicture().src = "https://placehold.co/40x40/222/FFF?text=?"; // Placeholder
-        if (Elements.userDisplayName()) Elements.userDisplayName().textContent = "Usuário Deslogado";
+        displayMessage("Desconectado com sucesso.", "success");
+        // O onAuthStateChanged lidará com a navegação para a página de login.
     } catch (error) {
-        console.error("Erro no logout:", error);
-        displayMessage("Erro ao fazer logout.", "error");
+        console.error("Erro ao fazer logout:", error);
+        displayMessage("Erro ao fazer logout. Tente novamente.", "error");
     }
 }
 
+/**
+ * Configura o observador de estado de autenticação do Firebase.
+ * Isso garante que o aplicativo reaja a mudanças no estado de login/logout.
+ * @param {string} appId - O ID do aplicativo para uso com o Firestore.
+ */
 export function setupAuthListener(appId) {
     onAuthStateChanged(auth, async (user) => {
-        currentUser = user;
+        currentUser = user; // Atualiza a variável global currentUser
+        console.log("[Auth Listener] Estado de autenticação alterado. User:", user ? user.uid : "null");
+
+        // NOVO: Sempre atualiza o estado do botão de login/logout no menu do perfil
+        updateProfileMenuLoginState();
+
         if (user) {
-            if (Elements.userIdDisplay()) Elements.userIdDisplay().textContent = `ID: ${user.isAnonymous ? 'Anônimo' : user.uid}`;
-            // Adicionado verificação de nulidade para userProfilePicture e userDisplayName
+            // Usuário autenticado (anônimo ou Google)
+            if (Elements.userIdDisplay()) Elements.userIdDisplay().textContent = `ID: ${user.uid}`;
             if (Elements.userProfilePicture()) Elements.userProfilePicture().src = user.photoURL || "https://placehold.co/40x40/222/FFF?text=?";
             if (Elements.userDisplayName()) Elements.userDisplayName().textContent = user.displayName || (user.isAnonymous ? "Usuário Anônimo" : "Usuário Google");
 

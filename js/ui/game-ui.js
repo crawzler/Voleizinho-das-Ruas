@@ -174,7 +174,7 @@ export function renderTeams(teams) {
         team.players.forEach(player => {
             const playerItem = document.createElement('li');
             playerItem.textContent = player;
-            teamList.appendChild(playerItem);
+            teamList.appendChild(playerItem); 
         });
         teamCard.appendChild(teamList);
 

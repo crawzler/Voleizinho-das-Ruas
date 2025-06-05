@@ -277,8 +277,10 @@ export function startGame(appId) {
         currentTeam2 = allGeneratedTeams[currentTeam2Index].players;
 
         const team1ConfigName = config[`customTeam${currentTeam1Index + 1}Name`];
+        // CORREÇÃO: current1Index para currentTeam1Index
         const team2ConfigName = config[`customTeam${currentTeam2Index + 1}Name`];
         const team1ConfigColor = config[`customTeam${currentTeam1Index + 1}Color`];
+        // CORREÇÃO: current2Index para currentTeam2Index
         const team2ConfigColor = config[`customTeam${currentTeam2Index + 1}Color`];
 
         activeTeam1Name = team1ConfigName || allGeneratedTeams[currentTeam1Index].name || 'Time 1';
@@ -349,7 +351,7 @@ export function cycleTeam(teamPanel) {
         const selectedTeam = allGeneratedTeams[currentTeam2Index];
         currentTeam2 = selectedTeam.players;
         activeTeam2Name = config[`customTeam${currentTeam2Index + 1}Name`] || selectedTeam.name;
-        activeTeam2Color = config[`customTeam${current2Index + 1}Color`] || defaultColors[currentTeam2Index] || '#f03737';
+        activeTeam2Color = config[`customTeam${currentTeam2Index + 1}Color`] || defaultColors[currentTeam2Index] || '#f03737';
         displayMessage(`Time 2: ${activeTeam2Name}`, 'info');
     }
 
@@ -502,7 +504,7 @@ export function resetGameForNewMatch() {
     updateNavScoringButton(false, '');
     setGameStartedExplicitly(false);
     updateTimerButtonIcon();
-    displayMessage('Jogo resetado. Pronto para uma nova partida!', 'success');
+    // REMOVIDO: displayMessage('Jogo resetado. Pronto para uma nova partida!', 'success');
 
     if (Elements.timerAndSetTimerWrapper()) {
         Elements.timerAndSetTimerWrapper().style.display = 'none';

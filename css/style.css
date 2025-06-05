@@ -45,6 +45,9 @@ button {
     border: none;
     border-radius: 8px;
     box-shadow: 0 4px 6px -1-px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .switch {
@@ -126,6 +129,9 @@ input:checked + .slider:before {
     background-color: transparent;
     border: none;
     transition: background-color 0.3s ease;
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .header-button:hover {
@@ -176,9 +182,12 @@ input:checked + .slider:before {
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 0;
-    cursor: pointer;
+    width: 100%;
     transition: background-color 0.2s ease;
     flex-grow: 1; /* Permite que ocupe o espaço disponível */
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .user-profile-header:hover {
@@ -247,6 +256,9 @@ input:checked + .slider:before {
     transition: background-color 0.2s ease;
     font-size: 0.9rem;
     box-shadow: none; /* Remove sombra padrão do botão */
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .profile-menu-item:hover {
@@ -258,6 +270,7 @@ input:checked + .slider:before {
     flex-direction: column;
     padding: 10px;
     flex-grow: 1;
+    gap: 0.25rem;
 }
 
 .sidebar-nav-item {
@@ -276,14 +289,17 @@ input:checked + .slider:before {
     text-align: left;
     padding: 5px 0px;
     box-shadow: inherit;
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .sidebar-nav-icon {
     font-size: 1.5rem;
 }
 
-.sidebar-footer {
-    margin-top: auto; /* Empurra o footer para a parte inferior */
+.app-info {
+    margin-top: 20px; /* Empurra o footer para a parte inferior */
     padding-top: 1rem;
     border-top: 1px solid #333;
     text-align: center;
@@ -309,6 +325,9 @@ input:checked + .slider:before {
     background-color: #2229; /* Totalmente transparente */
     z-index: 940; /* Abaixo do sidebar (950) e acima do resto do conteúdo */
     display: none; /* Oculto por padrão */
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .sidebar-overlay.active {
@@ -408,6 +427,9 @@ input:checked + .slider:before {
     gap: 0.75rem;
     transition: background-color 0.3s ease, transform 0.1s ease;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .google-login-button:hover {
@@ -463,6 +485,9 @@ input:checked + .slider:before {
     cursor: pointer;
     transition: background-color 0.3s ease;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* Scoring Page */
@@ -473,6 +498,9 @@ input:checked + .slider:before {
     margin: 0;
     padding: 0;
     z-index: 100; /* Z-index base para a tela de pontuação */
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .scoring-page-layout.app-page--active { /* Aplicado apenas quando a página de pontuação está ativa */
@@ -506,7 +534,7 @@ input:checked + .slider:before {
 /* #524931  CHAT, AQUI ESSA SESSÃO É PARA UTILIZAR NA CRIAÇÃO DO MODAL PARA SELECIONAR OS TIMES */
 .select-team-modal-container {
     display: none; /* Oculto por padrão */
-    flex-direction: column;
+    /* flex-direction: column; REMOVIDO: Será definido pelo .select-team-content */
     align-items: center;
     position: fixed; /* Alterado para fixed para cobrir toda a viewport */
     top: 0;
@@ -520,68 +548,118 @@ input:checked + .slider:before {
     box-sizing: border-box; /* Garante que o padding não aumente o tamanho total */
 }
 
+/* NOVO: Wrapper para o conteúdo do modal para centralização */
+.select-team-modal-content-wrapper {
+    position: relative; /* Para o botão de fechar */
+    background-color: #222; /* Fundo do modal */
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 500px; /* Limita a largura do modal */
+    width: 90%; /* Ocupa 90% da largura em telas menores */
+    margin: auto; /* Centraliza o wrapper dentro do container */
+    max-height: 90vh; /* Limita a altura e adiciona rolagem */
+    overflow-y: auto; /* Adiciona rolagem vertical */
+}
+
+
+/* NOVO: Estilo para o botão de fechar no canto superior direito do modal */
+.close-modal-button-top-right {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: transparent;
+    color: white;
+    border: none;
+    font-size: 1.5rem;
+    padding: 0.5rem;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 1001; /* Acima do conteúdo do modal */
+    box-shadow: none;
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.close-modal-button-top-right:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
 .select-team-modal-container.modal-active {
     display: flex; /* Exibir quando ativo */
 }
 
-.select-team-modal-container h4 {
+/* REMOVIDO: Estilo para o título h4 no modal, pois foi removido do HTML */
+/* .select-team-modal-container h4 {
     padding-bottom: 1rem;
     font-size: 1.5rem;
-    color: white; /* Garante que o título seja visível */
-}
+    color: white;
+} */
 
 .select-team-container {
     display: grid;
     grid-template-columns: 1fr 1fr; /* Duas colunas para mobile */
     gap: 1rem;
-    max-height: 70vh; /* Limita a altura para rolagem */
-    overflow-y: auto; /* Adiciona rolagem vertical */
-    background-color: #222; /* Fundo do contêiner do modal */
-    padding: 20px; /* Padding interno */
-    border-radius: 8px; /* Cantos arredondados */
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    /* REMOVIDO: max-height e overflow-y, pois estão agora no wrapper */
+    /* background-color: #222; */
+    /* padding: 20px; */
+    /* border-radius: 8px; */
+    /* box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); */
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+    width: 100%; /* Ocupa a largura total do wrapper */
+    margin-top: 1rem; /* Espaçamento entre o botão de fechar e a lista de times */
+    justify-content: center; /* Centraliza os itens da grade horizontalmente */
+    align-items: center; /* Centraliza os itens da grade verticalmente */
 }
 
-.select-team-modal {
-    display: flex;    
+/* NOVO: Estilo para a mensagem "Nenhum time gerado" no modal */
+.select-team-container p { /* Aplica ao parágrafo dentro do container de times */
+    width: 100%; /* Garante que ocupe a largura total do grid */
+    text-align: center; /* Centraliza o texto dentro do parágrafo */
+    grid-column: 1 / -1; /* Faz com que ocupe todas as colunas do grid */
+}
+
+.select-team-list-item {
+    display: flex;
     align-items: center;
-    font-size: 1.2rem; /* Ajustado para melhor visualização no mobile */
+    justify-content: center;
+    font-size: 1rem;
     font-weight: bold;
     color: white;
     padding: 10px;
     background-color: #333;
     border-radius: 8px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    cursor: pointer; /* Indica que é clicável */
     transition: background-color 0.2s ease, transform 0.1s ease;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+    text-align: center;
+    min-width: 100px;
+    max-width: 150px;
 }
 
-.select-team-modal:hover {
+.select-team-list-item .select-team-name {
+    margin-left: 10px;
+}
+
+.select-team-list-item:hover {
     background-color: #444; /* Efeito hover */
     transform: translateY(-2px);
 }
 
-.select-team-color {
+.select-team-color-box { /* Renomeado de select-team-color para select-team-color-box */
     display: block;
     background-color: rgb(50, 95, 218); /* Cor padrão, será sobrescrita por JS */
     min-width: 30px;
     height: 30px;
     border-radius: 8px;
-    margin-right: 10px; /* Espaçamento menor */
-}
-
-/* Estilo para o botão de fechar dentro do modal */
-#close-modal-button {
-    margin-top: 1rem; /* Espaçamento acima do botão */
-    background-color: #DC2626; /* Cor vermelha para o botão de fechar */
-    color: white;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-weight: bold;
-}
-
-#close-modal-button:hover {
-    background-color: #B91C1C; /* Escurecer no hover */
+    margin-bottom: 5px; /* Espaçamento entre a caixa de cor e o nome */
 }
 
 /* Media Query para telas maiores no modal */
@@ -591,7 +669,7 @@ input:checked + .slider:before {
         max-width: 600px; /* Limita a largura para desktop */
     }
 }
-/* #524931  CHAT, AQUI ESSA SESSÃO É PARA UTILIZAR NA CRIAÇÃO DO MODAL PARA SELECI ONAR OS TIMES */
+/* #524932  CHAT, AQUI ESSA SESSÃO É PARA UTILIZAR NA CRIAÇÃO DO MODAL PARA SELECIONAR OS TIMES */
 
 .score-display-container {
     display: flex;
@@ -599,6 +677,9 @@ input:checked + .slider:before {
     width: 100%;
     height: 100%;
     position: relative;
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .score-panel {
@@ -613,6 +694,9 @@ input:checked + .slider:before {
     border-radius: 0;
     cursor: pointer;
     transition: background-color 0.3s ease; /* Removido transform para evitar animação */
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .team1-panel {
@@ -628,6 +712,9 @@ input:checked + .slider:before {
 .team-name {
     font-size: 2.5rem;
     margin-bottom: 0.5rem; /* Espaço abaixo do nome do time */
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .score-number {
@@ -661,6 +748,9 @@ input:checked + .slider:before {
 
 .generate-teams-button {
     width: 100%;
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .teams-grid {
@@ -675,6 +765,9 @@ input:checked + .slider:before {
     padding: 1rem;
     border-radius: 0.5rem;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .team-card-title {
@@ -741,6 +834,9 @@ input:checked + .slider:before {
     align-items: center;
     justify-content: space-between;    
     flex-direction: row-reverse;
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .player-info {
@@ -756,6 +852,9 @@ input:checked + .slider:before {
     box-shadow: none;
     color: #DC2626;
     padding: 0.25rem;
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .team-players-column {
@@ -767,6 +866,9 @@ input:checked + .slider:before {
     margin: 5px;
     min-width: 80px;
     max-width: 110px;
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .team-players-column ul {
@@ -807,6 +909,9 @@ input:checked + .slider:before {
     border: none;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
     z-index: 10;
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 #swap-teams-button .material-icons {
@@ -824,6 +929,9 @@ input:checked + .slider:before {
     border-radius: 8px 8px 0px 0px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
     z-index: 10;
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .timer-wrapper {
@@ -836,6 +944,9 @@ input:checked + .slider:before {
     align-items: center;
     gap: 0.75rem;
     padding: 0;
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .timer-wrapper:hover {
@@ -888,6 +999,9 @@ input:checked + .slider:before {
     font-size: 1.125rem;
     font-weight: 600;
     transition: background-color 0.3s ease;
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* NOVO: Estilo para o cabeçalho QUANDO ELE PRÓPRIO TEM A CLASSE active */
@@ -988,8 +1102,7 @@ input:checked + .slider:before {
     color: white;
     font-weight: bold;
     text-align: center;
-    opacity: 0;
-    transform: translateY(-20px);
+    /* Removido opacity e transform iniciais, agora confiando na animação */
     animation: fadeInOut 4s forwards;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }

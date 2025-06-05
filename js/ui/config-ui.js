@@ -2,17 +2,38 @@
 // Lógica de interface para a tela de configurações.
 
 import * as Elements from './elements.js';
-import { updateTeamDisplayNamesAndColors, renderScoringPagePlayers } from './game-ui.js';
+import { updateTeamDisplayNamesAndColors, renderScoringPagePlayers } from '../ui/game-ui.js';
 import { getCurrentTeam1, getCurrentTeam2, getActiveTeam1Name, getActiveTeam2Name, getActiveTeam1Color, getActiveTeam2Color } from '../game/logic.js';
 
+// Nomes padrão para os times personalizados
+const defaultTeamNames = [
+    'Time A', 'Time B', 'Time C', 'Time D', 'Time E', 'Time F'
+];
+// Cores padrão para os times personalizados
+const defaultTeamColors = [
+    '#325fda', '#f03737', '#4CAF50', '#FFC107', '#9C27B0', '#00BCD4'
+];
 
 /**
  * Carrega as configurações salvas no localStorage e as aplica aos inputs.
+ * Garante que nomes e cores padrão para times personalizados sejam sempre incluídos.
  * @returns {Object} O objeto de configuração carregado.
  */
 export function loadConfig() {
     try {
-        const config = JSON.parse(localStorage.getItem('volleyballConfig')) || {};
+        let config = JSON.parse(localStorage.getItem('volleyballConfig')) || {}; // Usar 'let' para permitir modificação do objeto config
+
+        // Preenche o objeto config com os nomes e cores padrão, se não estiverem definidos
+        for (let i = 0; i < defaultTeamNames.length; i++) {
+            const teamNum = i + 1;
+            const nameKey = `customTeam${teamNum}Name`;
+            const colorKey = `customTeam${teamNum}Color`;
+            // Se a configuração não existir, usa o padrão do array, ou um fallback genérico
+            config[nameKey] = config[nameKey] ?? defaultTeamNames[i] ?? `Time ${teamNum}`;
+            config[colorKey] = config[colorKey] ?? defaultTeamColors[i] ?? `#${Math.floor(Math.random()*16777215).toString(16)}`;
+        }
+
+        // Aplica as configurações aos inputs da UI
         if (Elements.playersPerTeamInput()) Elements.playersPerTeamInput().value = config.playersPerTeam ?? 4;
         if (Elements.pointsPerSetInput()) Elements.pointsPerSetInput().value = config.pointsPerSet ?? 15;
         if (Elements.numberOfSetsInput()) Elements.numberOfSetsInput().value = config.numberOfSets ?? 1;
@@ -23,18 +44,16 @@ export function loadConfig() {
         // Aplica as cores e nomes personalizados aos inputs de configuração
         for (let i = 0; i < Elements.customTeamInputs.length; i++) {
             const teamNum = i + 1;
-            if (Elements.customTeamInputs[i].name()) Elements.customTeamInputs[i].name().value = config[`customTeam${teamNum}Name`] ?? `Time Personalizado ${teamNum}`;
-            if (Elements.customTeamInputs[i].color()) Elements.customTeamInputs[i].color().value = config[`customTeam${teamNum}Color`] ?? `#${Math.floor(Math.random()*16777215).toString(16)}`;
+            if (Elements.customTeamInputs[i].name()) Elements.customTeamInputs[i].name().value = config[`customTeam${teamNum}Name`];
+            if (Elements.customTeamInputs[i].color()) Elements.customTeamInputs[i].color().value = config[`customTeam${teamNum}Color`];
         }
-
-        // REMOVIDO: As chamadas a updateTeamDisplayNamesAndColors() aqui para evitar sobrescrever os times ativos.
-        // A atualização da exibição dos nomes e cores dos times na tela de pontuação
-        // é responsabilidade do logic.js quando o jogo começa ou os times são trocados.
 
         // Aplica o tema escuro
         document.body.classList.toggle('dark-mode', config.darkMode ?? true);
 
-        return config;
+        console.log("[config-ui.js] Configurações carregadas/processadas (incluindo padrões):", config);
+
+        return config; // O objeto config retornado agora inclui os padrões se não estiverem salvos
     } catch (e) {
         console.error('Erro ao carregar configurações do localStorage:', e);
         return {};
@@ -67,7 +86,7 @@ export function saveConfig() {
         }
 
         localStorage.setItem('volleyballConfig', JSON.stringify(config));
-        console.log("Configurações salvas:", config);
+        console.log("[config-ui.js] Configurações salvas:", config);
 
         // Atualiza a exibição de jogadores na tela de pontuação imediatamente após salvar
         // É importante que essa atualização venha do estado ATUAL do jogo, não do config salvo.
@@ -80,10 +99,6 @@ export function saveConfig() {
         } else {
             renderScoringPagePlayers([], [], false); // Esconde os jogadores se a opção estiver desativada
         }
-
-        // REMOVIDO: A chamada a updateTeamDisplayNamesAndColors() aqui para evitar sobrescrever os times ativos.
-        // A atualização da exibição dos nomes e cores dos times na tela de pontuação
-        // é responsabilidade do logic.js quando o jogo começa ou os times são trocados.
 
         // Atualiza o tema escuro
         document.body.classList.toggle('dark-mode', config.darkMode);
@@ -98,19 +113,49 @@ export function saveConfig() {
  * Configura os event listeners para os inputs de configuração.
  */
 export function setupConfigUI() {
-    // Carrega as configurações ao iniciar a UI de configuração
+    console.log("[config-ui.js] Iniciando setupConfigUI.");
+    console.log("[config-ui.js] Conteúdo do objeto Elements:", Elements);
+
     loadConfig();
 
-    if (Elements.playersPerTeamInput()) Elements.playersPerTeamInput().addEventListener('change', saveConfig);
-    if (Elements.pointsPerSetInput()) Elements.pointsPerSetInput().addEventListener('change', saveConfig);
-    if (Elements.numberOfSetsInput()) Elements.numberOfSetsInput().addEventListener('change', saveConfig);
-    if (Elements.darkModeToggle()) Elements.darkModeToggle().addEventListener('change', saveConfig);
-    if (Elements.vibrationToggle()) Elements.vibrationToggle().addEventListener('change', saveConfig);
-    if (Elements.displayPlayersToggle()) Elements.displayPlayersToggle().addEventListener('change', saveConfig);
+    const elementsToSetup = [
+        { getter: Elements.playersPerTeamInput, name: 'playersPerTeamInput' },
+        { getter: Elements.pointsPerSetInput, name: 'pointsPerSetInput' },
+        { getter: Elements.numberOfSetsInput, name: 'numberOfSetsInput' },
+        { getter: Elements.darkModeToggle, name: 'darkModeToggle' },
+        { getter: Elements.vibrationToggle, name: 'vibrationToggle' },
+        { getter: Elements.displayPlayersToggle, name: 'displayPlayersToggle' },
+    ];
+
+    elementsToSetup.forEach(({ getter, name }) => {
+        if (typeof getter === 'function') { // Garante que a propriedade é uma função antes de chamá-la
+            const element = getter(); // Obtém a referência ao elemento DOM
+            if (element) {
+                element.addEventListener('change', saveConfig);
+            } else {
+                console.warn(`[config-ui.js] Elemento DOM para '${name}' não encontrado. Listener não adicionado.`);
+            }
+        } else {
+            console.error(`[config-ui.js] Elements.${name} não é uma função. Verifique a importação de elements.js.`);
+        }
+    });
 
     Elements.customTeamInputs.forEach(input => {
-        if (input.name()) input.name().addEventListener('change', saveConfig);
-        if (input.color()) input.color().addEventListener('change', saveConfig);
+        if (input.name && typeof input.name === 'function') {
+            const nameEl = input.name();
+            if (nameEl) nameEl.addEventListener('change', saveConfig);
+            else console.warn(`[config-ui.js] Elemento para nome de time personalizado não encontrado.`);
+        } else {
+            console.error(`[config-ui.js] Elements.customTeamInputs.name não é uma função válida.`);
+        }
+
+        if (input.color && typeof input.color === 'function') {
+            const colorEl = input.color();
+            if (colorEl) colorEl.addEventListener('change', saveConfig);
+            else console.warn(`[config-ui.js] Elemento para cor de time personalizado não encontrado.`);
+        } else {
+            console.error(`[config-ui.js] Elements.customTeamInputs.color não é uma função válida.`);
+        }
     });
 
     // Adiciona listener para o botão de reset de configurações
@@ -118,10 +163,11 @@ export function setupConfigUI() {
         Elements.resetConfigButton().addEventListener('click', () => {
             localStorage.removeItem('volleyballConfig');
             loadConfig(); // Recarrega as configurações padrão
-            console.log('Configurações resetadas para o padrão.');
+            console.log('[config-ui.js] Configurações resetadas para o padrão.');
             // Força a atualização dos jogadores na tela de pontuação após reset
             // Usa o estado ATUAL do jogo, que será resetado para os defaults de config-ui.js
             renderScoringPagePlayers(getCurrentTeam1(), getCurrentTeam2(), loadConfig().displayPlayers ?? true);
         });
     }
+    console.log("[config-ui.js] setupConfigUI finalizado.");
 }

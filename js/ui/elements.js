@@ -71,6 +71,7 @@ export const teamsGridLayout = () => document.getElementById('teams-grid-layout'
 export const teamSelectionModal = () => document.getElementById('team-selection-modal');
 export const modalTeamList = () => document.getElementById('modal-team-list');
 export const closeModalButton = () => document.getElementById('close-modal-button');
+export const closeModalButtonTopRight = () => document.getElementById('close-modal-button-top-right'); // NOVO: Botão de fechar no canto superior direito
 
 // Tela de Configurações
 export const accordionHeaders = () => document.querySelectorAll('.accordion-header'); // Pode continuar sendo um querySelectorAll

@@ -84,7 +84,7 @@ export async function addPlayer(playerName, userId, appId) { // Adicionado appId
                 createdAt: new Date()
             });
             console.log("Jogador adicionado ao Firestore com ID:", playerRef.id);
-            displayMessage(`Jogador '${playerName}' adicionado ao Firestore.`, "success");
+            displayMessage(`Jogador '${playerName}' adicionado!`, "success");
             // O listener do Firestore (setupFirestorePlayersListener) irá atualizar a lista 'players' e a UI
         } catch (e) {
             console.error("Erro ao adicionar jogador ao Firestore:", e);
@@ -125,8 +125,8 @@ export async function removePlayer(playerId, userId, appId) { // Adicionado appI
     if (userId && auth.currentUser && playerToRemove.firestoreId) {
         try {
             await deleteDoc(doc(db, `artifacts/${appId}/public/data/players`, playerToRemove.firestoreId)); // Usando appId
-            console.log("Jogador removido do Firestore com ID:", playerToRemove.firestoreId);
-            displayMessage(`Jogador '${playerToRemove.name}' removido do Firestore.`, "success");
+            console.log("Jogador removido com ID:", playerToRemove.firestoreId);
+            displayMessage(`Jogador '${playerToRemove.name}' removido!.`, "success");
             // O listener do Firestore irá atualizar a lista 'players' e a UI
         } catch (e) {
             console.error("Erro ao remover jogador do Firestore:", e);
