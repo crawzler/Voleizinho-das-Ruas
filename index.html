@@ -19,10 +19,25 @@
 
     <div id="sidebar" class="sidebar-menu">
         <div class="sidebar-header">
-            <h2 class="sidebar-title">Menu</h2>
-            <button id="close-sidebar-button" class="header-button">
+            <!-- NOVO: Container para foto e nome do usuário, agora clicável -->
+            <div id="user-profile-header" class="user-profile-header">
+                <img id="user-profile-picture" class="user-profile-picture" src="https://placehold.co/40x40/222/FFF?text=?" alt="User Profile">
+                <span id="user-display-name" class="user-display-name">Carregando...</span>
+                <span class="material-icons profile-menu-arrow">arrow_drop_down</span>
+            </div>
+            <!-- NOVO: Mini-menu do perfil -->
+            <div id="profile-menu" class="profile-menu">
+                <button id="profile-settings-button" class="profile-menu-item">
+                    <span class="material-icons">settings</span> Configurações
+                </button>
+                <button id="profile-logout-button" class="profile-menu-item">
+                    <span class="material-icons">logout</span> Sair
+                </button>
+            </div>
+            <!-- REMOVIDO: Botão de fechar o sidebar (o X) -->
+            <!-- <button id="close-sidebar-button" class="header-button">
                 <span class="material-icons">close</span>
-            </button>
+            </button> -->
         </div>
         <nav class="sidebar-nav">
             <button id="nav-scoring" class="sidebar-nav-item">
@@ -43,11 +58,10 @@
             <button id="nav-stats" class="sidebar-nav-item">
                 <span class="material-icons sidebar-nav-icon">insights</span> Estatísticas
             </button>
-            <button id="nav-config" class="sidebar-nav-item">
+            <!-- REMOVIDO: Botão de Sair -->
+            <!-- Botão de Configurações será acessível no mini-menu do perfil -->
+            <button id="nav-config" class="sidebar-nav-item" style="display:none;">
                 <span class="material-icons sidebar-nav-icon">settings</span> Configurações
-            </button>
-            <button id="nav-logout" class="sidebar-nav-item">
-                <span class="material-icons sidebar-nav-icon">logout</span> Sair
             </button>
         </nav>
         <div class="sidebar-footer">
@@ -79,15 +93,15 @@
         <section id="scoring-page" class="app-page scoring-page-layout">
             <div class="score-display-container">
 
-                <!-- #524931  CHAT, AQUI ESSA SESSÃO É PARA UTILIZAR NA CRIAÇÃO DO MODAL PARA SELECIONAR OS TIMES-->
-                <div class="select-team-modal-container">
+                <!-- MODAL DE SELEÇÃO DE TIME - REINSERINDO OS IDs NECESSÁRIOS -->
+                <div id="team-selection-modal" class="select-team-modal-container">
                     <h4>Selecione um time:</h4>
-                    <div class="select-team-modal">
-                        <span class="custom-team-1-color select-team-color"></span>
-                        <span class="custom-team-1-name select-team-name">Time 1</span>
+                    <div id="modal-team-list" class="select-team-container">
+                        <!-- Times gerados dinamicamente pelo JavaScript serão inseridos aqui -->
                     </div>
+                    <button id="close-modal-button" class="button button--secondary">Fechar</button>
                 </div>
-                <!-- #524932  CHAT, AQUI ESSA SESSÃO É PARA UTILIZAR NA CRIAÇÃO DO MODAL PARA SELECIONAR OS TIMES-->
+                <!-- FIM DO MODAL DE SELEÇÃO DE TIME -->
 
                 <div id="team1-panel" class="score-panel team1-panel">
                     <h3 id="team1-name" class="team-name">Time 1</h3>
@@ -103,7 +117,8 @@
                     <div id="team2-players-column" class="team-players-column"></div>
                 </div>
             </div>
-            <div class="timer-and-set-timer-wrapper">
+            <!-- ADICIONADO O ID PARA O WRAPPER DO TIMER -->
+            <div id="timer-and-set-timer-wrapper" class="timer-and-set-timer-wrapper">
                 <div class="timer-wrapper">
                     <span id="timer-text">00:00</span>
                     <span class="material-icons timer-toggle-button">play_arrow</span>
@@ -334,6 +349,9 @@
             <h4>Em desenvolvimento...</h4>
         </section>
     </main>
+
+    <!-- NOVO: Overlay para fechar o menu ao clicar fora -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
 
     <!-- Container para mensagens de notificação -->
     <div id="message-container" class="message-container"></div>
