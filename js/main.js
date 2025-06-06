@@ -15,6 +15,24 @@ import { displayMessage } from './ui/messages.js';
 import { updatePlayerCount, updateSelectAllToggle } from './ui/players-ui.js'; // Importa as funções para a UI de jogadores
 
 document.addEventListener('DOMContentLoaded', async () => {
+
+    
+    // NOVO: Desativa o pull-to-refresh para mobile
+    let lastTouchY = 0;
+    window.addEventListener('touchstart', (e) => {
+        lastTouchY = e.touches[0].clientY;
+    });
+
+    window.addEventListener('touchmove', (e) => {
+        const currentTouchY = e.touches[0].clientY;
+        // Se a tela está no topo (scrollY === 0) e o usuário está arrastando para baixo
+        if (window.scrollY === 0 && currentTouchY > lastTouchY) {
+            e.preventDefault();
+        }
+    }, { passive: false }); // 'passive: false' é crucial para que preventDefault funcione
+
+    
+    
     // Esconde todas as páginas inicialmente para garantir que apenas uma seja exibida
     Elements.pages().forEach(page => { // Chamada da função Elements.pages()
         page.classList.remove('app-page--active');
