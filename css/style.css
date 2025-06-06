@@ -1,6 +1,7 @@
 html {
     box-sizing: border-box;
     height: 100%; /* Garante que o html ocupe toda a altura da viewport */
+    width: 100%; /* Garante que o html ocupe toda a largura da viewport */
 } /* FECHAMENTO CORRETO DO HTML */
 
 /* Regra universal de box-sizing deve ser aplicada globalmente */
@@ -19,7 +20,8 @@ body {
     overflow-x: hidden;
     margin: 0;
     padding: 0;    
-    overscroll-behavior-y: auto; /* Adicionado para ativar o efeito elástico de rolagem */
+    overscroll-behavior-y: contain; /* ALTERADO: Impede o pull-to-refresh no corpo principal */
+    width: 100%; /* Garante que o body ocupe toda a largura da viewport */
 }
 
 input {
@@ -149,7 +151,7 @@ input:checked + .slider:before {
     flex-direction: column;
     padding: 10px 1rem 1rem 1rem;
     overflow: auto;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .sidebar-menu.active {
@@ -165,13 +167,6 @@ input:checked + .slider:before {
     position: relative; /* Para posicionar o mini-menu corretamente */
     padding-bottom: 10px; /* Adiciona espaço para o mini-menu se ele estiver por baixo */
 }
-
-/* REMOVIDO: Título do menu */
-/* .sidebar-title {
-    color: #ddd;
-    font-size: 1rem;
-    margin: 0;
-} */
 
 /* NOVO: Estilos para o cabeçalho do perfil do usuário */
 .user-profile-header {
@@ -230,7 +225,7 @@ input:checked + .slider:before {
     width: 100%;
     background-color: #333;
     border-radius: 0 0 8px 8px; /* Apenas as bordas inferiores arredondadas */
-    box-shadow: 0 4鸣8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     z-index: 960; /* Acima do sidebar, mas abaixo do botão de fechar */
     overflow: hidden; /* Garante que o conteúdo não vaze se houver padding/margin */
 }
@@ -348,7 +343,6 @@ input:checked + .slider:before {
     top: 0;
     left: 0;
     display: none; /* Esconde todas as páginas por padrão */
-    /* overflow-y: auto; REMOVIDO: O scroll agora será em containers internos, como players-list-container */
     padding: 1rem;
     box-sizing: border-box;
     background-color: #1a1a1a;
@@ -372,7 +366,7 @@ input:checked + .slider:before {
 /* Estilo para a página ativa (geral) */
 .app-page.app-page--active {
     display: flex !important;
-    z-index: 500; /* Z-index para páginas ativas (abaixo do sidebar) */
+    z-index: 800; /* Z-index para páginas ativas (abaixo do sidebar) */
 }
 
 /* Login Page Styles - Z-index mais alto quando ativa */
@@ -495,22 +489,22 @@ input:checked + .slider:before {
     margin: 0;
     padding: 0;
     z-index: 100; /* Z-index base para a tela de pontuação */
-    /* NOVO: Remove a demarcação azul em cliques/toques */
     outline: none;
     -webkit-tap-highlight-color: transparent;
+
+    /* RESTRUTURADO: Para empilhar elementos da página de jogo verticalmente */
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
 .scoring-page-layout.app-page--active { /* Aplicado apenas quando a página de pontuação está ativa */
-    width: 100vw;
-    height: 100vh;
-    position: fixed; /* Posição fixa para cobrir a tela inteira */
-    top: 0;
-    left: 0;
-    z-index: 100; /* Garante que esteja acima de outras páginas inativas, mas abaixo do sidebar/start-page */
-    display: flex;
-    flex-direction: row; /* Times lado a lado */
-    align-items: stretch; /* Estica os painéis para preencher a altura */
-    justify-content: stretch; /* Estica os painéis para preencher a largura */
+    display: flex !important; /* Garante que esteja visível */
+    z-index: 500; /* Z-index para páginas ativas */
 }
 
 
@@ -531,7 +525,6 @@ input:checked + .slider:before {
 /* #524931  CHAT, AQUI ESSA SESSÃO É PARA UTILIZAR NA CRIAÇÃO DO MODAL PARA SELECIONAR OS TIMES */
 .select-team-modal-container {
     display: none; /* Oculto por padrão */
-    /* flex-direction: column; REMOVIDO: Será definido pelo .select-team-content */
     align-items: center;
     position: fixed; /* Alterado para fixed para cobrir toda a viewport */
     top: 0;
@@ -560,6 +553,7 @@ input:checked + .slider:before {
     margin: auto; /* Centraliza o wrapper dentro do container */
     max-height: 90vh; /* Limita a altura e adiciona rolagem */
     overflow-y: auto; /* Adiciona rolagem vertical */
+    overscroll-behavior-y: auto; /* Adicionado para garantir rolagem independente */
 }
 
 
@@ -601,18 +595,13 @@ input:checked + .slider:before {
     display: grid;
     grid-template-columns: 1fr 1fr; /* Duas colunas para mobile */
     gap: 1rem;
-    /* REMOVIDO: max-height e overflow-y, pois estão agora no wrapper */
-    /* background-color: #222; */
-    /* padding: 20px; */
-    /* border-radius: 8px; */
-    /* box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); */
-    /* NOVO: Remove a demarcação azul em cliques/toques */
-    outline: none;
-    -webkit-tap-highlight-color: transparent;
     width: 100%; /* Ocupa a largura total do wrapper */
     margin-top: 1rem; /* Espaçamento entre o botão de fechar e a lista de times */
     justify-content: center; /* Centraliza os itens da grade horizontalmente */
     align-items: center; /* Centraliza os itens da grade verticalmente */
+    /* NOVO: Remove a demarcação azul em cliques/toques */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* NOVO: Estilo para a mensagem "Nenhum time gerado" no modal */
@@ -624,7 +613,8 @@ input:checked + .slider:before {
 
 .select-team-list-item {
     display: flex;
-    align-items: center;
+    flex-direction: column; /* Organiza cor e nome em coluna */
+    align-items: center; /* Centraliza horizontalmente */
     justify-content: center;
     font-size: 1rem;
     font-weight: bold;
@@ -642,7 +632,8 @@ input:checked + .slider:before {
 }
 
 .select-team-list-item .select-team-name {
-    margin-left: 10px;
+    margin-top: 5px; /* Espaçamento entre a caixa de cor e o nome */
+    margin-left: 0; /* Remove margin-left antigo */
 }
 
 .select-team-list-item:hover {
@@ -656,7 +647,7 @@ input:checked + .slider:before {
     min-width: 30px;
     height: 30px;
     border-radius: 8px;
-    margin-bottom: 5px; /* Espaçamento entre a caixa de cor e o nome */
+    margin-bottom: 0; /* Ajusta a margem, pois o nome agora está abaixo */
 }
 
 /* Media Query para telas maiores no modal */
@@ -671,8 +662,8 @@ input:checked + .slider:before {
 .score-display-container {
     display: flex;
     flex-direction: column; /* Painéis de pontuação em coluna no modo retrato */
+    flex: 1; /* Ocupa o espaço vertical restante */
     width: 100%;
-    height: 100%;
     position: relative;
     /* NOVO: Remove a demarcação azul em cliques/toques */
     outline: none;
@@ -825,6 +816,7 @@ input:checked + .slider:before {
     -webkit-overflow-scrolling: touch; /* Melhora o scroll em iOS */
     min-height: 0; /* Crucial para flex items com overflow */
     padding-bottom: 50px; /* Espaço para rolagem no final */
+    overscroll-behavior-y: auto; /* Adicionado para garantir rolagem independente */
 }
 
 .player-list-item {
@@ -871,6 +863,8 @@ input:checked + .slider:before {
     /* NOVO: Remove a demarcação azul em cliques/toques */
     outline: none;
     -webkit-tap-highlight-color: transparent;
+    overflow-y: auto; /* Adicionado para garantir rolagem independente */
+    overscroll-behavior-y: auto; /* Adicionado para garantir rolagem independente */
 }
 
 .team-players-column ul {
@@ -1017,6 +1011,8 @@ input:checked + .slider:before {
     overflow: hidden;
     transition: max-height 0.3s ease-out;
     color: #D1D5DB;
+    overflow-y: auto; /* Adicionado para garantir rolagem independente */
+    overscroll-behavior-y: auto; /* Adicionado para garantir rolagem independente */
 }
 
 .accordion-content-sub {
@@ -1119,6 +1115,27 @@ input:checked + .slider:before {
 
 .message-box.info {
     background-color: #2563EB;
+}
+
+
+/* Animação para a mensagem */
+@keyframes fadeInOut {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    10% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    90% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
 }
 
 
