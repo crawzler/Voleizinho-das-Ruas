@@ -1,9 +1,32 @@
-const CACHE_NAME = 'VdR-DZ-v0.2.0_Test';
+const CACHE_NAME = 'VdR-DZ-v0.2.1_Test';
 const urlsToCache = [
   './',
   './index.html',
+  './manifest.json',
   './css/style.css',
-  './js/main.js' // Alterado de script.js para main.js, que é o ponto de entrada principal
+  './assets/app-logo.png',
+  './assets/google-icon.png',
+  './images/icon-48x48.png',
+  './images/icon-72x72.png',
+  './images/icon-96x96.png',
+  './images/icon-144x144.png',
+  './images/icon-192x192.png',
+  './images/icon-512x512.png',
+  './js/main.js',
+  './js/data/players.js',
+  './js/firebase/auth.js',
+  './js/firebase/config.js',
+  './js/game/logic.js',
+  './js/game/teams.js',
+  './js/ui/config-ui.js',
+  './js/ui/elements.js',
+  './js/ui/game-ui.js',
+  './js/ui/messages.js',
+  './js/ui/pages.js',
+  './js/ui/players-ui.js',
+  './js/utils/app-info.js',
+  './js/utils/helpers.js',
+  'https://fonts.googleapis.com/icon?family=Material+Icons'
 ];
 
 self.addEventListener('install', (event) => {
