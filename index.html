@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#252525"/>
     <title>Vôlei Score App</title>
     <link rel="stylesheet" href="css/style.css">
@@ -87,6 +87,10 @@
 
         <!-- Página de Pontuação -->
         <section id="scoring-page" class="app-page scoring-page-layout">
+            <!-- NOVO: Contêineres para as estrelas de sets vencidos -->
+            <div id="team1-stars" class="stars-container"></div>
+            <div id="team2-stars" class="stars-container"></div>
+            
             <div class="score-display-container">
 
                 <!-- MODAL DE SELEÇÃO DE TIME -->
@@ -273,7 +277,7 @@
             <button id="reset-config-button" class="button button--secondary form-button--full-width">Redefinir Configurações</button>
 
             
-            <div class="app-info">
+            <div class="app-info" style="display: none;">
                 <span id="user-id-display">ID: Carregando...</span>
                 <span id="app-version-display">Versão: Carregando...</span>
             </div>
@@ -282,7 +286,7 @@
         <!-- Página de Histórico -->
         <section id="history-page" class="app-page history-page-layout">
             <h2 class="page-heading">Histórico de Jogos</h2>
-            <h4>Em desenvolvimento...</h4>
+            <!--<h4>Em desenvolvimento...</h4>-->
             <!-- Conteúdo do histórico, por exemplo:
             <div class="history-card">
                 <div class="history-card-header">
@@ -325,8 +329,8 @@
         <!-- Página de Agendamentos -->
         <section id="scheduling-page" class="app-page scheduling-page-layout">
             <h2 class="page-heading">Agendamentos de Jogos</h2>
-            <h4>Em Desenvolvimento...</h4>
-            <!--
+            <!--<h4>Em Desenvolvimento...</h4>-->
+            
             <div class="scheduling-form-grid">
                 <div class="form-group">
                     <label for="date-input" class="form-label">Data:</label>
@@ -350,12 +354,12 @@
                 </div>
                 <button class="button button--primary form-button--full-width">Agendar Jogo</button>
             </div>
-            -->
+            
         </section>
 
         <section id="stats-page" class="app-page stats-page-layout">
             <h2 class="page-heading">Estatísticas dos Jogadores</h2>
-            <h4>Em desenvolvimento...</h4>
+            <!--<h4>Em desenvolvimento...</h4>-->
         </section>
     </main>
 
