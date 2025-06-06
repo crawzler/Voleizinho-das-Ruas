@@ -17,19 +17,19 @@ import { updatePlayerCount, updateSelectAllToggle } from './ui/players-ui.js'; /
 document.addEventListener('DOMContentLoaded', async () => {
 
     
-    // NOVO: Desativa o pull-to-refresh para mobile
-    let lastTouchY = 0;
-    window.addEventListener('touchstart', (e) => {
-        lastTouchY = e.touches[0].clientY;
-    });
+    // REMOVIDO: Desativa o pull-to-refresh para mobile
+    // let lastTouchY = 0;
+    // window.addEventListener('touchstart', (e) => {
+    //     lastTouchY = e.touches[0].clientY;
+    // });
 
-    window.addEventListener('touchmove', (e) => {
-        const currentTouchY = e.touches[0].clientY;
-        // Se a tela está no topo (scrollY === 0) e o usuário está arrastando para baixo
-        if (window.scrollY === 0 && currentTouchY > lastTouchY) {
-            e.preventDefault();
-        }
-    }, { passive: false }); // 'passive: false' é crucial para que preventDefault funcione
+    // window.addEventListener('touchmove', (e) => {
+    //     const currentTouchY = e.touches[0].clientY;
+    //     // Se a tela está no topo (scrollY === 0) e o usuário está arrastando para baixo
+    //     if (window.scrollY === 0 && currentTouchY > lastTouchY) {
+    //         e.preventDefault();
+    //     }
+    // }, { passive: false }); // 'passive: false' é crucial para que preventDefault funcione
 
     
     
