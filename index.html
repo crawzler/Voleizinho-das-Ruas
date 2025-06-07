@@ -227,7 +227,7 @@
                     <div class="accordion-header">
                         <h3>Times Personalizados</h3>
                         <span class="material-icons">expand_more</span>
-                    </div>
+                    </button>
                     <div class="accordion-content">  
                         <div class="accordion-content-sub-teams">
                             <div>
@@ -276,9 +276,8 @@
                 </div>
             </div>
             <button id="reset-config-button" class="button button--secondary form-button--full-width">Redefinir Configurações</button>
-
             
-            <div class="app-info" style="display: none;">
+            <div class="app-info">
                 <span id="user-id-display">ID: Carregando...</span>
                 <span id="app-version-display">Versão: Carregando...</span>
             </div>
@@ -295,7 +294,6 @@
         <!-- Página de Agendamentos -->
         <section id="scheduling-page" class="app-page scheduling-page-layout">
             <h2 class="page-heading">Agendamentos de Jogos</h2>
-            <!--<h4>Em Desenvolvimento...</h4>-->
             
             <div class="scheduling-form-grid">
                 <div class="form-group">
@@ -344,6 +342,17 @@
             <!--<h4>Em desenvolvimento...</h4>-->
         </section>
     </main>
+
+    <!-- Confirmation Modal Structure (NOVO) -->
+    <div id="confirmation-modal" class="confirmation-modal-overlay">
+        <div class="confirmation-modal-content">
+            <p id="confirmation-message" class="confirmation-message"></p>
+            <div class="confirmation-buttons">
+                <button id="confirm-yes-button" class="button confirmation-button--confirm">Sim</button>
+                <button id="confirm-no-button" class="button confirmation-button--cancel">Não</button>
+            </div>
+        </div>
+    </div>
 
     <!-- NOVO: Overlay para fechar o menu ao clicar fora -->
     <div id="sidebar-overlay" class="sidebar-overlay"></div>

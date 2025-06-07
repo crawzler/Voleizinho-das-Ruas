@@ -30,9 +30,8 @@ export const teamsPage = () => document.getElementById('teams-page');
 export const playersPage = () => document.getElementById('players-page');
 export const configPage = () => document.getElementById('config-page');
 export const historyPage = () => document.getElementById('history-page');
-export const schedulingPage = () => document.getElementById('scheduling-page');
 export const statsPage = () => document.getElementById('stats-page');
-export const historyList = () => document.getElementById('history-list-container');
+export const schedulingPage = () => document.getElementById('scheduling-page'); // Adicionado
 
 // Botões de Navegação
 export const navScoringButton = () => document.getElementById('nav-scoring');
@@ -97,7 +96,10 @@ for (let i = 1; i <= 6; i++) {
     });
 }
 
-// Página de Agendamentos
+// Página de Histórico
+export const historyListContainer = () => document.getElementById('history-list-container');
+
+// Página de Agendamentos (NOVO)
 export const dateInput = () => document.getElementById('date-input');
 export const startTimeInput = () => document.getElementById('start-time-input');
 export const endTimeInput = () => document.getElementById('end-time-input');
@@ -105,5 +107,11 @@ export const locationInput = () => document.getElementById('location-input');
 export const notesInput = () => document.getElementById('notes-input');
 export const scheduleGameButton = () => document.getElementById('schedule-game-button');
 export const upcomingGamesList = () => document.getElementById('upcoming-games-list');
-export const pastGamesAccordion = () => document.getElementById('past-games-accordion');
 export const pastGamesList = () => document.getElementById('past-games-list');
+export const pastGamesAccordion = () => document.getElementById('past-games-accordion');
+
+// Modal de Confirmação (NOVO)
+export const confirmationModal = () => document.getElementById('confirmation-modal');
+export const confirmationMessage = () => document.getElementById('confirmation-message');
+export const confirmYesButton = () => document.getElementById('confirm-yes-button');
+export const confirmNoButton = () => document.getElementById('confirm-no-button');

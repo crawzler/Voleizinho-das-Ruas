@@ -1,134 +1,166 @@
 // js/ui/history-ui.js
-// Renders the game history page.
+// Funções relacionadas à interface da página de histórico de jogos.
 
-import { loadGameHistory } from '../data/history.js';
 import * as Elements from './elements.js';
+import { displayMessage } from './messages.js';
+import { showConfirmationModal } from './pages.js'; // Importa o modal de confirmação
+
+const MATCH_HISTORY_STORAGE_KEY = 'voleiScoreMatchHistory';
+
+let matchHistory = [];
 
 /**
- * Formata a data de um jogo para exibição.
- * @param {string} isoDate - A data no formato ISO.
- * @returns {string} A data formatada (ex: 01/01/2023 14:30).
+ * Carrega o histórico de partidas do localStorage.
  */
-function formatGameDate(isoDate) {
-    if (!isoDate) return 'Data desconhecida';
-    const date = new Date(isoDate);
-    return date.toLocaleString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+function loadMatchHistoryFromLocalStorage() {
+    const storedHistory = localStorage.getItem(MATCH_HISTORY_STORAGE_KEY);
+    // console.log('Histórico carregado do localStorage:', storedHistory); // Removido log de depuração
+    if (storedHistory) {
+        try {
+            matchHistory = JSON.parse(storedHistory);
+        } catch (error) {
+            console.error('Erro ao analisar o histórico do localStorage:', error);
+            matchHistory = [];
+        }
+    }
+}
+
+/**
+ * Salva o histórico de partidas no localStorage.
+ */
+function saveMatchHistoryToLocalStorage() {
+    try {
+        localStorage.setItem(MATCH_HISTORY_STORAGE_KEY, JSON.stringify(matchHistory));
+        // console.log('Histórico salvo no localStorage com sucesso.'); // Removido log de depuração
+    } catch (error) {
+        console.error('Erro ao salvar o histórico no localStorage:', error);
+        displayMessage('Erro ao salvar o histórico.', 'error');
+    }
+}
+
+/**
+ * Adiciona uma partida ao histórico.
+ * @param {object} matchData - Os dados da partida (teamA, teamB, score, winner, timeElapsed, location, etc.).
+ */
+export function addMatchToHistory(matchData) {
+    // Adiciona um ID único à partida para facilitar a remoção
+    const matchWithId = { ...matchData, id: `match-${Date.now()}` };
+    matchHistory.unshift(matchWithId); // Adiciona no início para as mais recentes aparecerem primeiro
+    saveMatchHistoryToLocalStorage();
+    displayMessage('Partida salva no histórico!', 'success');
+    renderMatchHistory(); // Renderiza novamente o histórico
+}
+
+/**
+ * Exclui uma partida do histórico.
+ * @param {string} matchId - O ID da partida a ser excluída.
+ */
+function deleteMatch(matchId) {
+    const initialLength = matchHistory.length;
+    matchHistory = matchHistory.filter(match => match.id !== matchId);
+    if (matchHistory.length < initialLength) {
+        saveMatchHistoryToLocalStorage();
+        displayMessage('Registro do histórico excluído.', 'success');
+        renderMatchHistory(); // Renderiza novamente o histórico
+    } else {
+        displayMessage('Erro: Registro do histórico não encontrado.', 'error');
+    }
+}
+
+/**
+ * Renderiza o histórico de partidas na interface do usuário.
+ */
+function renderMatchHistory() {
+    const historyListContainer = Elements.historyListContainer(); // Chamada da função
+    if (!historyListContainer) {
+        console.warn("Elemento 'history-list-container' não encontrado no DOM.");
+        return;
+    }
+
+    historyListContainer.innerHTML = ''; // Limpa o container antes de renderizar
+
+    if (matchHistory.length === 0) {
+        historyListContainer.innerHTML = '<p class="empty-list-message">Nenhuma partida registrada ainda.</p>';
+        return;
+    }
+
+    matchHistory.forEach(match => {
+        historyListContainer.appendChild(createMatchCard(match));
     });
 }
 
 /**
- * Formata a duração de um jogo para exibição.
- * @param {number} durationInSeconds - A duração em segundos.
- * @returns {string} A duração formatada (ex: 1h 15m 30s).
+ * Cria o elemento HTML para um cartão de partida do histórico.
+ * @param {object} match - Os dados da partida.
+ * @returns {HTMLElement} O elemento do cartão da partida.
  */
-function formatGameDuration(durationInSeconds) {
-    if (isNaN(durationInSeconds) || durationInSeconds < 0) {
-        return '00:00';
-    }
-    const minutes = Math.floor(durationInSeconds / 60).toString().padStart(2, '0');
-    const seconds = (durationInSeconds % 60).toString().padStart(2, '0');
-    return `${minutes}:${seconds}`;
-}
+function createMatchCard(match) {
+    const card = document.createElement('div');
+    card.className = 'match-history-card';
+    card.dataset.matchId = match.id; // Adiciona o ID da partida como um data attribute
 
-function formatSetDuration(durationInSeconds) {
-    if (isNaN(durationInSeconds) || durationInSeconds < 0) {
-        return '00:00';
-    }
-    const minutes = Math.floor(durationInSeconds / 60).toString().padStart(2, '0');
-    const seconds = (durationInSeconds % 60).toString().padStart(2, '0');
-    return `${minutes}:${seconds}`;
-}
+    const matchDate = new Date(match.createdAt);
+    const formattedDate = matchDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const formattedTime = matchDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
+    const isTeamAWinner = match.winner === match.teamA.name;
+    const isTeamBWinner = match.winner === match.teamB.name;
 
-/**
- * Cria o HTML para um único item do histórico.
- * @param {object} game - O objeto do jogo.
- * @returns {string} O HTML do item do histórico.
- */
-function createHistoryItemHTML(game) {
-    const gameDate = new Date(game.date);
-    const formattedDate = gameDate.toLocaleDateString('pt-BR');
-    const formattedTime = gameDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const teamAName = match.teamA.name || 'Time A';
+    const teamBName = match.teamB.name || 'Time B';
 
-    const team1PlayersList = game.team1Players.map(player => `<li>- ${player}</li>`).join('');
-    const team2PlayersList = game.team2Players.map(player => `<li>- ${player}</li>`).join('');
+    const createPlayerList = (teamPlayers, isWinner) => {
+        if (!teamPlayers || teamPlayers.length === 0) return 'Sem jogadores';
+        return `<ul>${teamPlayers.map(player => `<li class="${isWinner ? 'winner-player' : ''}">${player}</li>`).join('')}</ul>`;
+    };
 
-    const setsList = game.sets.map(set => `
-        <li>
-            <span>${set.team1Score} ${game.team1Name} vs ${game.team2Name} ${set.team2Score}</span>
-            <span>${formatSetDuration(set.duration)}</span>
-        </li>
-    `).join('');
-
-    return `
-        <div class="history-item">
-            <div class="history-item-header">
-                <h2>${game.team1Name} ${game.team1Sets} vs ${game.team2Sets} ${game.team2Name}</h2>
-                <div class="date-time">
-                    <span>${formattedDate}</span>
-                    <span>${formattedTime}</span>
-                </div>
-                <button class="expand-button">
-                    <i class="material-icons">expand_more</i>
-                </button>
+    card.innerHTML = `
+        <div class="date-time-info">
+            <span>${formattedDate} às ${formattedTime}</span>
+            <button class="delete-match-button" title="Excluir partida"><span class="material-icons">delete</span></button>
+        </div>
+        <div class="match-info">
+            <div class="team">
+                <h4 class="${isTeamAWinner ? 'winner' : ''}">${teamAName} (${match.score.setsA})</h4>
+                ${createPlayerList(match.teamA.players, isTeamAWinner)}
             </div>
-            <div class="history-item-content" style="display: none;">
-                <div class="details-grid">
-                    <div class="players-section">
-                        <h3>Jogadores:</h3>
-                        <div class="teams">
-                            <div class="team">
-                                <h4>${game.team1Name}:</h4>
-                                <ul>${team1PlayersList}</ul>
-                            </div>
-                            <div class="team">
-                                <h4>${game.team2Name}:</h4>
-                                <ul>${team2PlayersList}</ul>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="sets-section">
-                        <h3>Sets:</h3>
-                        <ul>${setsList}</ul>
-                    </div>
-                </div>
-                <div class="history-item-footer">
-                    <div class="location">
-                        <i class="material-icons">location_on</i>
-                        <span>Local: Quadra da Praça</span>
-                    </div>
-                    <div class="game-time">
-                        <i class="material-icons">timer</i>
-                        <span>Tempo de jogo: ${formatGameDuration(game.duration)}</span>
-                    </div>
-                    <button class="delete-button">
-                        <i class="material-icons">delete</i>
-                    </button>
-                </div>
+            <div class="match-score">
+                <span>${match.score.teamA}</span> x <span>${match.score.teamB}</span>
+            </div>
+            <div class="team">
+                <h4 class="${isTeamBWinner ? 'winner' : ''}">${teamBName} (${match.score.setsB})</h4>
+                ${createPlayerList(match.teamB.players, isTeamBWinner)}
             </div>
         </div>
     `;
+    return card;
 }
 
-
 /**
- * Carrega e exibe o histórico de jogos na página.
+ * Configura os event listeners e a lógica para a página de histórico.
  */
-export async function setupHistoryPage() {
-    const historyContainer = Elements.historyList();
-    historyContainer.innerHTML = '<p class="message message--loading">Carregando histórico...</p>';
+export function setupHistoryPage() {
+    loadMatchHistoryFromLocalStorage();
 
-    const gameHistory = await loadGameHistory();
-
-    if (gameHistory.length === 0) {
-        historyContainer.innerHTML = '<p class="message message--info">Nenhum jogo encontrado no histórico.</p>';
-        return;
+    const historyListContainer = Elements.historyListContainer(); // Chamada da função aqui também
+    
+    if (historyListContainer) {
+        // Delegação de evento para o botão de excluir
+        historyListContainer.addEventListener('click', (event) => {
+            const deleteButton = event.target.closest('.delete-match-button');
+            if (deleteButton) {
+                const card = deleteButton.closest('.match-history-card');
+                const matchId = card.dataset.matchId;
+                showConfirmationModal(
+                    'Tem certeza que deseja excluir este registro do histórico?',
+                    () => {
+                        deleteMatch(matchId);
+                    }
+                );
+            }
+        });
     }
 
-    historyContainer.innerHTML = gameHistory.map(createHistoryItemHTML).join('');
+    // Renderiza o histórico sempre que a página é configurada
+    renderMatchHistory();
 }

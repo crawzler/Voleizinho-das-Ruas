@@ -36,6 +36,13 @@ input {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
+/* NOVO: Estilo para os ícones de data e hora nos inputs */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1); /* Inverte a cor, tornando o ícone branco */
+    cursor: pointer;
+}
+
 button {
     font-weight: bold;
     color: white;
@@ -622,7 +629,7 @@ input:checked + .slider:before {
     padding: 10px;
     background-color: #333;
     border-radius: 8px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 6px -1-px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     transition: background-color 0.2s ease, transform 0.1s ease;
     outline: none;
     -webkit-tap-highlight-color: transparent;
@@ -716,18 +723,19 @@ input:checked + .slider:before {
 
 .stars-container {
     position: absolute;
-    top: 50%;
     display: flex;
     gap: 5px;
     z-index: 501; /* Acima da página de pontuação */
 }
 
-#team1-stars {
-    left: 10px;
+#team1-stars {    
+    right: 10px;
+    top: 25%;
 }
 
 #team2-stars {
     right: 10px;
+    top: 75%;
 }
 
 .star-icon {
@@ -775,7 +783,7 @@ input:checked + .slider:before {
     background-color: #222;
     padding: 1rem;
     border-radius: 0.5rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 6px -1-px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     /* NOVO: Remove a demarcação azul em cliques/toques */
     outline: none;
     -webkit-tap-highlight-color: transparent;
@@ -1090,6 +1098,7 @@ input:checked + .slider:before {
 
 .accordion-item {
     width: 100%;
+    flex-shrink: 0; /* NOVO: Impede que o item do accordion encolha em layouts flex */
 }
 
 .accordion-container {
@@ -1101,7 +1110,7 @@ input:checked + .slider:before {
     border-radius: 0.5rem;
     margin-bottom: 1rem;
     overflow: hidden;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 6px -1-px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .accordion-header {
@@ -1122,10 +1131,9 @@ input:checked + .slider:before {
     -webkit-tap-highlight-color: transparent;
 }
 
-/* NOVO: Estilo para o cabeçalho QUANDO ELE PRÓPRIO TEM A CLASSE active */
-.accordion-header.active {
-    background-color: #333; /* Uma cor ligeiramente diferente para indicar que está ativo */
-    border-bottom: 1px solid #666; /* Adiciona uma borda para separação visual */
+.accordion-header h3 {
+    padding: 0px;
+    margin: 0px;
 }
 
 .accordion-content {
@@ -1133,8 +1141,12 @@ input:checked + .slider:before {
     overflow: hidden;
     transition: max-height 0.3s ease-out;
     color: #D1D5DB;
-    overflow-y: auto; /* Adicionado para garantir rolagem independente */
-    overscroll-behavior-y: auto; /* Adicionado para garantir rolagem independente */
+    overflow-y: auto;
+    overscroll-behavior-y: auto;
+}
+
+.accordion-item.active .accordion-content {
+    min-height: 50px; /* TEMPORÁRIO: Garante que o conteúdo seja visível mesmo se scrollHeight for 0 */
 }
 
 .accordion-content-sub {
@@ -1261,6 +1273,219 @@ input:checked + .slider:before {
 }
 
 
+/* Estilos para a lista de agendamentos */
+.scheduled-games-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    width: 100%;
+}
+
+.scheduled-game-card {
+    background-color: #222;
+    border-radius: 8px;
+    /* NOVO: Ajuste do padding para dar espaço aos botões absolutos */
+    padding: 1rem 3.5rem 1rem 1rem;
+    position: relative; /* Essencial para o posicionamento absoluto dos filhos */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-left: 5px solid #2563EB;
+    /* Manter display: flex e flex-direction: row-reverse se o card-content ainda é flex item junto com card-actions */
+    display: flex;
+    flex-direction: row-reverse; /* Ícones de ação à direita */
+    gap: 0.5rem;
+    margin: 10px;
+}
+
+/* NOVO: Ajuste do card-actions para ser um contêiner absoluto e organizar os botões */
+.card-actions {
+    position: absolute; /* Tira do fluxo normal do scheduled-game-card */
+    top: 0;
+    right: 0;
+    width: 3.5rem; /* Largura fixa para conter os botões */
+    height: 100%; /* Ocupa a altura total do card pai */
+    display: flex; /* Mantém flex para organizar os botões internos */
+    flex-direction: column; /* Empilha os botões verticalmente */
+    justify-content: space-between; /* Distribui os botões no topo e na base */
+    align-items: center; /* Centraliza horizontalmente dentro desta coluna estreita */
+    padding: 0.5rem; /* Preenchimento dentro da área de ações */
+    /* Removido: margin-left: auto; padding-left: 0.5rem; - substituídos por position: absolute e padding/width */
+}
+
+.scheduled-game-card h3 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    color: #2563EB; /* Default blue for upcoming */
+}
+
+.scheduled-game-card p {
+    margin: 0.25rem 0;
+    color: #E5E7EB;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.scheduled-game-card .material-icons {
+    font-size: 1.2em;
+    color: #E5E7EB; /* Changed from #9CA3AF to white */
+}
+
+.page-subheading {
+    width: 100%;
+    text-align: left;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: #E5E7EB;
+    font-size: 1.25rem;
+}
+
+/* Não é necessário position: relative aqui, já está no .scheduled-game-card */
+/* .scheduled-game-card {
+    position: relative;
+} */
+
+.scheduled-game-card.status-upcoming {
+    border: 1px solid #3B82F6; /* Blue for upcoming */
+}
+
+.scheduled-game-card.status-cancelled {
+    border: 1px solid #EF4444; /* Red for cancelled */
+    opacity: 0.8; /* Slightly faded for cancelled */
+}
+
+.scheduled-game-card.status-past {
+    border: 1px solid #444; /* Gray for past */
+}
+
+.card-content h3 {
+    padding-bottom: 5px;
+    border-bottom: 1px dashed #444
+
+}
+
+.scheduled-game-card.status-cancelled h3,
+.scheduled-game-card.status-cancelled p {
+    text-decoration: line-through;
+}
+
+/* Visual Improvements for Scheduled Games Action Buttons */
+.card-action-button {
+    background: transparent;
+    border: none;
+    color: #E5E7EB; /* Changed to a lighter color for better visibility */
+    cursor: pointer;
+    padding: 0.5rem; /* Increased padding for better touch target */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: none; /* Ensure no extra shadow */
+    /* NÃO É MAIS NECESSÁRIO position: absolute aqui, pois o .card-actions agora gerencia */
+}
+
+.card-action-button .material-icons {
+    font-size: 1.6rem; /* Slightly larger icon */
+}
+
+.cancel-game-button:hover {
+    color: #FBBF24; /* Amber for warning */
+    background-color: rgba(251, 191, 36, 0.2); /* Slightly more opaque background */
+}
+
+.empty-list-message {
+    text-align: center;
+    color: #6B7280;
+    padding: 1rem;
+}
+
+/* Status-specific title colors - already defined, but good to keep track */
+.status-upcoming h3 { color: #3B82F6; } /* Blue */
+.status-cancelled h3 { color: #EF4444; } /* Red */
+.status-past h3 { color: #9CA3AF; } /* Gray */
+
+/* Styles for the isolated Past Games Accordion */
+.past-games-accordion .accordion-header {
+    width: 100%;
+}
+
+.past-games-accordion .accordion-arrow {
+    transition: transform 0.3s ease;
+}
+
+.past-games-accordion.active .accordion-arrow {
+    transform: rotate(180deg);
+}
+
+
+/* Confirmation Modal Styles (NOVO) */
+.confirmation-modal-overlay {
+    display: none; /* Hidden by default */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7); /* Dark overlay */
+    z-index: 1000; /* Above all other content */
+    align-items: center;
+    justify-content: center;
+}
+
+.confirmation-modal-overlay.active {
+    display: flex;
+}
+
+.confirmation-modal-content {
+    background-color: #222;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    max-width: 300px;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.confirmation-message {
+    color: #E5E7EB;
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.confirmation-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.confirmation-button--confirm {
+    background-color: #EF4444; /* Red for 'Sim' (confirm action) */
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.confirmation-button--confirm:hover {
+    background-color: #DC2626;
+}
+
+.confirmation-button--cancel {
+    background-color: #6B7280; /* Gray for 'Não' (cancel action) */
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.confirmation-button--cancel:hover {
+    background-color: #4B5563;
+}
+
 /* Media Queries for Responsiveness */
 @media (min-width: 600px) {
     .sidebar-menu {
@@ -1273,8 +1498,8 @@ input:checked + .slider:before {
     }
 
     #team2-players-column {    
-    top: 0px;
-    left: 50%;
+        top: 0px;
+        left: 50%;
     }
 
     #team1-players-column {    
@@ -1284,6 +1509,16 @@ input:checked + .slider:before {
 
     .score-panel {
         flex: 1; /* Ocupa espaço igual */
+    }
+
+    #team1-stars {
+        left: 10px;
+        top: 50%;
+    }
+
+    #team2-stars {
+        right: 10px;
+        top: 50%;
     }
 
     .teams-grid {
@@ -1306,6 +1541,11 @@ input:checked + .slider:before {
         margin-bottom: 20px;
         width: 100%;
     }
+   
+
+    .scheduled-games-container {
+        grid-template-columns: 1fr 1fr;
+    }
 
     .form-group:nth-child(4) {
         grid-column: 1 / span 3; /* Ou grid-column: 1 / 3; */
@@ -1324,187 +1564,4 @@ input:checked + .slider:before {
 
 }
 
-}
-
-/* Estilos para a lista de agendamentos */
-.scheduled-games-container {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin-top: 1.5rem;
-    width: 100%;
-}
-
-.scheduled-game-card {
-    background-color: #222;
-    border-radius: 8px;
-    padding: 1rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    border-left: 5px solid #2563EB;
-}
-
-.scheduled-game-card h3 {
-    margin-top: 0;
-    margin-bottom: 0.5rem;
-    color: #2563EB;
-}
-
-.scheduled-game-card p {
-    margin: 0.25rem 0;
-    color: #E5E7EB;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.scheduled-game-card .material-icons {
-    font-size: 1.2em;
-}
-
-.page-subheading {
-    width: 100%;
-    text-align: left;
-    margin-top: 1.5rem;
-    margin-bottom: 0.5rem;
-    color: #E5E7EB;
-    font-size: 1.25rem;
-}
-
-.scheduled-game-card {
-    position: relative; /* For positioning the cancel button */
-}
-
-.scheduled-game-card.status-upcoming {
-    border-left-color: #2563EB; /* Blue */
-}
-
-.scheduled-game-card.status-cancelled {
-    border-left-color: #DC2626; /* Red */
-    opacity: 0.7;
-}
-
-.scheduled-game-card.status-past {
-    border-left-color: #6B7280; /* Gray */
-}
-
-.scheduled-game-card.status-cancelled h3,
-.scheduled-game-card.status-cancelled p {
-    text-decoration: line-through;
-}
-
-.cancel-game-button {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    background: transparent;
-    border: none;
-    color: #9CA3AF;
-    cursor: pointer;
-    padding: 0.25rem;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.cancel-game-button:hover {
-    color: #DC2626;
-    background-color: rgba(220, 38, 38, 0.1);
-}
-
-/* Visual Improvements for Scheduled Games */
-.scheduled-game-card {
-    display: flex;
-    align-items: flex-start;
-    gap: 1rem;
-    background-color: #2a2a2a; /* Slightly lighter than page background */
-    padding: 1rem;
-    border-radius: 8px;
-    border-left-width: 5px;
-    border-left-style: solid;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-    transition: all 0.3s ease;
-}
-
-.scheduled-game-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.25);
-}
-
-.card-content {
-    flex-grow: 1;
-}
-
-.card-content h3 {
-    margin: 0 0 0.75rem 0;
-    font-size: 1.2rem;
-}
-
-.card-content p {
-    font-size: 0.95rem;
-    color: #D1D5DB;
-}
-
-.card-content .material-icons {
-    vertical-align: bottom;
-    margin-right: 0.5rem;
-    color: #9CA3AF;
-}
-
-.card-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.card-action-button {
-    background: transparent;
-    border: none;
-    color: #9CA3AF;
-    cursor: pointer;
-    padding: 0.25rem;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-}
-
-.card-action-button .material-icons {
-    font-size: 1.4rem;
-}
-
-.cancel-game-button:hover {
-    color: #FBBF24; /* Amber for warning */
-    background-color: rgba(251, 191, 36, 0.1);
-}
-
-.delete-game-button:hover {
-    color: #EF4444; /* Red for danger */
-    background-color: rgba(239, 68, 68, 0.1);
-}
-
-.empty-list-message {
-    text-align: center;
-    color: #6B7280;
-    padding: 1rem;
-}
-
-/* Status-specific title colors */
-.status-upcoming h3 { color: #3B82F6; } /* Blue */
-.status-cancelled h3 { color: #EF4444; } /* Red */
-.status-past h3 { color: #9CA3AF; } /* Gray */
-
-/* Styles for the isolated Past Games Accordion */
-.past-games-accordion .accordion-header {
-    /* Styles are already defined for .accordion-header, this is for specificity if needed */
-    width: 100%;
-}
-
-.past-games-accordion .accordion-arrow {
-    transition: transform 0.3s ease;
-}
-
-.past-games-accordion.active .accordion-arrow {
-    transform: rotate(180deg);
 }

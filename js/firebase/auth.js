@@ -1,14 +1,15 @@
 // js/firebase/auth.js
 // Contém a lógica de autenticação do Firebase (login, logout, observador de estado).
 
-import { auth, db } from './config.js';
-import { signInAnonymously, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { loadPlayers, setupFirestorePlayersListener } from '../data/players.js';
-import { showPage, updatePlayerModificationAbility, updateProfileMenuLoginState } from '../ui/pages.js'; // NOVO: Importa updateProfileMenuLoginState
+import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"; // Removido 'auth' e 'db' diretos de config.js
+import { setupFirestorePlayersListener } from '../data/players.js'; // Removido loadPlayersFromLocalStorage, pois não é usado diretamente aqui
+import { showPage, updatePlayerModificationAbility, updateProfileMenuLoginState } from '../ui/pages.js';
 import * as Elements from '../ui/elements.js';
 import { displayMessage } from '../ui/messages.js';
 
 let currentUser = null;
+let currentAuthInstance = null; // Armazena a instância de auth passada
+let currentDbInstance = null;   // Armazena a instância de db passada
 let isManualAnonymousLogin = false;
 
 const googleLoginProvider = new GoogleAuthProvider();
@@ -18,10 +19,14 @@ export function getCurrentUser() {
 }
 
 export async function loginWithGoogle() {
+    if (!currentAuthInstance) {
+        console.error("Instância de autenticação não disponível para login com Google.");
+        displayMessage("Erro de login: Autenticação não inicializada.", "error");
+        return;
+    }
     try {
-        await signInWithPopup(auth, googleLoginProvider);
+        await signInWithPopup(currentAuthInstance, googleLoginProvider);
         console.log("Login com Google realizado com sucesso!");
-        // O onAuthStateChanged (abaixo) lidará com a navegação para a página inicial após o login.
     } catch (error) {
         console.error("Erro no login com Google:", error);
         displayMessage("Erro no login com Google. Tente novamente.", "error");
@@ -29,11 +34,15 @@ export async function loginWithGoogle() {
 }
 
 export async function signInAnonymouslyUser(appId) {
+    if (!currentAuthInstance) {
+        console.error("Instância de autenticação não disponível para login anônimo.");
+        displayMessage("Erro de login: Autenticação não inicializada.", "error");
+        return;
+    }
     isManualAnonymousLogin = true;
     try {
-        await signInAnonymously(auth);
+        await signInAnonymously(currentAuthInstance);
         console.log("Login anônimo realizado com sucesso!");
-        // O onAuthStateChanged (abaixo) lidará com a navegação para a página inicial após o login.
     } catch (error) {
         console.error("Erro no login anônimo:", error);
         displayMessage("Erro no login anônimo. Tente novamente.", "error");
@@ -41,40 +50,46 @@ export async function signInAnonymouslyUser(appId) {
 }
 
 export async function logout() {
+    if (!currentAuthInstance) {
+        console.error("Instância de autenticação não disponível para logout.");
+        displayMessage("Erro de logout: Autenticação não inicializada.", "error");
+        return;
+    }
     try {
-        await signOut(auth);
+        await signOut(currentAuthInstance);
         console.log("Logout realizado com sucesso!");
         displayMessage("Você foi desconectado.", "info");
-        // O onAuthStateChanged (abaixo) lidará com a navegação para a página de login.
     } catch (error) {
-        console.error("Erro ao fazer logout:", error);
+        console.error("Erro no logout:", error);
         displayMessage("Erro ao fazer logout. Tente novamente.", "error");
     }
 }
 
 /**
  * Configura o observador de estado de autenticação do Firebase.
- * Isso garante que a UI seja atualizada e os dados sejam carregados/sincronizados
- * sempre que o estado de autenticação mudar.
- * @param {string} appId - O ID do aplicativo.
+ * Este listener é o ponto central para reagir às mudanças de login/logout.
+ * @param {object} authInstance - A instância do Auth do Firebase.
+ * @param {object} dbInstance - A instância do Firestore do Firebase.
+ * @param {string} appId - O ID do aplicativo para uso na sincronização do Firestore.
  */
-export function setupAuthListener(appId) {
-    onAuthStateChanged(auth, async (user) => {
-        currentUser = user; // Atualiza a referência global do usuário
+export function setupAuthListener(authInstance, dbInstance, appId) { // CORRIGIDO: Aceita authInstance e dbInstance
+    currentAuthInstance = authInstance; // Armazena a instância
+    currentDbInstance = dbInstance;     // Armazena a instância
 
-        // Atualiza o estado do menu de perfil (login/logout)
-        updateProfileMenuLoginState(user);
+    onAuthStateChanged(currentAuthInstance, async (user) => { // Usa currentAuthInstance
+        currentUser = user; // Atualiza o usuário global
+        updateProfileMenuLoginState(); // Atualiza o estado do menu de perfil
 
         if (user) {
-            // Usuário autenticado (anônimo ou Google)
+            // Usuário autenticado
+            console.log(`Usuário logado: ${user.uid}`);
             if (Elements.userIdDisplay()) Elements.userIdDisplay().textContent = `ID: ${user.uid}`;
-            if (Elements.userProfilePicture()) Elements.userProfilePicture().src = user.photoURL || "https://placehold.co/40x40/222/FFF?text=?";
+            if (Elements.userProfilePicture()) Elements.userProfilePicture().src = user.photoURL || "https://placehold.co/40x40/222/FFF?text=?"; // Placeholder se não houver foto
             if (Elements.userDisplayName()) Elements.userDisplayName().textContent = user.displayName || (user.isAnonymous ? "Usuário Anônimo" : "Usuário Google");
 
             // Configura o listener do Firestore APENAS QUANDO O USUÁRIO ESTÁ AUTENTICADO
-            // Isso garante que o 'db' e o 'user.uid' estão disponíveis.
             console.log(`Usuário autenticado (${user.isAnonymous ? 'Anônimo' : 'Google'}). Configurando listener do Firestore.`);
-            setupFirestorePlayersListener(appId); // MOVIDO PARA AQUI
+            setupFirestorePlayersListener(currentDbInstance, appId); // CORRIGIDO: Passa dbInstance
             updatePlayerModificationAbility(true); // AGORA: Qualquer usuário autenticado pode modificar
             showPage('start-page'); // Mostra a página inicial após o login
         } else {
@@ -86,7 +101,7 @@ export function setupAuthListener(appId) {
             updatePlayerModificationAbility(false); // AGORA: Ninguém logado não pode modificar
             showPage('login-page'); // Mostra a página de login
             // Quando não há usuário, desinscreve o listener do Firestore para evitar erros.
-            setupFirestorePlayersListener(null); // Passa null para desinscrever o listener
+            setupFirestorePlayersListener(null, appId); // Passa null para desinscrever o listener, mas mantém appId para consistência
         }
     });
 }

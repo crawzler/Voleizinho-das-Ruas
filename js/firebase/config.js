@@ -1,9 +1,9 @@
 // js/firebase/config.js
 // Contém a configuração e inicialização do Firebase.
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 let app;
 let db;
@@ -13,6 +13,7 @@ let firebaseConfig;
 
 /**
  * Inicializa o Firebase App e define as instâncias de Auth e Firestore.
+ * @returns {Promise<{app: object, db: object, auth: object}>} Um objeto contendo as instâncias inicializadas.
  */
 export async function initFirebaseApp() {
     // Determine appId e firebaseConfig
@@ -53,30 +54,7 @@ export async function initFirebaseApp() {
     auth = getAuth(app);
 
     console.log("Firebase App inicializado.");
-}
-
-/**
- * Retorna a instância do Firebase App.
- * @returns {object} A instância do Firebase App.
- */
-export function getFirebaseApp() {
-    return app;
-}
-
-/**
- * Retorna a instância do Firestore.
- * @returns {object} A instância do Firestore.
- */
-export function getFirestoreDb() {
-    return db;
-}
-
-/**
- * Retorna a instância de autenticação do Firebase.
- * @returns {object} A instância de autenticação.
- */
-export function getAuthInstance() {
-    return auth;
+    return { app, db, auth }; // Retorna as instâncias
 }
 
 /**
@@ -87,5 +65,5 @@ export function getAppId() {
     return appId;
 }
 
-// Exporta as instâncias diretamente para facilitar o uso em outros módulos
-export { db, auth };
+// REMOVIDO: getFirestoreDb() e getFirebaseAuth() não são mais necessários
+// porque as instâncias são passadas diretamente após a inicialização.
