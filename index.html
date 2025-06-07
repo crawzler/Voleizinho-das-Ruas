@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#252525"/>
     <title>Vôlei Score App</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/history.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="manifest" href="manifest.json">
 </head>
@@ -88,8 +89,8 @@
         <!-- Página de Pontuação -->
         <section id="scoring-page" class="app-page scoring-page-layout">
             <!-- NOVO: Contêineres para as estrelas de sets vencidos -->
-            <div id="team1-stars" class="stars-container"></div>
-            <div id="team2-stars" class="stars-container"></div>
+            <div id="team1-stars" class="stars-container">a</div>
+            <div id="team2-stars" class="stars-container">b</div>
             
             <div class="score-display-container">
 
@@ -286,44 +287,9 @@
         <!-- Página de Histórico -->
         <section id="history-page" class="app-page history-page-layout">
             <h2 class="page-heading">Histórico de Jogos</h2>
-            <!--<h4>Em desenvolvimento...</h4>-->
-            <!-- Conteúdo do histórico, por exemplo:
-            <div class="history-card">
-                <div class="history-card-header">
-                    <span class="history-date">25/05/2024</span>
-                    <span class="history-score">Time A 21 x 18 Time B</span>
-                </div>
-                <div class="history-players-layout">
-                    <div>
-                        <h4 class="history-players-title">Jogadores Time A:</h4>
-                        <ul class="history-players-list">
-                            <li>- Ana</li>
-                            <li>- Bruno</li>
-                            <li>- Carlos</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <h4 class="history-players-title">Jogadores Time B:</h4>
-                        <ul class="history-players-list">
-                            <li>- Daniela</li>
-                            <li>- Eduardo</li>
-                            <li>- Fernanda</li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="history-card-footer">
-                    <div class="history-card-detail">
-                        <span class="material-icons history-detail-icon">place</span>
-                        <span>Local: Quadra da Praça</span>
-                    </div>
-                    <div class="history-card-detail">
-                        <span class="material-icons history-detail-icon">timer</span>
-                        <span>Tempo de jogo: 00:25</span>
-                        <button class="delete-game-button history-delete-button"><span class="material-icons">delete</span></button>
-                    </div>
-                </div>
+            <div id="history-list-container" class="history-list-container">
+                <!-- O histórico de jogos será renderizado aqui pelo history-ui.js -->
             </div>
-            -->
         </section>
 
         <!-- Página de Agendamentos -->
@@ -352,9 +318,25 @@
                     <label for="notes-input" class="form-label">Observação</label>
                     <input type="text" id="notes-input" placeholder="Ex: Praia, Ginásio X" class="form-input">
                 </div>
-                <button class="button button--primary form-button--full-width">Agendar Jogo</button>
             </div>
-            
+            <button id="schedule-game-button" class="button button--primary form-button--full-width">Agendar Jogo</button>
+
+            <h3 class="page-subheading">Próximos Jogos</h3>
+            <div id="upcoming-games-list" class="scheduled-games-container">
+                <!-- Próximos jogos serão exibidos aqui -->
+            </div>
+
+            <div class="accordion-item">
+                <button class="accordion-header" id="past-games-accordion">
+                    <h3>Jogos Passados</h3>
+                    <span class="material-icons">expand_more</span>
+                </button>
+                <div class="accordion-content">
+                    <div id="past-games-list" class="scheduled-games-container">
+                        <!-- Jogos passados serão exibidos aqui -->
+                    </div>
+                </div>
+            </div>
         </section>
 
         <section id="stats-page" class="app-page stats-page-layout">

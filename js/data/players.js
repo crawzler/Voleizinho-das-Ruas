@@ -1,8 +1,8 @@
 // js/data/players.js
 // Gerencia a lista de jogadores, incluindo armazenamento local e sincronização com Firestore.
 
-import { db, auth } from '../firebase/config.js';
-import { collection, addDoc, deleteDoc, doc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getFirestoreDb, auth } from '../firebase/config.js';
+import { collection, addDoc, deleteDoc, doc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getCurrentUser } from '../firebase/auth.js';
 import { renderPlayersList } from '../ui/players-ui.js';
 import { displayMessage } from '../ui/messages.js'; // NOVO: Importa a função de exibição de mensagens
@@ -99,6 +99,7 @@ export async function addPlayer(playerName) {
     // Tenta salvar no Firestore se o usuário estiver autenticado e o db estiver disponível
     const user = getCurrentUser();
     // Verifica se estamos online antes de tentar adicionar ao Firestore
+    const db = getFirestoreDb();
     if (navigator.onLine && user && db && user.uid && currentAppId) {
         try {
             const playersCollectionRef = collection(db, `artifacts/${currentAppId}/public/data/players`);
@@ -142,6 +143,7 @@ export async function removePlayer(playerId) {
     // Tenta remover do Firestore se tiver um firestoreId e o db estiver disponível
     const user = getCurrentUser();
     // Verifica se estamos online antes de tentar remover do Firestore
+    const db = getFirestoreDb();
     if (navigator.onLine && playerToRemove.firestoreId && user && db && user.uid && currentAppId) {
         try {
             const playerDocRef = doc(db, `artifacts/${currentAppId}/public/data/players`, playerToRemove.firestoreId);
@@ -171,6 +173,7 @@ export function setupFirestorePlayersListener(appId) {
     }
 
     const user = getCurrentUser();
+    const db = getFirestoreDb();
     if (!user || !db || !appId) {
         console.log("[setupFirestorePlayersListener] Usuário não autenticado ou Firebase não inicializado. Não configurando listener do Firestore.");
         return; // Retorna sem configurar o listener se as dependências não estiverem prontas

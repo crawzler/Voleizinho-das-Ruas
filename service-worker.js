@@ -13,6 +13,7 @@ const urlsToCache = [
   './images/icon-192x192.png',
   './images/icon-512x512.png',
   './js/main.js',
+  // Adicionando todas as dependências JavaScript explicitamente
   './js/data/players.js',
   './js/firebase/auth.js',
   './js/firebase/config.js',
@@ -26,21 +27,23 @@ const urlsToCache = [
   './js/ui/players-ui.js',
   './js/utils/app-info.js',
   './js/utils/helpers.js',
-  'https://fonts.googleapis.com/icon?family=Material+Icons'
+  './js/ui/history-ui.js', // Adicionado history-ui.js
+
+  // Adicionando as dependências do Firebase importadas via URL (apenas para o Service Worker, já que o app as carrega como módulos)
+  "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js",
+  "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js",
+  "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js",
+  "https://fonts.googleapis.com/icon?family=Material+Icons"
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        // Removido 'https://fonts.googleapis.com/icon?family=Material+Icons' daqui
-        // para evitar erros de CORS ou falhas de rede durante o cache inicial.
-        // O navegador ainda vai carregar a fonte diretamente do HTML.
         return cache.addAll(urlsToCache);
       })
       .catch((error) => {
         console.error('Falha ao adicionar URLs ao cache durante a instalação:', error);
-        // Permite que o Service Worker continue a instalação mesmo se o cache inicial falhar.
       })
   );
 });

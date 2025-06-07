@@ -32,6 +32,7 @@ export const configPage = () => document.getElementById('config-page');
 export const historyPage = () => document.getElementById('history-page');
 export const schedulingPage = () => document.getElementById('scheduling-page');
 export const statsPage = () => document.getElementById('stats-page');
+export const historyList = () => document.getElementById('history-list-container');
 
 // Botões de Navegação
 export const navScoringButton = () => document.getElementById('nav-scoring');
@@ -51,6 +52,9 @@ export const team2Panel = () => document.getElementById('team2-panel');
 export const team2NameDisplay = () => document.getElementById('team2-name');
 export const team2ScoreDisplay = () => document.getElementById('team2-score');
 export const team2PlayersColumn = () => document.getElementById('team2-players-column');
+
+export const team1Stars = () => document.getElementById('team1-stars');
+export const team2Stars = () => document.getElementById('team2-stars');
 
 export const timerText = () => document.getElementById('timer-text');
 export const setTimerText = () => document.getElementById('set-timer-text');
@@ -92,3 +96,14 @@ for (let i = 1; i <= 6; i++) {
         color: () => document.getElementById(`custom-team-${i}-color`)
     });
 }
+
+// Página de Agendamentos
+export const dateInput = () => document.getElementById('date-input');
+export const startTimeInput = () => document.getElementById('start-time-input');
+export const endTimeInput = () => document.getElementById('end-time-input');
+export const locationInput = () => document.getElementById('location-input');
+export const notesInput = () => document.getElementById('notes-input');
+export const scheduleGameButton = () => document.getElementById('schedule-game-button');
+export const upcomingGamesList = () => document.getElementById('upcoming-games-list');
+export const pastGamesAccordion = () => document.getElementById('past-games-accordion');
+export const pastGamesList = () => document.getElementById('past-games-list');

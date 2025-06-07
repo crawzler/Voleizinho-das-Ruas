@@ -13,6 +13,8 @@ import { getPlayers } from './data/players.js';
 import * as Elements from './ui/elements.js';
 import { displayMessage } from './ui/messages.js';
 import { updatePlayerCount, updateSelectAllToggle } from './ui/players-ui.js'; // Importa as funções para a UI de jogadores
+import { setupSchedulingPage } from './ui/scheduling-ui.js';
+import './ui/history-ui.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
 
@@ -61,6 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupConfigUI();
     setupScoreInteractions();
     setupTeamSelectionModal(); // Configura o modal de seleção de time
+   setupSchedulingPage();
 
 
     // Configura o botão de login com Google

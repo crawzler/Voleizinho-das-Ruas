@@ -2,16 +2,19 @@
 // Contém a lógica principal do jogo: pontuação, timer e gerenciamento de estado.
 
 // Importa funções de UI e dados.
-import { updateScoreDisplay, updateTimerDisplay, updateSetTimerDisplay, renderScoringPagePlayers, updateTeamDisplayNamesAndColors, updateNavScoringButton, renderTeams } from '../ui/game-ui.js';
+import { updateScoreDisplay, updateTimerDisplay, updateSetTimerDisplay, renderScoringPagePlayers, updateTeamDisplayNamesAndColors, updateNavScoringButton, renderTeams, updateSetsDisplay } from '../ui/game-ui.js';
 import { getPlayers } from '../data/players.js';
 import { shuffleArray } from '../utils/helpers.js';
 import { loadConfig } from '../ui/config-ui.js';
 import { showPage, setGameStartedExplicitly } from '../ui/pages.js';
 import * as Elements from '../ui/elements.js';
 import { displayMessage } from '../ui/messages.js';
+import { saveGameToHistory } from '../data/history.js';
 
 let team1Score = 0;
 let team2Score = 0;
+let team1Sets = 0;
+let team2Sets = 0;
 let timerInterval = null;
 let timeElapsed = 0;
 let isTimerRunning = false;
@@ -23,6 +26,7 @@ let isGameInProgress = false;
 let allGeneratedTeams = [];
 let currentTeam1Index = 0;
 let currentTeam2Index = 1;
+let setsHistory = [];
 
 
 let activeTeam1Name = 'Time 1';
@@ -160,15 +164,54 @@ export function toggleTimer() {
  * @param {number} pointsPerSet - Pontos necessários para vencer o set.
  */
 function checkSetEnd(pointsPerSet) {
+    const config = loadConfig();
+    const setsToWin = parseInt(config.numberOfSets, 10);
+
+    let setWinner = null;
+
     if (team1Score >= pointsPerSet && team1Score - team2Score >= 2) {
+        setWinner = 'team1';
+        team1Sets++;
         console.log('Time 1 venceu o set!');
         displayMessage(`${activeTeam1Name} venceu o set!`, 'success');
-        resetSet();
     } else if (team2Score >= pointsPerSet && team2Score - team1Score >= 2) {
+        setWinner = 'team2';
+        team2Sets++;
         console.log('Time 2 venceu o set!');
         displayMessage(`${activeTeam2Name} venceu o set!`, 'success');
+    }
+
+    if (setWinner) {
+        const setInfo = {
+            team1Score: team1Score,
+            team2Score: team2Score,
+            duration: setElapsedTime,
+            winner: setWinner
+        };
+        setsHistory.push(setInfo);
+
+        updateSetsDisplay(team1Sets, team2Sets);
+        if (checkMatchEnd(setsToWin)) {
+            return;
+        }
         resetSet();
     }
+}
+
+function checkMatchEnd(setsToWin) {
+    let matchWinner = null;
+    if (team1Sets >= setsToWin) {
+        matchWinner = activeTeam1Name;
+    } else if (team2Sets >= setsToWin) {
+        matchWinner = activeTeam2Name;
+    }
+
+    if (matchWinner) {
+        displayMessage(`${matchWinner} venceu a partida!`, 'success');
+        endGame(); // Encerra o jogo
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -207,6 +250,11 @@ export function swapTeams() {
     team1Score = team2Score;
     team2Score = tempScore;
 
+    // Troca os sets
+    const tempSets = team1Sets;
+    team1Sets = team2Sets;
+    team2Sets = tempSets;
+
     // Troca os jogadores
     const tempTeam = currentTeam1;
     currentTeam1 = currentTeam2;
@@ -238,6 +286,7 @@ export function swapTeams() {
     // Atualiza a exibição na UI
     updateScoreDisplay(team1Score, team2Score);
     updateTeamDisplayNamesAndColors(activeTeam1Name, activeTeam2Name, activeTeam1Color, activeTeam2Color);
+    updateSetsDisplay(team1Sets, team2Sets);
     const config = loadConfig();
     // Condição para exibir jogadores: config.displayPlayers E (time1 ou time2 tem jogadores)
     const shouldDisplayPlayers = (config.displayPlayers ?? true) && (currentTeam1.length > 0 || currentTeam2.length > 0);
@@ -323,6 +372,7 @@ export function startGame(appId) {
     startTimer();
     startSetTimer();
     updateTimerButtonIcon();
+    setsHistory = [];
 }
 
 /**
@@ -460,6 +510,22 @@ export function endGame() {
         return;
     }
 
+    const gameData = {
+        team1Name: activeTeam1Name,
+        team2Name: activeTeam2Name,
+        team1Score: team1Score,
+        team2Score: team2Score,
+        team1Sets: team1Sets,
+        team2Sets: team2Sets,
+        duration: timeElapsed,
+        team1Players: currentTeam1,
+        team2Players: currentTeam2,
+        date: new Date().toISOString(),
+        sets: setsHistory
+    };
+
+    saveGameToHistory(gameData);
+
     clearInterval(timerInterval);
     clearInterval(setTimerInterval);
     timerInterval = null;
@@ -467,7 +533,7 @@ export function endGame() {
     isTimerRunning = false;
     isGameInProgress = false;
     setGameStartedExplicitly(false);
-    displayMessage("Jogo encerrado!", "info");
+    displayMessage("Jogo encerrado e salvo no histórico!", "info");
     showPage('start-page');
 }
 
@@ -477,8 +543,11 @@ export function endGame() {
 export function resetGameForNewMatch() {
     team1Score = 0;
     team2Score = 0;
+    team1Sets = 0;
+    team2Sets = 0;
     timeElapsed = 0;
     setElapsedTime = 0;
+    setsHistory = [];
     clearInterval(timerInterval);
     clearInterval(setTimerInterval);
     timerInterval = null;
@@ -497,6 +566,7 @@ export function resetGameForNewMatch() {
     activeTeam2Color = config.customTeam2Color || '#f03737';
 
     updateScoreDisplay(team1Score, team2Score);
+    updateSetsDisplay(team1Sets, team2Sets);
     updateTimerDisplay(timeElapsed);
     updateSetTimerDisplay(setElapsedTime);
     updateTeamDisplayNamesAndColors(activeTeam1Name, activeTeam2Name, activeTeam1Color, activeTeam2Color);

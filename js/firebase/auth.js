@@ -2,7 +2,7 @@
 // Contém a lógica de autenticação do Firebase (login, logout, observador de estado).
 
 import { auth, db } from './config.js';
-import { signInAnonymously, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { signInAnonymously, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { loadPlayers, setupFirestorePlayersListener } from '../data/players.js';
 import { showPage, updatePlayerModificationAbility, updateProfileMenuLoginState } from '../ui/pages.js'; // NOVO: Importa updateProfileMenuLoginState
 import * as Elements from '../ui/elements.js';

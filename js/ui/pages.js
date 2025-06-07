@@ -9,6 +9,7 @@ import { renderPlayersList, updatePlayerCount, updateSelectAllToggle } from './p
 import { getCurrentUser, logout, loginWithGoogle } from '../firebase/auth.js'; // NOVO: Importa loginWithGoogle
 import { addPlayer, removePlayer } from '../data/players.js';
 import { displayMessage } from './messages.js';
+import { setupHistoryPage } from './history-ui.js';
 
 let touchStartY = 0;
 const DRAG_THRESHOLD = 30; // Limite de movimento para diferenciar clique de arrastar
@@ -111,6 +112,8 @@ export function showPage(pageIdToShow) {
     } else if (pageIdToShow === 'start-page') {
         resetGameForNewMatch();
         setGameStartedExplicitly(false);
+    } else if (pageIdToShow === 'history-page') {
+        setupHistoryPage();
     }
 }
 
@@ -334,12 +337,26 @@ export function setupAccordion() {
     Elements.accordionHeaders().forEach(header => {
         header.addEventListener('click', () => {
             const accordionItem = header.parentElement;
-            accordionItem.classList.toggle('active');
             const content = header.nextElementSibling;
-            if (accordionItem.classList.contains('active')) {
-                content.style.maxHeight = content.scrollHeight + 'px';
-            } else {
+            const isActive = accordionItem.classList.contains('active');
+
+            // Close all other accordions (optional, but good practice)
+            // Elements.accordionHeaders().forEach(otherHeader => {
+            //     const otherItem = otherHeader.parentElement;
+            //     if (otherItem !== accordionItem) {
+            //         otherItem.classList.remove('active');
+            //         otherHeader.nextElementSibling.style.maxHeight = null;
+            //     }
+            // });
+
+            // Toggle the clicked accordion
+            if (isActive) {
+                accordionItem.classList.remove('active');
                 content.style.maxHeight = null;
+            } else {
+                accordionItem.classList.add('active');
+                // Set max-height to the scrollHeight of the content
+                content.style.maxHeight = content.scrollHeight + 'px';
             }
         });
     });

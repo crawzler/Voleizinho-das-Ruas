@@ -21,7 +21,21 @@ const defaultTeamColors = [
  */
 export function loadConfig() {
     try {
-        let config = JSON.parse(localStorage.getItem('volleyballConfig')) || {}; // Usar 'let' para permitir modificação do objeto config
+        let config = JSON.parse(localStorage.getItem('volleyballConfig'));
+        let isNewConfig = false;
+        if (!config) {
+            config = {};
+            isNewConfig = true;
+        }
+
+        // Garante que as configurações básicas tenham valores padrão
+        config.playersPerTeam = config.playersPerTeam ?? 4;
+        config.pointsPerSet = config.pointsPerSet ?? 15;
+        config.numberOfSets = config.numberOfSets ?? 1;
+        config.darkMode = config.darkMode ?? true;
+        config.vibration = config.vibration ?? true;
+        config.displayPlayers = config.displayPlayers ?? true;
+
 
         // Preenche o objeto config com os nomes e cores padrão, se não estiverem definidos
         for (let i = 0; i < defaultTeamNames.length; i++) {
@@ -31,6 +45,12 @@ export function loadConfig() {
             // Se a configuração não existir, usa o padrão do array, ou um fallback genérico
             config[nameKey] = config[nameKey] ?? defaultTeamNames[i] ?? `Time ${teamNum}`;
             config[colorKey] = config[colorKey] ?? defaultTeamColors[i] ?? `#${Math.floor(Math.random()*16777215).toString(16)}`;
+        }
+
+        // Se for uma nova configuração, salva no localStorage
+        if (isNewConfig) {
+            localStorage.setItem('volleyballConfig', JSON.stringify(config));
+            console.log("[config-ui.js] Nova configuração padrão salva no localStorage:", config);
         }
 
         // Aplica as configurações aos inputs da UI

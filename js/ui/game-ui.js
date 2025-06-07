@@ -33,6 +33,32 @@ export function updateSetTimerDisplay(setElapsedTime) {
 }
 
 /**
+ * Atualiza a exibição de sets vencidos (estrelas) para cada time.
+ * @param {number} team1Sets - Número de sets vencidos pelo Time 1.
+ * @param {number} team2Sets - Número de sets vencidos pelo Time 2.
+ */
+export function updateSetsDisplay(team1Sets, team2Sets) {
+    const team1StarsContainer = Elements.team1Stars();
+    const team2StarsContainer = Elements.team2Stars();
+
+    if (!team1StarsContainer || !team2StarsContainer) {
+        console.warn("Elementos de estrelas não encontrados.");
+        return;
+    }
+
+    const createStars = (count) => {
+        let starsHtml = '';
+        for (let i = 0; i < count; i++) {
+            starsHtml += '<span class="material-icons star-icon">star</span>';
+        }
+        return starsHtml;
+    };
+
+    team1StarsContainer.innerHTML = createStars(team1Sets);
+    team2StarsContainer.innerHTML = createStars(team2Sets);
+}
+
+/**
  * Renderiza os nomes dos jogadores para os times na página de pontuação.
  * @param {Array<string>} team1Players - Nomes dos jogadores do Time 1.
  * @param {Array<string>} team2Players - Nomes dos jogadores do Time 2.
