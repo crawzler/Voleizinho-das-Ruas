@@ -18,6 +18,9 @@ import { setupSchedulingPage } from './ui/scheduling-ui.js';
 
 import { signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
+let authListenerInitialized = false;
+let loadingTimeout = null;
+
 /**
  * Updates the connection indicator in the UI.
  * @param {'online' | 'offline' | 'reconnecting'} status - The connection status.
@@ -47,7 +50,39 @@ export function updateConnectionIndicator(status) { // NOVO: Exporta a função
     }
 }
 
+/**
+ * Hides the loading overlay.
+ */
+export function hideLoadingOverlay() { // NOVO: Função para esconder o overlay
+    const loadingOverlay = Elements.loadingOverlay();
+    if (loadingOverlay) {
+        loadingOverlay.classList.add('hidden');
+        if (loadingTimeout) {
+            clearTimeout(loadingTimeout);
+            loadingTimeout = null;
+        }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+    // Exibe a tela de carregamento imediatamente
+    const loadingOverlay = Elements.loadingOverlay();
+    if (loadingOverlay) {
+        loadingOverlay.classList.remove('hidden'); // Garante que a tela de carregamento esteja visível
+    }
+    console.log("[main.js] DOMContentLoaded. Exibindo tela de carregamento. navigator.onLine:", navigator.onLine);
+
+    // Inicia o timer para forçar o modo offline após 10 segundos, se necessário
+    loadingTimeout = setTimeout(() => {
+        if (!authListenerInitialized) {
+            console.log("[main.js] Tempo limite de carregamento excedido. Forçando modo offline.");
+            displayMessage("Não foi possível conectar. Modo offline ativado.", "info");
+            showPage('start-page'); // Força a exibição da página inicial
+            updateConnectionIndicator(navigator.onLine ? 'online' : 'offline'); // Garante que o indicador seja atualizado
+            hideLoadingOverlay();
+        }
+    }, 10000); // 10 segundos
+
     // Initializes the Firebase App and gets instances
     const { app, db, auth } = await initFirebaseApp();
     const appId = getAppId();
@@ -65,6 +100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadPlayersFromLocalStorage();
 
     setupAuthListener(auth, db, appId);
+    authListenerInitialized = true; // Marca que o listener de autenticação foi inicializado
 
     setupSidebar();
     setupPageNavigation(startGame, getPlayers, appId);

@@ -7,7 +7,7 @@ import { getPlayers } from '../data/players.js';
 import { showPage, updatePlayerModificationAbility } from '../ui/pages.js';
 import * as Elements from '../ui/elements.js';
 import { displayMessage } from '../ui/messages.js';
-import { updateConnectionIndicator } from '../main.js'; // NOVO: Importa updateConnectionIndicator
+import { updateConnectionIndicator, hideLoadingOverlay } from '../main.js'; // NOVO: Importa updateConnectionIndicator e hideLoadingOverlay
 
 let currentUser = null;
 let currentAuthInstance = null; // Stores the Firebase Auth instancea
@@ -124,6 +124,7 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
 
         // NOVO: Atualiza o indicador de conexão imediatamente com base no status da rede
         updateConnectionIndicator(navigator.onLine ? 'online' : 'offline');
+        hideLoadingOverlay(); // Oculta a tela de carregamento assim que o estado de autenticação for determinado
 
         if (user) {
             console.log(`User logged in: ${user.uid} (Provider: ${user.isAnonymous ? 'Anonymous' : user.providerData[0]?.providerId || 'Google'})`);
