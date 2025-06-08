@@ -7,11 +7,11 @@ import { getPlayers } from '../data/players.js';
 import { showPage, updatePlayerModificationAbility } from '../ui/pages.js';
 import * as Elements from '../ui/elements.js';
 import { displayMessage } from '../ui/messages.js';
-import { updateConnectionIndicator, hideLoadingOverlay } from '../main.js'; // NOVO: Importa updateConnectionIndicator e hideLoadingOverlay
+import { updateConnectionIndicator, hideLoadingOverlay } from '../main.js'; // Importa hideLoadingOverlay
 
 let currentUser = null;
-let currentAuthInstance = null; // Stores the Firebase Auth instancea
-let currentDbInstance = null;   // Stores the Firestore DB instance
+let currentAuthInstance = null;
+let currentDbInstance = null;
 let isManualAnonymousLogin = false;
 
 const googleLoginProvider = new GoogleAuthProvider();
@@ -74,7 +74,8 @@ export async function logout() {
         await signOut(currentAuthInstance);
         console.log("Logout successful!");
         displayMessage("You have been disconnected.", "info");
-    } catch (error) {
+    }
+    catch (error) {
         console.error("Error during logout:", error);
         displayMessage("Error logging out. Please try again.", "error");
     }
@@ -116,7 +117,6 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
     currentDbInstance = dbInstance;
 
     onAuthStateChanged(currentAuthInstance, async (user) => {
-        // NOVO LOG DE DEBUG: Verifica o estado inicial do onAuthStateChanged
         console.log(`[onAuthStateChanged] Usuário: ${user ? user.uid : 'NULO'}, Online: ${navigator.onLine}`);
 
         currentUser = user;
@@ -147,7 +147,6 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
             updatePlayerModificationAbility(false);
             setupFirestorePlayersListener(null, appId);
 
-            // ATUALIZADO: Lógica para lidar com o estado offline/online na tela de login
             if (!navigator.onLine) {
                 console.log("[Auth Listener] Offline e sem usuário logado. Tentando mostrar start-page.");
                 showPage('start-page'); // Direciona para a start-page para permitir acesso aos dados locais

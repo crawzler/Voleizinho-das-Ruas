@@ -25,7 +25,7 @@ let loadingTimeout = null;
  * Updates the connection indicator in the UI.
  * @param {'online' | 'offline' | 'reconnecting'} status - The connection status.
  */
-export function updateConnectionIndicator(status) { // NOVO: Exporta a função
+export function updateConnectionIndicator(status) {
     const statusDot = Elements.statusDot();
     const statusText = Elements.statusText();
 
@@ -53,14 +53,15 @@ export function updateConnectionIndicator(status) { // NOVO: Exporta a função
 /**
  * Hides the loading overlay.
  */
-export function hideLoadingOverlay() { // NOVO: Função para esconder o overlay
+export function hideLoadingOverlay() {
     const loadingOverlay = Elements.loadingOverlay();
-    if (loadingOverlay) {
+    if (loadingOverlay && !loadingOverlay.classList.contains('hidden')) { // Verifica se já não está oculto
         loadingOverlay.classList.add('hidden');
         if (loadingTimeout) {
             clearTimeout(loadingTimeout);
             loadingTimeout = null;
         }
+        console.log("[main.js] Tela de carregamento oculta.");
     }
 }
 
@@ -78,7 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log("[main.js] Tempo limite de carregamento excedido. Forçando modo offline.");
             displayMessage("Não foi possível conectar. Modo offline ativado.", "info");
             showPage('start-page'); // Força a exibição da página inicial
-            updateConnectionIndicator(navigator.onLine ? 'online' : 'offline'); // Garante que o indicador seja atualizado
+            updateConnectionIndicator('offline'); // Força o indicador para offline
             hideLoadingOverlay();
         }
     }, 10000); // 10 segundos
@@ -109,58 +110,58 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupScoreInteractions();
     setupTeamSelectionModal();
     setupHistoryPage();
-    setupSchedulingPage();
+    setupSchedulingPage(); // Garante que a página de agendamento seja configurada uma vez
 
     // Listeners for team page buttons
     const generateTeamsButton = document.getElementById('generate-teams-button');
-    console.log("Element 'generate-teams-button':", generateTeamsButton); // DEBUG LOG
+    console.log("Element 'generate-teams-button':", generateTeamsButton);
     if (generateTeamsButton) {
         generateTeamsButton.addEventListener('click', () => {
-            console.log("Button 'Generate Teams' clicked."); // DEBUG LOG
+            console.log("Button 'Generate Teams' clicked.");
             generateTeams(appId);
         });
     }
 
     // Listener for start/stop game button (which now starts the game or toggles the timer)
     const toggleTimerButton = document.getElementById('toggle-timer-button');
-    console.log("Element 'toggle-timer-button':", toggleTimerButton); // DEBUG LOG
+    console.log("Element 'toggle-timer-button':", toggleTimerButton);
     if (toggleTimerButton) {
         toggleTimerButton.addEventListener('click', () => {
-            console.log("Button 'Toggle Timer' clicked."); // DEBUG LOG
+            console.log("Button 'Toggle Timer' clicked.");
             toggleTimer();
         });
     }
 
     // Listener for swap teams button
     const swapTeamsButton = document.getElementById('swap-teams-button');
-    console.log("Element 'swap-teams-button':", swapTeamsButton); // DEBUG LOG
+    console.log("Element 'swap-teams-button':", swapTeamsButton);
     if (swapTeamsButton) {
         swapTeamsButton.addEventListener('click', () => {
-            console.log("Button 'Swap Teams' clicked."); // DEBUG LOG
+            console.log("Button 'Swap Teams' clicked.");
             swapTeams();
         });
     }
 
     // Sets up the timer toggle button
     const timerAndSetTimerWrapperElement = Elements.timerAndSetTimerWrapper();
-    console.log("Element 'Elements.timerAndSetTimerWrapper()':", timerAndSetTimerWrapperElement); // DEBUG LOG
+    console.log("Element 'Elements.timerAndSetTimerWrapper()':", timerAndSetTimerWrapperElement);
     if (timerAndSetTimerWrapperElement) {
         timerAndSetTimerWrapperElement.addEventListener('click', () => {
-            console.log("Timer Wrapper clicked."); // DEBUG LOG
+            console.log("Timer Wrapper clicked.");
             toggleTimer();
         });
     }
 
     // Sets up the end game button
     const endGameButton = document.getElementById('end-game-button');
-    console.log("Element 'end-game-button':", endGameButton); // DEBUG LOG
+    console.log("Element 'end-game-button':", endGameButton);
     if (endGameButton) {
         endGameButton.addEventListener('click', () => {
-            console.log("Button 'End Game' clicked."); // DEBUG LOG
+            console.log("Button 'End Game' clicked.");
             showConfirmationModal(
                 'Are you sure you want to end the game? The score will be saved to history.',
                 () => {
-                    console.log("Game end confirmation."); // DEBUG LOG
+                    console.log("Game end confirmation.");
                     endGame();
                 }
             );
@@ -168,7 +169,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // FIXED: Adds event listeners for login buttons with correct HTML IDs
-    const googleLoginButton = document.getElementById('google-login-button'); // Corrected ID
+    const googleLoginButton = document.getElementById('google-login-button');
     console.log("Element 'google-login-button':", googleLoginButton);
     if (googleLoginButton) {
         googleLoginButton.addEventListener('click', () => {
@@ -177,41 +178,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    const anonymousLoginButton = document.getElementById('anonymous-login-button'); // Corrected ID
+    const anonymousLoginButton = document.getElementById('anonymous-login-button');
     console.log("Element 'anonymous-login-button':", anonymousLoginButton);
     if (anonymousLoginButton) {
         anonymousLoginButton.addEventListener('click', () => {
             console.log("Button 'Sign in anonymously' clicked.");
-            signInAnonymouslyUser(appId); // Passes appId to the function
+            signInAnonymouslyUser(appId);
         });
     }
 
-    // NEW: Listener to detect when the application goes online again
+    // NOVO: Listener para detectar quando o aplicativo volta a ficar online
     window.addEventListener('online', () => {
         console.log("Application online again. Attempting to revalidate session...");
         displayMessage("Online novamente! Tentando reconectar...", "info");
-        // updateConnectionIndicator('reconnecting'); // REMOVIDO: auth.js agora gerencia
-        setTimeout(() => {
-            setupAuthListener(auth, db, appId); 
+        updateConnectionIndicator('reconnecting'); // Define estado "reconectando" imediatamente
+        setTimeout(() => { // Pequeno delay antes de confirmar online para visual
+            setupAuthListener(auth, db, appId); // Re-executa o listener para pegar o estado mais recente
             updateProfileMenuLoginState();
-            // updateConnectionIndicator('online'); // REMOVIDO: auth.js agora gerencia
         }, 1500);
     });
 
-    // NEW: Listener to detect when the application goes offline
+    // NOVO: Listener para detectar quando o aplicativo fica offline
     window.addEventListener('offline', () => {
         console.log("Application offline.");
         displayMessage("Você está offline.", "error");
-        // Disables login buttons and the logout button
         if (Elements.googleLoginButton()) Elements.googleLoginButton().disabled = true;
         if (Elements.anonymousLoginButton()) Elements.anonymousLoginButton().disabled = true;
-        updateProfileMenuLoginState(); // UPDATED: Ensures the logout is disabled
-        // updateConnectionIndicator('offline'); // REMOVIDO: auth.js agora gerencia
+        updateProfileMenuLoginState();
+        updateConnectionIndicator('offline'); // Define estado offline
     });
 
-    // Defines the initial state of the connection indicator
+    // Define o estado inicial do indicador de conexão
     updateConnectionIndicator(navigator.onLine ? 'online' : 'offline');
-
 
     loadAppVersion();
     registerServiceWorker();
