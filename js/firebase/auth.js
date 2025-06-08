@@ -3,7 +3,7 @@
 
 import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { setupFirestorePlayersListener } from '../data/players.js';
-import { showPage, updatePlayerModificationAbility, updateProfileMenuLoginState } from '../ui/pages.js';
+import { showPage, updatePlayerModificationAbility } from '../ui/pages.js'; // Removido updateProfileMenuLoginState pois será declarado abaixo
 import * as Elements from '../ui/elements.js';
 import { displayMessage } from '../ui/messages.js';
 
@@ -24,6 +24,11 @@ export async function loginWithGoogle() {
         displayMessage("Erro de login: Autenticação não inicializada.", "error");
         return;
     }
+    // NOVO: Verifica se está offline antes de tentar o login
+    if (!navigator.onLine) {
+        displayMessage("Você está offline. Conecte-se à internet para fazer login com o Google.", "error");
+        return;
+    }
     try {
         await signInWithPopup(currentAuthInstance, googleLoginProvider);
         console.log("Login com Google realizado com sucesso!");
@@ -37,6 +42,11 @@ export async function signInAnonymouslyUser(appId) {
     if (!currentAuthInstance) {
         console.error("Instância de autenticação não disponível para login anônimo.");
         displayMessage("Erro de login: Autenticação não inicializada.", "error");
+        return;
+    }
+    // NOVO: Verifica se está offline antes de tentar o login anônimo (pode precisar de conexão inicial)
+    if (!navigator.onLine) {
+        displayMessage("Você está offline. Conecte-se à internet para iniciar uma sessão anônima.", "error");
         return;
     }
     isManualAnonymousLogin = true;
@@ -55,6 +65,14 @@ export async function logout() {
         displayMessage("Erro de logout: Autenticação não inicializada.", "error");
         return;
     }
+    // NOVO: Informa o usuário se estiver offline ao tentar deslogar e retorna
+    if (!navigator.onLine) {
+        displayMessage("Você está offline. Não é possível fazer logout agora.", "info");
+        // Não chamamos signOut aqui se a intenção é desabilitar o botão,
+        // pois signOut() tentaria uma requisição de rede e pode causar erros.
+        return; // Sai da função, impedindo o logout
+    }
+
     try {
         await signOut(currentAuthInstance);
         console.log("Logout realizado com sucesso!");
@@ -64,6 +82,33 @@ export async function logout() {
         displayMessage("Erro ao fazer logout. Tente novamente.", "error");
     }
 }
+
+/**
+ * ATUALIZADO: Atualiza o texto, ícone e estado disabled do botão de login/logout no mini-menu do perfil.
+ * Esta função agora é responsável por habilitar/desabilitar o botão de logout e está declarada apenas uma vez.
+ */
+export function updateProfileMenuLoginState() {
+    const profileLogoutButton = Elements.profileLogoutButton();
+    const currentUser = getCurrentUser();
+    const isOnline = navigator.onLine; // Obtém o status online atual
+
+    if (profileLogoutButton) {
+        // Se houver um usuário logado (seja Google ou anônimo)
+        if (currentUser) {
+            profileLogoutButton.innerHTML = `<span class="material-icons">logout</span> Sair`;
+            profileLogoutButton.disabled = !isOnline; // Desabilita se offline
+        } else {
+            // Se não houver usuário logado
+            profileLogoutButton.innerHTML = `<span class="material-icons">login</span> Logar`;
+            profileLogoutButton.disabled = !isOnline; // Desabilita se offline
+        }
+
+        // Controla também os eventos do ponteiro e a opacidade para feedback visual
+        profileLogoutButton.style.pointerEvents = profileLogoutButton.disabled ? 'none' : 'auto';
+        profileLogoutButton.style.opacity = profileLogoutButton.disabled ? '0.5' : '1';
+    }
+}
+
 
 /**
  * Configura o observador de estado de autenticação do Firebase.
@@ -78,7 +123,7 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
 
     onAuthStateChanged(currentAuthInstance, async (user) => { // Usa currentAuthInstance
         currentUser = user; // Atualiza o usuário global
-        updateProfileMenuLoginState(); // Atualiza o estado do menu de perfil
+        updateProfileMenuLoginState(); // ATUALIZADO: Garante que o estado do botão de logout seja atualizado aqui
 
         if (user) {
             // Usuário autenticado (incluindo sessões persistidas)
@@ -91,15 +136,30 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
             setupFirestorePlayersListener(currentDbInstance, appId);
             updatePlayerModificationAbility(true);
             showPage('start-page'); // Mostra a página inicial se houver um usuário autenticado
+            
+            // NOVO: Habilita botões de login/logout quando online
+            if (Elements.googleLoginButton()) Elements.googleLoginButton().disabled = false;
+            if (Elements.anonymousLoginButton()) Elements.anonymousLoginButton().disabled = false;
         } else {
             // Nenhum usuário autenticado (sessão não encontrada ou expirada)
-            console.log("Nenhum usuário autenticado. Exibindo página de login.");
+            console.log("Nenhum usuário autenticado.");
             if (Elements.userIdDisplay()) Elements.userIdDisplay().textContent = 'ID: Não logado'; // Altera para "Não logado"
             if (Elements.userProfilePicture()) Elements.userProfilePicture().src = "https://placehold.co/40x40/222/FFF?text=?";
             if (Elements.userDisplayName()) Elements.userDisplayName().textContent = "Visitante"; // Altera para "Visitante"
             updatePlayerModificationAbility(false);
             showPage('login-page'); // Permanece na página de login
             setupFirestorePlayersListener(null, appId); // Desinscreve o listener do Firestore
+
+            // NOVO: Desabilita botões de login/logout se offline
+            if (!navigator.onLine) {
+                displayMessage("Sua sessão expirou ou não há conexão. Conecte-se à internet para fazer login.", "error");
+                if (Elements.googleLoginButton()) Elements.googleLoginButton().disabled = true;
+                if (Elements.anonymousLoginButton()) Elements.anonymousLoginButton().disabled = true;
+            } else {
+                // NOVO: Habilita botões de login/logout se online
+                if (Elements.googleLoginButton()) Elements.googleLoginButton().disabled = false;
+                if (Elements.anonymousLoginButton()) Elements.anonymousLoginButton().disabled = false;
+            }
         }
     });
 }

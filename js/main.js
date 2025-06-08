@@ -2,7 +2,7 @@
 // Ponto de entrada principal do seu aplicativo. Orquestra a inicialização e os módulos.
 
 import { initFirebaseApp, getAppId } from './firebase/config.js';
-import { loginWithGoogle, logout, setupAuthListener, signInAnonymouslyUser } from './firebase/auth.js';
+import { loginWithGoogle, logout, setupAuthListener, signInAnonymouslyUser, updateProfileMenuLoginState } from './firebase/auth.js'; // Importa updateProfileMenuLoginState
 import { loadPlayersFromLocalStorage, setupFirestorePlayersListener, addPlayer, removePlayer } from './data/players.js';
 import { showPage, updatePlayerModificationAbility, setupSidebar, setupPageNavigation, setupAccordion, setupScoreInteractions, setupTeamSelectionModal, closeSidebar, showConfirmationModal, hideConfirmationModal } from './ui/pages.js';
 import { setupConfigUI } from './ui/config-ui.js';
@@ -119,6 +119,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             signInAnonymouslyUser(appId); // Passa o appId para a função
         });
     }
+
+    // NOVO: Listener para detectar quando o aplicativo volta a ficar online
+    window.addEventListener('online', () => {
+        console.log("Aplicativo online novamente. Tentando revalidar a sessão...");
+        displayMessage("Online novamente! Tentando reconectar...", "info");
+        // Força uma reavaliação do estado de autenticação do Firebase.
+        // O onAuthStateChanged (configurado em auth.js) será disparado e tentará
+        // renovar a sessão ou logar o usuário se for possível.
+        setupAuthListener(auth, db, appId); 
+        updateProfileMenuLoginState(); // ATUALIZADO: Garante que o botão de logout seja habilitado
+    });
+
+    // NOVO: Listener para detectar quando o aplicativo fica offline
+    window.addEventListener('offline', () => {
+        console.log("Aplicativo offline.");
+        displayMessage("Você está offline.", "error");
+        // Desabilita os botões de login e o botão de logout
+        if (Elements.googleLoginButton()) Elements.googleLoginButton().disabled = true;
+        if (Elements.anonymousLoginButton()) Elements.anonymousLoginButton().disabled = true;
+        updateProfileMenuLoginState(); // ATUALIZADO: Garante que o botão de logout seja desabilitado
+    });
 
 
     loadAppVersion();
