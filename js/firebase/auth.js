@@ -7,9 +7,10 @@ import { getPlayers } from '../data/players.js';
 import { showPage, updatePlayerModificationAbility } from '../ui/pages.js';
 import * as Elements from '../ui/elements.js';
 import { displayMessage } from '../ui/messages.js';
+import { updateConnectionIndicator } from '../main.js'; // NOVO: Importa updateConnectionIndicator
 
 let currentUser = null;
-let currentAuthInstance = null; // Stores the Firebase Auth instance
+let currentAuthInstance = null; // Stores the Firebase Auth instancea
 let currentDbInstance = null;   // Stores the Firestore DB instance
 let isManualAnonymousLogin = false;
 
@@ -118,6 +119,9 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
         currentUser = user;
         updateProfileMenuLoginState();
 
+        // NOVO: Atualiza o indicador de conexão imediatamente com base no status da rede
+        updateConnectionIndicator(navigator.onLine ? 'online' : 'offline');
+
         if (user) {
             console.log(`User logged in: ${user.uid} (Provider: ${user.isAnonymous ? 'Anonymous' : user.providerData[0]?.providerId || 'Google'})`);
             if (Elements.userIdDisplay()) Elements.userIdDisplay().textContent = `ID: ${user.uid}`;
@@ -144,20 +148,14 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
                 console.log("[Auth Listener] Offline e sem usuário logado. Tentando mostrar start-page.");
                 showPage('start-page'); // Direciona para a start-page para permitir acesso aos dados locais
                 displayMessage("Sua sessão expirou devido à falta de conexão, mas você pode continuar usando dados locais. Reconecte para logar novamente.", "info");
-                // Garante que o indicador de conexão seja 'offline'
-                if (window.updateConnectionIndicator) { // Verifica se a função existe
-                    window.updateConnectionIndicator('offline');
-                }
+                // updateConnectionIndicator('offline'); // REMOVIDO: Já tratado no início da callback
 
                 if (Elements.googleLoginButton()) Elements.googleLoginButton().disabled = true;
                 if (Elements.anonymousLoginButton()) Elements.anonymousLoginButton().disabled = true;
             } else {
                 console.log("[Auth Listener] Online e sem usuário logado. Mostrando login-page.");
                 showPage('login-page');
-                // Garante que o indicador de conexão seja 'online'
-                if (window.updateConnectionIndicator) { // Verifica se a função existe
-                    window.updateConnectionIndicator('online');
-                }
+                // updateConnectionIndicator('online'); // REMOVIDO: Já tratado no início da callback
                 if (Elements.googleLoginButton()) Elements.googleLoginButton().disabled = false;
                 if (Elements.anonymousLoginButton()) Elements.anonymousLoginButton().disabled = false;
             }
