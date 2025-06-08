@@ -150,17 +150,10 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
             updatePlayerModificationAbility(false);
             setupFirestorePlayersListener(null, appId); // Unsubscribes the Firestore listener
 
-            // NEW: Checks if offline and informs that the session has expired, potentially redirecting to start-page
+            // ATUALIZADO: Sempre tenta mostrar a start-page se offline, independente de haver jogadores locais
             if (!navigator.onLine) {
-                // If offline AND there are local players, go to start-page
-                if (getPlayers().length > 0) {
-                    showPage('start-page'); // Directs to start-page to allow access to local data
-                    displayMessage("Your session expired due to lack of connection, but you can continue using local data. Reconnect to log in again.", "info");
-                } else {
-                    // If offline AND no local players, stay on login-page
-                    showPage('login-page');
-                    displayMessage("Your session expired or there's no connection. Connect to the internet to log in.", "error");
-                }
+                showPage('start-page'); // Directs to start-page to allow access to local data
+                displayMessage("Your session expired due to lack of connection, but you can continue using local data. Reconnect to log in again.", "info");
                 // NEW: Disables login buttons if offline
                 if (Elements.googleLoginButton()) Elements.googleLoginButton().disabled = true;
                 if (Elements.anonymousLoginButton()) Elements.anonymousLoginButton().disabled = true;
