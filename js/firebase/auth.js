@@ -116,6 +116,9 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
     currentDbInstance = dbInstance;
 
     onAuthStateChanged(currentAuthInstance, async (user) => {
+        // NOVO LOG DE DEBUG: Verifica o estado inicial do onAuthStateChanged
+        console.log(`[onAuthStateChanged] Usuário: ${user ? user.uid : 'NULO'}, Online: ${navigator.onLine}`);
+
         currentUser = user;
         updateProfileMenuLoginState();
 
@@ -148,14 +151,12 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
                 console.log("[Auth Listener] Offline e sem usuário logado. Tentando mostrar start-page.");
                 showPage('start-page'); // Direciona para a start-page para permitir acesso aos dados locais
                 displayMessage("Sua sessão expirou devido à falta de conexão, mas você pode continuar usando dados locais. Reconecte para logar novamente.", "info");
-                // updateConnectionIndicator('offline'); // REMOVIDO: Já tratado no início da callback
-
+                
                 if (Elements.googleLoginButton()) Elements.googleLoginButton().disabled = true;
                 if (Elements.anonymousLoginButton()) Elements.anonymousLoginButton().disabled = true;
             } else {
                 console.log("[Auth Listener] Online e sem usuário logado. Mostrando login-page.");
                 showPage('login-page');
-                // updateConnectionIndicator('online'); // REMOVIDO: Já tratado no início da callback
                 if (Elements.googleLoginButton()) Elements.googleLoginButton().disabled = false;
                 if (Elements.anonymousLoginButton()) Elements.anonymousLoginButton().disabled = false;
             }
