@@ -107,6 +107,8 @@ export const navSchedulingButton = () => document.getElementById('nav-scheduling
 export const navStatsButton = () => document.getElementById('nav-stats');
 export const navConfigButton = () => document.getElementById('nav-config');
 
+// NOVO: Headers do Accordion
+export const accordionHeaders = () => document.querySelectorAll('.accordion-header');
 
 // Elementos da página de Histórico
 export const historyListContainer = () => document.getElementById('history-list-container');
