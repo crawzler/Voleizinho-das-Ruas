@@ -20,6 +20,11 @@ export const profileSettingsButton = () => document.getElementById('profile-sett
 // NOVO: Overlay do sidebar
 export const sidebarOverlay = () => document.getElementById('sidebar-overlay');
 
+// NOVO: Indicador de Conexão
+export const connectionIndicator = () => document.getElementById('connection-indicator');
+export const statusDot = () => connectionIndicator()?.querySelector('.status-dot');
+export const statusText = () => connectionIndicator()?.querySelector('.status-text');
+
 
 // Páginas
 export const pages = () => document.querySelectorAll('.app-page'); // Pode continuar sendo um querySelectorAll

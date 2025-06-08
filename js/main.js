@@ -1,5 +1,5 @@
 // js/main.js
-// Main entry point of your application. Orchestrates initialization and modules.
+// Ponto de entrada principal do seu aplicativo. Orquestra a inicialização e os módulos.
 
 import { initFirebaseApp, getAppId } from './firebase/config.js';
 import { loginWithGoogle, logout, setupAuthListener, signInAnonymouslyUser, updateProfileMenuLoginState } from './firebase/auth.js'; // Imports updateProfileMenuLoginState
@@ -18,23 +18,53 @@ import { setupSchedulingPage } from './ui/scheduling-ui.js';
 
 import { signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
+/**
+ * Atualiza o indicador de conexão na UI.
+ * @param {'online' | 'offline' | 'reconnecting'} status - O status da conexão.
+ */
+function updateConnectionIndicator(status) {
+    const statusDot = Elements.statusDot();
+    const statusText = Elements.statusText();
+
+    if (statusDot && statusText) {
+        statusDot.className = 'status-dot'; // Reseta as classes
+        statusText.textContent = ''; // Reseta o texto
+
+        switch (status) {
+            case 'online':
+                statusDot.classList.add('online');
+                statusText.textContent = 'Online';
+                break;
+            case 'offline':
+                statusDot.classList.add('offline');
+                statusText.textContent = 'Offline';
+                break;
+            case 'reconnecting':
+                statusDot.classList.add('reconnecting');
+                statusText.textContent = 'Reconectando...';
+                break;
+        }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
-    // Initializes the Firebase App and gets instances
+    // Inicializa o Firebase App e obtém as instâncias
     const { app, db, auth } = await initFirebaseApp();
     const appId = getAppId();
 
     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
         try {
             await signInWithCustomToken(auth, __initial_auth_token);
-            console.log("User logged in with Canvas initial token.");
+            console.log("Usuário logado com token inicial do Canvas.");
         } catch (error) {
-            console.error("Error logging in with Canvas initial token:", error);
+            console.error("Erro ao logar com token inicial do Canvas:", error);
         }
     }
 
-    setupAuthListener(auth, db, appId);
-
+    // CARREGA JOGADORES DO LOCALSTORAGE ANTES DE CONFIGURAR O LISTENER DE AUTENTICAÇÃO
     loadPlayersFromLocalStorage();
+
+    setupAuthListener(auth, db, appId);
 
     setupSidebar();
     setupPageNavigation(startGame, getPlayers, appId);
@@ -45,101 +75,106 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupHistoryPage();
     setupSchedulingPage();
 
-    // Listeners for team page buttons
+    // Listeners para os botões da página de times
     const generateTeamsButton = document.getElementById('generate-teams-button');
-    console.log("Element 'generate-teams-button':", generateTeamsButton); // DEBUG LOG
+    console.log("Elemento 'generate-teams-button':", generateTeamsButton); // LOG DE DEPURACAO
     if (generateTeamsButton) {
         generateTeamsButton.addEventListener('click', () => {
-            console.log("Button 'Generate Teams' clicked."); // DEBUG LOG
+            console.log("Botão 'Gerar Times' clicado."); // LOG DE DEPURACAO
             generateTeams(appId);
         });
     }
 
-    // Listener for start/stop game button (which now starts the game or toggles the timer)
+    // Listener para o botão de iniciar/parar o jogo (que agora inicia o jogo ou alterna o timer)
     const toggleTimerButton = document.getElementById('toggle-timer-button');
-    console.log("Element 'toggle-timer-button':", toggleTimerButton); // DEBUG LOG
+    console.log("Elemento 'toggle-timer-button':", toggleTimerButton); // LOG DE DEPURACAO
     if (toggleTimerButton) {
         toggleTimerButton.addEventListener('click', () => {
-            console.log("Button 'Toggle Timer' clicked."); // DEBUG LOG
+            console.log("Botão 'Alternar Timer' clicado."); // LOG DE DEPURACAO
             toggleTimer();
         });
     }
 
-    // Listener for swap teams button
+    // Listener para o botão de trocar times
     const swapTeamsButton = document.getElementById('swap-teams-button');
-    console.log("Element 'swap-teams-button':", swapTeamsButton); // DEBUG LOG
+    console.log("Elemento 'swap-teams-button':", swapTeamsButton); // LOG DE DEPURACAO
     if (swapTeamsButton) {
         swapTeamsButton.addEventListener('click', () => {
-            console.log("Button 'Swap Teams' clicked."); // DEBUG LOG
+            console.log("Botão 'Trocar Times' clicado."); // LOG DE DEPURACAO
             swapTeams();
         });
     }
 
-    // Sets up the timer toggle button
+    // Configura o botão de toggle do timer
     const timerAndSetTimerWrapperElement = Elements.timerAndSetTimerWrapper();
-    console.log("Element 'Elements.timerAndSetTimerWrapper()':", timerAndSetTimerWrapperElement); // DEBUG LOG
+    console.log("Elemento 'Elements.timerAndSetTimerWrapper()':", timerAndSetTimerWrapperElement); // LOG DE DEPURACAO
     if (timerAndSetTimerWrapperElement) {
         timerAndSetTimerWrapperElement.addEventListener('click', () => {
-            console.log("Timer Wrapper clicked."); // DEBUG LOG
+            console.log("Wrapper do Timer clicado."); // LOG DE DEPURACAO
             toggleTimer();
         });
     }
 
-    // Sets up the end game button
+    // Configura o botão de encerrar jogo
     const endGameButton = document.getElementById('end-game-button');
-    console.log("Element 'end-game-button':", endGameButton); // DEBUG LOG
+    console.log("Elemento 'end-game-button':", endGameButton); // LOG DE DEPURACAO
     if (endGameButton) {
         endGameButton.addEventListener('click', () => {
-            console.log("Button 'End Game' clicked."); // DEBUG LOG
+            console.log("Botão 'Encerrar Jogo' clicado."); // LOG DE DEPURACAO
             showConfirmationModal(
-                'Are you sure you want to end the game? The score will be saved to history.',
+                'Tem certeza que deseja encerrar o jogo? O placar será salvo no histórico.',
                 () => {
-                    console.log("Game end confirmation."); // DEBUG LOG
+                    console.log("Confirmação de encerramento de jogo."); // LOG DE DEPURACAO
                     endGame();
                 }
             );
         });
     }
 
-    // FIXED: Adds event listeners for login buttons with correct HTML IDs
-    const googleLoginButton = document.getElementById('google-login-button'); // Corrected ID
-    console.log("Element 'google-login-button':", googleLoginButton);
+    // CORRIGIDO: Adiciona event listeners para os botões de login com os IDs corretos do HTML
+    const googleLoginButton = document.getElementById('google-login-button'); // ID corrigido
+    console.log("Elemento 'google-login-button':", googleLoginButton);
     if (googleLoginButton) {
         googleLoginButton.addEventListener('click', () => {
-            console.log("Button 'Sign in with Google' clicked.");
+            console.log("Botão 'Entrar com Google' clicado.");
             loginWithGoogle();
         });
     }
 
-    const anonymousLoginButton = document.getElementById('anonymous-login-button'); // Corrected ID
-    console.log("Element 'anonymous-login-button':", anonymousLoginButton);
+    const anonymousLoginButton = document.getElementById('anonymous-login-button'); // ID corrigido
+    console.log("Elemento 'anonymous-login-button':", anonymousLoginButton);
     if (anonymousLoginButton) {
         anonymousLoginButton.addEventListener('click', () => {
-            console.log("Button 'Sign in anonymously' clicked.");
-            signInAnonymouslyUser(appId); // Passes appId to the function
+            console.log("Botão 'Entrar como Anônimo' clicado.");
+            signInAnonymouslyUser(appId); // Passa o appId para a função
         });
     }
 
-    // NEW: Listener to detect when the application goes online again
+    // NOVO: Listener para detectar quando o aplicativo volta a ficar online
     window.addEventListener('online', () => {
-        console.log("Application online again. Attempting to revalidate session...");
-        displayMessage("Online again! Attempting to reconnect...", "info");
-        // Forces a re-evaluation of Firebase authentication state.
-        // onAuthStateChanged (configured in auth.js) will be triggered and will try
-        // to renew the session or log the user in if possible.
-        setupAuthListener(auth, db, appId); 
-        updateProfileMenuLoginState(); // UPDATED: Ensures the logout button is enabled
+        console.log("Aplicativo online novamente. Tentando revalidar a sessão...");
+        displayMessage("Online novamente! Tentando reconectar...", "info");
+        updateConnectionIndicator('reconnecting'); // Define estado "reconectando" imediatamente
+        setTimeout(() => { // Pequeno delay antes de confirmar online para visual
+            setupAuthListener(auth, db, appId); 
+            updateProfileMenuLoginState();
+            updateConnectionIndicator('online'); // Confirma online
+        }, 1500); // 1.5 segundos para a transição
     });
 
-    // NEW: Listener to detect when the application goes offline
+    // NOVO: Listener para detectar quando o aplicativo fica offline
     window.addEventListener('offline', () => {
-        console.log("Application offline.");
-        displayMessage("You are offline.", "error");
-        // Disables login buttons and the logout button
+        console.log("Aplicativo offline.");
+        displayMessage("Você está offline.", "error");
+        // Desabilita os botões de login e o botão de logout
         if (Elements.googleLoginButton()) Elements.googleLoginButton().disabled = true;
         if (Elements.anonymousLoginButton()) Elements.anonymousLoginButton().disabled = true;
-        updateProfileMenuLoginState(); // UPDATED: Ensures the logout button is disabled
+        updateProfileMenuLoginState(); // ATUALIZADO: Garante que o logout seja desabilitado
+        updateConnectionIndicator('offline'); // Define estado offline
     });
+
+    // Define o estado inicial do indicador de conexão
+    updateConnectionIndicator(navigator.onLine ? 'online' : 'offline');
 
 
     loadAppVersion();
@@ -148,7 +183,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (Elements.sidebarOverlay()) {
         Elements.sidebarOverlay().addEventListener('click', () => {
             closeSidebar();
-            console.log('Sidebar closed by clicking on overlay.');
+            console.log('Sidebar fechado por clique no overlay.');
         });
     }
 });

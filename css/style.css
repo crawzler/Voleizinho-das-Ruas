@@ -658,7 +658,7 @@ input:checked + .slider:before {
     top: 0px;
 }
 
-/* #524931  CHAT, AQUI ESSA SESSÃO É PARA UTILIZAR NA CRIAÇÃO DO MODAL PARA SELECIONAR OS TIMES */
+/* #524931  CHAT, AQUI ESSA SESSÃO É PARA UTILIZAR NA CRIAÇÃO DO MODAL PARA SELECONAR OS TIMES */
 .select-team-modal-container {
     display: none; /* Oculto por padrão */
     align-items: center;
@@ -793,7 +793,7 @@ input:checked + .slider:before {
         max-width: 600px; /* Limita a largura para desktop */
     }
 }
-/* #524932  CHAT, AQUI ESSA SESSÃO É PARA UTILIZAR NA CRIAÇÃO DO MODAL PARA SELECIONAR OS TIMES */
+/* #524932  CHAT, AQUI ESSA SESSÃO É PARA UTILIZAR NA CRIAÇÃO DO MODAL PARA SELECONAR OS TIMES */
 
 .score-display-container {
     display: flex;
@@ -1706,4 +1706,55 @@ input:checked + .slider:before {
 
 }
 
+}
+
+/* NOVO: Estilos para o indicador de conexão */
+.connection-indicator {
+    position: fixed; /* Posição fixa na viewport */
+    top: 1rem; /* 1rem do topo */
+    left: 1rem; /* 1rem da esquerda */
+    display: flex;
+    align-items: center;
+    gap: 0.4rem; /* Espaçamento entre a bolinha e o texto */
+    z-index: 1001; /* Acima da maioria dos elementos, mas abaixo de modais */
+    background-color: rgba(0, 0, 0, 0.6); /* Fundo sutil para contraste */
+    padding: 0.4rem 0.6rem;
+    border-radius: 12px; /* Cantos arredondados */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.status-dot {
+    width: 8px; /* Tamanho da bolinha */
+    height: 8px;
+    border-radius: 50%; /* Faz a bolinha ser um círculo */
+    display: inline-block;
+    flex-shrink: 0; /* Impede que a bolinha encolha */
+}
+
+.status-text {
+    font-size: 0.75rem; /* Texto pequeno */
+    font-weight: 500;
+    color: #E5E7EB; /* Cor padrão do texto (clara) */
+}
+
+/* Cores dos estados */
+.status-dot.online {
+    background-color: #4CAF50; /* Verde */
+}
+.status-text.online {
+    color: #4CAF50; /* Texto verde */
+}
+
+.status-dot.offline {
+    background-color: #EF4444; /* Vermelho */
+}
+.status-text.offline {
+    color: #EF4444; /* Texto vermelho */
+}
+
+.status-dot.reconnecting {
+    background-color: #FFC107; /* Amarelo */
+}
+.status-text.reconnecting {
+    color: #FFC107; /* Texto amarelo */
 }
