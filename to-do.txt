@@ -1,1 +1,0 @@
--Botão para resetar os cookies (Só caso tenha internet).
