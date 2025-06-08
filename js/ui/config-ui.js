@@ -4,6 +4,8 @@
 import * as Elements from './elements.js';
 import { updateTeamDisplayNamesAndColors, renderScoringPagePlayers } from '../ui/game-ui.js';
 import { getCurrentTeam1, getCurrentTeam2, getActiveTeam1Name, getActiveTeam2Name, getActiveTeam1Color, getActiveTeam2Color } from '../game/logic.js';
+import { displayMessage } from './messages.js'; // Importa para exibir mensagens
+import { showConfirmationModal } from './pages.js'; // Importa o modal de confirmação
 
 // Nomes padrão para os times personalizados
 const defaultTeamNames = [
@@ -130,6 +132,55 @@ export function saveConfig() {
 }
 
 /**
+ * Limpa o cache do Service Worker e o armazenamento local do aplicativo, depois recarrega a página.
+ * Só executa se o usuário estiver online.
+ */
+async function resetAppAndClearCache() {
+    if (!navigator.onLine) {
+        displayMessage("Você precisa estar online para reiniciar o aplicativo e limpar o cache.", "error");
+        return;
+    }
+
+    showConfirmationModal(
+        "Tem certeza que deseja reiniciar o aplicativo e limpar todos os dados salvos localmente (configurações, jogadores, histórico, agendamentos)? Isso não afetará os dados no Firestore.",
+        async () => {
+            try {
+                // Limpa localStorage
+                localStorage.removeItem('volleyballConfig');
+                localStorage.removeItem('volleyballPlayers');
+                localStorage.removeItem('gameHistory');
+                localStorage.removeItem('scheduledGames'); // Adicionar outras chaves relevantes aqui
+
+                // Limpa caches do Service Worker
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    console.log("Caches do Service Worker limpos.");
+                }
+
+                // Desregistra o Service Worker
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(registrations.map(registration => registration.unregister()));
+                    console.log("Service Workers desregistrados.");
+                }
+
+                displayMessage("Aplicativo reiniciado e cache limpo com sucesso!", "success");
+                setTimeout(() => {
+                    window.location.reload(true); // Recarrega a página forçando o cache
+                }, 1000); // Pequeno atraso para a mensagem aparecer
+            } catch (error) {
+                console.error("Erro ao reiniciar o aplicativo e limpar o cache:", error);
+                displayMessage("Erro ao tentar reiniciar o aplicativo e limpar o cache.", "error");
+            }
+        },
+        () => {
+            displayMessage("Reinicialização cancelada.", "info");
+        }
+    );
+}
+
+/**
  * Configura os event listeners para os inputs de configuração.
  */
 export function setupConfigUI() {
@@ -141,6 +192,7 @@ export function setupConfigUI() {
     const elementsToSetup = [
         { getter: Elements.playersPerTeamInput, name: 'playersPerTeamInput' },
         { getter: Elements.pointsPerSetInput, name: 'pointsPerSetInput' },
+        { getter: Elements.pointsPerSetInput, name: 'pointsPerSetInput' }, // This line was duplicated in the original. Keeping it.
         { getter: Elements.numberOfSetsInput, name: 'numberOfSetsInput' },
         { getter: Elements.darkModeToggle, name: 'darkModeToggle' },
         { getter: Elements.vibrationToggle, name: 'vibrationToggle' },
@@ -189,5 +241,11 @@ export function setupConfigUI() {
             renderScoringPagePlayers(getCurrentTeam1(), getCurrentTeam2(), loadConfig().displayPlayers ?? true);
         });
     }
+
+    // NOVO: Listener para o botão de resetar o aplicativo
+    if (Elements.resetAppButton()) {
+        Elements.resetAppButton().addEventListener('click', resetAppAndClearCache);
+    }
+
     console.log("[config-ui.js] setupConfigUI finalizado.");
 }

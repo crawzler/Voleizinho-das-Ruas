@@ -1,4 +1,4 @@
-const CACHE_NAME = 'VdR-DZ-v0.2.2_Test';
+const CACHE_NAME = 'VdR-DZ-v0.2.3_Test';
 const urlsToCache = [
   './',
   './index.html',

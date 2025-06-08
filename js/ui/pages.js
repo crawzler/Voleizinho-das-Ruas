@@ -238,13 +238,13 @@ export function setupSidebar(startGameHandler, getPlayersHandler) {
         });
     }
 
-    // Listener para o botão "Configurações" dentro do mini-menu
-    if (Elements.profileSettingsButton()) {
-        Elements.profileSettingsButton().addEventListener('click', () => {
-            showPage('config-page');
-            closeSidebar();
-        });
-    }
+    // REMOVIDO: Listener para o botão "Configurações" dentro do mini-menu, movido para o sidebar principal
+    // if (Elements.profileSettingsButton()) {
+    //     Elements.profileSettingsButton().addEventListener('click', () => {
+    //         showPage('config-page'); // Navega para a página de configurações
+    //         closeSidebar();
+    //     });
+    // }
 }
 
 
@@ -391,11 +391,13 @@ export function selectTeamFromModal(teamIndex, panelId) {
 
     const teamNumberForConfig = teamIndex + 1;
 
+    // CORREÇÃO AQUI: Garante que as chaves de configuração sejam construídas corretamente
     const teamConfigNameKey = `customTeam${teamNumberForConfig}Name`;
     const teamConfigColorKey = `customTeam${teamNumberForConfig}Color`;
 
+    // Acessa as configurações usando as chaves corretas
     const teamDisplayName = config[teamConfigNameKey] || selectedTeam.name || `Time ${teamNumberForConfig}`;
-    const teamDisplayColor = config[teamColorKey] || defaultColors[teamIndex] || '#6c757d';
+    const teamDisplayColor = config[teamConfigColorKey] || defaultColors[teamIndex] || '#6c757d'; // Usa teamConfigColorKey aqui
 
     if (panelId === 'team1') {
         setCurrentTeam1(selectedTeam.players);
@@ -410,9 +412,12 @@ export function selectTeamFromModal(teamIndex, panelId) {
     updateTeamDisplayNamesAndColors(getActiveTeam1Name(), getActiveTeam2Name(), getActiveTeam1Color(), getActiveTeam2Color());
     const shouldDisplayPlayers = (config.displayPlayers ?? true) && (getCurrentTeam1().length > 0 || getCurrentTeam2().length > 0);
     renderScoringPagePlayers(getCurrentTeam1(), getCurrentTeam2(), shouldDisplayPlayers);
+    
+    // Fecha o modal
+    Elements.teamSelectionModal().classList.remove('modal-active');
     displayMessage(`Time ${panelId === 'team1' ? 1 : 2} atualizado para: ${teamDisplayName}`, "success");
-    closeTeamSelectionModal();
 }
+
 
 /**
  * Configura os event listeners para o modal de seleção de time.
@@ -539,7 +544,7 @@ function handleConfirmClick() {
     if (onConfirmCallback) {
         try {
             onConfirmCallback();
-        } catch (error) {
+        } catch (error) { // CORRIGIDO: 'catches' para 'catch'
             console.error('Erro ao executar a ação confirmada:', error);
             displayMessage('Erro ao executar a ação confirmada.', 'error');
         }

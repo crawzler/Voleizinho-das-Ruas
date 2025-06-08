@@ -28,9 +28,10 @@
             </div>
             <!-- NOVO: Mini-menu do perfil -->
             <div id="profile-menu" class="profile-menu">
-                <button id="profile-settings-button" class="profile-menu-item">
+                <!-- REMOVIDO: Botão de Configurações do mini-menu do perfil -->
+                <!-- <button id="profile-settings-button" class="profile-menu-item">
                     <span class="material-icons">settings</span> Configurações
-                </button>
+                </button> -->
                 <button id="profile-logout-button" class="profile-menu-item">
                     <span class="material-icons">logout</span> Sair
                 </button>
@@ -60,8 +61,8 @@
                 <span class="material-icons sidebar-nav-icon">insights</span> Estatísticas
             </button>
             <!-- REMOVIDO: Botão de Sair -->
-            <!-- Botão de Configurações será acessível no mini-menu do perfil -->
-            <button id="nav-config" class="sidebar-nav-item" style="display:none;">
+            <!-- Botão de Configurações MOVIDO para o sidebar principal -->
+            <button id="nav-config" class="sidebar-nav-item" >
                 <span class="material-icons sidebar-nav-icon">settings</span> Configurações
             </button>
         </nav>
@@ -224,7 +225,8 @@
                 </div>
 
                 <div class="accordion-item">
-                    <div class="accordion-header">
+                    <!-- CORREÇÃO: Alterado de <div> para <button> para corrigir o bug do accordion -->
+                    <button class="accordion-header">
                         <h3>Times Personalizados</h3>
                         <span class="material-icons">expand_more</span>
                     </button>
@@ -275,7 +277,24 @@
                         </div>
                 </div>
             </div>
-            <button id="reset-config-button" class="button button--secondary form-button--full-width">Redefinir Configurações</button>
+
+                <!-- NOVO: Acordeão para Reiniciar Aplicativo -->
+                <div class="accordion-item">
+                    <button class="accordion-header">
+                        <h3>Reiniciar Aplicativo</h3>
+                        <span class="material-icons">expand_more</span>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="accordion-content-sub-full-width"> <!-- Classe para botões em linha única -->
+                            <button id="reset-app-button" class="button button--secondary form-button--full-width">
+                                <span class="material-icons">cleaning_services</span> Limpar Cache e Reiniciar App
+                            </button>
+                            <button id="reset-config-button" class="button button--secondary form-button--full-width mt-4"> <!-- Adicionado mt-4 para espaçamento -->
+                                <span class="material-icons">settings_backup_restore</span> Redefinir Configurações
+                            </button>
+                        </div>
+                    </div>
+                </div>
             
             <div class="app-info">
                 <span id="user-id-display">ID: Carregando...</span>

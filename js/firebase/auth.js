@@ -1,8 +1,8 @@
 // js/firebase/auth.js
 // Contém a lógica de autenticação do Firebase (login, logout, observador de estado).
 
-import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"; // Removido 'auth' e 'db' diretos de config.js
-import { setupFirestorePlayersListener } from '../data/players.js'; // Removido loadPlayersFromLocalStorage, pois não é usado diretamente aqui
+import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { setupFirestorePlayersListener } from '../data/players.js';
 import { showPage, updatePlayerModificationAbility, updateProfileMenuLoginState } from '../ui/pages.js';
 import * as Elements from '../ui/elements.js';
 import { displayMessage } from '../ui/messages.js';
@@ -72,7 +72,7 @@ export async function logout() {
  * @param {object} dbInstance - A instância do Firestore do Firebase.
  * @param {string} appId - O ID do aplicativo para uso na sincronização do Firestore.
  */
-export function setupAuthListener(authInstance, dbInstance, appId) { // CORRIGIDO: Aceita authInstance e dbInstance
+export function setupAuthListener(authInstance, dbInstance, appId) {
     currentAuthInstance = authInstance; // Armazena a instância
     currentDbInstance = dbInstance;     // Armazena a instância
 
@@ -81,27 +81,25 @@ export function setupAuthListener(authInstance, dbInstance, appId) { // CORRIGID
         updateProfileMenuLoginState(); // Atualiza o estado do menu de perfil
 
         if (user) {
-            // Usuário autenticado
-            console.log(`Usuário logado: ${user.uid}`);
+            // Usuário autenticado (incluindo sessões persistidas)
+            console.log(`Usuário logado: ${user.uid} (Provider: ${user.isAnonymous ? 'Anônimo' : user.providerData[0]?.providerId || 'Google'})`); // Adicionado log do provedor
             if (Elements.userIdDisplay()) Elements.userIdDisplay().textContent = `ID: ${user.uid}`;
             if (Elements.userProfilePicture()) Elements.userProfilePicture().src = user.photoURL || "https://placehold.co/40x40/222/FFF?text=?"; // Placeholder se não houver foto
             if (Elements.userDisplayName()) Elements.userDisplayName().textContent = user.displayName || (user.isAnonymous ? "Usuário Anônimo" : "Usuário Google");
 
-            // Configura o listener do Firestore APENAS QUANDO O USUÁRIO ESTÁ AUTENTICADO
-            console.log(`Usuário autenticado (${user.isAnonymous ? 'Anônimo' : 'Google'}). Configurando listener do Firestore.`);
-            setupFirestorePlayersListener(currentDbInstance, appId); // CORRIGIDO: Passa dbInstance
-            updatePlayerModificationAbility(true); // AGORA: Qualquer usuário autenticado pode modificar
-            showPage('start-page'); // Mostra a página inicial após o login
+            console.log(`Configurando listener do Firestore para o usuário: ${user.uid}`);
+            setupFirestorePlayersListener(currentDbInstance, appId);
+            updatePlayerModificationAbility(true);
+            showPage('start-page'); // Mostra a página inicial se houver um usuário autenticado
         } else {
-            // Nenhum usuário autenticado (nem mesmo anônimo automático de sessão anterior)
+            // Nenhum usuário autenticado (sessão não encontrada ou expirada)
             console.log("Nenhum usuário autenticado. Exibindo página de login.");
-            if (Elements.userIdDisplay()) Elements.userIdDisplay().textContent = 'ID: Anônimo';
-            if (Elements.userProfilePicture()) Elements.userProfilePicture().src = "https://placehold.co/40x40/222/FFF?text=?"; // Placeholder
-            if (Elements.userDisplayName()) Elements.userDisplayName().textContent = "Usuário Anônimo";
-            updatePlayerModificationAbility(false); // AGORA: Ninguém logado não pode modificar
-            showPage('login-page'); // Mostra a página de login
-            // Quando não há usuário, desinscreve o listener do Firestore para evitar erros.
-            setupFirestorePlayersListener(null, appId); // Passa null para desinscrever o listener, mas mantém appId para consistência
+            if (Elements.userIdDisplay()) Elements.userIdDisplay().textContent = 'ID: Não logado'; // Altera para "Não logado"
+            if (Elements.userProfilePicture()) Elements.userProfilePicture().src = "https://placehold.co/40x40/222/FFF?text=?";
+            if (Elements.userDisplayName()) Elements.userDisplayName().textContent = "Visitante"; // Altera para "Visitante"
+            updatePlayerModificationAbility(false);
+            showPage('login-page'); // Permanece na página de login
+            setupFirestorePlayersListener(null, appId); // Desinscreve o listener do Firestore
         }
     });
 }

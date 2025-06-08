@@ -2,7 +2,11 @@ html {
     box-sizing: border-box;
     height: 100%; /* Garante que o html ocupe toda a altura da viewport */
     width: 100%; /* Garante que o html ocupe toda a largura da viewport */
-} /* FECHAMENTO CORRETO DO HTML */
+    /* NOVO: Oculta a barra de rolagem horizontal para o html, mas permite rolagem */
+    overflow-x: hidden;
+    /* NOVO: Oculta a barra de rolagem vertical para o html, mas permite rolagem */
+    overflow-y: hidden; /* Ajuste para evitar rolagem do HTML */
+}
 
 /* Regra universal de box-sizing deve ser aplicada globalmente */
 *, *::before, *::after {
@@ -17,12 +21,27 @@ body {
     flex-direction: column;
     min-height: 100vh; /* Garante que o body ocupe toda a altura da viewport */
     height: 100%; /* Garante que o body ocupe toda a altura da viewport */
-    overflow-x: hidden;
     margin: 0;
-    padding: 0;    
-    overscroll-behavior-y: contain; /* ALTERADO: Impede o pull-to-refresh no corpo principal */
+    padding: 0;
     width: 100%; /* Garante que o body ocupe toda a largura da viewport */
+    overscroll-behavior-y: contain; /* Impede o pull-to-refresh no corpo principal */
+
+    /* NOVO: Esconde as barras de rolagem, mas permite a rolagem */
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
 }
+
+/* NOVO: Para navegadores baseados em WebKit (Chrome, Safari, etc.) */
+body::-webkit-scrollbar,
+.app-main-content::-webkit-scrollbar,
+.sidebar-menu::-webkit-scrollbar,
+.players-list-container::-webkit-scrollbar,
+.accordion-content::-webkit-scrollbar,
+.select-team-modal-content-wrapper::-webkit-scrollbar,
+.team-players-column::-webkit-scrollbar {
+    display: none;
+}
+
 
 input {
     width: 100%;
@@ -43,18 +62,126 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     cursor: pointer;
 }
 
+/* ESTILOS DE BOTÃO REVERTIDOS PARA O ESTADO ANTERIOR À GLOBALIZAÇÃO */
 button {
     font-weight: bold;
     color: white;
-    background-color: #222;
+    background-color: #222; /* Fundo escuro genérico */
     padding: 0.75rem 1.25rem;
-    border: none;
+    border: none; /* Sem borda por padrão */
     border-radius: 8px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    /* NOVO: Remove a demarcação azul em cliques/toques */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Sombra sutil original */
     outline: none;
     -webkit-tap-highlight-color: transparent;
+    cursor: pointer;
+    transition: background-color 0.3s ease; /* Transição básica */
+    display: flex; /* Mantido para alinhamento de ícones, se usados */
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem; /* Espaçamento entre texto e ícone */
 }
+
+/* Estilos para botões primários (manter para os que já usam, mas o foco é nos de reset) */
+.button--primary {
+    background-color: #222 /* Azul primário */
+}
+
+.button--primary:hover {
+    background-color: #222; /* Azul mais escuro no hover */
+}
+
+/* Estilos para botões secundários (manter para os que já usam, mas o foco é nos de reset) */
+.button--secondary {
+    background-color: #4B5563; /* Cinza secundário */
+}
+
+.button--secondary:hover {
+    background-color: #374151; /* Cinza mais escuro no hover */
+}
+
+/* Removidas as regras .button:hover e .button:active globais */
+
+
+/* Estilos específicos para os botões dentro do acordeão de reiniciar aplicativo */
+.accordion-content-sub-full-width {
+    display: flex;
+    flex-direction: column; /* Empilha os botões verticalmente por padrão */
+    gap: 1rem; /* Espaçamento entre os botões */
+    padding: 20px;
+    border-top: 1px solid #666;
+}
+
+.accordion-content-sub-full-width #reset-app-button,
+.accordion-content-sub-full-width #reset-config-button {
+    padding: 1rem 1.5rem; /* Padding maior para um visual mais proeminente */
+    border-radius: 12px; /* Ligeiramente mais arredondado */
+    font-size: 1rem;
+    font-weight: 600;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2); /* Sombra de texto sutil */
+    transition: background-color 0.3s ease, transform 0.1s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    display: flex; /* Habilita flex para alinhamento de ícones */
+    align-items: center; /* Alinha verticalmente ícone e texto */
+    justify-content: center; /* Centraliza o conteúdo horizontalmente */
+    gap: 0.75rem; /* Espaçamento entre ícone e texto */
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4); /* Sombra mais pronunciada para esses botões */
+    border: 1px solid transparent; /* Adiciona uma borda transparente para transição */
+}
+
+.accordion-content-sub-full-width #reset-app-button:hover,
+.accordion-content-sub-full-width #reset-config-button:hover {
+    transform: translateY(-2px); /* Efeito de elevação no hover */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5); /* Sombra ainda mais pronunciada no hover */
+}
+
+.accordion-content-sub-full-width #reset-app-button:active,
+.accordion-content-sub-full-width #reset-config-button:active {
+    transform: translateY(0); /* Efeito de clique */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Cores específicas para cada botão */
+#reset-app-button {
+    background-color: #EF4444; /* Vermelho para reset/limpar */
+    border-color: #DC2626;
+}
+
+#reset-app-button:hover {
+    background-color: #DC2626;
+}
+
+#reset-config-button {
+    background-color: #F97316; /* Laranja para redefinir configurações */
+    border-color: #EA580C;
+}
+
+#reset-config-button:hover {
+    background-color: #EA580C;
+}
+
+/* Garante que os ícones dentro desses botões específicos herdem a cor */
+.accordion-content-sub-full-width .button .material-icons {
+    color: inherit; /* Faz com que a cor do ícone corresponda à cor do texto do botão */
+}
+
+/* Media query para desktop, se quiser que fiquem lado a lado */
+@media (min-width: 600px) {
+    .accordion-content-sub-full-width {
+        flex-direction: row; /* Lado a lado em telas maiores */
+        justify-content: space-between;
+    }
+    .accordion-content-sub-full-width .button {
+        flex: 1; /* Distribui o espaço igualmente */
+    }
+    .accordion-content-sub-full-width .mt-4 {
+        margin-top: 0; /* Remove margem superior quando estão lado a lado */
+        margin-left: 1rem; /* Adiciona margem à esquerda para separar */
+    }
+    /* Primeiro botão do grupo não precisa de margin-left */
+    .accordion-content-sub-full-width .button:first-child {
+        margin-left: 0;
+    }
+}
+
 
 .switch {
     position: relative;
@@ -101,6 +228,7 @@ input:checked + .slider:before {
 /* Rounded sliders */
 .slider.round {
   border-radius: 34px;
+  min-width: 40px;
 }
 
 .slider.round:before {
@@ -267,7 +395,7 @@ input:checked + .slider:before {
 .sidebar-nav {
     display: flex;
     flex-direction: column;
-    padding: 10px;
+    padding: 0px 10px;
     flex-grow: 1;
     gap: 0.25rem;
 }
@@ -277,6 +405,7 @@ input:checked + .slider:before {
     font-weight: 100;
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     gap: 0.75rem;
     background-color: transparent;
     border: none;
@@ -767,6 +896,7 @@ input:checked + .slider:before {
 
 .generate-teams-button {
     width: 100%;
+    background-color: #222;
     /* NOVO: Remove a demarcação azul em cliques/toques */
     outline: none;
     -webkit-tap-highlight-color: transparent;
@@ -1075,9 +1205,13 @@ input:checked + .slider:before {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: auto auto auto;
-    gap: 10px;
+    gap: 15px; /* Ligeiramente diferente para distinção */
     margin-bottom: 20px;
     width: 100%;
+    padding: 15px; /* Adicionado padding */
+    background-color: #2a2a2a; /* Adicionado background */
+    border-radius: 8px; /* Cantos arredondados */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Sombra suave */
 }
 
 .form-group:nth-child(4) {
@@ -1156,6 +1290,15 @@ input:checked + .slider:before {
     gap: 20px;
     padding: 20px;
     border-top: 1px solid #666;
+}
+
+/* NOVO: Regra específica para o 4º item dentro de .accordion-content-sub */
+.accordion-content-sub .form-group:nth-child(4) {
+    grid-column: auto / span 1; /* Garante que o 4º item ocupe apenas uma coluna */
+}
+
+.accordion-content-sub .form-group:nth-child(5) {
+    grid-column: auto / span 1; /* Garante que o 4º item ocupe apenas uma coluna */
 }
 
 .accordion-content-sub-teams {
@@ -1299,17 +1442,16 @@ input:checked + .slider:before {
 
 /* NOVO: Ajuste do card-actions para ser um contêiner absoluto e organizar os botões */
 .card-actions {
-    position: absolute; /* Tira do fluxo normal do scheduled-game-card */
+    position: absolute;
     top: 0;
     right: 0;
-    width: 3.5rem; /* Largura fixa para conter os botões */
-    height: 100%; /* Ocupa a altura total do card pai */
-    display: flex; /* Mantém flex para organizar os botões internos */
-    flex-direction: column; /* Empilha os botões verticalmente */
-    justify-content: space-between; /* Distribui os botões no topo e na base */
-    align-items: center; /* Centraliza horizontalmente dentro desta coluna estreita */
-    padding: 0.5rem; /* Preenchimento dentro da área de ações */
-    /* Removido: margin-left: auto; padding-left: 0.5rem; - substituídos por position: absolute e padding/width */
+    width: 3.5rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
 }
 
 .scheduled-game-card h3 {

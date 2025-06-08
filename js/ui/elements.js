@@ -86,6 +86,7 @@ export const vibrationToggle = () => document.getElementById('vibration-toggle')
 export const displayPlayersToggle = () => document.getElementById('display-players-toggle');
 export const appVersionDisplay = () => document.getElementById('app-version-display');
 export const resetConfigButton = () => document.getElementById('reset-config-button');
+export const resetAppButton = () => document.getElementById('reset-app-button'); // NOVO: Adicionado resetAppButton
 
 export const customTeamInputs = [];
 for (let i = 1; i <= 6; i++) {
