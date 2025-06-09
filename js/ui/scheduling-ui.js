@@ -4,11 +4,13 @@
 import * as Elements from './elements.js';
 import { displayMessage } from './messages.js';
 import { showConfirmationModal } from './pages.js'; // Importa o modal de confirmação
+import * as SchedulesData from '../data/schedules.js';
 
 const SCHEDULES_STORAGE_KEY = 'voleiScoreSchedules';
 
 // Array para armazenar os jogos agendados
 let scheduledGames = []; // Esta variável deve manter o estado em memória
+let unsubscribeSchedules = null;
 
 /**
  * Carrega os agendamentos do localStorage.
@@ -37,6 +39,20 @@ function saveSchedulesToLocalStorage() {
         console.error('Erro ao salvar agendamentos no localStorage:', e);
         displayMessage('Erro ao salvar agendamentos no seu dispositivo.', 'error');
     }
+}
+
+/**
+ * Sincroniza os agendamentos com o Firestore e o localStorage.
+ */
+function syncWithFirestoreAndLocalStorage() {
+    if (unsubscribeSchedules) unsubscribeSchedules();
+    // Sempre escuta o Firestore público (todos autenticados podem ler)
+    unsubscribeSchedules = SchedulesData.subscribeSchedules((arr) => {
+        // Ordena por data crescente (upcoming) e decrescente (past) já aqui, se quiser
+        scheduledGames = Array.isArray(arr) ? arr.slice() : [];
+        saveSchedulesToLocalStorage();
+        renderScheduledGames();
+    });
 }
 
 /**
@@ -77,7 +93,7 @@ export function deleteGame(gameId) {
 /**
  * Renderiza a lista de jogos agendados na página, separando-os por status.
  */
-function renderScheduledGames() {
+export function renderScheduledGames() {
     const upcomingListContainer = Elements.upcomingGamesList();
     const pastListContainer = Elements.pastGamesList();
     if (!upcomingListContainer || !pastListContainer) {
@@ -190,13 +206,14 @@ function createGameCard(game) {
  * Configura os event listeners e a lógica para a página de agendamento.
  */
 export function setupSchedulingPage() {
-    loadSchedulesFromLocalStorage(); // Load existing schedules when page is setup
+    // Não precisa carregar do localStorage se vai sincronizar do Firestore
+    syncWithFirestoreAndLocalStorage();
 
     const scheduleButton = Elements.scheduleGameButton();
     const pageContainer = Elements.schedulingPage();
 
     if (scheduleButton) {
-        scheduleButton.addEventListener('click', () => {
+        scheduleButton.addEventListener('click', async () => {
             const dateInputEl = Elements.dateInput();
             const date = dateInputEl ? dateInputEl.value.trim() : '';
             
@@ -219,20 +236,28 @@ export function setupSchedulingPage() {
             }
 
             const newSchedule = {
-                id: `game_${new Date().getTime()}`.toString(), // Garante que o ID seja uma string
+                id: `game_${new Date().getTime()}`.toString(),
                 date,
                 startTime,
                 endTime,
                 location,
                 notes,
-                status: 'upcoming', // New schedules are always 'upcoming' initially
+                status: 'upcoming',
                 createdAt: new Date().toISOString()
             };
 
             scheduledGames.push(newSchedule);
             saveSchedulesToLocalStorage();
-            renderScheduledGames();
-            displayMessage('Jogo agendado com sucesso!', 'success');
+            try {
+                await SchedulesData.saveSchedule(newSchedule);
+                displayMessage('Jogo agendado com sucesso!', 'success');
+            } catch (err) {
+                if (err && err.code === "permission-denied") {
+                    displayMessage('Você não tem permissão para agendar jogos. Apenas administradores podem agendar.', 'error');
+                } else {
+                    displayMessage('Erro ao agendar jogo. Tente novamente.', 'error');
+                }
+            }
 
             // Clear form fields after successful scheduling
             Elements.dateInput().value = '';
@@ -243,40 +268,56 @@ export function setupSchedulingPage() {
         });
     }
     
-    // Delegate click events for action buttons on the scheduling page
     if(pageContainer) {
-        pageContainer.addEventListener('click', (event) => {
+        pageContainer.addEventListener('click', async (event) => {
             const button = event.target.closest('.card-action-button');
-            
-            if (!button) {
-                return; // Not an action button
-            }
-
+            if (!button) return;
             const card = button.closest('.scheduled-game-card');
-            if (!card) { 
-                console.error('Botão de ação encontrado, mas o card pai não. Botão:', button);
-                return;
-            }
-
+            if (!card) return;
             const gameId = card.dataset.gameId;
 
             if (button.classList.contains('cancel-game-button')) {
                 showConfirmationModal(
                     'Tem certeza que deseja cancelar este agendamento?',
-                    () => {
-                        cancelGame(gameId); // Agora cancelGame é uma função exportada e acessível
+                    async () => {
+                        const game = scheduledGames.find(g => g.id === gameId);
+                        if (game) {
+                            game.status = 'cancelled';
+                            saveSchedulesToLocalStorage();
+                            try {
+                                await SchedulesData.updateSchedule(game);
+                                displayMessage('Jogo cancelado.', 'info');
+                            } catch (err) {
+                                if (err && err.code === "permission-denied") {
+                                    displayMessage('Você não tem permissão para cancelar jogos. Apenas administradores podem cancelar.', 'error');
+                                } else {
+                                    displayMessage('Erro ao cancelar jogo. Tente novamente.', 'error');
+                                }
+                            }
+                        }
                     }
                 );
             } else if (button.classList.contains('delete-game-button')) {
                 showConfirmationModal(
                     'Tem certeza que deseja excluir este agendamento?',
-                    () => {
-                        deleteGame(gameId); // Agora deleteGame é uma função exportada e acessível
+                    async () => {
+                        scheduledGames = scheduledGames.filter(g => g.id !== gameId);
+                        saveSchedulesToLocalStorage();
+                        try {
+                            await SchedulesData.deleteSchedule(gameId);
+                            displayMessage('Agendamento excluído.', 'success');
+                        } catch (err) {
+                            if (err && err.code === "permission-denied") {
+                                displayMessage('Você não tem permissão para excluir jogos. Apenas administradores podem excluir.', 'error');
+                            } else {
+                                displayMessage('Erro ao excluir agendamento. Tente novamente.', 'error');
+                            }
+                        }
                     }
                 );
             }
         });
     }
 
-    renderScheduledGames(); // Initial render when page is loaded/setup
+    // Não chama renderScheduledGames aqui, pois o listener do Firestore já atualiza a UI
 }

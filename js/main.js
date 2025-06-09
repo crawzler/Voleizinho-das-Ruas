@@ -4,6 +4,7 @@
 import { initFirebaseApp, getAppId } from './firebase/config.js';
 import { loginWithGoogle, logout, setupAuthListener, signInAnonymouslyUser, updateProfileMenuLoginState } from './firebase/auth.js'; // Imports updateProfileMenuLoginState
 import { loadPlayersFromLocalStorage, setupFirestorePlayersListener, addPlayer, removePlayer } from './data/players.js';
+import * as SchedulesData from './data/schedules.js';
 import { showPage, updatePlayerModificationAbility, setupSidebar, setupPageNavigation, setupAccordion, setupScoreInteractions, setupTeamSelectionModal, closeSidebar, showConfirmationModal, hideConfirmationModal } from './ui/pages.js';
 import { setupConfigUI, loadConfig } from './ui/config-ui.js'; // Importa loadConfig
 import { startGame, toggleTimer, swapTeams, endGame } from './game/logic.js';
@@ -74,7 +75,7 @@ export function hideLoadingOverlay() {
             clearTimeout(loadingTimeout);
             loadingTimeout = null;
         }
-        console.log("[main.js] Tela de carregamento oculta.");
+        // Log essencial removido
     }
 }
 
@@ -89,10 +90,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Inicia o timer para forçar o modo offline após 10 segundos, se necessário
     loadingTimeout = setTimeout(() => {
         if (!authListenerInitialized) {
-            console.log("[main.js] Tempo limite de carregamento excedido. Forçando modo offline.");
+            // Log essencial removido
             displayMessage("Não foi possível conectar. Modo offline ativado.", "info");
-            showPage('start-page'); // Força a exibição da página inicial
-            updateConnectionIndicator('offline'); // Força o indicador para offline (respeitará a config)
+            showPage('start-page');
+            updateConnectionIndicator('offline');
             hideLoadingOverlay();
         }
     }, 10000); // 10 segundos
@@ -104,10 +105,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
         try {
             await signInWithCustomToken(auth, __initial_auth_token);
-            console.log("User logged in with Canvas initial token.");
-        } catch (error) {
-            console.error("Error logging in with Canvas initial token:", error);
-        }
+            // Log essencial removido
+        } catch (error) {}
     }
 
     // CARREGA JOGADORES DO LOCALSTORAGE ANTES DE CONFIGURAR O LISTENER DE AUTENTICAÇÃO
@@ -202,23 +201,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // NOVO: Listener para detectar quando o aplicativo volta a ficar online
     window.addEventListener('online', () => {
-        console.log("Application online again. Attempting to revalidate session...");
+        // Log essencial removido
         displayMessage("Online novamente! Tentando reconectar...", "info");
-        updateConnectionIndicator('reconnecting'); // Define estado "reconectando" imediatamente (respeitará a config)
-        setTimeout(() => { // Pequeno delay antes de confirmar online para visual
-            setupAuthListener(auth, db, appId); // Re-executa o listener para pegar o estado mais recente
+        updateConnectionIndicator('reconnecting');
+        setTimeout(() => {
+            setupAuthListener(auth, db, appId);
             updateProfileMenuLoginState();
         }, 1500);
     });
 
-    // NOVO: Listener para detectar quando o aplicativo fica offline
     window.addEventListener('offline', () => {
-        console.log("Application offline.");
+        // Log essencial removido
         displayMessage("Você está offline.", "error");
         if (Elements.googleLoginButton()) Elements.googleLoginButton().disabled = true;
         if (Elements.anonymousLoginButton()) Elements.anonymousLoginButton().disabled = true;
         updateProfileMenuLoginState();
-        updateConnectionIndicator('offline'); // Define estado offline (respeitará a config)
+        updateConnectionIndicator('offline');
     });
 
     // Define o estado inicial do indicador de conexão com base na configuração
@@ -230,7 +228,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (Elements.sidebarOverlay()) {
         Elements.sidebarOverlay().addEventListener('click', () => {
             closeSidebar();
-            console.log('Sidebar closed by clicking on overlay.');
+            // Log essencial removido
         });
     }
 });

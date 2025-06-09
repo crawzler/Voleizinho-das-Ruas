@@ -65,5 +65,9 @@ export function getAppId() {
     return appId;
 }
 
+export function getFirestoreDb() {
+    return db;
+}
+
 // REMOVIDO: getFirestoreDb() e getFirebaseAuth() não são mais necessários
 // porque as instâncias são passadas diretamente após a inicialização.

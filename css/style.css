@@ -612,7 +612,7 @@ input:checked + .slider:before {
     cursor: pointer;
     transition: background-color 0.3s ease;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    /* NOVO: Remove a demarcação azul em cliques/toques */
+    /* NOVO: Removes a demarcação azul em cliques/toques */
     outline: none;
     -webkit-tap-highlight-color: transparent;
 }
@@ -801,7 +801,7 @@ input:checked + .slider:before {
     flex: 1; /* Ocupa o espaço vertical restante */
     width: 100%;
     position: relative;
-    /* NOVO: Remove a demarcação azul em cliques/toques */
+    /* NOVO: Removes a demarcação azul em cliques/toques */
     outline: none;
     -webkit-tap-highlight-color: transparent;
 }
@@ -818,7 +818,7 @@ input:checked + .slider:before {
     border-radius: 0;
     cursor: pointer;
     transition: background-color 0.3s ease; /* Removido transform para evitar animação */
-    /* NOVO: Remove a demarcação azul em cliques/toques */
+    /* NOVO: Removes a demarcação azul em cliques/toques */
     outline: none;
     -webkit-tap-highlight-color: transparent;
 }
@@ -833,10 +833,86 @@ input:checked + .slider:before {
     border-left: none;
 }
 
+.team1-panel.swap-animate-left {
+    animation: swap-slide-left 0.7s cubic-bezier(.68,-0.55,.27,1.55);
+    z-index: 2;
+    box-shadow: 0 0 32px 0 #325fda88;
+}
+.team2-panel.swap-animate-right {
+    animation: swap-slide-right 0.7s cubic-bezier(.68,-0.55,.27,1.55);
+    z-index: 2;
+    box-shadow: 0 0 32px 0 #f0373788;
+}
+
+@keyframes swap-slide-left {
+    0% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+        filter: brightness(1);
+    }
+    20% {
+        transform: translateX(-10%) scale(1.05) skewY(-2deg);
+        opacity: 0.9;
+        filter: brightness(1.2);
+    }
+    40% {
+        transform: translateX(-120%) scale(0.9) skewY(-6deg);
+        opacity: 0.2;
+        filter: brightness(0.7);
+    }
+    60% {
+        transform: translateX(120%) scale(0.9) skewY(6deg);
+        opacity: 0.2;
+        filter: brightness(0.7);
+    }
+    80% {
+        transform: translateX(10%) scale(1.05) skewY(2deg);
+        opacity: 0.9;
+        filter: brightness(1.2);
+    }
+    100% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+        filter: brightness(1);
+    }
+}
+@keyframes swap-slide-right {
+    0% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+        filter: brightness(1);
+    }
+    20% {
+        transform: translateX(10%) scale(1.05) skewY(2deg);
+        opacity: 0.9;
+        filter: brightness(1.2);
+    }
+    40% {
+        transform: translateX(120%) scale(0.9) skewY(6deg);
+        opacity: 0.2;
+        filter: brightness(0.7);
+    }
+    60% {
+        transform: translateX(-120%) scale(0.9) skewY(-6deg);
+        opacity: 0.2;
+        filter: brightness(0.7);
+    }
+    80% {
+        transform: translateX(-10%) scale(1.05) skewY(-2deg);
+        opacity: 0.9;
+        filter: brightness(1.2);
+    }
+    100% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+        filter: brightness(1);
+    }
+}
+
 .team-name {
     font-size: 2.5rem;
     margin-bottom: 0.5rem; /* Espaço abaixo do nome do time */
-    /* NOVO: Remove a demarcação azul em cliques/toques */
+    /* NOVO: Removes a demarcação azul em cliques/toques */
     outline: none;
     -webkit-tap-highlight-color: transparent;
 }
@@ -848,6 +924,69 @@ input:checked + .slider:before {
     margin-bottom: 0;
     line-height: 1;
     text-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.score-number.score-animate {
+    animation: score-bounce 0.4s;
+}
+
+.score-number.score-animate-team1 {
+    animation: score-bounce-team1 0.4s;
+}
+.score-number.score-animate-team2 {
+    animation: score-bounce-team2 0.4s;
+}
+.score-number.score-animate-team1-down {
+    animation: score-down-team1 0.4s;
+}
+.score-number.score-animate-team2-down {
+    animation: score-down-team2 0.4s;
+}
+
+@keyframes score-bounce {
+    0% {
+        transform: scale(1);
+        color: white;
+    }
+    30% {
+        transform: scale(1.25);
+        color: #FFD700;
+    }
+    60% {
+        transform: scale(0.95);
+        color: #FFD700;
+    }
+    100% {
+        transform: scale(1);
+        color: white;
+    }
+}
+
+@keyframes score-bounce-team1 {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.25); }
+    60% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}
+@keyframes score-bounce-team2 {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.25); }
+    60% { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}
+@keyframes score-down-team1 {
+    0% { transform: scale(1); }
+    20% { transform: scale(0.85) rotate(-5deg); }
+    40% { transform: scale(1.05) rotate(3deg); }
+    60% { transform: scale(0.95) rotate(-2deg); }
+    100% { transform: scale(1); }
+}
+@keyframes score-down-team2 {
+    0% { transform: scale(1); }
+    20% { transform: scale(0.85) rotate(5deg); }
+    40% { transform: scale(1.05) rotate(-3deg); }
+    60% { transform: scale(0.95) rotate(2deg); }
+    100% { transform: scale(1); }
 }
 
 .stars-container {
@@ -914,7 +1053,7 @@ input:checked + .slider:before {
     padding: 1rem;
     border-radius: 0.5rem;
     box-shadow: 0 4px 6px -1-px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    /* NOVO: Remove a demarcação azul em cliques/toques */
+    /* NOVO: Removes a demarcação azul em cliques/toques */
     outline: none;
     -webkit-tap-highlight-color: transparent;
 }
@@ -989,7 +1128,7 @@ input:checked + .slider:before {
     align-items: center;
     justify-content: space-between;    
     flex-direction: row-reverse;
-    /* NOVO: Remove a demarcação azul em cliques/toques */
+    /* NOVO: Removes a demarcação azul em cliques/toques */
     outline: none;
     -webkit-tap-highlight-color: transparent;
 }
@@ -1007,7 +1146,7 @@ input:checked + .slider:before {
     box-shadow: none;
     color: #DC2626;
     padding: 0.25rem;
-    /* NOVO: Remove a demarcação azul em cliques/toques */
+    /* NOVO: Removes a demarcação azul em cliques/toques */
     outline: none;
     -webkit-tap-highlight-color: transparent;
 }
@@ -1021,7 +1160,7 @@ input:checked + .slider:before {
     margin: 5px;
     min-width: 80px;
     max-width: 110px;
-    /* NOVO: Remove a demarcação azul em cliques/toques */
+    /* NOVO: Removes a demarcação azul em cliques/toques */
     outline: none;
     -webkit-tap-highlight-color: transparent;
     overflow-y: auto; /* Adicionado para garantir rolagem independente */
@@ -1066,7 +1205,7 @@ input:checked + .slider:before {
     border: none;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
     z-index: 10;
-    /* NOVO: Remove a demarcação azul em cliques/toques */
+    /* NOVO: Removes a demarcação azul em cliques/toques */
     outline: none;
     -webkit-tap-highlight-color: transparent;
 }
@@ -1086,7 +1225,7 @@ input:checked + .slider:before {
     border-radius: 8px 8px 0px 0px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
     z-index: 10;
-    /* NOVO: Remove a demarcação azul em cliques/toques */
+    /* NOVO: Removes a demarcação azul em cliques/toques */
     outline: none;
     -webkit-tap-highlight-color: transparent;
 }
@@ -1101,7 +1240,7 @@ input:checked + .slider:before {
     align-items: center;
     gap: 0.75rem;
     padding: 0;
-    /* NOVO: Remove a demarcação azul em cliques/toques */
+    /* NOVO: Removes a demarcação azul em cliques/toques */
     outline: none;
     -webkit-tap-highlight-color: transparent;
 }
@@ -1209,7 +1348,7 @@ input:checked + .slider:before {
     margin-bottom: 20px;
     width: 100%;
     padding: 15px; /* Adicionado padding */
-    background-color: #2a2a2a; /* Adicionado background */
+    background-color: #222; /* Adicionado background */
     border-radius: 8px; /* Cantos arredondados */
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Sombra suave */
 }

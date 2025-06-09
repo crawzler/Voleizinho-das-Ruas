@@ -19,7 +19,7 @@ function loadMatchHistoryFromLocalStorage() {
         try {
             matchHistory = JSON.parse(storedHistory);
         } catch (error) {
-            console.error('Erro ao analisar o histórico do localStorage:', error);
+            // Removido: console.error('Erro ao analisar o histórico do localStorage:', error);
             matchHistory = [];
         }
     }
@@ -33,8 +33,8 @@ function saveMatchHistoryToLocalStorage() {
         localStorage.setItem(MATCH_HISTORY_STORAGE_KEY, JSON.stringify(matchHistory));
         // console.log('Histórico salvo no localStorage com sucesso.'); // Removido log de depuração
     } catch (error) {
-        console.error('Erro ao salvar o histórico no localStorage:', error);
-        displayMessage('Erro ao salvar o histórico.', 'error');
+        // Removido: console.error('Erro ao salvar o histórico no localStorage:', error);
+        // Removido: displayMessage('Erro ao salvar o histórico.', 'error');
     }
 }
 
@@ -63,7 +63,7 @@ function deleteMatch(matchId) {
         displayMessage('Registro do histórico excluído.', 'success');
         renderMatchHistory(); // Renderiza novamente o histórico
     } else {
-        displayMessage('Erro: Registro do histórico não encontrado.', 'error');
+        // Removido: displayMessage('Erro: Registro do histórico não encontrado.', 'error');
     }
 }
 
@@ -73,7 +73,7 @@ function deleteMatch(matchId) {
 function renderMatchHistory() {
     const historyListContainer = Elements.historyListContainer(); // Chamada da função
     if (!historyListContainer) {
-        console.warn("Elemento 'history-list-container' não encontrado no DOM.");
+        // Removido: console.log("Container do histórico não encontrado. A página de histórico está visível?");
         return;
     }
 

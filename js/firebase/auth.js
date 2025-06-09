@@ -8,6 +8,7 @@ import { showPage, updatePlayerModificationAbility } from '../ui/pages.js';
 import * as Elements from '../ui/elements.js';
 import { displayMessage } from '../ui/messages.js';
 import { updateConnectionIndicator, hideLoadingOverlay } from '../main.js'; // Importa hideLoadingOverlay
+import { setupSchedulingPage } from '../ui/scheduling-ui.js';
 
 let currentUser = null;
 let currentAuthInstance = null;
@@ -134,6 +135,7 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
 
             console.log(`Setting up Firestore listener for user: ${user.uid}`);
             setupFirestorePlayersListener(currentDbInstance, appId);
+            setupSchedulingPage(); // Adicione esta linha para garantir que o listener de agendamentos seja refeito ao logar
             updatePlayerModificationAbility(true);
             showPage('start-page');
             
@@ -146,6 +148,7 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
             if (Elements.userDisplayName()) Elements.userDisplayName().textContent = "Visitor";
             updatePlayerModificationAbility(false);
             setupFirestorePlayersListener(null, appId);
+            setupSchedulingPage(); // Adicione esta linha para garantir que o listener de agendamentos seja removido/desativado ao deslogar
 
             if (!navigator.onLine) {
                 console.log("[Auth Listener] Offline e sem usuário logado. Tentando mostrar start-page.");

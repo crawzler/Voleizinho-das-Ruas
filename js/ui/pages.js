@@ -10,7 +10,8 @@ import { getCurrentUser, logout, loginWithGoogle } from '../firebase/auth.js';
 import { addPlayer, removePlayer } from '../data/players.js';
 import { displayMessage } from './messages.js';
 // Importa as funções de scheduling-ui.js que serão usadas nos callbacks do modal
-import { cancelGame, deleteGame } from './scheduling-ui.js';
+import { cancelGame, deleteGame, setupSchedulingPage } from './scheduling-ui.js';
+import * as SchedulingUI from './scheduling-ui.js'; // Adicione esta linha para importar tudo
 
 let touchStartY = 0;
 const DRAG_THRESHOLD = 30; // Limite de movimento para diferenciar clique de arrastar
@@ -51,17 +52,15 @@ export function closeSidebar() {
     if (sidebar) {
         sidebar.classList.remove('active');
     }
-    // Garante que o mini-menu do perfil seja fechado ao fechar o sidebar
     if (profileMenu && profileMenu.classList.contains('active')) {
         profileMenu.classList.remove('active');
         if (userProfileHeader) {
             userProfileHeader.classList.remove('active');
         }
     }
-    // Oculta o overlay
     if (sidebarOverlay) {
-        sidebarOverlay.classList.add('hidden'); // Alterado para 'hidden' para melhor UX (não remova do DOM)
-        sidebarOverlay.classList.remove('active'); // Remove a classe 'active' também
+        sidebarOverlay.classList.add('hidden');
+        sidebarOverlay.classList.remove('active');
     }
 }
 
@@ -118,6 +117,13 @@ export async function showPage(pageIdToShow) {
     } else if (pageIdToShow === 'start-page') {
         resetGameForNewMatch();
         setGameStartedExplicitly(false);
+    } else if (pageIdToShow === 'scheduling-page') {
+        // Força renderização instantânea ao entrar na tela de agendamentos
+        if (typeof SchedulingUI.renderScheduledGames === 'function') {
+            SchedulingUI.renderScheduledGames();
+        }
+        // Garante que o listener esteja ativo ao entrar na tela
+        setupSchedulingPage();
     }
 }
 
@@ -352,7 +358,7 @@ export function setupAccordion() {
  */
 export function openTeamSelectionModal(panelId) {
     if (!Elements.teamSelectionModal()) {
-        console.error("Elemento do modal de seleção de time não encontrado.");
+        // Removido: console.error("Elemento do modal de seleção de time não encontrado.");
         displayMessage("Erro: Modal de seleção de time não encontrado.", "error");
         return;
     }
@@ -513,7 +519,7 @@ export function showConfirmationModal(message, onConfirm, onCancel = null) {
     const noButton = Elements.confirmNoButton();
 
     if (!modal || !msgElement || !yesButton || !noButton) {
-        console.error("Elementos do modal de confirmação não encontrados.");
+        // Removido: console.error("Elementos do modal de confirmação não encontrados.");
         return;
     }
 
@@ -544,13 +550,13 @@ function handleConfirmClick() {
     if (onConfirmCallback) {
         try {
             onConfirmCallback();
-        } catch (error) { // CORRIGIDO: 'catches' para 'catch'
+        } catch (error) {
             console.error('Erro ao executar a ação confirmada:', error);
             displayMessage('Erro ao executar a ação confirmada.', 'error');
         }
     }
-    hideConfirmationModal(); // MOVIDO: Agora o modal é escondido DEPOIS da execução do callback.
-    onConfirmCallback = null; // Resetar APÓS uso
+    hideConfirmationModal();
+    onConfirmCallback = null;
     onCancelCallback = null;
 }
 
@@ -559,6 +565,71 @@ function handleCancelClick() {
     if (onCancelCallback) {
         onCancelCallback();
     }
-    onConfirmCallback = null; // Resetar APÓS uso
+    onConfirmCallback = null;
     onCancelCallback = null;
 }
+
+// Lista de páginas principais na ordem do menu lateral
+const MAIN_PAGES = [
+    'scoring-page',
+    'teams-page',
+    'players-page',
+    'history-page',
+    'scheduling-page',
+    'stats-page',
+    'config-page'
+];
+
+// Variáveis para swipe lateral
+let swipeStartX = null;
+let swipeStartY = null;
+const SWIPE_X_THRESHOLD = 60; // Pixels mínimos para considerar swipe
+const SWIPE_Y_MAX = 40; // Máximo de desvio vertical para considerar swipe lateral
+
+function setupSwipeNavigation() {
+    const mainContent = document.querySelector('.app-main-content');
+    if (!mainContent) return;
+
+    mainContent.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            swipeStartX = e.touches[0].clientX;
+            swipeStartY = e.touches[0].clientY;
+        }
+    });
+
+    mainContent.addEventListener('touchend', (e) => {
+        if (swipeStartX === null || swipeStartY === null) return;
+        const endX = e.changedTouches[0].clientX;
+        const endY = e.changedTouches[0].clientY;
+        const deltaX = endX - swipeStartX;
+        const deltaY = endY - swipeStartY;
+
+        // Só considera swipe lateral se o movimento for predominantemente horizontal
+        if (Math.abs(deltaX) > SWIPE_X_THRESHOLD && Math.abs(deltaY) < SWIPE_Y_MAX) {
+            handleSwipeNavigation(deltaX);
+        }
+        swipeStartX = null;
+        swipeStartY = null;
+    });
+}
+
+function handleSwipeNavigation(deltaX) {
+    // Só permite swipe se estiver em uma das páginas principais
+    const idx = MAIN_PAGES.indexOf(currentPageId);
+    if (idx === -1) return;
+
+    let nextIdx = null;
+    if (deltaX < 0 && idx < MAIN_PAGES.length - 1) {
+        // Swipe para a esquerda: próxima página
+        nextIdx = idx + 1;
+    } else if (deltaX > 0 && idx > 0) {
+        // Swipe para a direita: página anterior
+        nextIdx = idx - 1;
+    }
+    if (nextIdx !== null) {
+        showPage(MAIN_PAGES[nextIdx]);
+    }
+}
+
+// No final do arquivo (ou após setupScoreInteractions), chame a função para ativar o swipe:
+setupSwipeNavigation();

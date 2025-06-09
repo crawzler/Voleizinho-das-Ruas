@@ -11,9 +11,51 @@ import { loadConfig } from './config-ui.js'; // Importa loadConfig para obter no
  * @param {number} team1Score - Pontuação do Time 1.
  * @param {number} team2Score - Pontuação do Time 2.
  */
+let lastTeam1Score = null;
+let lastTeam2Score = null;
 export function updateScoreDisplay(team1Score, team2Score) {
-    if (Elements.team1ScoreDisplay()) Elements.team1ScoreDisplay().textContent = team1Score;
-    if (Elements.team2ScoreDisplay()) Elements.team2ScoreDisplay().textContent = team2Score;
+    const team1El = Elements.team1ScoreDisplay();
+    const team2El = Elements.team2ScoreDisplay();
+
+    // Funções de vibração personalizadas
+    function vibrateUp() {
+        if (navigator.vibrate) navigator.vibrate([10, 30, 10]);
+    }
+    function vibrateDown() {
+        if (navigator.vibrate) navigator.vibrate([40, 30, 40, 30, 20]);
+    }
+
+    if (team1El) {
+        team1El.textContent = team1Score;
+        if (lastTeam1Score !== null && team1Score !== lastTeam1Score) {
+            // Remove ambas as animações antes de adicionar a correta
+            team1El.classList.remove('score-animate-team1', 'score-animate-team1-down');
+            void team1El.offsetWidth;
+            if (team1Score > lastTeam1Score) {
+                team1El.classList.add('score-animate-team1');
+                vibrateUp();
+            } else {
+                team1El.classList.add('score-animate-team1-down');
+                vibrateDown();
+            }
+        }
+        lastTeam1Score = team1Score;
+    }
+    if (team2El) {
+        team2El.textContent = team2Score;
+        if (lastTeam2Score !== null && team2Score !== lastTeam2Score) {
+            team2El.classList.remove('score-animate-team2', 'score-animate-team2-down');
+            void team2El.offsetWidth;
+            if (team2Score > lastTeam2Score) {
+                team2El.classList.add('score-animate-team2');
+                vibrateUp();
+            } else {
+                team2El.classList.add('score-animate-team2-down');
+                vibrateDown();
+            }
+        }
+        lastTeam2Score = team2Score;
+    }
 }
 
 /**
@@ -42,7 +84,6 @@ export function updateSetsDisplay(team1Sets, team2Sets) {
     const team2StarsContainer = Elements.team2Stars();
 
     if (!team1StarsContainer || !team2StarsContainer) {
-        console.warn("Elementos de estrelas não encontrados.");
         return;
     }
 
@@ -69,7 +110,6 @@ export function renderScoringPagePlayers(team1Players, team2Players, shouldDispl
     const team2Column = Elements.team2PlayersColumn();
 
     if (!team1Column || !team2Column) {
-        console.warn("Elementos de coluna de jogadores não encontrados.");
         return;
     }
 
@@ -108,8 +148,6 @@ export function renderScoringPagePlayers(team1Players, team2Players, shouldDispl
  * @param {string} team2Color - Cor a ser exibida para o Time 2 (hex).
  */
 export function updateTeamDisplayNamesAndColors(team1Name, team2Name, team1Color, team2Color) {
-    console.log(`[updateTeamDisplayNamesAndColors] Received: Team1 Name: ${team1Name}, Color: ${team1Color} | Team2 Name: ${team2Name}, Color: ${team2Color}`);
-
     const team1NameElement = Elements.team1NameDisplay();
     const team2NameElement = Elements.team2NameDisplay();
     const team1PanelElement = Elements.team1Panel();
@@ -117,30 +155,18 @@ export function updateTeamDisplayNamesAndColors(team1Name, team2Name, team1Color
 
     if (team1NameElement) {
         team1NameElement.textContent = team1Name;
-        console.log(`[updateTeamDisplayNamesAndColors] Team1 Name Element found. Set to: ${team1NameElement.textContent}`);
-    } else {
-        console.warn("[updateTeamDisplayNamesAndColors] Team1 Name Element not found.");
     }
 
     if (team2NameElement) {
         team2NameElement.textContent = team2Name;
-        console.log(`[updateTeamDisplayNamesAndColors] Team2 Name Element found. Set to: ${team2NameElement.textContent}`);
-    } else {
-        console.warn("[updateTeamDisplayNamesAndColors] Team2 Name Element not found.");
     }
 
     if (team1PanelElement) {
         team1PanelElement.style.backgroundColor = team1Color;
-        console.log(`[updateTeamDisplayNamesAndColors] Team1 Panel Element found. Set background to: ${team1PanelElement.style.backgroundColor}`);
-    } else {
-        console.warn("[updateTeamDisplayNamesAndColors] Team1 Panel Element not found.");
     }
 
     if (team2PanelElement) {
         team2PanelElement.style.backgroundColor = team2Color;
-        console.log(`[updateTeamDisplayNamesAndColors] Team2 Panel Element found. Set background to: ${team2PanelElement.style.backgroundColor}`);
-    } else {
-        console.warn("[updateTeamDisplayNamesAndColors] Team2 Panel Element not found.");
     }
 }
 
@@ -217,7 +243,6 @@ export function renderTeams(teams) {
 export function renderTeamsInModal(teams, panelId, selectTeamCallback) {
     const modalTeamListElement = Elements.modalTeamList();
     if (!modalTeamListElement) {
-        console.error("Elemento '#modal-team-list' não encontrado no DOM.");
         return;
     }
 
@@ -262,4 +287,26 @@ export function renderTeamsInModal(teams, panelId, selectTeamCallback) {
 
         modalTeamListElement.appendChild(teamModalItem);
     });
+}
+
+/**
+ * Anima a troca dos times de lado na tela de pontuação.
+ */
+export function animateSwapTeams() {
+    const team1Panel = Elements.team1Panel && Elements.team1Panel();
+    const team2Panel = Elements.team2Panel && Elements.team2Panel();
+    if (team1Panel && team2Panel) {
+        team1Panel.classList.remove('swap-animate-left');
+        team2Panel.classList.remove('swap-animate-right');
+        // Força reflow para reiniciar animação
+        void team1Panel.offsetWidth;
+        void team2Panel.offsetWidth;
+        team1Panel.classList.add('swap-animate-left');
+        team2Panel.classList.add('swap-animate-right');
+        // Remove as classes após a animação para permitir futuras animações
+        setTimeout(() => {
+            team1Panel.classList.remove('swap-animate-left');
+            team2Panel.classList.remove('swap-animate-right');
+        }, 700); // 700ms igual ao tempo da animação no CSS
+    }
 }
