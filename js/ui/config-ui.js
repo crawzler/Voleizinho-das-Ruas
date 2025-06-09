@@ -6,6 +6,7 @@ import { updateTeamDisplayNamesAndColors, renderScoringPagePlayers } from '../ui
 import { getCurrentTeam1, getCurrentTeam2, getActiveTeam1Name, getActiveTeam2Name, getActiveTeam1Color, getActiveTeam2Color } from '../game/logic.js';
 import { displayMessage } from './messages.js'; // Importa para exibir mensagens
 import { showConfirmationModal } from './pages.js'; // Importa o modal de confirmação
+import { updateConnectionIndicator } from '../main.js'; // Importa updateConnectionIndicator
 
 // Nomes padrão para os times personalizados
 const defaultTeamNames = [
@@ -37,6 +38,8 @@ export function loadConfig() {
         config.darkMode = config.darkMode ?? true;
         config.vibration = config.vibration ?? true;
         config.displayPlayers = config.displayPlayers ?? true;
+        // NOVO: Garante que showConnectionStatus está definido, padrão para true
+        config.showConnectionStatus = config.showConnectionStatus ?? true;
 
 
         // Preenche o objeto config com os nomes e cores padrão, se não estiverem definidos
@@ -62,6 +65,9 @@ export function loadConfig() {
         if (Elements.darkModeToggle()) Elements.darkModeToggle().checked = config.darkMode ?? true;
         if (Elements.vibrationToggle()) Elements.vibrationToggle().checked = config.vibration ?? true;
         if (Elements.displayPlayersToggle()) Elements.displayPlayersToggle().checked = config.displayPlayers ?? true;
+        // NOVO: Aplica a configuração do status de conexão
+        if (Elements.showConnectionStatusToggle()) Elements.showConnectionStatusToggle().checked = config.showConnectionStatus ?? true;
+
 
         // Aplica as cores e nomes personalizados aos inputs de configuração
         for (let i = 0; i < Elements.customTeamInputs.length; i++) {
@@ -73,7 +79,7 @@ export function loadConfig() {
         // Aplica o tema escuro
         document.body.classList.toggle('dark-mode', config.darkMode ?? true);
 
-        console.log("[config-ui.js] Configurações carregadas/processadas (incluindo padrões):", config);
+        // console.log("[config-ui.js] Configurações carregadas/processadas (incluindo padrões):", config); // Removido console.log excessivo
 
         return config; // O objeto config retornado agora inclui os padrões se não estiverem salvos
     } catch (e) {
@@ -94,6 +100,8 @@ export function saveConfig() {
             darkMode: Elements.darkModeToggle() ? Elements.darkModeToggle().checked : true,
             vibration: Elements.vibrationToggle() ? Elements.vibrationToggle().checked : true,
             displayPlayers: Elements.displayPlayersToggle() ? Elements.displayPlayersToggle().checked : true,
+            // NOVO: Salva o estado do toggle de status de conexão
+            showConnectionStatus: Elements.showConnectionStatusToggle() ? Elements.showConnectionStatusToggle().checked : true,
         };
 
         // Salva nomes e cores personalizados
@@ -108,7 +116,7 @@ export function saveConfig() {
         }
 
         localStorage.setItem('volleyballConfig', JSON.stringify(config));
-        console.log("[config-ui.js] Configurações salvas:", config);
+        // console.log("[config-ui.js] Configurações salvas:", config); // Removido console.log excessivo
 
         // Atualiza a exibição de jogadores na tela de pontuação imediatamente após salvar
         // É importante que essa atualização venha do estado ATUAL do jogo, não do config salvo.
@@ -124,6 +132,9 @@ export function saveConfig() {
 
         // Atualiza o tema escuro
         document.body.classList.toggle('dark-mode', config.darkMode);
+
+        // NOVO: Atualiza a visibilidade do indicador de conexão imediatamente
+        updateConnectionIndicator(navigator.onLine ? 'online' : 'offline');
 
 
     } catch (e) {
@@ -184,8 +195,8 @@ async function resetAppAndClearCache() {
  * Configura os event listeners para os inputs de configuração.
  */
 export function setupConfigUI() {
-    console.log("[config-ui.js] Iniciando setupConfigUI.");
-    console.log("[config-ui.js] Conteúdo do objeto Elements:", Elements);
+    // console.log("[config-ui.js] Iniciando setupConfigUI."); // Removido console.log excessivo
+    // console.log("[config-ui.js] Conteúdo do objeto Elements:", Elements); // Removido console.log excessivo
 
     loadConfig();
 
@@ -212,13 +223,24 @@ export function setupConfigUI() {
         }
     });
 
+    // NOVO: Adiciona listener para o toggle de status de conexão
+    if (Elements.showConnectionStatusToggle()) {
+        Elements.showConnectionStatusToggle().addEventListener('change', () => {
+            saveConfig(); // Salva a configuração
+            // A visibilidade do indicador de conexão é atualizada imediatamente dentro de saveConfig()
+            // através de updateConnectionIndicator
+        });
+    } else {
+        console.warn(`[config-ui.js] Elemento 'showConnectionStatusToggle' não encontrado.`);
+    }
+
     Elements.customTeamInputs.forEach(input => {
         if (input.name && typeof input.name === 'function') {
             const nameEl = input.name();
             if (nameEl) nameEl.addEventListener('change', saveConfig);
             else console.warn(`[config-ui.js] Elemento para nome de time personalizado não encontrado.`);
         } else {
-            console.error(`[config-ui.js] Elements.customTeamInputs.name não é uma função válida.`);
+            // console.error(`[config-ui.js] Elements.customTeamInputs.name não é uma função válida.`); // Removido console.error excessivo
         }
 
         if (input.color && typeof input.color === 'function') {
@@ -226,7 +248,7 @@ export function setupConfigUI() {
             if (colorEl) colorEl.addEventListener('change', saveConfig);
             else console.warn(`[config-ui.js] Elemento para cor de time personalizado não encontrado.`);
         } else {
-            console.error(`[config-ui.js] Elements.customTeamInputs.color não é uma função válida.`);
+            // console.error(`[config-ui.js] Elements.customTeamInputs.color não é uma função válida.`); // Removido console.error excessivo
         }
     });
 
@@ -236,9 +258,11 @@ export function setupConfigUI() {
             localStorage.removeItem('volleyballConfig');
             loadConfig(); // Recarrega as configurações padrão
             console.log('[config-ui.js] Configurações resetadas para o padrão.');
+            displayMessage('Configurações resetadas para o padrão.', 'success');
             // Força a atualização dos jogadores na tela de pontuação após reset
-            // Usa o estado ATUAL do jogo, que será resetado para os defaults de config-ui.js
             renderScoringPagePlayers(getCurrentTeam1(), getCurrentTeam2(), loadConfig().displayPlayers ?? true);
+            // NOVO: Atualiza a visibilidade do indicador de conexão após o reset
+            updateConnectionIndicator(navigator.onLine ? 'online' : 'offline');
         });
     }
 

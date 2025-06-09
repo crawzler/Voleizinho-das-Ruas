@@ -78,6 +78,8 @@ export const numberOfSetsInput = () => document.getElementById('number-of-sets')
 export const darkModeToggle = () => document.getElementById('dark-mode-toggle');
 export const vibrationToggle = () => document.getElementById('vibration-toggle');
 export const displayPlayersToggle = () => document.getElementById('display-players-toggle');
+// NOVO: Toggle para exibir Status de Conexão
+export const showConnectionStatusToggle = () => document.getElementById('show-connection-status-toggle');
 
 // Inputs de times personalizados (para fácil iteração)
 export const customTeamInputs = [

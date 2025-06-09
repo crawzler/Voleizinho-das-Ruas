@@ -5,7 +5,7 @@ import { initFirebaseApp, getAppId } from './firebase/config.js';
 import { loginWithGoogle, logout, setupAuthListener, signInAnonymouslyUser, updateProfileMenuLoginState } from './firebase/auth.js'; // Imports updateProfileMenuLoginState
 import { loadPlayersFromLocalStorage, setupFirestorePlayersListener, addPlayer, removePlayer } from './data/players.js';
 import { showPage, updatePlayerModificationAbility, setupSidebar, setupPageNavigation, setupAccordion, setupScoreInteractions, setupTeamSelectionModal, closeSidebar, showConfirmationModal, hideConfirmationModal } from './ui/pages.js';
-import { setupConfigUI } from './ui/config-ui.js';
+import { setupConfigUI, loadConfig } from './ui/config-ui.js'; // Importa loadConfig
 import { startGame, toggleTimer, swapTeams, endGame } from './game/logic.js';
 import { generateTeams } from './game/teams.js';
 import { loadAppVersion, registerServiceWorker } from './utils/app-info.js';
@@ -22,31 +22,44 @@ let authListenerInitialized = false;
 let loadingTimeout = null;
 
 /**
- * Updates the connection indicator in the UI.
- * @param {'online' | 'offline' | 'reconnecting'} status - The connection status.
+ * Atualiza o indicador de status de conexão na UI.
+ * @param {'online' | 'offline' | 'reconnecting'} status - O status da conexão.
  */
 export function updateConnectionIndicator(status) {
+    const indicator = Elements.connectionIndicator();
     const statusDot = Elements.statusDot();
     const statusText = Elements.statusText();
 
-    if (statusDot && statusText) {
-        statusDot.className = 'status-dot'; // Resets the classes
-        statusText.textContent = ''; // Resets the text
+    if (!indicator || !statusDot || !statusText) {
+        // console.warn("Elementos do indicador de conexão não encontrados."); // Removido console.warn excessivo
+        return;
+    }
 
-        switch (status) {
-            case 'online':
-                statusDot.classList.add('online');
-                statusText.textContent = 'Online';
-                break;
-            case 'offline':
-                statusDot.classList.add('offline');
-                statusText.textContent = 'Offline';
-                break;
-            case 'reconnecting':
-                statusDot.classList.add('reconnecting');
-                statusText.textContent = 'Reconectando...';
-                break;
-        }
+    const config = loadConfig(); // Carrega a configuração mais recente
+
+    if (!config.showConnectionStatus) {
+        indicator.classList.add('hidden-by-config');
+        return;
+    } else {
+        indicator.classList.remove('hidden-by-config');
+    }
+
+    statusDot.className = 'status-dot'; // Resets the classes
+    statusText.textContent = ''; // Resets the text
+
+    switch (status) {
+        case 'online':
+            statusDot.classList.add('online');
+            statusText.textContent = 'Online';
+            break;
+        case 'offline':
+            statusDot.classList.add('offline');
+            statusText.textContent = 'Offline';
+            break;
+        case 'reconnecting':
+            statusDot.classList.add('reconnecting');
+            statusText.textContent = 'Reconectando...';
+            break;
     }
 }
 
@@ -79,7 +92,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log("[main.js] Tempo limite de carregamento excedido. Forçando modo offline.");
             displayMessage("Não foi possível conectar. Modo offline ativado.", "info");
             showPage('start-page'); // Força a exibição da página inicial
-            updateConnectionIndicator('offline'); // Força o indicador para offline
+            updateConnectionIndicator('offline'); // Força o indicador para offline (respeitará a config)
             hideLoadingOverlay();
         }
     }, 10000); // 10 segundos
@@ -114,7 +127,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Listeners for team page buttons
     const generateTeamsButton = document.getElementById('generate-teams-button');
-    console.log("Element 'generate-teams-button':", generateTeamsButton);
+    // console.log("Element 'generate-teams-button':", generateTeamsButton); // Removido console.log excessivo
     if (generateTeamsButton) {
         generateTeamsButton.addEventListener('click', () => {
             console.log("Button 'Generate Teams' clicked.");
@@ -124,7 +137,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Listener for start/stop game button (which now starts the game or toggles the timer)
     const toggleTimerButton = document.getElementById('toggle-timer-button');
-    console.log("Element 'toggle-timer-button':", toggleTimerButton);
+    // console.log("Element 'toggle-timer-button':", toggleTimerButton); // Removido console.log excessivo
     if (toggleTimerButton) {
         toggleTimerButton.addEventListener('click', () => {
             console.log("Button 'Toggle Timer' clicked.");
@@ -134,7 +147,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Listener for swap teams button
     const swapTeamsButton = document.getElementById('swap-teams-button');
-    console.log("Element 'swap-teams-button':", swapTeamsButton);
+    // console.log("Element 'swap-teams-button':", swapTeamsButton); // Removido console.log excessivo
     if (swapTeamsButton) {
         swapTeamsButton.addEventListener('click', () => {
             console.log("Button 'Swap Teams' clicked.");
@@ -144,7 +157,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Sets up the timer toggle button
     const timerAndSetTimerWrapperElement = Elements.timerAndSetTimerWrapper();
-    console.log("Element 'Elements.timerAndSetTimerWrapper()':", timerAndSetTimerWrapperElement);
+    // console.log("Element 'Elements.timerAndSetTimerWrapper()':", timerAndSetTimerWrapperElement); // Removido console.log excessivo
     if (timerAndSetTimerWrapperElement) {
         timerAndSetTimerWrapperElement.addEventListener('click', () => {
             console.log("Timer Wrapper clicked.");
@@ -154,7 +167,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Sets up the end game button
     const endGameButton = document.getElementById('end-game-button');
-    console.log("Element 'end-game-button':", endGameButton);
+    // console.log("Element 'end-game-button':", endGameButton); // Removido console.log excessivo
     if (endGameButton) {
         endGameButton.addEventListener('click', () => {
             console.log("Button 'End Game' clicked.");
@@ -170,7 +183,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // FIXED: Adds event listeners for login buttons with correct HTML IDs
     const googleLoginButton = document.getElementById('google-login-button');
-    console.log("Element 'google-login-button':", googleLoginButton);
+    // console.log("Element 'google-login-button':", googleLoginButton); // Removido console.log excessivo
     if (googleLoginButton) {
         googleLoginButton.addEventListener('click', () => {
             console.log("Button 'Sign in with Google' clicked.");
@@ -179,7 +192,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const anonymousLoginButton = document.getElementById('anonymous-login-button');
-    console.log("Element 'anonymous-login-button':", anonymousLoginButton);
+    // console.log("Element 'anonymous-login-button':", anonymousLoginButton); // Removido console.log excessivo
     if (anonymousLoginButton) {
         anonymousLoginButton.addEventListener('click', () => {
             console.log("Button 'Sign in anonymously' clicked.");
@@ -191,7 +204,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.addEventListener('online', () => {
         console.log("Application online again. Attempting to revalidate session...");
         displayMessage("Online novamente! Tentando reconectar...", "info");
-        updateConnectionIndicator('reconnecting'); // Define estado "reconectando" imediatamente
+        updateConnectionIndicator('reconnecting'); // Define estado "reconectando" imediatamente (respeitará a config)
         setTimeout(() => { // Pequeno delay antes de confirmar online para visual
             setupAuthListener(auth, db, appId); // Re-executa o listener para pegar o estado mais recente
             updateProfileMenuLoginState();
@@ -205,10 +218,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (Elements.googleLoginButton()) Elements.googleLoginButton().disabled = true;
         if (Elements.anonymousLoginButton()) Elements.anonymousLoginButton().disabled = true;
         updateProfileMenuLoginState();
-        updateConnectionIndicator('offline'); // Define estado offline
+        updateConnectionIndicator('offline'); // Define estado offline (respeitará a config)
     });
 
-    // Define o estado inicial do indicador de conexão
+    // Define o estado inicial do indicador de conexão com base na configuração
     updateConnectionIndicator(navigator.onLine ? 'online' : 'offline');
 
     loadAppVersion();

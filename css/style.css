@@ -1723,6 +1723,11 @@ input:checked + .slider:before {
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
+/* NOVO: Classe para esconder o indicador de conexão via configuração do usuário */
+.connection-indicator.hidden-by-config {
+    display: none !important; /* Usa !important para garantir a sobreposição */
+}
+
 .status-dot {
     width: 8px; /* Tamanho da bolinha */
     height: 8px;
