@@ -10,6 +10,7 @@ import { showPage, setGameStartedExplicitly } from '../ui/pages.js';
 import * as Elements from '../ui/elements.js';
 import { displayMessage } from '../ui/messages.js';
 import { saveGameToHistory } from '../data/history.js';
+import { addMatchToHistory } from '../ui/history-ui.js';
 
 let team1Score = 0;
 let team2Score = 0;
@@ -489,6 +490,32 @@ export function endGame() {
     };
 
     saveGameToHistory(gameData);
+    
+    // Formatar os dados para o formato esperado por history-ui.js
+    const matchData = {
+        teamA: {
+            name: activeTeam1Name,
+            players: currentTeam1
+        },
+        teamB: {
+            name: activeTeam2Name,
+            players: currentTeam2
+        },
+        score: {
+            teamA: team1Score,
+            teamB: team2Score,
+            setsA: team1Sets,
+            setsB: team2Sets
+        },
+        winner: team1Sets > team2Sets ? activeTeam1Name : activeTeam2Name,
+        timeElapsed: timeElapsed,
+        createdAt: new Date().toISOString(),
+        sets: setsHistory,
+        location: 'Não informado'
+    };
+    
+    // Adicionar ao histórico usando a função do history-ui.js
+    addMatchToHistory(matchData);
 
     clearInterval(timerInterval);
     clearInterval(setTimerInterval);

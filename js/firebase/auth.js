@@ -12,12 +12,17 @@ import { deleteDoc, doc, getDoc, setDoc } from "https://www.gstatic.com/firebase
 import { getAppId } from './config.js';
 
 let currentUser = null;
+
 let currentAuthInstance = null;
 let currentDbInstance = null;
 let isManualAnonymousLogin = false;
 
 export function getCurrentUser() {
     return currentUser;
+}
+
+export function setCurrentUser(user) {
+    currentUser = user;
 }
 
 export async function signInAnonymouslyUser(appId) {
@@ -103,7 +108,7 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
     onAuthStateChanged(currentAuthInstance, async (user) => {
         console.log(`[onAuthStateChanged] Usuário: ${user ? user.uid : 'NULO'}, Online: ${navigator.onLine}`);
 
-        currentUser = user;
+        setCurrentUser(user); // Update the currentUser
         updateProfileMenuLoginState();
         updateConnectionIndicator(navigator.onLine ? 'online' : 'offline');
         hideLoadingOverlay();

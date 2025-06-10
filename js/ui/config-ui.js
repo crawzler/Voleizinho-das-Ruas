@@ -334,9 +334,49 @@ export function setupConfigUI() {
         Elements.resetAppButton().addEventListener('click', resetAppAndClearCache);
     }
 
-    // NOVO: Listener para o campo de chave admin
-    if (Elements.adminKeyInput()) {
-        Elements.adminKeyInput().addEventListener('input', saveConfig);
+    // Configura input da chave admin
+    const adminKeyInput = document.getElementById('admin-key-input');
+    if (adminKeyInput) {
+        // Define o tipo do input como 'password' para ocultar a chave
+        adminKeyInput.type = 'password';
+
+        // Carrega valor existente se houver
+        const config = loadConfig();
+        if (config.adminKey) {
+            adminKeyInput.value = config.adminKey;
+        }
+
+        // Remove botão existente antes de adicionar um novo
+        const existingButton = document.getElementById('authenticate-button');
+        if (existingButton) {
+            existingButton.remove();
+        }
+
+        // Adiciona botão para autenticar
+        const authenticateButton = document.createElement('button');
+        authenticateButton.id = 'authenticate-button';
+        authenticateButton.textContent = 'Autenticar';
+        authenticateButton.style.marginTop = '5px';
+        adminKeyInput.parentNode.insertBefore(authenticateButton, adminKeyInput.nextSibling);
+
+        authenticateButton.addEventListener('click', () => {
+            const config = JSON.parse(localStorage.getItem('volleyballConfig')) || {};
+            config.adminKey = adminKeyInput.value;
+            localStorage.setItem('volleyballConfig', JSON.stringify(config));
+
+            // Corrige validação da chave
+            const correctAdminKey = 'admin998939';
+            if (config.adminKey === correctAdminKey) {
+                displayMessage('Chave autenticada', 'success');
+                
+                // Recarrega a página automaticamente apenas se a chave for válida
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000); // Pequeno atraso para exibir a mensagem antes de recarregar
+            } else {
+                displayMessage('Chave inválida', 'error');
+            }
+        });
     }
 
     addResetUserButton(); // Adiciona o botão de resetar usuário

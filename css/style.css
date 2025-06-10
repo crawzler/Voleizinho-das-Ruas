@@ -207,44 +207,34 @@ button {
     right: 0;
     bottom: 0;
     background-color: #ccc;
-    -webkit-transition: .4s;
+    transition: .4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
     transition: .4s;
 }
 
 input:checked + .slider {
-  background-color: #2196F3;
-}
-
-input:focus + .slider {
-  box-shadow: 0 0 1px #2196F3;
+    background-color: #2196F3;
 }
 
 input:checked + .slider:before {
-  -webkit-transform: translateX(20px);
-  -ms-transform: translateX(20px);
-  transform: translateX(20px);
+    transform: translateX(20px);
 }
 
-/* Rounded sliders */
 .slider.round {
-  border-radius: 34px;
-  min-width: 40px;
+    border-radius: 34px;
 }
 
 .slider.round:before {
-  border-radius: 50%;
-}
-
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 16px;
-  width: 16px;
-  left: 2px;
-  bottom: 2px;
-  background-color: white;
-  -webkit-transition: .4s;
-  transition: .4s;
+    border-radius: 50%;
 }
 
 .header-button-container {
@@ -354,41 +344,49 @@ input:checked + .slider:before {
 }
 
 
-/* NOVO: Estilos para o mini-menu do perfil */
+/* --- MENU DE PERFIL UNIFICADO E CORRIGIDO --- */
 .profile-menu {
-    display: none; /* Oculto por padrão */
+    display: none;
     flex-direction: column;
     position: absolute;
-    top: 100%; /* Posição abaixo do user-profile-header */
+    top: 100%;
     left: 0;
     width: 100%;
-    background-color: #333;
-    border-radius: 0 0 8px 8px; /* Apenas as bordas inferiores arredondadas */
+    background-color: #222;
+    border-radius: 0 0 8px 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    z-index: 960; /* Acima do sidebar, mas abaixo do botão de fechar */
-    overflow: hidden; /* Garante que o conteúdo não vaze se houver padding/margin */
+    z-index: 960;
+    overflow: hidden;
 }
-
 .profile-menu.active {
-    display: flex; /* Exibir quando ativo */
+    display: flex;
 }
-
 .profile-menu-item {
     display: flex;
     align-items: center;
     width: 100%;
     padding: 12px;
     border: none;
-    background: none;
-    color: var(--text-color);
+    color: #fff;
     cursor: pointer;
     text-align: left;
     gap: 8px;
+    background-color: #333;
+    transition: background 0.2s;
 }
-
 .profile-menu-item:hover {
-    background-color: var(--hover-color);
+    background-color: #444;
 }
+.profile-menu-arrow {
+    color: #D1D5DB;
+    margin-left: auto;
+    transition: transform 0.2s ease;
+}
+.user-profile-header.active .profile-menu-arrow {
+    transform: rotate(180deg);
+}
+/* --- FIM MENU DE PERFIL UNIFICADO --- */
+
 
 .sidebar-nav {
     display: flex;
@@ -1071,24 +1069,31 @@ input:checked + .slider:before {
 
 .player-list-item {
     background-color: #222;
-    box-shadow: 0 4px 6px -1-px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     padding: 0.75rem;
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: space-between;    
     flex-direction: row-reverse;
-    /* NOVO: Removes a demarcação azul em cliques/toques */
-    outline: none;
-    -webkit-tap-highlight-color: transparent;
+}
+
+/* Estilo para jogadores locais */
+.player-info span[data-local="true"] {
+    font-style: italic;
 }
 
 .player-info {
-    width: 100%;
     display: flex;
-    flex-direction: row-reverse;    
+    align-items: center;
     justify-content: space-between;
-    margin-left: 20px;
+    flex: 1;
+    gap: 1rem;
+}
+
+.player-info span {
+    color: #E5E7EB;
+    font-size: 1rem;
 }
 
 .remove-button {
@@ -1096,9 +1101,28 @@ input:checked + .slider:before {
     box-shadow: none;
     color: #DC2626;
     padding: 0.25rem;
-    /* NOVO: Removes a demarcação azul em cliques/toques */
     outline: none;
     -webkit-tap-highlight-color: transparent;
+    display: none; /* Esconde por padrão */
+}
+
+.remove-button.visible {
+    display: flex; /* Mostra apenas quando tiver a classe visible */
+}
+
+/* Estilo para o botão de excluir jogo */
+.delete-game-button {
+    background-color: transparent;
+    box-shadow: none;
+    color: #DC2626;
+    padding: 0.25rem;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+    display: none; /* Esconde por padrão */
+}
+
+.delete-game-button.visible {
+    display: flex; /* Mostra apenas quando tiver a classe visible */
 }
 
 .team-players-column {
@@ -1616,6 +1640,16 @@ input:checked + .slider:before {
     /* NÃO É MAIS NECESSÁRIO position: absolute aqui, pois o .card-actions agora gerencia */
 }
 
+/* Estilo específico para o botão de excluir jogo */
+.delete-game-button {
+    color: #DC2626 !important;
+    display: none !important; /* Esconde por padrão */
+}
+
+.delete-game-button.visible {
+    display: flex !important; /* Mostra apenas quando tiver a classe visible */
+}
+
 .card-action-button .material-icons {
     font-size: 1.6rem; /* Slightly larger icon */
 }
@@ -2074,6 +2108,9 @@ input:checked + .slider:before {
     padding-top: 16px;
 }
 
+/* --- REMOVIDO: Blocos duplicados de menu de perfil e dropdown antigos para evitar conflito visual --- */
+
+
 /* Estilos para o menu de perfil */
 .user-profile-header {
     cursor: pointer;
@@ -2086,19 +2123,20 @@ input:checked + .slider:before {
 
 .profile-menu {
     display: none;
+    flex-direction: column;
     position: absolute;
     top: 100%;
     left: 0;
     width: 100%;
-    background-color: var(--background-color);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    z-index: 1000;
+    background-color: #222;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 960;
+    overflow: hidden;
 }
 
-.profile-menu.show {
-    display: block;
+.profile-menu.active {
+    display: flex;
 }
 
 .profile-menu-item {
@@ -2107,85 +2145,45 @@ input:checked + .slider:before {
     width: 100%;
     padding: 12px;
     border: none;
-    background: none;
-    color: var(--text-color);
+    color: #fff;
     cursor: pointer;
     text-align: left;
     gap: 8px;
-}
-
-.profile-menu-item:hover {
-    background-color: var(--hover-color);
-}
-
-.profile-menu-arrow {
-    margin-left: auto;
-}
-
-.user-dropdown {
-    position: relative;
-    display: inline-block;
-}
-
-.user-dropdown-toggle {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: #222;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 16px;
-    cursor: pointer;
-    width: 100%;
-}
-
-.user-profile-picture {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid #444;
-}
-
-.user-dropdown-menu {
-    display: none;
-    position: absolute;
-    right: 0;
-    top: 110%;
-    background: #222;
-    min-width: 160px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-    border-radius: 8px;
-    z-index: 100;
-    padding: 8px 0;
- /* Adicionado padding vertical */
-}
-
-.user-dropdown.show .user-dropdown-menu {
-    display: block;
-}
-
-.user-dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    background: none;
-    border: none;
-    color: #fff;
-    padding: 12px 20px;
-    cursor: pointer;
-    font-size: 1rem;
-    text-align: left;
-    border-radius: 8px;
+    background-color: #333;
     transition: background 0.2s;
 }
 
-.user-dropdown-item:hover {
-    background: #333;
+.profile-menu-item:hover {
+    background-color: #444;
 }
 
-.user-dropdown .material-icons {
-    font-size: 22px;
+.profile-menu-arrow {
+    color: #D1D5DB;
+    margin-left: auto;
+    transition: transform 0.2s ease;
 }
+
+.user-profile-header.active .profile-menu-arrow {
+    transform: rotate(180deg);
+}
+
+/* NOVO: Estilo para o campo de senha admin */
+input[type="password"] {
+    width: 100%;
+    flex-grow: 1;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background-color: #333;
+    border: none;
+    color: white;
+    outline: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.form-input[type="password"] {
+    background-color: #333;
+    color: white;
+    border: 1px solid #444;
+}
+
+/*# sourceMappingURL=style.css.map */

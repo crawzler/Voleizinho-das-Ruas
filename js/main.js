@@ -13,7 +13,7 @@ import { loadAppVersion, registerServiceWorker } from './utils/app-info.js';
 import { getPlayers } from './data/players.js';
 import * as Elements from './ui/elements.js';
 import { displayMessage } from './ui/messages.js';
-import { updatePlayerCount, updateSelectAllToggle } from './ui/players-ui.js';
+import { updatePlayerCount, updateSelectAllToggle, savePlayerSelectionState } from './ui/players-ui.js';
 import { setupHistoryPage } from './ui/history-ui.js';
 import { setupSchedulingPage } from './ui/scheduling-ui.js';
 
@@ -223,14 +223,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // NOVO: Listener para detectar quando o aplicativo volta a ficar online
-    window.addEventListener('online', () => {
-        // Log essencial removido
-        displayMessage("Online novamente! Tentando reconectar...", "info");
+    window.addEventListener('online', async () => {
+        displayMessage("Online novamente! Sincronizando dados...", "info");
         updateConnectionIndicator('reconnecting');
-        setTimeout(() => {
-            setupAuthListener(auth, db, appId);
+        
+        try {
+            const { app, db, auth } = await initFirebaseApp();
+            const appId = getAppId();
+            
+            // Recarrega autenticação e configura listeners
+            await setupAuthListener(auth, db, appId);
+            await setupFirestorePlayersListener(db, appId);
             updateProfileMenuLoginState();
-        }, 1500);
+            
+            displayMessage("Dados sincronizados com sucesso!", "success");
+            updateConnectionIndicator('online');
+        } catch (error) {
+            console.error("Erro na sincronização:", error);
+            displayMessage("Erro ao sincronizar dados", "error");
+            updateConnectionIndicator('offline');
+        }
     });
 
     window.addEventListener('offline', () => {

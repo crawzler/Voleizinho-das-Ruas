@@ -108,31 +108,142 @@ function createMatchCard(match) {
 
     const teamAName = match.teamA.name || 'Time A';
     const teamBName = match.teamB.name || 'Time B';
+    
+    // Formatar duração do jogo
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+    
+    const gameTime = formatTime(match.timeElapsed || 0);
 
+    // Criar listas de jogadores
     const createPlayerList = (teamPlayers, isWinner) => {
-        if (!teamPlayers || teamPlayers.length === 0) return 'Sem jogadores';
-        return `<ul>${teamPlayers.map(player => `<li class="${isWinner ? 'winner-player' : ''}">${player}</li>`).join('')}</ul>`;
+        if (!teamPlayers || teamPlayers.length === 0) return '<ul><li>Sem jogadores</li></ul>';
+        return `<ul>${teamPlayers.map(player => `<li>${player}</li>`).join('')}</ul>`;
+    };
+    
+    // Criar itens de sets
+    const createSetsItems = () => {
+        if (!match.sets || match.sets.length === 0) {
+            return `<div class="set-item">
+                <span class="set-number">Set 1:</span>
+                <div class="set-score">
+                    <span class="${isTeamAWinner ? 'winner-score' : ''}">${teamAName} ${match.score.teamA}</span>
+                    <span> x </span>
+                    <span class="${isTeamBWinner ? 'winner-score' : ''}">${match.score.teamB} ${teamBName}</span>
+                </div>
+            </div>`;
+        }
+        
+        return match.sets.map((set, index) => {
+            const isTeamASetWinner = set.winner === 'team1';
+            const isTeamBSetWinner = set.winner === 'team2';
+            return `<div class="set-item">
+                <span class="set-number">Set ${index + 1}:</span>
+                <div class="set-score">
+                    <span class="${isTeamASetWinner ? 'winner-score' : ''}">${teamAName} ${set.team1Score}</span>
+                    <span> x </span>
+                    <span class="${isTeamBSetWinner ? 'winner-score' : ''}">${set.team2Score} ${teamBName}</span>
+                </div>
+            </div>`;
+        }).join('');
+    };
+    
+    // Criar itens de tempo dos sets
+    const createSetTimesItems = () => {
+        if (!match.sets || match.sets.length === 0) {
+            return `<div class="set-time-item">
+                <div class="set-time">
+                    <span class="material-icons">schedule</span>
+                    <span>00:00</span>
+                </div>
+            </div>`;
+        }
+        
+        return match.sets.map((set, index) => {
+            const setTime = formatTime(set.duration || 0);
+            return `<div class="set-time-item">
+                <div class="set-time">
+                    <span class="material-icons">schedule</span>
+                    <span>${setTime}</span>
+                </div>
+            </div>`;
+        }).join('');
     };
 
     card.innerHTML = `
         <div class="date-time-info">
-            <span>${formattedDate} às ${formattedTime}</span>
-            <button class="delete-match-button" title="Excluir partida"><span class="material-icons">delete</span></button>
+            <span>${teamAName} ${match.score.setsA} x ${match.score.setsB} ${teamBName}</span>
+            <div class="match-date">
+                <span class="match-date-span">
+                    <span class="match-date-value">${formattedDate}</span>
+                    <span class="match-time-value">${formattedTime}</span>
+                </span>
+                <span class="material-icons match-expand-icon">chevron_right</span>
+            </div>
         </div>
         <div class="match-info">
-            <div class="team">
-                <h4 class="${isTeamAWinner ? 'winner' : ''}">${teamAName} (${match.score.setsA})</h4>
-                ${createPlayerList(match.teamA.players, isTeamAWinner)}
+            <div class="match-content">
+                <div class="match-section">
+                    <h4 class="section-title">Jogadores</h4>
+                    <div class="players-container">
+                        <div class="team-players team-a-players ${isTeamAWinner ? 'winner-team' : ''}">
+                            <h5>${teamAName}</h5>
+                            ${createPlayerList(match.teamA.players)}
+                        </div>
+                        <div class="team-players team-b-players ${isTeamBWinner ? 'winner-team' : ''}">
+                            <h5>${teamBName}</h5>
+                            ${createPlayerList(match.teamB.players)}
+                        </div>
+                    </div>
+                </div>
+                <div class="match-section">
+                    <h4 class="section-title">Sets</h4>
+                    <div class="sets-container">
+                        ${createSetsItems()}
+                    </div>
+                </div>
+                <div class="match-section">
+                    <h4 class="section-title">Tempo</h4>
+                    <div class="set-times-container">
+                        ${createSetTimesItems()}
+                    </div>
+                </div>
             </div>
-            <div class="match-score">
-                <span>${match.score.teamA}</span> x <span>${match.score.teamB}</span>
+        </div>
+        <div class="match-footer">
+            <div class="match-location">
+                <span class="material-icons">location_on</span>
+                <span>Local: ${match.location || 'Não informado'}</span>
             </div>
-            <div class="team">
-                <h4 class="${isTeamBWinner ? 'winner' : ''}">${teamBName} (${match.score.setsB})</h4>
-                ${createPlayerList(match.teamB.players, isTeamBWinner)}
+            <div class="match-duration">
+                <span class="material-icons">timer</span>
+                <span>Tempo de jogo: ${gameTime}</span>
+                <button class="delete-match-button" title="Excluir partida">
+                    <span class="material-icons">delete</span>
+                </button>
             </div>
         </div>
     `;
+    
+    // Adicionar funcionalidade de accordion
+    const header = card.querySelector('.date-time-info');
+    const content = card.querySelector('.match-info');
+    
+    header.addEventListener('click', () => {
+        header.classList.toggle('active');
+        content.classList.toggle('active');
+        
+        // Ajusta a altura máxima do conteúdo para animação suave
+        if (content.classList.contains('active')) {
+            content.style.maxHeight = content.scrollHeight + 'px';
+        } else {
+            content.style.maxHeight = '0';
+        }
+    });
+    
     return card;
 }
 
@@ -147,8 +258,11 @@ export function setupHistoryPage() {
     if (historyListContainer) {
         // Delegação de evento para o botão de excluir
         historyListContainer.addEventListener('click', (event) => {
-            const deleteButton = event.target.closest('.delete-match-button');
-            if (deleteButton) {
+            // Evita que o clique no botão de excluir acione o accordion
+            if (event.target.closest('.delete-match-button')) {
+                event.stopPropagation();
+                
+                const deleteButton = event.target.closest('.delete-match-button');
                 const card = deleteButton.closest('.match-history-card');
                 const matchId = card.dataset.matchId;
                 showConfirmationModal(

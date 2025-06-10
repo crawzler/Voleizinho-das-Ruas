@@ -11,7 +11,7 @@ import { displayMessage } from './messages.js';
 // Importa as funções de scheduling-ui.js que serão usadas nos callbacks do modal
 import { cancelGame, deleteGame, setupSchedulingPage } from './scheduling-ui.js';
 import * as SchedulingUI from './scheduling-ui.js'; // Adicione esta linha para importar tudo
-import { addPlayer } from '../data/players.js'; // <-- ADICIONE ESTA LINHA
+import { addPlayer, removePlayer } from '../data/players.js'; // <-- ADICIONE ESTA LINHA
 
 let touchStartY = 0;
 const DRAG_THRESHOLD = 30; // Limite de movimento para diferenciar clique de arrastar
@@ -234,6 +234,33 @@ export function setupSidebar(startGameHandler, getPlayersHandler) {
             const profileMenu = Elements.profileMenu();
             const userProfileHeader = Elements.userProfileHeader();
             if (profileMenu && userProfileHeader) {
+                // Cria dinamicamente o botão de login/logout se não existir
+                let logoutBtn = Elements.profileLogoutButton();
+                if (!logoutBtn) {
+                    logoutBtn = document.createElement('button');
+                    logoutBtn.id = 'profile-logout-button';
+                    logoutBtn.className = 'profile-menu-item';
+                    profileMenu.appendChild(logoutBtn);
+                }
+                // Atualiza o texto/ícone do botão
+                const currentUser = getCurrentUser();
+                if (currentUser && currentUser.isAnonymous) {
+                    logoutBtn.innerHTML = '<span class="material-icons">login</span> Logar';
+                } else {
+                    logoutBtn.innerHTML = '<span class="material-icons">logout</span> Sair';
+                }
+                // Remove event listeners antigos
+                logoutBtn.replaceWith(logoutBtn.cloneNode(true));
+                const freshLogoutBtn = Elements.profileLogoutButton();
+                freshLogoutBtn.addEventListener('click', () => {
+                    const user = getCurrentUser();
+                    if (user && user.isAnonymous) {
+                        loginWithGoogle();
+                    } else {
+                        logout();
+                    }
+                    closeSidebar();
+                });
                 profileMenu.classList.toggle('active');
                 userProfileHeader.classList.toggle('active');
             }
@@ -294,16 +321,24 @@ export function setupPageNavigation(startGameHandler, getPlayersHandler, appId) 
         addPlayerButton.addEventListener('click', async () => {
             const playerNameInput = Elements.newPlayerNameInput();
             const playerName = playerNameInput ? playerNameInput.value.trim() : '';
-            const { getFirestoreDb } = await import('../firebase/config.js');
-            const db = getFirestoreDb();
+            
             if (playerName) {
-                const currentUser = getCurrentUser();
-                await addPlayer(db, appId, playerName, currentUser ? currentUser.uid : null);
-                if (playerNameInput) {
-                    playerNameInput.value = '';
+                try {
+                    let db = null;
+                    if (navigator.onLine) {
+                        const { getFirestoreDb } = await import('../firebase/config.js');
+                        db = getFirestoreDb();
+                    }
+                    
+                    await addPlayer(db, appId, playerName);
+                    if (playerNameInput) {
+                        playerNameInput.value = '';
+                    }
+                    displayMessage("Jogador adicionado com sucesso!", "success");
+                } catch (error) {
+                    console.error("Erro ao adicionar jogador:", error);
+                    displayMessage("Erro ao adicionar jogador. Tente novamente.", "error");
                 }
-            } else {
-                // console.warn("O nome do jogador não pode estar vazio.");
             }
         });
     }

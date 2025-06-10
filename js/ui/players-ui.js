@@ -1,104 +1,199 @@
 // js/ui/players-ui.js
 // Lógica de interface para a lista de jogadores.
 
-import * as Elements from './elements.js';
-import { updatePlayerModificationAbility } from './pages.js'; // Importa a função de pages.js
 import { getCurrentUser } from '../firebase/auth.js';
-import { loadConfig } from './config-ui.js';
-import { showConfirmationModal } from './pages.js'; // Importa o modal de confirmação
+import * as Elements from './elements.js';
+import { displayMessage } from './messages.js';
+
+let updatePlayerCountCallback = () => {}
 
 /**
  * Renderiza a lista de jogadores na UI.
  * @param {Array<Object>} players - A lista de jogadores a ser renderizada.
  */
 export function renderPlayersList(players) {
-    if (!Elements.playersListContainer()) return;
+    const playersListContainer = Elements.playersListContainer();
+    if (!playersListContainer) return;
 
-    Elements.playersListContainer().innerHTML = '';
-
-    const user = getCurrentUser();
-    const config = loadConfig();
-    const isGoogleUser = user && !user.isAnonymous;
-    const isAdminKey = config && config.adminKey === "admin998939";
-    const canDeleteGlobal = isGoogleUser && isAdminKey;
-
-    players.forEach((player) => {
-        const isLocalTag = player.name && /\[local\]/i.test(player.name);
-        const canDeleteThis = isLocalTag || canDeleteGlobal;
-
-        let displayName = player.name || '';
-        if (isLocalTag) {
-            displayName = displayName.replace(/\[local\]/ig, '').trim();
+    // Carrega o estado de seleção dos jogadores do localStorage ou usa os selecionados atualmente
+    let selectedPlayerIds = [];
+    try {
+        const savedSelection = localStorage.getItem('selectedPlayers');
+        if (savedSelection) {
+            selectedPlayerIds = JSON.parse(savedSelection);
+        } else {
+            // Se não houver seleção salva, usa os selecionados atualmente
+            document.querySelectorAll('#players-list-container .player-checkbox:checked').forEach(checkbox => {
+                selectedPlayerIds.push(checkbox.dataset.playerId);
+            });
         }
+    } catch (e) {
+        console.warn('Erro ao carregar estado de seleção dos jogadores:', e);
+        // Em caso de erro, usa os selecionados atualmente
+        document.querySelectorAll('#players-list-container .player-checkbox:checked').forEach(checkbox => {
+            selectedPlayerIds.push(checkbox.dataset.playerId);
+        });
+    }
 
-        const playerDiv = document.createElement('div');
-        playerDiv.className = 'player-list-item';
-        playerDiv.innerHTML = `
+    // Verifica autenticação e chave admin
+    const config = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
+
+    // Tenta obter o usuário, mas com proteção contra erros de inicialização
+    let user = null;
+    let canDelete = false;
+    try {
+        user = getCurrentUser();
+        const isAdminKey = config.adminKey === 'admin998939';
+        const isGoogleUser = user && !user.isAnonymous;
+        canDelete = isAdminKey && isGoogleUser;
+    } catch (error) {
+        console.warn('Erro ao obter usuário atual:', error);
+        // Continue mesmo com erro, tratando como usuário não autenticado
+    }
+
+    // Se não houver jogadores, tenta carregar do localStorage
+    if (!players || players.length === 0) {
+        try {
+            const stored = localStorage.getItem('volleyballPlayers');
+            if (stored) {
+                players = JSON.parse(stored);
+                if (!navigator.onLine) {
+                    players = players.map(player => ({
+                        ...player,
+                        name: player.name.includes('[local]') ?
+                            player.name :
+                            `${player.name} [local]`,
+                        isLocal: true
+                    }));
+                }
+            }
+        } catch (e) {
+            console.warn('Erro ao ler jogadores do localStorage:', e);
+            players = [];
+        }
+    }
+
+    playersListContainer.innerHTML = '';
+
+    if (!players || players.length === 0) {
+        playersListContainer.innerHTML = '<p class="empty-list-message">Nenhum jogador cadastrado.</p>';
+        return;
+    }
+
+    // Ordena os jogadores por nome em ordem alfabética
+    players.sort((a, b) => a.name.localeCompare(b.name));
+    
+    players.forEach(player => {
+        const playerElement = document.createElement('div');
+        playerElement.className = 'player-list-item';
+        const isLocal = !navigator.onLine || player.isLocal;
+        
+        // Verifica se o usuário atual pode excluir este jogador específico
+        let showDeleteButton = canDelete; // Admin pode excluir qualquer jogador
+
+        // Se não for admin, verifica se foi o criador deste jogador
+        if (!showDeleteButton && user) {
+            // Verifica se o jogador foi criado pelo usuário atual
+            if (player.createdBy && player.createdBy === user.uid) {
+                showDeleteButton = true;
+            }
+        }
+        
+        // Verifica se este jogador estava selecionado anteriormente ou é novo
+        // Jogadores novos são identificados pela data de criação recente (últimos 5 segundos)
+        const isNew = player.createdAt && (new Date() - new Date(player.createdAt) < 5000);
+        const isChecked = selectedPlayerIds.includes(player.id) || isNew ? 'checked' : '';
+        
+        playerElement.innerHTML = `
             <div class="player-info">
+                <span data-local="${isLocal}">${player.name}</span>
                 <label class="switch">
-                    <input type="checkbox" checked="checked" class="player-checkbox" data-player-id="${player.id}">
+                    <input type="checkbox" class="player-checkbox" data-player-id="${player.id}" ${isChecked}>
                     <span class="slider round"></span>
                 </label>
-                <span class="player-name-display">${displayName}${isLocalTag ? ' <span class="local-tag" style="color:#888;font-size:0.85em;">[local]</span>' : ''}</span>
             </div>
-            ${canDeleteThis ? `
-            <button class="remove-button" data-player-id="${player.id}">
-                <span class="material-icons delete-icon">delete</span>
+            <button class="remove-button ${showDeleteButton ? 'visible' : ''}" data-player-id="${player.id}">
+                <span class="material-icons">delete</span>
             </button>
-            ` : ''}
         `;
-        Elements.playersListContainer().appendChild(playerDiv);
+        playersListContainer.appendChild(playerElement);
     });
+    
+    // Adiciona event listeners para os checkboxes
+    document.querySelectorAll('#players-list-container .player-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', savePlayerSelectionState);
+    });
+    
+    // Adiciona event listener para o botão "Selecionar Todos"
+    const selectAllToggle = Elements.selectAllPlayersToggle();
+    if (selectAllToggle) {
+        selectAllToggle.addEventListener('change', () => {
+            // Marca ou desmarca todos os checkboxes
+            const checkboxes = document.querySelectorAll('#players-list-container .player-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAllToggle.checked;
+            });
+            
+            // Salva o estado
+            savePlayerSelectionState();
+            updatePlayerCount();
+        });
+    }
+
     updatePlayerCount();
     updateSelectAllToggle();
-    updatePlayerModificationAbility(true);
-
-    // Remove listeners antigos para evitar múltiplos binds
-    Elements.playersListContainer().querySelectorAll('.remove-button').forEach(btn => {
-        const newBtn = btn.cloneNode(true);
-        btn.parentNode.replaceChild(newBtn, btn);
-    });
-
-    // Adiciona confirmação ao excluir jogador SEM disparar exclusão imediata
-    Elements.playersListContainer().querySelectorAll('.remove-button').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            const playerId = btn.getAttribute('data-player-id');
-            showConfirmationModal(
-                'Tem certeza que deseja excluir este jogador?',
-                () => {
-                    // Remove o jogador diretamente aqui, sem simular clique
-                    // O handler global do container está em pages.js
-                    const event = new CustomEvent('remove-player-confirmed', {
-                        bubbles: true,
-                        detail: { playerId }
-                    });
-                    Elements.playersListContainer().dispatchEvent(event);
-                }
-            );
-        });
-    });
-
-    // Handler para remoção real após confirmação
-    // Este evento será capturado no pages.js, não precisa simular clique no botão!
 }
 
 /**
  * Atualiza a contagem de jogadores selecionados/total.
  */
 export function updatePlayerCount() {
-    if (!Elements.playerCountSpan()) return; // Chamada da função
-    const checkboxes = document.querySelectorAll('#players-list-container .player-checkbox');
-    const selectedPlayers = Array.from(checkboxes).filter(checkbox => checkbox.checked).length;
-    Elements.playerCountSpan().textContent = `${selectedPlayers}/${checkboxes.length}`; // Chamada da função
+    const selectedCount = document.querySelectorAll('#players-list-container .player-checkbox:checked').length;
+    const totalCount = document.querySelectorAll('#players-list-container .player-checkbox').length;
+    const playerCountDisplay = document.getElementById('player-count');
+    if (playerCountDisplay) {
+        playerCountDisplay.textContent = `${selectedCount}/${totalCount}`;
+    }
+}
+
+/**
+ * Salva o estado de seleção dos jogadores no localStorage
+ */
+export function savePlayerSelectionState() {
+    try {
+        const selectedPlayerIds = [];
+        document.querySelectorAll('#players-list-container .player-checkbox:checked').forEach(checkbox => {
+            selectedPlayerIds.push(checkbox.dataset.playerId);
+        });
+        
+        localStorage.setItem('selectedPlayers', JSON.stringify(selectedPlayerIds));
+    } catch (e) {
+        console.warn('Erro ao salvar estado de seleção dos jogadores:', e);
+    }
 }
 
 /**
  * Atualiza o estado do toggle "Selecionar Todos".
  */
 export function updateSelectAllToggle() {
-    if (!Elements.selectAllPlayersToggle()) return; // Chamada da função
+    const selectAllToggle = Elements.selectAllPlayersToggle();
+    if (!selectAllToggle) return;
+
     const checkboxes = document.querySelectorAll('#players-list-container .player-checkbox');
-    const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
-    Elements.selectAllPlayersToggle().checked = allChecked; // Chamada da função
+    const checkedBoxes = document.querySelectorAll('#players-list-container .player-checkbox:checked');
+
+    if (checkboxes.length === 0) {
+        selectAllToggle.checked = false;
+        selectAllToggle.indeterminate = false;
+    } else if (checkedBoxes.length === 0) {
+        selectAllToggle.checked = false;
+        selectAllToggle.indeterminate = false;
+    } else if (checkedBoxes.length === checkboxes.length) {
+        selectAllToggle.checked = true;
+        selectAllToggle.indeterminate = false;
+    } else {
+        selectAllToggle.checked = false;
+        selectAllToggle.indeterminate = true;
+    }
 }
+

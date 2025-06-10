@@ -5,6 +5,7 @@ import * as Elements from './elements.js';
 import { displayMessage } from './messages.js';
 import { showConfirmationModal } from './pages.js'; // Importa o modal de confirmação
 import * as SchedulesData from '../data/schedules.js';
+import { getCurrentUser } from '../firebase/auth.js';
 
 const SCHEDULES_STORAGE_KEY = 'voleiScoreSchedules';
 
@@ -200,13 +201,30 @@ function createGameCard(game) {
             statusTitle = 'Desconhecido';
     }
 
+    // Verifica autenticação e chave admin
+    const config = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
+    
+    // Tenta obter o usuário, mas com proteção contra erros de inicialização
+    let user = null;
+    let canDelete = false;
+    try {
+        user = getCurrentUser();
+        const isAdminKey = config.adminKey === 'admin998939';
+        const isGoogleUser = user && !user.isAnonymous;
+        canDelete = isAdminKey && isGoogleUser;
+    } catch (error) {
+        console.warn('Erro ao obter usuário atual:', error);
+        // Continue mesmo com erro, tratando como usuário não autenticado
+    }
+
+    // Cria o HTML do card diretamente
     card.innerHTML = `
         <div class="card-actions">
             ${game.status === 'upcoming' ? `<button class="cancel-game-button card-action-button" title="Cancelar Jogo"><span class="material-icons">cancel</span></button>` : ''}
-            <button class="delete-game-button card-action-button" title="Excluir Jogo"><span class="material-icons">delete</span></button>
+            <button class="delete-game-button card-action-button ${canDelete ? 'visible' : ''}" title="Excluir Jogo"><span class="material-icons">delete</span></button>
         </div>
         <div class="card-content">
-            <h3>${statusTitle}</h3> <!-- Dynamic title based on status -->
+            <h3>${statusTitle}</h3>
             <p><span class="material-icons">event</span> ${formattedDate}</p>
             <p><span class="material-icons">schedule</span> ${game.startTime} ${game.endTime ? `- ${game.endTime}` : ''}</p>
             ${game.notes ? `<p><span class="material-icons">notes</span> ${game.notes}</p>` : ''}
