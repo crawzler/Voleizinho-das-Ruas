@@ -475,47 +475,37 @@ export function endGame() {
         return;
     }
 
-    const gameData = {
-        team1Name: activeTeam1Name,
-        team2Name: activeTeam2Name,
-        team1Score: team1Score,
-        team2Score: team2Score,
-        team1Sets: team1Sets,
-        team2Sets: team2Sets,
-        duration: timeElapsed,
-        team1Players: currentTeam1,
-        team2Players: currentTeam2,
-        date: new Date().toISOString(),
-        sets: setsHistory
-    };
-
-    saveGameToHistory(gameData);
+    // Verificar se ambos os times têm jogadores antes de salvar
+    const team1HasPlayers = currentTeam1 && currentTeam1.length > 0;
+    const team2HasPlayers = currentTeam2 && currentTeam2.length > 0;
     
-    // Formatar os dados para o formato esperado por history-ui.js
-    const matchData = {
-        teamA: {
-            name: activeTeam1Name,
-            players: currentTeam1
-        },
-        teamB: {
-            name: activeTeam2Name,
-            players: currentTeam2
-        },
-        score: {
-            teamA: team1Score,
-            teamB: team2Score,
-            setsA: team1Sets,
-            setsB: team2Sets
-        },
-        winner: team1Sets > team2Sets ? activeTeam1Name : activeTeam2Name,
-        timeElapsed: timeElapsed,
-        createdAt: new Date().toISOString(),
-        sets: setsHistory,
-        location: 'Não informado'
-    };
-    
-    // Adicionar ao histórico usando a função do history-ui.js
-    addMatchToHistory(matchData);
+    if (team1HasPlayers && team2HasPlayers) {
+        // Formatar os dados para o formato esperado por history-ui.js
+        const matchData = {
+            teamA: {
+                name: activeTeam1Name,
+                players: currentTeam1
+            },
+            teamB: {
+                name: activeTeam2Name,
+                players: currentTeam2
+            },
+            score: {
+                teamA: team1Score,
+                teamB: team2Score,
+                setsA: team1Sets,
+                setsB: team2Sets
+            },
+            winner: team1Sets > team2Sets ? activeTeam1Name : activeTeam2Name,
+            timeElapsed: timeElapsed,
+            createdAt: new Date().toISOString(),
+            sets: setsHistory,
+            location: 'Não informado'
+        };
+        
+        // Adicionar ao histórico usando a função do history-ui.js que já tem o modal de confirmação
+        addMatchToHistory(matchData);
+    }
 
     clearInterval(timerInterval);
     clearInterval(setTimerInterval);

@@ -16,6 +16,15 @@
     width: 100%;
 }
 
+.match-history-header {
+    font-size: 1.225rem;
+}
+
+.team-winner {
+    color: #ffd700;
+    font-weight: 600;
+}
+
 .date-time-info {
     display: flex;
     justify-content: space-between;
@@ -33,9 +42,12 @@
     -webkit-tap-highlight-color: transparent;
 }
 
-.date-time-info span {
+
+
+.match-date span {
     color: #e0e0e0;
-    font-size: 1rem;
+    font-size: 0.75rem;
+    font-weight: 100;
 }
 
 .delete-match-button {
@@ -53,7 +65,7 @@
 
 .match-info {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-columns: 1fr;
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.3s ease-out;
@@ -61,6 +73,8 @@
     overflow-y: auto;
     overscroll-behavior-y: auto;
     padding: 0px 20px;
+    border-top: 1px solid #333;
+    background-color: #222;
 }
 
 .match-info.active {
@@ -83,6 +97,7 @@
     display: flex;
     flex-direction: row;
     align-items: flex-end;
+    align-items: center;
 }
 
 .match-date-span {
@@ -108,23 +123,32 @@
 
 .match-content {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 3fr 2fr 6%;
     gap: 16px;
     margin-top: 16px;
 }
 
 .match-section {
+    display: flex;
     border-bottom: 1px solid #333;
     padding-bottom: 16px;
+    flex-direction: column;
+    align-items: stretch;
 }
 
 .section-title {
+    text-align: center;
     font-size: 1rem;
     font-weight: 600;
     color: #fff;
     margin: 10px 0px;
     padding-bottom: 5px;
     border-bottom: 1px dashed #666;
+}
+
+.section-title .material-icons {
+    font-size: 1.2rem;
+    vertical-align: middle;
 }
 
 .players-container {
@@ -150,15 +174,13 @@
 }
 
 .team-players li {
-    padding: 4px 0;
     color: #bbb;
 }
 
 .winner-team h5, 
 .winner-team li, 
 .winner-score {
-    color: #ffd700 !important; /* Amarelo para o time vencedor */
-    font-weight: 600;
+    color: #ffd700 !important;
 }
 
 .sets-container {
@@ -231,14 +253,6 @@
 }
 
 /* Responsividade */
-@media (max-width: 768px) {
-    .match-content {
-        grid-template-columns: 1fr;
-    }
-    
-    .match-footer {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
+@media (max-width: 600px) {
+
 }

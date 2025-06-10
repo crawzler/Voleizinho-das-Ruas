@@ -221,8 +221,54 @@ export function setupSidebar(startGameHandler, getPlayersHandler) {
         item.addEventListener('click', () => {
             const pageId = item.id.replace('nav-', '');
             const targetPageId = pageId + '-page';
-
-            showPage(targetPageId);
+            
+            if (pageId === 'scoring') {
+                if (getIsGameInProgress()) {
+                    // Se já existe um jogo em andamento, perguntar se deseja iniciar um novo
+                    showConfirmationModal(
+                        'Deseja iniciar uma nova partida? A partida atual será perdida.',
+                        () => {
+                            // Se confirmar, verificar se há jogadores na partida atual
+                            import('../game/logic.js').then(({ endGame, startGame, getCurrentTeam1, getCurrentTeam2, resetGameForNewMatch }) => {
+                                const team1HasPlayers = getCurrentTeam1() && getCurrentTeam1().length > 0;
+                                const team2HasPlayers = getCurrentTeam2() && getCurrentTeam2().length > 0;
+                                
+                                // Só pergunta se quer salvar se tiver jogadores em ambos os times
+                                if (team1HasPlayers && team2HasPlayers) {
+                                    showConfirmationModal(
+                                        'Deseja salvar a partida atual no histórico?',
+                                        () => {
+                                            // Se confirmar, salva a partida atual
+                                            endGame(); // endGame já salva a partida
+                                            // Mostra a tela inicial em vez de iniciar nova partida
+                                            showPage('start-page');
+                                        },
+                                        () => {
+                                            // Se não confirmar, apenas reseta e mostra a tela inicial
+                                            resetGameForNewMatch();
+                                            showPage('start-page');
+                                        }
+                                    );
+                                } else {
+                                    // Se não tiver jogadores, apenas reseta e mostra a tela inicial
+                                    resetGameForNewMatch();
+                                    showPage('start-page');
+                                }
+                            });
+                        },
+                        () => {
+                            // Se não confirmar, apenas mostra a página de pontuação atual
+                            showPage(targetPageId);
+                        }
+                    );
+                } else {
+                    // Se não houver jogo em andamento, mostra a tela inicial
+                    showPage('start-page');
+                }
+            } else {
+                showPage(targetPageId);
+            }
+            
             closeSidebar();
         });
     });

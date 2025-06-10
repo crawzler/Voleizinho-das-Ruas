@@ -307,7 +307,7 @@ input:checked + .slider:before {
     -webkit-tap-highlight-color: transparent;
     cursor: pointer;
     position: relative;
-    padding: 8px;
+    padding: 8px 0px;
     gap: 8px;
 }
 
@@ -1001,9 +1001,22 @@ input:checked + .slider:before {
     padding: 1rem;
     border-radius: 0.5rem;
     box-shadow: 0 4px 6px -1-px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    /* NOVO: Removes a demarcação azul em cliques/toques */
     outline: none;
     -webkit-tap-highlight-color: transparent;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+}
+
+.team-card-list {
+    color: #D1D5DB;
+    list-style: inside;
+    padding: 0px;
+    margin: 0px;
+    margin-top: 10px;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 .team-card-title {
@@ -2117,7 +2130,7 @@ input:checked + .slider:before {
     position: relative;
     display: flex;
     align-items: center;
-    padding: 8px;
+    padding: 4px 0px;
     gap: 8px;
 }
 
