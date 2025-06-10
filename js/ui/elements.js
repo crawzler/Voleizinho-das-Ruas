@@ -15,7 +15,7 @@ export const userProfileHeader = () => document.getElementById('user-profile-hea
 // Elementos do mini-menu do perfil
 export const profileMenu = () => document.getElementById('profile-menu');
 export const profileLogoutButton = () => document.getElementById('profile-logout-button');
-// export const profileSettingsButton = () => document.getElementById('profile-settings-button'); // Removido do HTML, movido para o sidebar principal
+export const userProfileContainer = () => document.getElementById('user-profile-container');
 
 // Overlay do Sidebar
 export const sidebarOverlay = () => document.getElementById('sidebar-overlay');
@@ -80,6 +80,7 @@ export const vibrationToggle = () => document.getElementById('vibration-toggle')
 export const displayPlayersToggle = () => document.getElementById('display-players-toggle');
 // NOVO: Toggle para exibir Status de Conexão
 export const showConnectionStatusToggle = () => document.getElementById('show-connection-status-toggle');
+export const configContainer = () => document.querySelector('.config-section'); // ou outro seletor apropriado para o container de configurações
 
 // Inputs de times personalizados (para fácil iteração)
 export const customTeamInputs = [
@@ -140,3 +141,6 @@ export const statusText = () => document.querySelector('#connection-indicator .s
 
 // NOVO: Overlay de Carregamento
 export const loadingOverlay = () => document.getElementById('loading-overlay');
+
+// Campo de Chave Admin (nova adição)
+export const adminKeyInput = () => document.getElementById('admin-key-input');

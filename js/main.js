@@ -2,8 +2,8 @@
 // Ponto de entrada principal do seu aplicativo. Orquestra a inicialização e os módulos.
 
 import { initFirebaseApp, getAppId } from './firebase/config.js';
-import { loginWithGoogle, logout, setupAuthListener, signInAnonymouslyUser, updateProfileMenuLoginState } from './firebase/auth.js'; // Imports updateProfileMenuLoginState
-import { loadPlayersFromLocalStorage, setupFirestorePlayersListener, addPlayer, removePlayer } from './data/players.js';
+import { logout, setupAuthListener, signInAnonymouslyUser, updateProfileMenuLoginState, getCurrentUser, loginWithGoogle } from './firebase/auth.js'; // Imports updateProfileMenuLoginState
+import { setupFirestorePlayersListener } from './data/players.js';
 import * as SchedulesData from './data/schedules.js';
 import { showPage, updatePlayerModificationAbility, setupSidebar, setupPageNavigation, setupAccordion, setupScoreInteractions, setupTeamSelectionModal, closeSidebar, showConfirmationModal, hideConfirmationModal } from './ui/pages.js';
 import { setupConfigUI, loadConfig } from './ui/config-ui.js'; // Importa loadConfig
@@ -21,6 +21,28 @@ import { signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1
 
 let authListenerInitialized = false;
 let loadingTimeout = null;
+
+// Use exatamente os UIDs das regras do Firebase
+const ADMIN_UIDS = [
+    "fVTPCFEN5KSKt4me7FgPyNtXHMx1",
+    "Q7cjHJcQoMV9J8IEaxnFFbWNXw22"
+    // Adicione mais UIDs de admin aqui, se necessário
+];
+
+// Função utilitária para checar se o usuário atual é admin
+function isCurrentUserAdmin() {
+    const user = getCurrentUser();
+    if (!user || !user.uid) return false;
+    return ADMIN_UIDS.includes(user.uid);
+}
+
+// Função utilitária para checar se o usuário atual está autenticado com Google
+function isCurrentUserGoogle() {
+    const user = getCurrentUser();
+    if (!user || !user.uid) return false;
+    // Firebase define isAnonymous = true para usuários anônimos
+    return !user.isAnonymous;
+}
 
 /**
  * Atualiza o indicador de status de conexão na UI.
@@ -50,7 +72,11 @@ export function updateConnectionIndicator(status) {
 
     switch (status) {
         case 'online':
-            statusDot.classList.add('online');
+            if (isCurrentUserGoogle()) {
+                statusDot.classList.add('online'); // Verde para autenticado Google
+            } else {
+                statusDot.classList.add('not-admin-online'); // Cinza para anônimo ou visitante
+            }
             statusText.textContent = 'Online';
             break;
         case 'offline':
@@ -109,11 +135,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {}
     }
 
-    // CARREGA JOGADORES DO LOCALSTORAGE ANTES DE CONFIGURAR O LISTENER DE AUTENTICAÇÃO
-    loadPlayersFromLocalStorage();
-
     setupAuthListener(auth, db, appId);
-    authListenerInitialized = true; // Marca que o listener de autenticação foi inicializado
+    authListenerInitialized = true;
 
     setupSidebar();
     setupPageNavigation(startGame, getPlayers, appId);
@@ -219,6 +242,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateConnectionIndicator('offline');
     });
 
+    // Dropdown user menu logic
+    const userDropdown = document.getElementById('userDropdown');
+    const userDropdownToggle = document.getElementById('userDropdownToggle');
+    const userDropdownMenu = document.getElementById('userDropdownMenu');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    if (userDropdown && userDropdownToggle && userDropdownMenu && logoutBtn) {
+        userDropdownToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            userDropdown.classList.toggle('show');
+        });
+
+        // Prevent menu from closing when clicking inside
+        userDropdownMenu.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', () => {
+            userDropdown.classList.remove('show');
+        });
+
+        // Logout button
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            userDropdown.classList.remove('show');
+            logout();
+        });
+    }
+
     // Define o estado inicial do indicador de conexão com base na configuração
     updateConnectionIndicator(navigator.onLine ? 'online' : 'offline');
 
@@ -229,6 +282,5 @@ document.addEventListener('DOMContentLoaded', async () => {
         Elements.sidebarOverlay().addEventListener('click', () => {
             closeSidebar();
             // Log essencial removido
-        });
-    }
+        });    }
 });

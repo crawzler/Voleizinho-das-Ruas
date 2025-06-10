@@ -37,16 +37,10 @@
                 <img id="user-profile-picture" class="user-profile-picture" src="https://placehold.co/40x40/222/FFF?text=?" alt="User Profile">
                 <span id="user-display-name" class="user-display-name">Carregando...</span>
                 <span class="material-icons profile-menu-arrow">arrow_drop_down</span>
-            </div>
-            <!-- NOVO: Mini-menu do perfil -->
-            <div id="profile-menu" class="profile-menu">
-                <!-- REMOVIDO: Botão de Configurações do mini-menu do perfil -->
-                <!-- <button id="profile-settings-button" class="profile-menu-item">
-                    <span class="material-icons">settings</span> Configurações
-                </button> -->
-                <button id="profile-logout-button" class="profile-menu-item">
-                    <span class="material-icons">logout</span> Sair
-                </button>
+                <!-- Menu dropdown -->
+                <div id="profile-menu" class="profile-menu">
+                    <!-- O conteúdo será inserido dinamicamente pelo JavaScript -->
+                </div>
             </div>
             <!-- REMOVIDO: Botão de fechar o sidebar (o X) -->
             <!-- <button id="close-sidebar-button" class="header-button">
@@ -196,7 +190,6 @@
                         <span class="material-icons">expand_more</span>
                     </button>
                     <div class="accordion-content">
-
                         <div class="accordion-content-sub">
                             <div class="form-group">
                                 <label for="players-per-team" class="form-label">Jogadores por Time:</label>
@@ -238,6 +231,18 @@
                                     <input type="checkbox" id="show-connection-status-toggle" checked>
                                     <span class="slider round"></span>
                                 </label>
+                            </div>
+                            
+                            <!-- NOVO: Seção para resetar dados do usuário -->
+                            <div id="reset-user-section" class="form-group form-group--full-width">
+                                <h4>Dados do Usuário</h4>
+                                <button id="reset-user-button" class="danger-button form-button--full-width">
+                                    <span class="material-icons">delete_forever</span>
+                                    Resetar Dados do Usuário
+                                </button>
+                                <p class="setting-description">
+                                    Atenção: Isso irá excluir todos os seus dados pessoais e desconectá-lo. Esta ação não pode ser desfeita.
+                                </p>
                             </div>
                         </div>
 
@@ -301,11 +306,16 @@
                 <!-- NOVO: Acordeão para Reiniciar Aplicativo -->
                 <div class="accordion-item">
                     <button class="accordion-header">
-                        <h3>Reiniciar Aplicativo</h3>
+                        <h3>Aplicativo</h3>
                         <span class="material-icons">expand_more</span>
                     </button>
                     <div class="accordion-content">
                         <div class="accordion-content-sub-full-width"> <!-- Classe para botões em linha única -->
+                            <!-- NOVO: Campo para chave admin -->
+                            <div class="form-group">
+                                <label for="admin-key-input" class="form-label">Chave Admin:</label>
+                                <input type="password" id="admin-key-input" class="form-input" placeholder="Digite a chave admin">
+                            </div>
                             <button id="reset-app-button" class="button button--secondary form-button--full-width">
                                 <span class="material-icons">cleaning_services</span> Limpar Cache e Reiniciar App
                             </button>
@@ -401,5 +411,19 @@
 
     <script type="module" src="js/main.js"></script>
     <!-- REMOVIDO: Bloco de registro duplicado do Service Worker -->
+
+    <!-- Filtro SVG para efeito gooey/liquido -->
+<svg width="0" height="0">
+  <filter id="gooey">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
+    <feColorMatrix in="blur" mode="matrix" values="
+      1 0 0 0 0
+      0 1 0 0 0
+      0 0 1 0 0
+      0 0 0 18 -7
+    " result="goo" />
+    <feBlend in="SourceGraphic" in2="goo" />
+  </filter>
+</svg>
 </body>
 </html>

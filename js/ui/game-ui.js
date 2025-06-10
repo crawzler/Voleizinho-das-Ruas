@@ -13,45 +13,32 @@ import { loadConfig } from './config-ui.js'; // Importa loadConfig para obter no
  */
 let lastTeam1Score = null;
 let lastTeam2Score = null;
-export function updateScoreDisplay(team1Score, team2Score) {
+export function updateScoreDisplay(team1Score, team2Score, skipAnimation = false) {
     const team1El = Elements.team1ScoreDisplay();
     const team2El = Elements.team2ScoreDisplay();
 
-    // Funções de vibração personalizadas
-    function vibrateUp() {
-        if (navigator.vibrate) navigator.vibrate([10, 30, 10]);
-    }
-    function vibrateDown() {
-        if (navigator.vibrate) navigator.vibrate([40, 30, 40, 30, 20]);
-    }
-
     if (team1El) {
         team1El.textContent = team1Score;
-        if (lastTeam1Score !== null && team1Score !== lastTeam1Score) {
-            // Remove ambas as animações antes de adicionar a correta
-            team1El.classList.remove('score-animate-team1', 'score-animate-team1-down');
-            void team1El.offsetWidth;
+        team1El.classList.remove('score-animate-up', 'score-animate-down');
+        void team1El.offsetWidth;
+        if (!skipAnimation && lastTeam1Score !== null) {
             if (team1Score > lastTeam1Score) {
-                team1El.classList.add('score-animate-team1');
-                vibrateUp();
-            } else {
-                team1El.classList.add('score-animate-team1-down');
-                vibrateDown();
+                team1El.classList.add('score-animate-up');
+            } else if (team1Score < lastTeam1Score) {
+                team1El.classList.add('score-animate-down');
             }
         }
         lastTeam1Score = team1Score;
     }
     if (team2El) {
         team2El.textContent = team2Score;
-        if (lastTeam2Score !== null && team2Score !== lastTeam2Score) {
-            team2El.classList.remove('score-animate-team2', 'score-animate-team2-down');
-            void team2El.offsetWidth;
+        team2El.classList.remove('score-animate-up', 'score-animate-down');
+        void team2El.offsetWidth;
+        if (!skipAnimation && lastTeam2Score !== null) {
             if (team2Score > lastTeam2Score) {
-                team2El.classList.add('score-animate-team2');
-                vibrateUp();
-            } else {
-                team2El.classList.add('score-animate-team2-down');
-                vibrateDown();
+                team2El.classList.add('score-animate-up');
+            } else if (team2Score < lastTeam2Score) {
+                team2El.classList.add('score-animate-down');
             }
         }
         lastTeam2Score = team2Score;
@@ -296,17 +283,17 @@ export function animateSwapTeams() {
     const team1Panel = Elements.team1Panel && Elements.team1Panel();
     const team2Panel = Elements.team2Panel && Elements.team2Panel();
     if (team1Panel && team2Panel) {
-        team1Panel.classList.remove('swap-animate-left');
-        team2Panel.classList.remove('swap-animate-right');
-        // Força reflow para reiniciar animação
+        team1Panel.classList.remove('spin-swap-left', 'cross-advanced-left', 'cross-slide-left', 'cross-fade', 'gooey-cross-left');
+        team2Panel.classList.remove('spin-swap-right', 'cross-advanced-right', 'cross-slide-right', 'cross-fade', 'gooey-cross-right');
         void team1Panel.offsetWidth;
         void team2Panel.offsetWidth;
-        team1Panel.classList.add('swap-animate-left');
-        team2Panel.classList.add('swap-animate-right');
-        // Remove as classes após a animação para permitir futuras animações
         setTimeout(() => {
-            team1Panel.classList.remove('swap-animate-left');
-            team2Panel.classList.remove('swap-animate-right');
-        }, 700); // 700ms igual ao tempo da animação no CSS
+            team1Panel.classList.add('spin-swap-left');
+            team2Panel.classList.add('spin-swap-right');
+        }, 10);
+        setTimeout(() => {
+            team1Panel.classList.remove('spin-swap-left');
+            team2Panel.classList.remove('spin-swap-right');
+        }, 400);
     }
 }

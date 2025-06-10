@@ -258,22 +258,21 @@ export function swapTeams() {
     currentTeam1Index = currentTeam2Index;
     currentTeam2Index = tempIndex;
 
+    // Chama a animação de troca de times na UI
+    import('../ui/game-ui.js').then(mod => {
+        if (typeof mod.animateSwapTeams === 'function') {
+            mod.animateSwapTeams();
+        }
+    });
 
     // Atualiza a exibição na UI
-    updateScoreDisplay(team1Score, team2Score);
+    updateScoreDisplay(team1Score, team2Score, true); // skipAnimation = true
     updateTeamDisplayNamesAndColors(activeTeam1Name, activeTeam2Name, activeTeam1Color, activeTeam2Color);
     updateSetsDisplay(team1Sets, team2Sets);
     const config = loadConfig();
     // Condição para exibir jogadores: config.displayPlayers E (time1 ou time2 tem jogadores)
     const shouldDisplayPlayers = (config.displayPlayers ?? true) && (currentTeam1.length > 0 || currentTeam2.length > 0);
     renderScoringPagePlayers(currentTeam1, currentTeam2, shouldDisplayPlayers);
-}
-
-/**
- * Esta função não deve ser chamada diretamente. A geração de times é gerenciada em teams.js.
- * @param {string} appId - O ID do aplicativo.
- */
-export function generateTeams(appId) {
 }
 
 /**

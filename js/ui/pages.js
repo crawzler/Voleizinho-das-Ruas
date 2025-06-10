@@ -4,14 +4,14 @@
 import * as Elements from './elements.js';
 import { getIsGameInProgress, resetGameForNewMatch, getCurrentTeam1, getCurrentTeam2, getActiveTeam1Name, getActiveTeam2Name, getActiveTeam1Color, getActiveTeam2Color, incrementScore, decrementScore, getAllGeneratedTeams, setCurrentTeam1, setCurrentTeam2, setActiveTeam1Name, setActiveTeam2Name, setActiveTeam1Color, setActiveTeam2Color, getTeam1Score, getTeam2Score } from '../game/logic.js';
 import { updateScoreDisplay, updateTimerDisplay, updateSetTimerDisplay, renderScoringPagePlayers, updateTeamDisplayNamesAndColors, updateNavScoringButton, renderTeams, renderTeamsInModal } from './game-ui.js';
-import { loadConfig, saveConfig } from './config-ui.js';
+import { loadConfig, saveConfig, setupConfigUI } from './config-ui.js';
 import { renderPlayersList, updatePlayerCount, updateSelectAllToggle } from './players-ui.js';
-import { getCurrentUser, logout, loginWithGoogle } from '../firebase/auth.js';
-import { addPlayer, removePlayer } from '../data/players.js';
+import { getCurrentUser, logout } from '../firebase/auth.js';
 import { displayMessage } from './messages.js';
 // Importa as funções de scheduling-ui.js que serão usadas nos callbacks do modal
 import { cancelGame, deleteGame, setupSchedulingPage } from './scheduling-ui.js';
 import * as SchedulingUI from './scheduling-ui.js'; // Adicione esta linha para importar tudo
+import { addPlayer } from '../data/players.js'; // <-- ADICIONE ESTA LINHA
 
 let touchStartY = 0;
 const DRAG_THRESHOLD = 30; // Limite de movimento para diferenciar clique de arrastar
@@ -95,11 +95,10 @@ export async function showPage(pageIdToShow) {
         const currentUser = getCurrentUser();
         updatePlayerModificationAbility(!!currentUser);
         updatePlayerCount();
-        updateSelectAllToggle();
-    } else if (pageIdToShow === 'teams-page') {
+        updateSelectAllToggle();    } else if (pageIdToShow === 'teams-page') {
         renderTeams(getAllGeneratedTeams());
     } else if (pageIdToShow === 'config-page') {
-        loadConfig();
+        setupConfigUI(); // Isso já chama loadConfig() internamente
     }
     // REMOVIDO: Importação assíncrona e chamada de setupSchedulingPage aqui.
     // Ela será chamada uma única vez no main.js.
@@ -189,6 +188,16 @@ export function updateProfileMenuLoginState() {
 
 
 /**
+ * Atualiza o nome do usuário exibido no sidebar.
+ * @param {string} playerName - nome do jogador salvo no Firestore
+ */
+export function updateSidebarUserName(playerName) {
+    if (Elements.userDisplayName()) {
+        Elements.userDisplayName().textContent = playerName || "Visitante";
+    }
+}
+
+/**
  * Configura os event listeners para os botões da barra lateral e mini-menu.
  * @param {Function} startGameHandler - Função para iniciar o jogo.
  * @param {Function} getPlayersHandler - Função para obter os jogadores.
@@ -229,6 +238,14 @@ export function setupSidebar(startGameHandler, getPlayersHandler) {
                 userProfileHeader.classList.toggle('active');
             }
         });
+    }
+
+    // REMOVIDO: Lógica para adicionar botão de alterar nome de exibição
+    if (Elements.profileMenu()) {
+        const logoutBtn = Elements.profileLogoutButton();
+        if (logoutBtn) {
+            logoutBtn.parentNode.removeChild(logoutBtn);
+        }
     }
 
     // Listener para o botão "Sair" (agora dinâmico "Logar"/"Sair") dentro do mini-menu
@@ -277,10 +294,11 @@ export function setupPageNavigation(startGameHandler, getPlayersHandler, appId) 
         addPlayerButton.addEventListener('click', async () => {
             const playerNameInput = Elements.newPlayerNameInput();
             const playerName = playerNameInput ? playerNameInput.value.trim() : '';
-            
+            const { getFirestoreDb } = await import('../firebase/config.js');
+            const db = getFirestoreDb();
             if (playerName) {
                 const currentUser = getCurrentUser();
-                await addPlayer(playerName, currentUser ? currentUser.uid : null, appId); 
+                await addPlayer(db, appId, playerName, currentUser ? currentUser.uid : null);
                 if (playerNameInput) {
                     playerNameInput.value = '';
                 }
@@ -303,25 +321,30 @@ export function setupPageNavigation(startGameHandler, getPlayersHandler, appId) 
     }
 
     if (Elements.playersListContainer()) {
+        // Substitua o listener abaixo para só remover após confirmação
         Elements.playersListContainer().addEventListener('click', async (event) => {
             if (event.target.closest('.remove-button')) {
                 const button = event.target.closest('.remove-button');
                 const playerIdToRemove = button.dataset.playerId;
-                if (playerIdToRemove) {
-                    const currentUser = getCurrentUser();
-                    await removePlayer(playerIdToRemove, currentUser ? currentUser.uid : null, appId); 
+                if (playerIdToRemove) { // <-- Corrigido: estava faltando parênteses
+                    // Mostra confirmação ANTES de remover
+                    showConfirmationModal(
+                        'Tem certeza que deseja excluir este jogador?',
+                        async () => {
+                            const currentUser = getCurrentUser();
+                            await removePlayer(playerIdToRemove, currentUser ? currentUser.uid : null, appId);
+                        }
+                    );
                 }
             }
         });
 
-        if (Elements.playersListContainer()) {
-            Elements.playersListContainer().addEventListener('change', (event) => {
-                if (event.target.classList.contains('player-checkbox')) {
-                    updatePlayerCount();
-                    updateSelectAllToggle();
-                }
-            });
-        }
+        Elements.playersListContainer().addEventListener('change', (event) => {
+            if (event.target.classList.contains('player-checkbox')) {
+                updatePlayerCount();
+                updateSelectAllToggle();
+            }
+        });
     }
 
     loadConfig();

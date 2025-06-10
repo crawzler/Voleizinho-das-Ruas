@@ -11,6 +11,9 @@ const SCHEDULES_STORAGE_KEY = 'voleiScoreSchedules';
 // Array para armazenar os jogos agendados
 let scheduledGames = []; // Esta variável deve manter o estado em memória
 let unsubscribeSchedules = null;
+let listenerInitialized = false;
+// NOVO: Flag para garantir que o event listener do botão só é adicionado uma vez
+let scheduleButtonListenerAdded = false;
 
 /**
  * Carrega os agendamentos do localStorage.
@@ -45,6 +48,8 @@ function saveSchedulesToLocalStorage() {
  * Sincroniza os agendamentos com o Firestore e o localStorage.
  */
 function syncWithFirestoreAndLocalStorage() {
+    if (listenerInitialized) return;
+    listenerInitialized = true;
     if (unsubscribeSchedules) unsubscribeSchedules();
     // Sempre escuta o Firestore público (todos autenticados podem ler)
     unsubscribeSchedules = SchedulesData.subscribeSchedules((arr) => {
@@ -53,6 +58,15 @@ function syncWithFirestoreAndLocalStorage() {
         saveSchedulesToLocalStorage();
         renderScheduledGames();
     });
+}
+
+// NOVO: Função para remover o listener (chame ao deslogar)
+export function cleanupSchedulingListener() {
+    if (unsubscribeSchedules) {
+        unsubscribeSchedules();
+        unsubscribeSchedules = null;
+    }
+    listenerInitialized = false;
 }
 
 /**
@@ -206,17 +220,17 @@ function createGameCard(game) {
  * Configura os event listeners e a lógica para a página de agendamento.
  */
 export function setupSchedulingPage() {
-    // Não precisa carregar do localStorage se vai sincronizar do Firestore
     syncWithFirestoreAndLocalStorage();
 
     const scheduleButton = Elements.scheduleGameButton();
     const pageContainer = Elements.schedulingPage();
 
-    if (scheduleButton) {
+    // Garante que o event listener do botão só é adicionado uma vez
+    if (scheduleButton && !scheduleButtonListenerAdded) {
+        scheduleButtonListenerAdded = true;
         scheduleButton.addEventListener('click', async () => {
             const dateInputEl = Elements.dateInput();
             const date = dateInputEl ? dateInputEl.value.trim() : '';
-            
             const startTime = Elements.startTimeInput().value;
             const endTime = Elements.endTimeInput().value;
             const location = Elements.locationInput().value.trim();
@@ -246,8 +260,6 @@ export function setupSchedulingPage() {
                 createdAt: new Date().toISOString()
             };
 
-            scheduledGames.push(newSchedule);
-            saveSchedulesToLocalStorage();
             try {
                 await SchedulesData.saveSchedule(newSchedule);
                 displayMessage('Jogo agendado com sucesso!', 'success');
