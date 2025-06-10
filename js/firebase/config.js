@@ -61,6 +61,7 @@ export async function initFirebaseApp() {
     window.firebaseAuth = auth;
     window.firebaseFirestore = db;
     window.firebaseUpdateProfile = updateProfile; // Expondo a função updateProfile para acesso direto
+    window.initFirebaseApp = initFirebaseApp; // Expondo a função de inicialização para o console
     // ----------------------------------------
 
     return { app, db, auth }; // Retorna as instâncias
