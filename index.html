@@ -97,8 +97,8 @@
         <!-- Página de Pontuação -->
         <section id="scoring-page" class="app-page scoring-page-layout">
             <!-- NOVO: Contêineres para as estrelas de sets vencidos -->
-            <div id="team1-stars" class="stars-container">a</div>
-            <div id="team2-stars" class="stars-container">b</div>
+            <div id="team1-stars" class="stars-container"></div>
+            <div id="team2-stars" class="stars-container"></div>
             
             <div class="score-display-container">
 
@@ -149,14 +149,22 @@
         <!-- Página de Times -->
         <section id="teams-page" class="app-page teams-page-layout">
             <h2 class="page-heading">Gerenciar Times</h2>
-                <div class="teams-action">
-                    <div class="teams-config">
-                        <label for="players-per-team-input" class="form-label">Jogadores por time:</label>
-                        <input type="number" id="players-per-team-input" class="form-input" min="1" max="10" value="4">
-                        <div id="selected-players-count" class="selected-players-info">Jogadores selecionados: 0</div>
+            
+            <div class="teams-control-panel">
+                <div class="teams-config-row">
+
+                    <div class="config-item">
+                        <label for="players-per-team-input" class="config-label">Jogadores por time:
+                        <span id="selected-players-count" class="stat-value">0/0</span></label>
+                        <div class="gerar-times-div">
+                            <input type="number" id="players-per-team-input" class="config-input" min="1" max="10" value="4">
+                            <button id="generate-teams-button" class="button button--primary generate-teams-btn">Gerar Times</button>
+                        </div>
                     </div>
-                    <button id="generate-teams-button" class="button button--primary form-button--full-width generate-teams-button">Gerar Times Aleatórios</button>
+
                 </div>
+            </div>
+            
             <div class="teams-page-layout-sub">
                 <div id="teams-grid-layout" class="teams-grid">
                     <!-- Times gerados serão renderizados aqui -->
@@ -169,24 +177,15 @@
             <h2 class="page-heading">Gerenciar Jogadores</h2>
             <div class="players-page-layout-sub">
                 <div class="player-category-tabs">
-                    <button id="tab-principais" class="category-tab active" data-category="principais">Principais</button>
+                    <button id="tab-todos" class="category-tab active" data-category="todos">Todos</button>
+                    <button id="tab-principais" class="category-tab" data-category="principais">Principais</button>
                     <button id="tab-esporadicos" class="category-tab" data-category="esporadicos">Esporádicos</button>
                     <button id="tab-random" class="category-tab" data-category="random">Random</button>
                 </div>
                 <div id="players-page-layout-add" class="players-page-layout-add">
-                    <select id="player-category-select" class="form-input">
-                        <option value="principais">Principal</option>
-                        <option value="esporadicos">Esporádico</option>
-                        <option value="random">Random</option>
-                    </select>
-                    <input type="text" id="new-player-name-input" placeholder="Nome do Jogador" class="form-input">
+                    <input type="text" id="player-input" placeholder="Digite o nome do jogador..." class="form-input">
                     <button id="add-player-button" class="button button--primary">Adicionar</button>
-                </div>
-                <div class="player-search-container">
-                    <input type="text" id="player-search-input" placeholder="Buscar jogador..." class="form-input">
-                    <button id="clear-search-button" class="button button--primary">
-                        Limpar
-                    </button>
+                    <button id="clear-search-button" class="button button--primary">Limpar</button>
                 </div>
                 <div class="player-list-controls">
                     <label class="switch">
@@ -430,6 +429,18 @@
 
     <!-- Container para mensagens de notificação -->
     <div id="message-container" class="message-container"></div>
+
+    <!-- Modal de seleção de categoria -->
+    <div id="category-selection-modal" class="confirmation-modal-overlay">
+        <div class="confirmation-modal-content">
+            <p id="category-selection-message" class="confirmation-message">Em qual categoria deseja adicionar o jogador?</p>
+            <div class="category-selection-buttons">
+                <button id="category-principais-btn" class="button confirmation-button--confirm">Principais</button>
+                <button id="category-esporadicos-btn" class="button confirmation-button--confirm">Esporádicos</button>
+                <button id="category-random-btn" class="button confirmation-button--confirm">Random</button>
+            </div>
+        </div>
+    </div>
 
     <script type="module" src="js/main.js"></script>
     

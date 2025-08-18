@@ -6,7 +6,7 @@ import * as Elements from './elements.js';
 import { displayMessage } from './messages.js';
 
 let updatePlayerCountCallback = () => {}
-let currentCategory = 'principais'; // Categoria ativa atual
+let currentCategory = 'todos'; // Categoria ativa atual
 
 /**
  * Renderiza a lista de jogadores na UI.
@@ -16,24 +16,17 @@ export function renderPlayersList(players) {
     const playersListContainer = Elements.playersListContainer();
     if (!playersListContainer) return;
 
-    // Carrega o estado de seleção dos jogadores do localStorage ou usa os selecionados atualmente
+    // Carrega o estado de seleção dos jogadores por categoria
     let selectedPlayerIds = [];
     try {
-        const savedSelection = localStorage.getItem('selectedPlayers');
+        const key = `selectedPlayers_${currentCategory}`;
+        const savedSelection = localStorage.getItem(key);
         if (savedSelection) {
             selectedPlayerIds = JSON.parse(savedSelection);
-        } else {
-            // Se não houver seleção salva, usa os selecionados atualmente
-            document.querySelectorAll('#players-list-container .player-checkbox:checked').forEach(checkbox => {
-                selectedPlayerIds.push(checkbox.dataset.playerId);
-            });
         }
     } catch (e) {
         console.warn('Erro ao carregar estado de seleção dos jogadores:', e);
-        // Em caso de erro, usa os selecionados atualmente
-        document.querySelectorAll('#players-list-container .player-checkbox:checked').forEach(checkbox => {
-            selectedPlayerIds.push(checkbox.dataset.playerId);
-        });
+        selectedPlayerIds = [];
     }
 
     // Verifica autenticação e chave admin
@@ -97,10 +90,12 @@ export function renderPlayersList(players) {
     }
 
     // Filtra jogadores por categoria atual e ordena por nome
-    const filteredPlayers = players.filter(player => {
-        const playerCategory = player.category || 'principais'; // Categoria padrão para jogadores antigos
-        return playerCategory === currentCategory;
-    });
+    const filteredPlayers = currentCategory === 'todos' 
+        ? players // Mostra todos se categoria for 'todos'
+        : players.filter(player => {
+            const playerCategory = player.category || 'principais'; // Categoria padrão para jogadores antigos
+            return playerCategory === currentCategory;
+          });
     
     filteredPlayers.sort((a, b) => a.name.localeCompare(b.name));
     
@@ -124,10 +119,8 @@ export function renderPlayersList(players) {
             }
         }
         
-        // Verifica se este jogador estava selecionado anteriormente ou é novo
-        // Jogadores novos são identificados pela data de criação recente (últimos 5 segundos)
-        const isNew = player.createdAt && (new Date() - new Date(player.createdAt) < 5000);
-        const isChecked = selectedPlayerIds.includes(player.id) || isNew ? 'checked' : '';
+        // Verifica se este jogador estava selecionado anteriormente
+        const isChecked = selectedPlayerIds.includes(player.id) ? 'checked' : '';
         
         playerElement.innerHTML = `
             <div class="player-info">
@@ -155,17 +148,23 @@ export function renderPlayersList(players) {
     // Adiciona event listener para o botão "Selecionar Todos"
     const selectAllToggle = Elements.selectAllPlayersToggle();
     if (selectAllToggle) {
-        selectAllToggle.addEventListener('change', () => {
-            // Marca ou desmarca todos os checkboxes
-            const checkboxes = document.querySelectorAll('#players-list-container .player-checkbox');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = selectAllToggle.checked;
+        // Remove listener antigo para evitar duplicação
+        selectAllToggle.replaceWith(selectAllToggle.cloneNode(true));
+        const newSelectAllToggle = Elements.selectAllPlayersToggle();
+        
+        if (newSelectAllToggle) {
+            newSelectAllToggle.addEventListener('change', () => {
+                // Marca ou desmarca todos os checkboxes APENAS da categoria atual
+                const checkboxes = document.querySelectorAll('#players-list-container .player-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = newSelectAllToggle.checked;
+                });
+                
+                // Salva o estado
+                savePlayerSelectionState();
+                updatePlayerCount();
             });
-            
-            // Salva o estado
-            savePlayerSelectionState();
-            updatePlayerCount();
-        });
+        }
     }
 
     updatePlayerCount();
@@ -176,6 +175,7 @@ export function renderPlayersList(players) {
     setupCategoryTabs();
     setupDropZones();
     updateCategoryCounters();
+
 }
 
 /**
@@ -227,25 +227,29 @@ function updateCategoryCounters() {
         }
     });
     
+    const totalCount = players.length;
+    
     // Atualiza o texto das abas com os contadores
+    const tabTodos = document.getElementById('tab-todos');
     const tabPrincipais = document.getElementById('tab-principais');
     const tabEsporadicos = document.getElementById('tab-esporadicos');
     const tabRandom = document.getElementById('tab-random');
     
-    if (tabPrincipais) tabPrincipais.textContent = `Principais (${counts.principais})`;
-    if (tabEsporadicos) tabEsporadicos.textContent = `Esporádicos (${counts.esporadicos})`;
-    if (tabRandom) tabRandom.textContent = `Random (${counts.random})`;
+    if (tabTodos) tabTodos.innerHTML = `<span>Todos</span><span>${totalCount}</span>`;
+    if (tabPrincipais) tabPrincipais.innerHTML = `<span>Principais</span><span>${counts.principais}</span>`;
+    if (tabEsporadicos) tabEsporadicos.innerHTML = `<span>Esporádicos</span><span>${counts.esporadicos}</span>`;
+    if (tabRandom) tabRandom.innerHTML = `<span>Random</span><span>${counts.random}</span>`;
 }
 
 /**
  * Configura a funcionalidade de busca de jogadores
  */
 function setupPlayerSearch() {
-    const searchInput = document.getElementById('player-search-input');
+    const playerInput = document.getElementById('player-input');
     const clearButton = document.getElementById('clear-search-button');
     
-    if (searchInput) {
-        searchInput.addEventListener('input', filterPlayers);
+    if (playerInput) {
+        playerInput.addEventListener('input', filterPlayers);
     }
     
     if (clearButton) {
@@ -257,9 +261,9 @@ function setupPlayerSearch() {
  * Limpa a busca e mostra todos os jogadores
  */
 function clearSearch() {
-    const searchInput = document.getElementById('player-search-input');
-    if (searchInput) {
-        searchInput.value = '';
+    const playerInput = document.getElementById('player-input');
+    if (playerInput) {
+        playerInput.value = '';
         filterPlayers();
     }
 }
@@ -268,8 +272,8 @@ function clearSearch() {
  * Filtra jogadores baseado no texto de busca
  */
 function filterPlayers() {
-    const searchInput = document.getElementById('player-search-input');
-    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+    const playerInput = document.getElementById('player-input');
+    const searchTerm = playerInput ? playerInput.value.toLowerCase() : '';
     
     if (!searchTerm) {
         // Se não há termo de busca, mostra apenas jogadores da categoria atual
@@ -297,15 +301,17 @@ function filterPlayers() {
         return;
     }
     
-    // Carrega estado de seleção
+    // Carrega estado de seleção da categoria atual
     let selectedPlayerIds = [];
     try {
-        const savedSelection = localStorage.getItem('selectedPlayers');
+        const key = `selectedPlayers_${currentCategory}`;
+        const savedSelection = localStorage.getItem(key);
         if (savedSelection) {
             selectedPlayerIds = JSON.parse(savedSelection);
         }
     } catch (e) {
         console.warn('Erro ao carregar estado de seleção:', e);
+        selectedPlayerIds = [];
     }
     
     // Verifica permissões de exclusão
@@ -361,6 +367,7 @@ function filterPlayers() {
     });
     
     updatePlayerCount();
+    updateSelectAllToggle();
 }
 
 /**
@@ -377,23 +384,71 @@ export function updatePlayerCount() {
     // Atualizar também o contador na tela de times
     const selectedPlayersCountElement = document.getElementById('selected-players-count');
     if (selectedPlayersCountElement) {
-        selectedPlayersCountElement.textContent = `Jogadores selecionados: ${selectedCount}`;
+        selectedPlayersCountElement.textContent = `${selectedCount}/${totalCount}`;
     }
 }
 
 /**
- * Salva o estado de seleção dos jogadores no localStorage
+ * Salva o estado de seleção dos jogadores no localStorage por categoria
  */
 export function savePlayerSelectionState() {
     try {
-        const selectedPlayerIds = [];
-        document.querySelectorAll('#players-list-container .player-checkbox:checked').forEach(checkbox => {
-            selectedPlayerIds.push(checkbox.dataset.playerId);
-        });
+        if (currentCategory === 'todos') {
+            // Na aba "Todos", atualiza as categorias específicas dos jogadores
+            const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
+            const categorySelections = {
+                principais: [],
+                esporadicos: [],
+                random: []
+            };
+            
+            document.querySelectorAll('#players-list-container .player-checkbox:checked').forEach(checkbox => {
+                const playerId = checkbox.dataset.playerId;
+                const player = players.find(p => p.id === playerId);
+                if (player) {
+                    const playerCategory = player.category || 'principais';
+                    categorySelections[playerCategory].push(playerId);
+                }
+            });
+            
+            // Salva as seleções nas categorias específicas
+            Object.keys(categorySelections).forEach(category => {
+                localStorage.setItem(`selectedPlayers_${category}`, JSON.stringify(categorySelections[category]));
+            });
+        } else {
+            // Para categorias específicas, salva normalmente
+            const selectedPlayerIds = [];
+            document.querySelectorAll('#players-list-container .player-checkbox:checked').forEach(checkbox => {
+                selectedPlayerIds.push(checkbox.dataset.playerId);
+            });
+            
+            const key = `selectedPlayers_${currentCategory}`;
+            localStorage.setItem(key, JSON.stringify(selectedPlayerIds));
+        }
         
-        localStorage.setItem('selectedPlayers', JSON.stringify(selectedPlayerIds));
+        // Atualiza seleções globais para a aba "Todos"
+        updateGlobalSelections();
     } catch (e) {
         console.warn('Erro ao salvar estado de seleção dos jogadores:', e);
+    }
+}
+
+/**
+ * Atualiza as seleções globais combinando todas as categorias
+ */
+function updateGlobalSelections() {
+    try {
+        const allSelected = [];
+        ['principais', 'esporadicos', 'random'].forEach(category => {
+            const categorySelections = localStorage.getItem(`selectedPlayers_${category}`);
+            if (categorySelections) {
+                const ids = JSON.parse(categorySelections);
+                allSelected.push(...ids);
+            }
+        });
+        localStorage.setItem('selectedPlayers_todos', JSON.stringify(allSelected));
+    } catch (e) {
+        console.warn('Erro ao atualizar seleções globais:', e);
     }
 }
 
@@ -571,6 +626,8 @@ function getCategoryDisplayName(category) {
     return names[category] || category;
 }
 
+
+
 /**
  * Atualiza o estado do toggle "Selecionar Todos".
  */
@@ -581,6 +638,7 @@ export function updateSelectAllToggle() {
     const checkboxes = document.querySelectorAll('#players-list-container .player-checkbox');
     const checkedBoxes = document.querySelectorAll('#players-list-container .player-checkbox:checked');
 
+    // Apenas atualiza o estado visual do toggle, sem alterar as seleções
     if (checkboxes.length === 0) {
         selectAllToggle.checked = false;
         selectAllToggle.indeterminate = false;

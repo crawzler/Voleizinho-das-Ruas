@@ -65,7 +65,7 @@ export const generateTeamsButton = () => document.getElementById('generate-teams
 export const teamsGridLayout = () => document.getElementById('teams-grid-layout');
 
 // Elementos da página de Jogadores
-export const newPlayerNameInput = () => document.getElementById('new-player-name-input');
+export const playerInput = () => document.getElementById('player-input');
 export const addPlayerButton = () => document.getElementById('add-player-button');
 export const playersListContainer = () => document.getElementById('players-list-container');
 export const playerCountSpan = () => document.getElementById('player-count');

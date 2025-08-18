@@ -210,9 +210,21 @@ export function renderTeams(teams) {
 
         const teamList = document.createElement('ul');
         teamList.className = 'team-card-list';
-        team.players.forEach(player => {
+        team.players.forEach((player, playerIndex) => {
             const playerItem = document.createElement('li');
-            playerItem.textContent = player;
+            playerItem.className = 'player-item';
+            
+            const playerName = document.createElement('span');
+            playerName.textContent = player;
+            playerItem.appendChild(playerName);
+            
+            const substituteBtn = document.createElement('button');
+            substituteBtn.className = 'substitute-btn';
+            substituteBtn.innerHTML = '↔';
+            substituteBtn.title = 'Substituir jogador';
+            substituteBtn.onclick = (e) => showSubstituteOptions(e, index, playerIndex, player);
+            playerItem.appendChild(substituteBtn);
+            
             teamList.appendChild(playerItem); 
         });
         teamCard.appendChild(teamList);
@@ -296,4 +308,222 @@ export function animateSwapTeams() {
             team2Panel.classList.remove('spin-swap-right');
         }, 400);
     }
+}
+
+/**
+ * Mostra o modal de substituição para um jogador.
+ * @param {Event} event - O evento de clique.
+ * @param {number} teamIndex - Índice do time.
+ * @param {number} playerIndex - Índice do jogador no time.
+ * @param {string} currentPlayer - Nome do jogador atual.
+ */
+window.showSubstituteOptions = function(event, teamIndex, playerIndex, currentPlayer) {
+    event.stopPropagation();
+    
+    // Remove modal existente
+    const existingModal = document.querySelector('.substitute-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Cria o modal
+    const modal = document.createElement('div');
+    modal.className = 'substitute-modal';
+    
+    const modalContent = document.createElement('div');
+    modalContent.className = 'substitute-modal-content';
+    
+    // Cabeçalho do modal
+    const header = document.createElement('div');
+    header.className = 'substitute-modal-header';
+    
+    const title = document.createElement('h3');
+    title.className = 'substitute-modal-title';
+    title.textContent = `Substituir: ${currentPlayer}`;
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'substitute-modal-close';
+    closeBtn.innerHTML = '×';
+    closeBtn.onclick = () => modal.remove();
+    
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+    
+    // Campo de busca
+    const searchInput = document.createElement('input');
+    searchInput.className = 'substitute-search';
+    searchInput.type = 'text';
+    searchInput.placeholder = 'Buscar jogador...';
+    
+    // Lista de jogadores
+    const playersList = document.createElement('div');
+    playersList.className = 'substitute-players-list';
+    
+    modalContent.appendChild(header);
+    modalContent.appendChild(searchInput);
+    modalContent.appendChild(playersList);
+    modal.appendChild(modalContent);
+    
+    // Adiciona ao DOM
+    document.body.appendChild(modal);
+    
+    // Carrega e renderiza jogadores
+    loadPlayersForSubstitution(playersList, searchInput, teamIndex, playerIndex, currentPlayer);
+    
+    // Fecha modal ao clicar fora
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.remove();
+    };
+    
+    // Foca no campo de busca
+    setTimeout(() => searchInput.focus(), 100);
+};
+
+/**
+ * Carrega e renderiza jogadores para substituição.
+ */
+function loadPlayersForSubstitution(container, searchInput, teamIndex, playerIndex, currentPlayer) {
+    import('../data/players.js').then(({ getPlayers }) => {
+        import('../game/logic.js').then(({ getAllGeneratedTeams }) => {
+            const allPlayers = getPlayers();
+            const teams = getAllGeneratedTeams();
+            
+            // Mapeia jogadores em times
+            const playersInTeams = new Map();
+            teams.forEach((team, tIndex) => {
+                team.players.forEach(player => {
+                    playersInTeams.set(player, tIndex);
+                });
+            });
+            
+            function renderPlayers(filter = '') {
+                container.innerHTML = '';
+                
+                const filteredPlayers = allPlayers.filter(player => 
+                    player.name.toLowerCase().includes(filter.toLowerCase()) &&
+                    player.name !== currentPlayer
+                );
+                
+                if (filteredPlayers.length === 0) {
+                    const noPlayers = document.createElement('div');
+                    noPlayers.className = 'no-players-message';
+                    noPlayers.textContent = 'Nenhum jogador encontrado';
+                    container.appendChild(noPlayers);
+                    return;
+                }
+                
+                filteredPlayers.forEach(player => {
+                    const item = document.createElement('div');
+                    item.className = 'substitute-player-item';
+                    
+                    const name = document.createElement('span');
+                    name.className = 'substitute-player-name';
+                    name.textContent = player.name;
+                    
+                    const status = document.createElement('span');
+                    status.className = 'substitute-player-status';
+                    
+                    const isInTeam = playersInTeams.has(player.name);
+                    if (isInTeam) {
+                        status.textContent = `Time ${playersInTeams.get(player.name) + 1}`;
+                        status.classList.add('status-in-team');
+                    } else {
+                        status.textContent = 'Disponível';
+                        status.classList.add('status-available');
+                    }
+                    
+                    item.appendChild(name);
+                    item.appendChild(status);
+                    
+                    item.onclick = () => {
+                        performSubstitution(teamIndex, playerIndex, currentPlayer, player.name, isInTeam ? playersInTeams.get(player.name) : null);
+                        document.querySelector('.substitute-modal').remove();
+                    };
+                    
+                    container.appendChild(item);
+                });
+            }
+            
+            // Renderização inicial
+            renderPlayers();
+            
+            // Busca em tempo real
+            searchInput.oninput = (e) => renderPlayers(e.target.value);
+        });
+    });
+}
+
+/**
+ * Executa a substituição com as regras definidas.
+ */
+function performSubstitution(teamIndex, playerIndex, oldPlayer, newPlayer, newPlayerTeamIndex) {
+    import('../game/logic.js').then(({ getAllGeneratedTeams, setAllGeneratedTeams }) => {
+        import('../utils/helpers.js').then(({ salvarTimesGerados }) => {
+            import('./messages.js').then(({ displayMessage }) => {
+                import('../ui/pages.js').then(({ updateSelectedPlayersCount }) => {
+                    const teams = getAllGeneratedTeams();
+                    const config = loadConfig();
+                    const playersPerTeam = config.playersPerTeam || 4;
+                    
+                    if (newPlayerTeamIndex !== null) {
+                        // Jogador já está em um time - trocar de lugar
+                        const newPlayerIndex = teams[newPlayerTeamIndex].players.indexOf(newPlayer);
+                        teams[teamIndex].players[playerIndex] = newPlayer;
+                        teams[newPlayerTeamIndex].players[newPlayerIndex] = oldPlayer;
+                        displayMessage(`${oldPlayer} trocou de lugar com ${newPlayer}`, 'success');
+                    } else {
+                        // Jogador não está em nenhum time
+                        teams[teamIndex].players[playerIndex] = newPlayer;
+                        
+                        // Encontrar o ID do jogador pelo nome e marcar como selecionado
+                        import('../data/players.js').then(({ getPlayers }) => {
+                            const allPlayers = getPlayers();
+                            const playerData = allPlayers.find(p => p.name === newPlayer);
+                            if (playerData) {
+                                const checkbox = document.querySelector(`input[data-player-id="${playerData.id}"]`);
+                                if (checkbox) {
+                                    checkbox.checked = true;
+                                    // Salva o estado de seleção
+                                    import('../ui/players-ui.js').then(({ savePlayerSelectionState }) => {
+                                        savePlayerSelectionState();
+                                    });
+                                }
+                            }
+                        });
+                        
+                        // Encontrar vaga para o jogador substituído
+                        let placed = false;
+                        for (let i = teams.length - 1; i >= 0; i--) {
+                            if (teams[i].players.length < playersPerTeam) {
+                                teams[i].players.push(oldPlayer);
+                                placed = true;
+                                break;
+                            }
+                        }
+                        
+                        // Se não encontrou vaga, criar novo time
+                        if (!placed) {
+                            const newTeamIndex = teams.length;
+                            const teamNameKey = `customTeam${newTeamIndex + 1}Name`;
+                            const teamDisplayName = config[teamNameKey] || `Time ${newTeamIndex + 1}`;
+                            
+                            teams.push({
+                                name: teamDisplayName,
+                                players: [oldPlayer]
+                            });
+                            displayMessage(`${newPlayer} entrou no lugar de ${oldPlayer}. ${oldPlayer} foi para o ${teamDisplayName}`, 'success');
+                        } else {
+                            displayMessage(`${newPlayer} entrou no lugar de ${oldPlayer}`, 'success');
+                        }
+                    }
+                    
+                    // Salva e re-renderiza
+                    setAllGeneratedTeams(teams);
+                    salvarTimesGerados(teams);
+                    renderTeams(teams);
+                    updateSelectedPlayersCount();
+                });
+            });
+        });
+    });
 }

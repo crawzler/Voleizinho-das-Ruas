@@ -34,6 +34,9 @@ export function generateTeams(appId) {
     const playersPerTeamInput = document.getElementById('players-per-team-input');
     const playersPerTeam = playersPerTeamInput ? parseInt(playersPerTeamInput.value, 10) || 4 : 4;
 
+    // Carrega as configurações para obter os nomes dos times
+    const config = loadConfig();
+
     const generatedTeams = [];
     let teamIndex = 0;
     while (shuffledPlayers.length > 0) {

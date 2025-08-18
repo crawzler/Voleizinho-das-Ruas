@@ -142,12 +142,12 @@ export async function showPage(pageIdToShow) {
  * @param {boolean} canModify - True se o usuário pode modificar jogadores, false caso contrário.
  */
 export function updatePlayerModificationAbility(canModify) {
-    const newPlayerNameInput = Elements.newPlayerNameInput();
+    const playerInput = Elements.playerInput();
     const addPlayerButton = Elements.addPlayerButton();
     const removeButtons = document.querySelectorAll('#players-list-container .remove-button');
     const selectAllToggle = Elements.selectAllPlayersToggle();
 
-    if (newPlayerNameInput) newPlayerNameInput.disabled = !canModify;
+    if (playerInput) playerInput.disabled = !canModify;
     if (addPlayerButton) addPlayerButton.disabled = !canModify;
     if (selectAllToggle) selectAllToggle.disabled = !canModify;
 
@@ -380,27 +380,14 @@ export function setupPageNavigation(startGameHandler, getPlayersHandler, appId) 
     const addPlayerButton = Elements.addPlayerButton();
     if (addPlayerButton) {
         addPlayerButton.addEventListener('click', async () => {
-            const playerNameInput = Elements.newPlayerNameInput();
-            const categorySelect = document.getElementById('player-category-select');
-            const playerName = playerNameInput ? playerNameInput.value.trim() : '';
-            const category = categorySelect ? categorySelect.value : 'principais';
+            const playerInput = document.getElementById('player-input');
+            const playerName = playerInput ? playerInput.value.trim() : '';
             
             if (playerName) {
-                try {
-                    let db = null;
-                    if (navigator.onLine) {
-                        const { getFirestoreDb } = await import('../firebase/config.js');
-                        db = getFirestoreDb();
-                    }
-                    
-                    await addPlayer(db, appId, playerName, null, true, category);
-                    if (playerNameInput) {
-                        playerNameInput.value = '';
-                    }
-                    displayMessage("Jogador adicionado com sucesso!", "success");
-                } catch (error) {
-                    console.error("Erro ao adicionar jogador:", error);
-                    displayMessage("Erro ao adicionar jogador. Tente novamente.", "error");
+                // Mostra modal de seleção de categoria
+                showCategorySelectionModal(playerName, appId);
+                if (playerInput) {
+                    playerInput.value = '';
                 }
             }
         });
@@ -690,77 +677,76 @@ function handleCancelClick() {
     onCancelCallback = null;
 }
 
-// Lista de páginas principais na ordem do menu lateral
-const MAIN_PAGES = [
-    'scoring-page',
-    'teams-page',
-    'players-page',
-    'history-page',
-    'scheduling-page',
-    'stats-page',
-    'config-page'
-];
 
-// Variáveis para swipe lateral
-let swipeStartX = null;
-let swipeStartY = null;
-const SWIPE_X_THRESHOLD = 60; // Pixels mínimos para considerar swipe
-const SWIPE_Y_MAX = 40; // Máximo de desvio vertical para considerar swipe lateral
-
-function setupSwipeNavigation() {
-    const mainContent = document.querySelector('.app-main-content');
-    if (!mainContent) return;
-
-    mainContent.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) {
-            swipeStartX = e.touches[0].clientX;
-            swipeStartY = e.touches[0].clientY;
-        }
-    });
-
-    mainContent.addEventListener('touchend', (e) => {
-        if (swipeStartX === null || swipeStartY === null) return;
-        const endX = e.changedTouches[0].clientX;
-        const endY = e.changedTouches[0].clientY;
-        const deltaX = endX - swipeStartX;
-        const deltaY = endY - swipeStartY;
-
-        // Só considera swipe lateral se o movimento for predominantemente horizontal
-        if (Math.abs(deltaX) > SWIPE_X_THRESHOLD && Math.abs(deltaY) < SWIPE_Y_MAX) {
-            handleSwipeNavigation(deltaX);
-        }
-        swipeStartX = null;
-        swipeStartY = null;
-    });
-}
-
-function handleSwipeNavigation(deltaX) {
-    // Só permite swipe se estiver em uma das páginas principais
-    const idx = MAIN_PAGES.indexOf(currentPageId);
-    if (idx === -1) return;
-
-    let nextIdx = null;
-    if (deltaX < 0 && idx < MAIN_PAGES.length - 1) {
-        // Swipe para a esquerda: próxima página
-        nextIdx = idx + 1;
-    } else if (deltaX > 0 && idx > 0) {
-        // Swipe para a direita: página anterior
-        nextIdx = idx - 1;
-    }
-    if (nextIdx !== null) {
-        showPage(MAIN_PAGES[nextIdx]);
-    }
-}
 
 // Função para atualizar contador de jogadores selecionados na tela de times
 function updateSelectedPlayersCount() {
     const selectedPlayersCountElement = document.getElementById('selected-players-count');
     if (selectedPlayersCountElement) {
-        const checkboxes = document.querySelectorAll('#players-list-container .player-checkbox:checked');
-        const count = checkboxes.length;
-        selectedPlayersCountElement.textContent = `Jogadores selecionados: ${count}`;
+        const selectedCheckboxes = document.querySelectorAll('#players-list-container .player-checkbox:checked');
+        const totalCheckboxes = document.querySelectorAll('#players-list-container .player-checkbox');
+        const selectedCount = selectedCheckboxes.length;
+        const totalCount = totalCheckboxes.length;
+        selectedPlayersCountElement.textContent = `${selectedCount}/${totalCount}`;
     }
 }
 
-// No final do arquivo (ou após setupScoreInteractions), chame a função para ativar o swipe:
-setupSwipeNavigation();
+// Função para mostrar modal de seleção de categoria
+function showCategorySelectionModal(playerName, appId) {
+    const modal = document.getElementById('category-selection-modal');
+    const messageElement = document.getElementById('category-selection-message');
+    
+    if (!modal || !messageElement) return;
+    
+    messageElement.textContent = `Em qual categoria deseja adicionar "${playerName}"?`;
+    modal.classList.add('active');
+    
+    // Remove listeners antigos
+    const buttons = modal.querySelectorAll('.category-selection-buttons .button');
+    buttons.forEach(btn => {
+        btn.replaceWith(btn.cloneNode(true));
+    });
+    
+    // Adiciona novos listeners
+    document.getElementById('category-principais-btn').addEventListener('click', () => {
+        addPlayerWithCategory(playerName, 'principais', appId);
+        hideCategorySelectionModal();
+    });
+    
+    document.getElementById('category-esporadicos-btn').addEventListener('click', () => {
+        addPlayerWithCategory(playerName, 'esporadicos', appId);
+        hideCategorySelectionModal();
+    });
+    
+    document.getElementById('category-random-btn').addEventListener('click', () => {
+        addPlayerWithCategory(playerName, 'random', appId);
+        hideCategorySelectionModal();
+    });
+}
+
+// Função para esconder modal de seleção de categoria
+function hideCategorySelectionModal() {
+    const modal = document.getElementById('category-selection-modal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+// Função para adicionar jogador com categoria
+async function addPlayerWithCategory(playerName, category, appId) {
+    try {
+        let db = null;
+        if (navigator.onLine) {
+            const { getFirestoreDb } = await import('../firebase/config.js');
+            db = getFirestoreDb();
+        }
+        
+        await addPlayer(db, appId, playerName, null, true, category);
+        displayMessage(`Jogador "${playerName}" adicionado em ${getCategoryDisplayName(category)}!`, "success");
+    } catch (error) {
+        console.error("Erro ao adicionar jogador:", error);
+        displayMessage("Erro ao adicionar jogador. Tente novamente.", "error");
+    }
+}
+
+

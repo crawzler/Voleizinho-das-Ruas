@@ -310,7 +310,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Define o estado inicial do indicador de conexão
     updateConnectionIndicator(connectivityManager.getStatus());
 
-    // Bloquear pull-to-refresh completamente
+    // Bloquear pull-to-refresh apenas no topo
     document.body.addEventListener('touchstart', e => {
         if (e.touches.length !== 1) return;
         const startY = e.touches[0].clientY;
@@ -320,17 +320,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, { passive: false });
     
     document.body.addEventListener('touchmove', e => {
-        // Permite scroll na lista de jogadores
-        if (e.target.closest('.players-list-container')) {
+        // Permite scroll em elementos específicos
+        if (e.target.closest('.players-list-container') || 
+            e.target.closest('.player-category-tabs')) {
             return;
         }
         e.preventDefault();
-    }, { passive: false });
-    
-    document.addEventListener('touchmove', e => {
-        if (e.touches.length > 1) {
-            e.preventDefault();
-        }
     }, { passive: false });
 
     loadAppVersion();
