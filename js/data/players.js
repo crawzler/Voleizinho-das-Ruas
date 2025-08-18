@@ -103,13 +103,23 @@ export function setupFirestorePlayersListener(dbInstance, appIdentifier) {
                 firestorePlayers.push({ ...doc.data(), id: doc.id });
             });
 
-            // Mescla jogadores do Firestore com jogadores locais
+            // Mescla jogadores do Firestore com jogadores locais, preservando categorias locais
             const localPlayers = getLocalPlayersWithTag();
             const localOnlyPlayers = localPlayers.filter(player =>
                 player.isLocal && !firestorePlayers.some(fp => fp.id === player.id)
             );
 
-            players = [...firestorePlayers, ...localOnlyPlayers];
+            // Preserva categorias que foram alteradas localmente
+            const mergedPlayers = firestorePlayers.map(firestorePlayer => {
+                const localPlayer = localPlayers.find(lp => lp.id === firestorePlayer.id);
+                if (localPlayer && localPlayer.category && localPlayer.category !== firestorePlayer.category) {
+                    // Preserva a categoria local se foi alterada
+                    return { ...firestorePlayer, category: localPlayer.category };
+                }
+                return firestorePlayer;
+            });
+
+            players = [...mergedPlayers, ...localOnlyPlayers];
 
             // Sempre salva a lista completa no localStorage
             try {
@@ -188,14 +198,14 @@ export async function adminAddPlayer(dbInstance, appId, name) {
     });
 }
 /**
- * Adiciona um novo jogador ao Firestore.
+ * Adiciona um novo jogador ao Firestore ou localStorage.
  * @param {object} dbInstance - Instância do Firestore.
  * @param {string} appId - ID do app.
  * @param {string} name - Nome do jogador.
  * @param {string} [uid] - UID do jogador (opcional, APENAS para registro via Google).
  * @returns {Promise<void>}
  */
-export async function addPlayer(dbInstance, appId, name, uid = null, forceManual = true) {
+export async function addPlayer(dbInstance, appId, name, uid = null, forceManual = true, category = 'principais') {
     if (!name || name.trim().length < 2) {
         throw new Error("Nome inválido");
     }
@@ -205,19 +215,26 @@ export async function addPlayer(dbInstance, appId, name, uid = null, forceManual
     const random = Math.floor(Math.random() * 100000);
     const playerId = `manual_${timestamp}_${random}`;
 
-    // Se estiver offline ou sem dbInstance, adiciona tag [local]
-    const playerName = (!navigator.onLine || !dbInstance) ? `${name.trim()} [local]` : name.trim();
-
-    // Obtenha o usuário atual para registrar quem criou o jogador
+    // Verifica se o usuário atual é admin
+    let isAdmin = false;
     let createdBy = null;
     try {
         const currentUser = getCurrentUser();
         if (currentUser) {
             createdBy = currentUser.uid;
+            // Lista de UIDs de administradores (mesma do main.js)
+            const ADMIN_UIDS = [
+                "fVTPCFEN5KSKt4me7FgPyNtXHMx1",
+                "Q7cjHJcQoMV9J8IEaxnFFbWNXw22"
+            ];
+            isAdmin = ADMIN_UIDS.includes(currentUser.uid);
         }
     } catch (e) {
         console.warn('Erro ao obter usuário atual para criação de jogador:', e);
     }
+
+    // Se não for admin ou estiver offline, adiciona tag [local]
+    const playerName = (!navigator.onLine || !dbInstance || !isAdmin) ? `${name.trim()} [local]` : name.trim();
 
     const playerData = {
         uid: playerId,
@@ -225,28 +242,29 @@ export async function addPlayer(dbInstance, appId, name, uid = null, forceManual
         createdAt: new Date().toISOString(),
         isManual: true,
         id: playerId,
-        isLocal: (!navigator.onLine || !dbInstance),
-        createdBy: createdBy // Registra o UID do usuário que criou o jogador
+        isLocal: (!navigator.onLine || !dbInstance || !isAdmin),
+        createdBy: createdBy, // Registra o UID do usuário que criou o jogador
+        category: category || 'principais' // Categoria especificada ou padrão
     };
 
-    // Se estiver offline, salva apenas no localStorage
-    if (!navigator.onLine || !dbInstance) {
-    try {
-        const stored = localStorage.getItem('volleyballPlayers');
-        let localPlayers = stored ? JSON.parse(stored) : [];
+    // Se estiver offline, não for admin, ou não tiver dbInstance, salva apenas no localStorage
+    if (!navigator.onLine || !dbInstance || !isAdmin) {
+        try {
+            const stored = localStorage.getItem('volleyballPlayers');
+            let localPlayers = stored ? JSON.parse(stored) : [];
 
-        localPlayers.push(playerData);
-        localStorage.setItem('volleyballPlayers', JSON.stringify(localPlayers));
-        players = localPlayers;
-        renderPlayersList(players);
+            localPlayers.push(playerData);
+            localStorage.setItem('volleyballPlayers', JSON.stringify(localPlayers));
+            players = localPlayers;
+            renderPlayersList(players);
             return;
-    } catch (e) {
+        } catch (e) {
             console.error("Erro ao salvar jogador localmente:", e);
-        throw e;
-}
-}
+            throw e;
+        }
+    }
 
-    // Se estiver online, tenta salvar no Firestore
+    // Se for admin e estiver online, tenta salvar no Firestore
     try {
         const playerDocRef = doc(dbInstance, `artifacts/${appId}/public/data/players`, playerId);
         await setDoc(playerDocRef, playerData);
@@ -263,30 +281,89 @@ export async function addPlayer(dbInstance, appId, name, uid = null, forceManual
 }
 
 /**
- * Remove um jogador do Firestore e atualiza a lista local.
+ * Remove um jogador do Firestore ou localStorage.
  * @param {string} playerId - O ID do jogador a ser removido.
  * @param {string} [requesterUid] - UID de quem está solicitando (opcional, para controle futuro).
  * @param {string} appId - O ID do aplicativo.
  * @returns {Promise<void>}
  */
 export async function removePlayer(playerId, requesterUid, appId) {
-    if (!currentDbInstance) {
-        throw new Error('Firestore não inicializado');
-    }
     if (!appId) {
         throw new Error('App ID não informado');
     }
     if (!playerId) {
         throw new Error('ID do jogador não informado');
     }
-    try {
-        const playerDocRef = doc(currentDbInstance, `artifacts/${appId}/public/data/players`, playerId);
-        await deleteDoc(playerDocRef);
-        // Remove localmente
-        players = players.filter(p => p.id !== playerId);
-        renderPlayersList(players);
-    } catch (e) {
-        console.error('Erro ao remover jogador:', e);
-        throw e;
+    
+    // Encontra o jogador na lista atual
+    const playerToRemove = players.find(p => p.id === playerId);
+    
+    // Se o jogador não existe ou não foi encontrado
+    if (!playerToRemove) {
+        throw new Error('Jogador não encontrado');
+    }
+    
+    // Verifica se o jogador é local
+    if (playerToRemove.isLocal) {
+        // Remove apenas do localStorage
+        try {
+            const stored = localStorage.getItem('volleyballPlayers');
+            if (stored) {
+                let localPlayers = JSON.parse(stored);
+                localPlayers = localPlayers.filter(p => p.id !== playerId);
+                localStorage.setItem('volleyballPlayers', JSON.stringify(localPlayers));
+                players = localPlayers;
+                renderPlayersList(players);
+            }
+            return;
+        } catch (e) {
+            console.error('Erro ao remover jogador local:', e);
+            throw e;
+        }
+    } else {
+        // Verifica se o usuário é admin
+        let isAdmin = false;
+        try {
+            const currentUser = getCurrentUser();
+            if (currentUser) {
+                const ADMIN_UIDS = [
+                    "fVTPCFEN5KSKt4me7FgPyNtXHMx1",
+                    "Q7cjHJcQoMV9J8IEaxnFFbWNXw22"
+                ];
+                isAdmin = ADMIN_UIDS.includes(currentUser.uid);
+            }
+        } catch (e) {
+            console.warn('Erro ao verificar permissões do usuário:', e);
+        }
+        
+        // Se não for admin, remove apenas localmente
+        if (!isAdmin || !currentDbInstance || !navigator.onLine) {
+            try {
+                // Remove da lista em memória
+                players = players.filter(p => p.id !== playerId);
+                // Atualiza localStorage
+                localStorage.setItem('volleyballPlayers', JSON.stringify(players));
+                renderPlayersList(players);
+                return;
+            } catch (e) {
+                console.error('Erro ao remover jogador localmente:', e);
+                throw e;
+            }
+        }
+        
+        // Se for admin, tenta remover do Firestore
+        try {
+            const playerDocRef = doc(currentDbInstance, `artifacts/${appId}/public/data/players`, playerId);
+            await deleteDoc(playerDocRef);
+            // Remove localmente também
+            players = players.filter(p => p.id !== playerId);
+            renderPlayersList(players);
+        } catch (e) {
+            console.error('Erro ao remover jogador do Firestore:', e);
+            // Se falhar no Firestore, tenta remover apenas localmente
+            players = players.filter(p => p.id !== playerId);
+            localStorage.setItem('volleyballPlayers', JSON.stringify(players));
+            renderPlayersList(players);
+        }
     }
 }

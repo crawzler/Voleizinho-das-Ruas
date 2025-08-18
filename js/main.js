@@ -7,7 +7,7 @@ import { setupFirestorePlayersListener } from './data/players.js';
 import * as SchedulesData from './data/schedules.js';
 import { showPage, updatePlayerModificationAbility, setupSidebar, setupPageNavigation, setupAccordion, setupScoreInteractions, setupTeamSelectionModal, closeSidebar, showConfirmationModal, hideConfirmationModal } from './ui/pages.js';
 import { setupConfigUI, loadConfig } from './ui/config-ui.js'; // Importa loadConfig
-import { startGame, toggleTimer, swapTeams, endGame } from './game/logic.js';
+import { startGame, toggleTimer, swapTeams, endGame, restoreSavedGameIfAny } from './game/logic.js';
 import { generateTeams } from './game/teams.js';
 import { loadAppVersion, registerServiceWorker } from './utils/app-info.js';
 import { getPlayers } from './data/players.js';
@@ -16,6 +16,8 @@ import { displayMessage } from './ui/messages.js';
 import { updatePlayerCount, updateSelectAllToggle, savePlayerSelectionState } from './ui/players-ui.js';
 import { setupHistoryPage } from './ui/history-ui.js';
 import { setupSchedulingPage } from './ui/scheduling-ui.js';
+import connectivityManager from './utils/connectivity.js';
+import offlineStorage from './utils/offline-storage.js';
 
 import { signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
@@ -48,6 +50,9 @@ function isCurrentUserGoogle() {
  * Atualiza o indicador de status de conexão na UI.
  * @param {'online' | 'offline' | 'reconnecting'} status - O status da conexão.
  */
+// Exporta funções para uso em outros módulos
+export { loadOfflineData, setupAutoSave };
+
 export function updateConnectionIndicator(status) {
     const indicator = Elements.connectionIndicator();
     const statusDot = Elements.statusDot();
@@ -222,36 +227,54 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // NOVO: Listener para detectar quando o aplicativo volta a ficar online
-    window.addEventListener('online', async () => {
-        displayMessage("Online novamente! Sincronizando dados...", "info");
-        updateConnectionIndicator('reconnecting');
-        
-        try {
-            const { app, db, auth } = await initFirebaseApp();
-            const appId = getAppId();
+    // Inicializa sistema de armazenamento offline
+    try {
+        await offlineStorage.init();
+        console.log('Sistema de armazenamento offline inicializado');
+    } catch (error) {
+        console.warn('Erro ao inicializar armazenamento offline:', error);
+    }
+    
+    // Configura gerenciador de conectividade
+    connectivityManager.onStatusChange(async (status) => {
+        if (status === 'online') {
+            displayMessage("Online novamente! Sincronizando dados...", "info");
+            updateConnectionIndicator('reconnecting');
             
-            // Recarrega autenticação e configura listeners
-            await setupAuthListener(auth, db, appId);
-            await setupFirestorePlayersListener(db, appId);
+            try {
+                const { app, db, auth } = await initFirebaseApp();
+                const appId = getAppId();
+                
+                // Recarrega autenticação e configura listeners
+                await setupAuthListener(auth, db, appId);
+                await setupFirestorePlayersListener(db, appId);
+                updateProfileMenuLoginState();
+                
+                // Habilita botões de login
+                if (Elements.googleLoginButton()) Elements.googleLoginButton().disabled = false;
+                if (Elements.anonymousLoginButton()) Elements.anonymousLoginButton().disabled = false;
+                
+                displayMessage("Dados sincronizados com sucesso!", "success");
+                updateConnectionIndicator('online');
+            } catch (error) {
+                console.error("Erro na sincronização:", error);
+                displayMessage("Erro ao sincronizar dados", "error");
+                updateConnectionIndicator('offline');
+            }
+        } else {
+            console.log('Modo offline ativado');
+            displayMessage("Você está offline. Dados salvos localmente.", "warning");
+            
+            // Desabilita botões de login
+            if (Elements.googleLoginButton()) Elements.googleLoginButton().disabled = true;
+            if (Elements.anonymousLoginButton()) Elements.anonymousLoginButton().disabled = true;
+            
             updateProfileMenuLoginState();
-            
-            displayMessage("Dados sincronizados com sucesso!", "success");
-            updateConnectionIndicator('online');
-        } catch (error) {
-            console.error("Erro na sincronização:", error);
-            displayMessage("Erro ao sincronizar dados", "error");
             updateConnectionIndicator('offline');
+            
+            // Carrega dados do cache offline
+            await loadOfflineData();
         }
-    });
-
-    window.addEventListener('offline', () => {
-        // Log essencial removido
-        displayMessage("Você está offline.", "error");
-        if (Elements.googleLoginButton()) Elements.googleLoginButton().disabled = true;
-        if (Elements.anonymousLoginButton()) Elements.anonymousLoginButton().disabled = true;
-        updateProfileMenuLoginState();
-        updateConnectionIndicator('offline');
     });
 
     // Dropdown user menu logic
@@ -284,15 +307,170 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Define o estado inicial do indicador de conexão com base na configuração
-    updateConnectionIndicator(navigator.onLine ? 'online' : 'offline');
+    // Define o estado inicial do indicador de conexão
+    updateConnectionIndicator(connectivityManager.getStatus());
+
+    // Bloquear pull-to-refresh completamente
+    document.body.addEventListener('touchstart', e => {
+        if (e.touches.length !== 1) return;
+        const startY = e.touches[0].clientY;
+        if (startY <= 10 && window.scrollY === 0) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+    
+    document.body.addEventListener('touchmove', e => {
+        // Permite scroll na lista de jogadores
+        if (e.target.closest('.players-list-container')) {
+            return;
+        }
+        e.preventDefault();
+    }, { passive: false });
+    
+    document.addEventListener('touchmove', e => {
+        if (e.touches.length > 1) {
+            e.preventDefault();
+        }
+    }, { passive: false });
 
     loadAppVersion();
     registerServiceWorker();
+    
+    // Configura salvamento automático de dados críticos
+    setupAutoSave();
 
     if (Elements.sidebarOverlay()) {
         Elements.sidebarOverlay().addEventListener('click', () => {
             closeSidebar();
             // Log essencial removido
         });    }
+    
+    // Tentar restaurar partida salva APÓS toda a configuração estar completa
+    setTimeout(async () => {
+        try {
+            const restored = restoreSavedGameIfAny();
+            if (restored) {
+                console.log("[main.js] Partida restaurada do armazenamento local.");
+            }
+            await updateStartButtonText();
+        } catch (e) {
+            console.warn("[main.js] Falha ao restaurar partida:", e);
+        }
+    }, 100);
 });
+
+// Função para atualizar o texto do botão de iniciar
+async function updateStartButtonText() {
+    const startButton = document.getElementById('start-game-button');
+    if (startButton) {
+        const { carregarEstado } = await import('./utils/helpers.js');
+        const saved = carregarEstado();
+        if (saved && saved.isGameInProgress) {
+            startButton.textContent = 'Continuar Partida';
+        } else {
+            startButton.textContent = 'Começar Jogo';
+        }
+    }
+}
+
+// Função para carregar dados offline
+async function loadOfflineData() {
+    try {
+        // Carrega jogadores do cache offline
+        const cachedPlayers = await offlineStorage.getPlayers();
+        if (cachedPlayers && cachedPlayers.length > 0) {
+            console.log('Carregando jogadores do cache offline:', cachedPlayers.length);
+            // Aqui você pode atualizar a UI com os jogadores em cache
+        }
+        
+        // Carrega configurações do cache offline
+        const cachedConfig = await offlineStorage.getConfig();
+        if (cachedConfig && Object.keys(cachedConfig).length > 0) {
+            console.log('Carregando configurações do cache offline');
+            // Aplica configurações em cache
+        }
+        
+        // Carrega histórico do cache offline
+        const cachedHistory = await offlineStorage.getGameHistory();
+        if (cachedHistory && cachedHistory.length > 0) {
+            console.log('Carregando histórico do cache offline:', cachedHistory.length);
+        }
+        
+    } catch (error) {
+        console.warn('Erro ao carregar dados offline:', error);
+    }
+}
+
+// Função para configurar salvamento automático
+function setupAutoSave() {
+    // Salva dados críticos periodicamente
+    setInterval(async () => {
+        try {
+            // Salva estado atual dos jogadores
+            const currentPlayers = getPlayers();
+            if (currentPlayers && currentPlayers.length > 0) {
+                await offlineStorage.savePlayers(currentPlayers);
+            }
+            
+            // Salva configurações atuais
+            const currentConfig = loadConfig();
+            if (currentConfig) {
+                await offlineStorage.saveConfig(currentConfig);
+            }
+            
+        } catch (error) {
+            console.warn('Erro no salvamento automático:', error);
+        }
+    }, 30000); // Salva a cada 30 segundos
+    
+    // Salva dados antes de fechar a página
+    window.addEventListener('beforeunload', async () => {
+        try {
+            const currentPlayers = getPlayers();
+            if (currentPlayers) await offlineStorage.savePlayers(currentPlayers);
+            
+            const currentConfig = loadConfig();
+            if (currentConfig) await offlineStorage.saveConfig(currentConfig);
+            
+        } catch (error) {
+            console.warn('Erro ao salvar antes de fechar:', error);
+        }
+    });
+}
+
+// Função global para limpar cache (pode ser chamada das configurações)
+window.clearOfflineCache = async () => {
+    try {
+        await offlineStorage.clearAll();
+        
+        // Limpa cache do service worker
+        if (window.clearAppCache) {
+            await window.clearAppCache();
+        }
+        
+        displayMessage('Cache offline limpo com sucesso!', 'success');
+        
+        // Recarrega a página após limpar o cache
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
+        
+        return true;
+    } catch (error) {
+        console.error('Erro ao limpar cache offline:', error);
+        displayMessage('Erro ao limpar cache offline', 'error');
+        return false;
+    }
+};
+
+// Função para obter estatísticas de armazenamento
+window.getStorageStats = async () => {
+    try {
+        const stats = await offlineStorage.getStorageStats();
+        console.log('Estatísticas de armazenamento:', stats);
+        return stats;
+    } catch (error) {
+        console.error('Erro ao obter estatísticas:', error);
+        return null;
+    }
+};

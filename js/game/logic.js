@@ -4,7 +4,7 @@
 // Importa funções de UI e dados.
 import { updateScoreDisplay, updateTimerDisplay, updateSetTimerDisplay, renderScoringPagePlayers, updateTeamDisplayNamesAndColors, updateNavScoringButton, renderTeams, updateSetsDisplay } from '../ui/game-ui.js';
 import { getPlayers } from '../data/players.js';
-import { shuffleArray } from '../utils/helpers.js';
+import { shuffleArray, salvarEstado, carregarEstado, limparEstado, salvarTimesGerados, carregarTimesGerados } from '../utils/helpers.js';
 import { loadConfig } from '../ui/config-ui.js';
 import { showPage, setGameStartedExplicitly } from '../ui/pages.js';
 import * as Elements from '../ui/elements.js';
@@ -28,12 +28,128 @@ let allGeneratedTeams = [];
 let currentTeam1Index = 0;
 let currentTeam2Index = 1;
 let setsHistory = [];
+let autoSaveInterval = null;
 
 
 let activeTeam1Name = 'Time 1';
 let activeTeam2Name = 'Time 2';
 let activeTeam1Color = '#325fda';
 let activeTeam2Color = '#f03737';
+// --- Persistência: captura e aplica estado do jogo ---
+function getGameState() {
+    return {
+        team1Score,
+        team2Score,
+        team1Sets,
+        team2Sets,
+        timeElapsed,
+        setElapsedTime,
+        isTimerRunning,
+        isGameInProgress,
+        currentTeam1,
+        currentTeam2,
+        currentTeam1Index,
+        currentTeam2Index,
+        activeTeam1Name,
+        activeTeam2Name,
+        activeTeam1Color,
+        activeTeam2Color,
+        setsHistory,
+        allGeneratedTeams
+    };
+}
+
+export function setGameState(state, { resumeTimers = true } = {}) {
+    if (!state) return;
+    team1Score = state.team1Score ?? 0;
+    team2Score = state.team2Score ?? 0;
+    team1Sets = state.team1Sets ?? 0;
+    team2Sets = state.team2Sets ?? 0;
+    timeElapsed = state.timeElapsed ?? 0;
+    setElapsedTime = state.setElapsedTime ?? 0;
+    isTimerRunning = !!state.isTimerRunning;
+    isGameInProgress = !!state.isGameInProgress;
+    currentTeam1 = Array.isArray(state.currentTeam1) ? state.currentTeam1 : [];
+    currentTeam2 = Array.isArray(state.currentTeam2) ? state.currentTeam2 : [];
+    currentTeam1Index = Number.isInteger(state.currentTeam1Index) ? state.currentTeam1Index : 0;
+    currentTeam2Index = Number.isInteger(state.currentTeam2Index) ? state.currentTeam2Index : 1;
+    activeTeam1Name = state.activeTeam1Name || 'Time 1';
+    activeTeam2Name = state.activeTeam2Name || 'Time 2';
+    activeTeam1Color = state.activeTeam1Color || '#325fda';
+    activeTeam2Color = state.activeTeam2Color || '#f03737';
+    setsHistory = Array.isArray(state.setsHistory) ? state.setsHistory : [];
+    if (Array.isArray(state.allGeneratedTeams)) {
+        allGeneratedTeams = state.allGeneratedTeams;
+    }
+
+    // Atualiza UI
+    updateScoreDisplay(team1Score, team2Score);
+    updateSetsDisplay(team1Sets, team2Sets);
+    updateTimerDisplay(timeElapsed);
+    updateSetTimerDisplay(setElapsedTime);
+    updateTeamDisplayNamesAndColors(activeTeam1Name, activeTeam2Name, activeTeam1Color, activeTeam2Color);
+    const displayPlayers = true;
+    const shouldDisplayPlayers = displayPlayers && (currentTeam1.length > 0 || currentTeam2.length > 0);
+    renderScoringPagePlayers(currentTeam1, currentTeam2, shouldDisplayPlayers);
+    updateNavScoringButton(isGameInProgress, isGameInProgress ? 'scoring-page' : '');
+
+    // Retomar timers se estavam rodando
+    if (resumeTimers && isGameInProgress) {
+        if (isTimerRunning) {
+            startTimer();
+            startSetTimer();
+        } else {
+            // Garantir que botões/ícones exibam estado parado
+            updateTimerButtonIcon();
+        }
+        if (Elements.timerAndSetTimerWrapper()) {
+            Elements.timerAndSetTimerWrapper().style.display = 'flex';
+        }
+        
+        // Iniciar salvamento automático se o jogo estiver em progresso
+        if (autoSaveInterval) {
+            clearInterval(autoSaveInterval);
+        }
+        autoSaveInterval = setInterval(() => {
+            if (isGameInProgress) {
+                try { 
+                    salvarEstado(getGameState());
+                } catch(e) {
+                    console.error('[autoSave] Erro ao salvar estado:', e);
+                }
+            }
+        }, 10000);
+    }
+}
+
+export function restoreSavedGameIfAny() {
+    try {
+        const saved = carregarEstado();
+        if (saved && saved.isGameInProgress) {
+            console.log('[restoreSavedGameIfAny] Restaurando partida salva:', saved);
+            setGameState(saved, { resumeTimers: true });
+            setGameStartedExplicitly(true);
+            showPage('scoring-page');
+            return true;
+        }
+    } catch (e) {
+        console.error('[restoreSavedGameIfAny] Erro ao restaurar partida:', e);
+    }
+    
+    // Sempre tentar restaurar times gerados, mesmo sem partida ativa
+    try {
+        const savedTeams = carregarTimesGerados();
+        if (savedTeams && savedTeams.length > 0) {
+            console.log('[restoreSavedGameIfAny] Restaurando times gerados:', savedTeams);
+            allGeneratedTeams = savedTeams;
+        }
+    } catch (e) {
+        console.error('[restoreSavedGameIfAny] Erro ao restaurar times gerados:', e);
+    }
+    
+    return false;
+}
+
 
 /**
  * Retorna o estado atual do jogo (se está em andamento ou não).
@@ -82,6 +198,9 @@ export function incrementScore(teamId) {
     }
     updateScoreDisplay(team1Score, team2Score);
     checkSetEnd(pointsPerSet);
+    // Persistir estado
+    try { salvarEstado(getGameState()); } catch(e) {}
+
 }
 
 /**
@@ -99,6 +218,8 @@ export function decrementScore(teamId) {
         team2Score--;
     }
     updateScoreDisplay(team1Score, team2Score);
+    // Persistir estado
+    try { salvarEstado(getGameState()); } catch(e) {}
 }
 
 /**
@@ -155,6 +276,8 @@ export function toggleTimer() {
         startSetTimer();
     }
     updateTimerButtonIcon();
+    // Persistir estado
+    try { salvarEstado(getGameState()); } catch(e) {}
 }
 
 /**
@@ -201,6 +324,13 @@ function checkMatchEnd(setsToWin) {
     }
 
     if (matchWinner) {
+        // Zerar pontos e sets quando a partida termina
+        team1Score = 0;
+        team2Score = 0;
+        team1Sets = 0;
+        team2Sets = 0;
+        updateScoreDisplay(team1Score, team2Score);
+        updateSetsDisplay(team1Sets, team2Sets);
         endGame();
         return true;
     }
@@ -219,6 +349,8 @@ function resetSet() {
     clearInterval(setTimerInterval);
     setTimerInterval = null;
     startSetTimer();
+    // Persistir estado após resetar set
+    try { salvarEstado(getGameState()); } catch(e) {}
 }
 
 /**
@@ -274,6 +406,9 @@ export function swapTeams() {
     // Condição para exibir jogadores: config.displayPlayers E (time1 ou time2 tem jogadores)
     const shouldDisplayPlayers = (config.displayPlayers ?? true) && (currentTeam1.length > 0 || currentTeam2.length > 0);
     renderScoringPagePlayers(currentTeam1, currentTeam2, shouldDisplayPlayers);
+    // Persistir estado
+    try { salvarEstado(getGameState()); } catch(e) {}
+
 }
 
 /**
@@ -342,6 +477,24 @@ export function startGame(appId) {
     startSetTimer();
     updateTimerButtonIcon();
     setsHistory = [];
+    
+    // Iniciar salvamento automático a cada 10 segundos
+    if (autoSaveInterval) {
+        clearInterval(autoSaveInterval);
+    }
+    autoSaveInterval = setInterval(() => {
+        if (isGameInProgress) {
+            try { 
+                salvarEstado(getGameState());
+            } catch(e) {
+                console.error('[autoSave] Erro ao salvar estado:', e);
+            }
+        }
+    }, 10000); // Salva a cada 10 segundos
+    
+    // Persistir estado inicial
+    try { salvarEstado(getGameState()); } catch(e) {}
+
 }
 
 /**
@@ -432,7 +585,8 @@ export function getActiveTeam2Color() {
  */
 export function setAllGeneratedTeams(teams) {
     allGeneratedTeams = teams;
-    console.log('[setAllGeneratedTeams] Times gerados definidos:', allGeneratedTeams);
+    salvarTimesGerados(teams);
+    console.log('[setAllGeneratedTeams] Times gerados definidos e salvos:', allGeneratedTeams);
 }
 
 /**
@@ -509,12 +663,22 @@ export function endGame() {
 
     clearInterval(timerInterval);
     clearInterval(setTimerInterval);
+    if (autoSaveInterval) {
+        clearInterval(autoSaveInterval);
+        autoSaveInterval = null;
+    }
     timerInterval = null;
     setTimerInterval = null;
     isTimerRunning = false;
     isGameInProgress = false;
     setGameStartedExplicitly(false);
     showPage('start-page');
+    // Limpar estado persistido ao endGame
+    try { limparEstado(); } catch(e) {}
+    // Atualizar texto do botão
+    const startButton = document.getElementById('start-game-button');
+    if (startButton) startButton.textContent = 'Começar Jogo';
+
 }
 
 /**
@@ -530,6 +694,10 @@ export function resetGameForNewMatch() {
     setsHistory = [];
     clearInterval(timerInterval);
     clearInterval(setTimerInterval);
+    if (autoSaveInterval) {
+        clearInterval(autoSaveInterval);
+        autoSaveInterval = null;
+    }
     timerInterval = null;
     setTimerInterval = null;
     isTimerRunning = false;
@@ -557,4 +725,50 @@ export function resetGameForNewMatch() {
         Elements.timerAndSetTimerWrapper().style.display = 'none';
     }
     renderScoringPagePlayers([], [], false);
+    // Limpar estado persistido ao resetGameForNewMatch
+    try { limparEstado(); } catch(e) {}
+    // Não limpar times gerados no reset - eles devem persistir
+    // Atualizar texto do botão
+    const startButton = document.getElementById('start-game-button');
+    if (startButton) startButton.textContent = 'Começar Jogo';
+
 }
+
+// Salvar automaticamente no fechamento/atualização da página
+window.addEventListener('beforeunload', () => {
+    if (isGameInProgress) {
+        try { 
+            const state = getGameState();
+            salvarEstado(state);
+            console.log('[beforeunload] Estado da partida salvo:', state);
+        } catch (e) {
+            console.error('[beforeunload] Erro ao salvar estado:', e);
+        }
+    }
+});
+
+// Salvar também no evento pagehide (mais confiável em dispositivos móveis)
+window.addEventListener('pagehide', () => {
+    if (isGameInProgress) {
+        try { 
+            const state = getGameState();
+            salvarEstado(state);
+            console.log('[pagehide] Estado da partida salvo:', state);
+        } catch (e) {
+            console.error('[pagehide] Erro ao salvar estado:', e);
+        }
+    }
+});
+
+// Salvar também no evento visibilitychange (quando a aba perde foco)
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && isGameInProgress) {
+        try { 
+            const state = getGameState();
+            salvarEstado(state);
+            console.log('[visibilitychange] Estado da partida salvo:', state);
+        } catch (e) {
+            console.error('[visibilitychange] Erro ao salvar estado:', e);
+        }
+    }
+});

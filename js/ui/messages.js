@@ -16,6 +16,9 @@ export function displayMessage(message, type = 'info', duration = 4000) {
         return;
     }
 
+    // Remove todas as mensagens anteriores
+    messageContainer.innerHTML = '';
+
     const messageBox = document.createElement('div');
     messageBox.className = `message-box ${type}`;
     messageBox.textContent = message;

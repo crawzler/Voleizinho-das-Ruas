@@ -97,6 +97,14 @@ export async function showPage(pageIdToShow) {
         updatePlayerCount();
         updateSelectAllToggle();    } else if (pageIdToShow === 'teams-page') {
         renderTeams(getAllGeneratedTeams());
+        // Carregar valor atual da configuração no campo
+        const playersPerTeamInput = document.getElementById('players-per-team-input');
+        if (playersPerTeamInput) {
+            const config = loadConfig();
+            playersPerTeamInput.value = config.playersPerTeam || 4;
+        }
+        // Atualizar contador de jogadores selecionados
+        updateSelectedPlayersCount();
     } else if (pageIdToShow === 'config-page') {
         setupConfigUI(); // Isso já chama loadConfig() internamente
     }
@@ -114,8 +122,10 @@ export async function showPage(pageIdToShow) {
         const shouldDisplayPlayers = displayPlayers && (currentTeam1Players.length > 0 || currentTeam2Players.length > 0);
         renderScoringPagePlayers(currentTeam1Players, currentTeam2Players, shouldDisplayPlayers);
     } else if (pageIdToShow === 'start-page') {
-        resetGameForNewMatch();
-        setGameStartedExplicitly(false);
+        // Não resetar o jogo automaticamente - apenas se não houver jogo em progresso
+        if (!getIsGameInProgress()) {
+            setGameStartedExplicitly(false);
+        }
     } else if (pageIdToShow === 'scheduling-page') {
         // Força renderização instantânea ao entrar na tela de agendamentos
         if (typeof SchedulingUI.renderScheduledGames === 'function') {
@@ -224,43 +234,48 @@ export function setupSidebar(startGameHandler, getPlayersHandler) {
             
             if (pageId === 'scoring') {
                 if (getIsGameInProgress()) {
-                    // Se já existe um jogo em andamento, perguntar se deseja iniciar um novo
-                    showConfirmationModal(
-                        'Deseja iniciar uma nova partida? A partida atual será perdida.',
-                        () => {
-                            // Se confirmar, verificar se há jogadores na partida atual
-                            import('../game/logic.js').then(({ endGame, startGame, getCurrentTeam1, getCurrentTeam2, resetGameForNewMatch }) => {
-                                const team1HasPlayers = getCurrentTeam1() && getCurrentTeam1().length > 0;
-                                const team2HasPlayers = getCurrentTeam2() && getCurrentTeam2().length > 0;
-                                
-                                // Só pergunta se quer salvar se tiver jogadores em ambos os times
-                                if (team1HasPlayers && team2HasPlayers) {
-                                    showConfirmationModal(
-                                        'Deseja salvar a partida atual no histórico?',
-                                        () => {
-                                            // Se confirmar, salva a partida atual
-                                            endGame(); // endGame já salva a partida
-                                            // Mostra a tela inicial em vez de iniciar nova partida
-                                            showPage('start-page');
-                                        },
-                                        () => {
-                                            // Se não confirmar, apenas reseta e mostra a tela inicial
-                                            resetGameForNewMatch();
-                                            showPage('start-page');
-                                        }
-                                    );
-                                } else {
-                                    // Se não tiver jogadores, apenas reseta e mostra a tela inicial
-                                    resetGameForNewMatch();
-                                    showPage('start-page');
-                                }
-                            });
-                        },
-                        () => {
-                            // Se não confirmar, apenas mostra a página de pontuação atual
-                            showPage(targetPageId);
-                        }
-                    );
+                    // Se já está na tela de pontuação e há jogo em andamento, perguntar se deseja iniciar um novo
+                    if (getCurrentPageId() === 'scoring-page') {
+                        showConfirmationModal(
+                            'Deseja iniciar uma nova partida? A partida atual será perdida.',
+                            () => {
+                                // Se confirmar, verificar se há jogadores na partida atual
+                                import('../game/logic.js').then(({ endGame, startGame, getCurrentTeam1, getCurrentTeam2, resetGameForNewMatch }) => {
+                                    const team1HasPlayers = getCurrentTeam1() && getCurrentTeam1().length > 0;
+                                    const team2HasPlayers = getCurrentTeam2() && getCurrentTeam2().length > 0;
+                                    
+                                    // Só pergunta se quer salvar se tiver jogadores em ambos os times
+                                    if (team1HasPlayers && team2HasPlayers) {
+                                        showConfirmationModal(
+                                            'Deseja salvar a partida atual no histórico?',
+                                            () => {
+                                                // Se confirmar, salva a partida atual
+                                                endGame(); // endGame já salva a partida
+                                                // Mostra a tela inicial em vez de iniciar nova partida
+                                                showPage('start-page');
+                                            },
+                                            () => {
+                                                // Se não confirmar, apenas reseta e mostra a tela inicial
+                                                resetGameForNewMatch();
+                                                showPage('start-page');
+                                            }
+                                        );
+                                    } else {
+                                        // Se não tiver jogadores, apenas reseta e mostra a tela inicial
+                                        resetGameForNewMatch();
+                                        showPage('start-page');
+                                    }
+                                });
+                            },
+                            () => {
+                                // Se não confirmar, apenas mostra a página de pontuação atual
+                                showPage(targetPageId);
+                            }
+                        );
+                    } else {
+                        // Se não está na tela de pontuação, apenas vai para a tela de pontuação
+                        showPage(targetPageId);
+                    }
                 } else {
                     // Se não houver jogo em andamento, mostra a tela inicial
                     showPage('start-page');
@@ -366,7 +381,9 @@ export function setupPageNavigation(startGameHandler, getPlayersHandler, appId) 
     if (addPlayerButton) {
         addPlayerButton.addEventListener('click', async () => {
             const playerNameInput = Elements.newPlayerNameInput();
+            const categorySelect = document.getElementById('player-category-select');
             const playerName = playerNameInput ? playerNameInput.value.trim() : '';
+            const category = categorySelect ? categorySelect.value : 'principais';
             
             if (playerName) {
                 try {
@@ -376,7 +393,7 @@ export function setupPageNavigation(startGameHandler, getPlayersHandler, appId) 
                         db = getFirestoreDb();
                     }
                     
-                    await addPlayer(db, appId, playerName);
+                    await addPlayer(db, appId, playerName, null, true, category);
                     if (playerNameInput) {
                         playerNameInput.value = '';
                     }
@@ -732,6 +749,16 @@ function handleSwipeNavigation(deltaX) {
     }
     if (nextIdx !== null) {
         showPage(MAIN_PAGES[nextIdx]);
+    }
+}
+
+// Função para atualizar contador de jogadores selecionados na tela de times
+function updateSelectedPlayersCount() {
+    const selectedPlayersCountElement = document.getElementById('selected-players-count');
+    if (selectedPlayersCountElement) {
+        const checkboxes = document.querySelectorAll('#players-list-container .player-checkbox:checked');
+        const count = checkboxes.length;
+        selectedPlayersCountElement.textContent = `Jogadores selecionados: ${count}`;
     }
 }
 

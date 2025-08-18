@@ -7,6 +7,7 @@
     <title>Vôlei Score App</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/history.css">
+    <link rel="stylesheet" href="css/offline-fallback.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="manifest" href="manifest.json">
 </head>
@@ -148,7 +149,12 @@
         <!-- Página de Times -->
         <section id="teams-page" class="app-page teams-page-layout">
             <h2 class="page-heading">Gerenciar Times</h2>
-                <div class="teams-action ">
+                <div class="teams-action">
+                    <div class="teams-config">
+                        <label for="players-per-team-input" class="form-label">Jogadores por time:</label>
+                        <input type="number" id="players-per-team-input" class="form-input" min="1" max="10" value="4">
+                        <div id="selected-players-count" class="selected-players-info">Jogadores selecionados: 0</div>
+                    </div>
                     <button id="generate-teams-button" class="button button--primary form-button--full-width generate-teams-button">Gerar Times Aleatórios</button>
                 </div>
             <div class="teams-page-layout-sub">
@@ -162,9 +168,25 @@
         <section id="players-page" class="app-page players-page-layout">
             <h2 class="page-heading">Gerenciar Jogadores</h2>
             <div class="players-page-layout-sub">
+                <div class="player-category-tabs">
+                    <button id="tab-principais" class="category-tab active" data-category="principais">Principais</button>
+                    <button id="tab-esporadicos" class="category-tab" data-category="esporadicos">Esporádicos</button>
+                    <button id="tab-random" class="category-tab" data-category="random">Random</button>
+                </div>
                 <div id="players-page-layout-add" class="players-page-layout-add">
+                    <select id="player-category-select" class="form-input">
+                        <option value="principais">Principal</option>
+                        <option value="esporadicos">Esporádico</option>
+                        <option value="random">Random</option>
+                    </select>
                     <input type="text" id="new-player-name-input" placeholder="Nome do Jogador" class="form-input">
                     <button id="add-player-button" class="button button--primary">Adicionar</button>
+                </div>
+                <div class="player-search-container">
+                    <input type="text" id="player-search-input" placeholder="Buscar jogador..." class="form-input">
+                    <button id="clear-search-button" class="button button--primary">
+                        Limpar
+                    </button>
                 </div>
                 <div class="player-list-controls">
                     <label class="switch">
@@ -226,7 +248,7 @@
                             </div>
                             <!-- NOVO: Toggle para exibir Status de Conexão -->
                             <div class="form-group form-group--toggle">
-                                <label for="show-connection-status-toggle" class="form-label">Exibir Status de Conexão:</label>
+                                <label for="show-connection-status-toggle" class="form-label">Exibir Status:</label>
                                 <label class="switch">
                                     <input type="checkbox" id="show-connection-status-toggle" checked>
                                     <span class="slider round"></span>
@@ -410,7 +432,50 @@
     <div id="message-container" class="message-container"></div>
 
     <script type="module" src="js/main.js"></script>
-    <!-- REMOVIDO: Bloco de registro duplicado do Service Worker -->
+    
+    <script>
+    // Registro do Service Worker com tratamento de erro
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+          .then(registration => {
+            console.log('SW registrado com sucesso:', registration.scope);
+            
+            // Força atualização se houver nova versão
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log('Nova versão disponível, recarregando...');
+                  window.location.reload();
+                }
+              });
+            });
+          })
+          .catch(error => {
+            console.warn('Falha ao registrar SW:', error);
+          });
+      });
+      
+      // Função para limpar cache (pode ser chamada das configurações)
+      window.clearAppCache = () => {
+        return new Promise((resolve) => {
+          if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            const channel = new MessageChannel();
+            channel.port1.onmessage = (event) => {
+              resolve(event.data.success);
+            };
+            navigator.serviceWorker.controller.postMessage(
+              { type: 'CLEAR_CACHE' }, 
+              [channel.port2]
+            );
+          } else {
+            resolve(false);
+          }
+        });
+      };
+    }
+    </script>
 
     <!-- Filtro SVG para efeito gooey/liquido -->
 <svg width="0" height="0">

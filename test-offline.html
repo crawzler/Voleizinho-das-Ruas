@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Offline - Vôlei Score App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #E5E7EB;
+        }
+        .test-section {
+            background-color: #222;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success { background-color: #10B981; }
+        .error { background-color: #EF4444; }
+        .warning { background-color: #F59E0B; }
+        .info { background-color: #3B82F6; }
+        button {
+            background-color: #2563EB;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #1D4ED8;
+        }
+        pre {
+            background-color: #374151;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🏐 Teste de Funcionalidade Offline</h1>
+    
+    <div class="test-section">
+        <h2>Status de Conectividade</h2>
+        <div id="connectivity-status" class="status info">Verificando...</div>
+        <button onclick="testConnectivity()">Testar Conectividade</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Service Worker</h2>
+        <div id="sw-status" class="status info">Verificando...</div>
+        <button onclick="testServiceWorker()">Testar Service Worker</button>
+        <button onclick="clearCache()">Limpar Cache</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Armazenamento Offline</h2>
+        <div id="storage-status" class="status info">Verificando...</div>
+        <button onclick="testOfflineStorage()">Testar Armazenamento</button>
+        <button onclick="showStorageStats()">Ver Estatísticas</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Cache de Recursos</h2>
+        <div id="cache-status" class="status info">Verificando...</div>
+        <button onclick="testResourceCache()">Testar Cache</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Logs de Teste</h2>
+        <pre id="test-logs"></pre>
+        <button onclick="clearLogs()">Limpar Logs</button>
+    </div>
+    
+    <script>
+        let logs = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            logs.push(logEntry);
+            
+            const logsElement = document.getElementById('test-logs');
+            logsElement.textContent = logs.join('\n');
+            logsElement.scrollTop = logsElement.scrollHeight;
+            
+            console.log(logEntry);
+        }
+        
+        function clearLogs() {
+            logs = [];
+            document.getElementById('test-logs').textContent = '';
+        }
+        
+        function updateStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${type}`;
+        }
+        
+        async function testConnectivity() {
+            log('Testando conectividade...');
+            
+            const isOnline = navigator.onLine;
+            updateStatus('connectivity-status', 
+                `Navigator.onLine: ${isOnline}`, 
+                isOnline ? 'success' : 'error'
+            );
+            
+            try {
+                const response = await fetch('https://www.google.com/favicon.ico', {
+                    method: 'HEAD',
+                    mode: 'no-cors',
+                    cache: 'no-cache'
+                });
+                log('Teste de conectividade real: SUCESSO');
+            } catch (error) {
+                log(`Teste de conectividade real: FALHA - ${error.message}`);
+            }
+        }
+        
+        async function testServiceWorker() {
+            log('Testando Service Worker...');
+            
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registration = await navigator.serviceWorker.getRegistration();
+                    if (registration) {
+                        updateStatus('sw-status', 
+                            `Service Worker ativo: ${registration.active ? 'SIM' : 'NÃO'}`, 
+                            registration.active ? 'success' : 'warning'
+                        );
+                        log(`Service Worker scope: ${registration.scope}`);
+                        log(`Service Worker state: ${registration.active?.state || 'N/A'}`);
+                    } else {
+                        updateStatus('sw-status', 'Service Worker não registrado', 'error');
+                        log('Service Worker não encontrado');
+                    }
+                } catch (error) {
+                    updateStatus('sw-status', `Erro: ${error.message}`, 'error');
+                    log(`Erro no Service Worker: ${error.message}`);
+                }
+            } else {
+                updateStatus('sw-status', 'Service Worker não suportado', 'error');
+                log('Service Worker não suportado neste navegador');
+            }
+        }
+        
+        async function clearCache() {
+            log('Limpando cache...');
+            
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                try {
+                    const channel = new MessageChannel();
+                    
+                    channel.port1.onmessage = (event) => {
+                        if (event.data.success) {
+                            log('Cache limpo com sucesso');
+                            updateStatus('sw-status', 'Cache limpo', 'success');
+                        } else {
+                            log(`Erro ao limpar cache: ${event.data.error}`);
+                            updateStatus('sw-status', 'Erro ao limpar cache', 'error');
+                        }
+                    };
+                    
+                    navigator.serviceWorker.controller.postMessage(
+                        { type: 'CLEAR_CACHE' }, 
+                        [channel.port2]
+                    );
+                } catch (error) {
+                    log(`Erro ao limpar cache: ${error.message}`);
+                }
+            } else {
+                log('Service Worker não disponível para limpar cache');
+            }
+        }
+        
+        async function testOfflineStorage() {
+            log('Testando armazenamento offline...');
+            
+            try {
+                // Testa localStorage
+                const testKey = 'offline_test';
+                const testData = { timestamp: Date.now(), test: true };
+                
+                localStorage.setItem(testKey, JSON.stringify(testData));
+                const retrieved = JSON.parse(localStorage.getItem(testKey));
+                
+                if (retrieved && retrieved.test) {
+                    log('localStorage: FUNCIONANDO');
+                } else {
+                    throw new Error('Dados não recuperados corretamente');
+                }
+                
+                localStorage.removeItem(testKey);
+                
+                // Testa IndexedDB
+                if ('indexedDB' in window) {
+                    const dbName = 'test_db';
+                    const request = indexedDB.open(dbName, 1);
+                    
+                    request.onsuccess = () => {
+                        log('IndexedDB: FUNCIONANDO');
+                        request.result.close();
+                        indexedDB.deleteDatabase(dbName);
+                        updateStatus('storage-status', 'Armazenamento offline funcionando', 'success');
+                    };
+                    
+                    request.onerror = () => {
+                        log('IndexedDB: ERRO');
+                        updateStatus('storage-status', 'Erro no IndexedDB', 'error');
+                    };
+                } else {
+                    log('IndexedDB: NÃO SUPORTADO');
+                    updateStatus('storage-status', 'IndexedDB não suportado', 'warning');
+                }
+                
+            } catch (error) {
+                log(`Erro no armazenamento: ${error.message}`);
+                updateStatus('storage-status', `Erro: ${error.message}`, 'error');
+            }
+        }
+        
+        async function showStorageStats() {
+            log('Obtendo estatísticas de armazenamento...');
+            
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                try {
+                    const channel = new MessageChannel();
+                    
+                    channel.port1.onmessage = (event) => {
+                        if (event.data.success) {
+                            const stats = event.data.stats;
+                            log('Estatísticas do cache:');
+                            Object.entries(stats).forEach(([cacheName, info]) => {
+                                log(`  ${cacheName}: ${info.entries} entradas`);
+                            });
+                        } else {
+                            log(`Erro ao obter estatísticas: ${event.data.error}`);
+                        }
+                    };
+                    
+                    navigator.serviceWorker.controller.postMessage(
+                        { type: 'GET_CACHE_STATS' }, 
+                        [channel.port2]
+                    );
+                } catch (error) {
+                    log(`Erro ao obter estatísticas: ${error.message}`);
+                }
+            }
+        }
+        
+        async function testResourceCache() {
+            log('Testando cache de recursos...');
+            
+            const testUrls = [
+                './css/style.css',
+                './js/main.js',
+                './manifest.json'
+            ];
+            
+            let cachedCount = 0;
+            
+            for (const url of testUrls) {
+                try {
+                    const cachedResponse = await caches.match(url);
+                    if (cachedResponse) {
+                        cachedCount++;
+                        log(`✓ ${url} está em cache`);
+                    } else {
+                        log(`✗ ${url} NÃO está em cache`);
+                    }
+                } catch (error) {
+                    log(`Erro ao verificar ${url}: ${error.message}`);
+                }
+            }
+            
+            const percentage = Math.round((cachedCount / testUrls.length) * 100);
+            updateStatus('cache-status', 
+                `${cachedCount}/${testUrls.length} recursos em cache (${percentage}%)`,
+                percentage > 80 ? 'success' : percentage > 50 ? 'warning' : 'error'
+            );
+        }
+        
+        // Executa testes iniciais
+        window.addEventListener('load', () => {
+            log('Iniciando testes automáticos...');
+            testConnectivity();
+            testServiceWorker();
+            testOfflineStorage();
+            testResourceCache();
+        });
+        
+        // Monitora mudanças de conectividade
+        window.addEventListener('online', () => {
+            log('Evento: ONLINE');
+            testConnectivity();
+        });
+        
+        window.addEventListener('offline', () => {
+            log('Evento: OFFLINE');
+            testConnectivity();
+        });
+    </script>
+</body>
+</html>

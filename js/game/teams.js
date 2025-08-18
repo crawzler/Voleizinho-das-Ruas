@@ -2,7 +2,7 @@
 // Lógica para geração e renderização de times.
 
 import { getPlayers } from '../data/players.js';
-import { shuffleArray } from '../utils/helpers.js';
+import { shuffleArray, salvarTimesGerados } from '../utils/helpers.js';
 import { loadConfig } from '../ui/config-ui.js';
 import { renderTeams, renderScoringPagePlayers, updateTeamDisplayNamesAndColors } from '../ui/game-ui.js';
 import { setAllGeneratedTeams, getAllGeneratedTeams, setCurrentTeam1, setCurrentTeam2, setActiveTeam1Name, setActiveTeam2Name, setActiveTeam1Color, setActiveTeam2Color } from './logic.js';
@@ -30,8 +30,9 @@ export function generateTeams(appId) {
     const shuffledPlayers = [...selectedPlayersNames];
     shuffleArray(shuffledPlayers);
 
-    const config = loadConfig();
-    const playersPerTeam = parseInt(config.playersPerTeam, 10) || 4;
+    // Pegar valor do campo na tela de times, se disponível
+    const playersPerTeamInput = document.getElementById('players-per-team-input');
+    const playersPerTeam = playersPerTeamInput ? parseInt(playersPerTeamInput.value, 10) || 4 : 4;
 
     const generatedTeams = [];
     let teamIndex = 0;
@@ -48,6 +49,7 @@ export function generateTeams(appId) {
     }
 
     setAllGeneratedTeams(generatedTeams);
+    salvarTimesGerados(generatedTeams);
     displayMessage('Times gerados com sucesso!', 'success');
     renderTeams(generatedTeams);
 }

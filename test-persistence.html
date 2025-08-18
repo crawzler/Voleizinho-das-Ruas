@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste de Persistência</title>
+</head>
+<body>
+    <h1>Teste de Persistência</h1>
+    <button onclick="salvar()">Salvar Estado</button>
+    <button onclick="carregar()">Carregar Estado</button>
+    <button onclick="limpar()">Limpar Estado</button>
+    <div id="resultado"></div>
+
+    <script>
+        function salvar() {
+            const estado = {
+                team1Score: 5,
+                team2Score: 3,
+                isGameInProgress: true,
+                allGeneratedTeams: [
+                    { name: "Time A", players: ["João", "Maria"] },
+                    { name: "Time B", players: ["Pedro", "Ana"] }
+                ]
+            };
+            localStorage.setItem("estadoPartida", JSON.stringify(estado));
+            document.getElementById("resultado").innerHTML = "Estado salvo!";
+        }
+
+        function carregar() {
+            const estado = localStorage.getItem("estadoPartida");
+            if (estado) {
+                const parsed = JSON.parse(estado);
+                document.getElementById("resultado").innerHTML = "Estado carregado: " + JSON.stringify(parsed, null, 2);
+            } else {
+                document.getElementById("resultado").innerHTML = "Nenhum estado encontrado";
+            }
+        }
+
+        function limpar() {
+            localStorage.removeItem("estadoPartida");
+            document.getElementById("resultado").innerHTML = "Estado limpo!";
+        }
+    </script>
+</body>
+</html>

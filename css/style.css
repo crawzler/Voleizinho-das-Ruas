@@ -24,7 +24,9 @@ body {
     margin: 0;
     padding: 0;
     width: 100%; /* Garante que o body ocupe toda a largura da viewport */
-    overscroll-behavior-y: contain; /* Impede o pull-to-refresh no corpo principal */
+    overscroll-behavior: none; /* Bloqueia completamente o pull-to-refresh */
+    overscroll-behavior-y: none; /* Bloqueia pull-to-refresh vertical */
+    overscroll-behavior-x: none; /* Bloqueia pull-to-refresh horizontal */
 
     /* NOVO: Esconde as barras de rolagem, mas permite a rolagem */
     -ms-overflow-style: none;  /* IE and Edge */
@@ -208,6 +210,7 @@ button {
     bottom: 0;
     background-color: #ccc;
     transition: .4s;
+    min-width: 40px;
 }
 
 .slider:before {
@@ -979,6 +982,28 @@ input:checked + .slider:before {
     width: 100%;
     flex: 1;
     width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.teams-config {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    background-color: #222;
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+.teams-config .form-input {
+    max-width: 100px;
+}
+
+.selected-players-info {
+    color: #D1D5DB;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
 }
 
 .generate-teams-button {
@@ -1047,6 +1072,62 @@ input:checked + .slider:before {
     gap: 0.5rem;
 }
 
+.player-category-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    background-color: #222;
+    border-radius: 8px;
+    padding: 0.25rem;
+}
+
+.category-tab {
+    flex: 1;
+    padding: 0.5rem 1rem;
+    background-color: transparent;
+    color: #D1D5DB;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.category-tab.active {
+    background-color: #2563EB;
+    color: white;
+}
+
+.category-tab:hover:not(.active) {
+    background-color: #374151;
+    color: white;
+}
+
+select.form-input {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: #333;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="%23ffffff" d="M2 0L0 2h4zm0 5L0 3h4z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 0.7rem center;
+    background-size: 0.65rem auto;
+    padding-right: 1rem;
+    padding-left: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.player-search-container {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
 .players-page-layout-sub {
     display: flex;
     flex-direction: column;
@@ -1074,10 +1155,12 @@ input:checked + .slider:before {
     gap: 0.5rem;
     flex-grow: 1;
     overflow-y: auto;
-    -webkit-overflow-scrolling: touch; /* Melhora o scroll em iOS */
-    min-height: 0; /* Crucial para flex items com overflow */
-    padding-bottom: 50px; /* Espaço para rolagem no final */
-    overscroll-behavior-y: auto; /* Adicionado para garantir rolagem independente */
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+    height: calc(100vh - 350px);
+    padding-bottom: 20px;
+    overscroll-behavior: none;
+    touch-action: pan-y;
 }
 
 .player-list-item {
@@ -1089,11 +1172,40 @@ input:checked + .slider:before {
     align-items: center;
     justify-content: space-between;    
     flex-direction: row-reverse;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.player-list-item.dragging {
+    cursor: grabbing;
+}
+
+.player-list-item.dragging {
+    opacity: 0.5;
+    transform: rotate(5deg);
+    z-index: 1000;
+}
+
+.category-tab.drag-over {
+    background-color: #10B981 !important;
+    transform: scale(1.05);
 }
 
 /* Estilo para jogadores locais */
 .player-info span[data-local="true"] {
-    font-style: italic;
+    position: relative;
+    padding-right: 20px;
+}
+
+.player-info span[data-local="true"]:after {
+    content: "🏠";
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    opacity: 0.7;
 }
 
 .player-info {
@@ -1853,10 +1965,13 @@ input:checked + .slider:before {
     align-items: center;
     gap: 0.4rem; /* Espaçamento entre a bolinha e o texto */
     z-index: 1001; /* Acima da maioria dos elementos, mas abaixo de modais */
-    background-color: rgba(0, 0, 0, 0.6); /* Fundo sutil para contraste */
-    padding: 0.4rem 0.6rem;
-    border-radius: 12px; /* Cantos arredondados */
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    background-color: rgba(0, 0, 0, 0.8); /* Fundo mais opaco para melhor visibilidade */
+    padding: 0.5rem 0.8rem;
+    border-radius: 16px; /* Cantos mais arredondados */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    backdrop-filter: blur(8px); /* Efeito de desfoque no fundo */
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Borda sutil */
+    transition: all 0.3s ease;
 }
 
 /* NOVO: Classe para esconder o indicador de conexão via configuração do usuário */
@@ -1898,9 +2013,126 @@ input:checked + .slider:before {
 
 .status-dot.reconnecting {
     background-color: #FFC107; /* Amarelo */
+    animation: pulse 2s infinite; /* Animação pulsante para reconectando */
 }
 .status-text.reconnecting {
     color: #FFC107; /* Texto amarelo */
+}
+
+/* Animação pulsante para status de reconexão */
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.1); }
+}
+
+/* Estilos para elementos desabilitados quando offline */
+.offline-disabled {
+    opacity: 0.5;
+    pointer-events: none;
+    cursor: not-allowed;
+}
+
+/* Indicador visual para dados em cache */
+.cached-data {
+    position: relative;
+}
+
+.cached-data::after {
+    content: '📱';
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+/* Estilos para mensagens de status offline */
+.offline-message {
+    background-color: rgba(239, 68, 68, 0.1);
+    border: 1px solid #EF4444;
+    color: #EF4444;
+    padding: 0.75rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    text-align: center;
+    font-size: 0.875rem;
+}
+
+.online-message {
+    background-color: rgba(16, 185, 129, 0.1);
+    border: 1px solid #10B981;
+    color: #10B981;
+    padding: 0.75rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    text-align: center;
+    font-size: 0.875rem;
+}
+
+/* Melhorias para ícones quando offline */
+.material-icons.offline-fallback {
+    font-family: sans-serif;
+    font-weight: bold;
+    font-size: 16px;
+    display: inline-block;
+    text-align: center;
+    line-height: 1;
+}
+
+/* Estilos para botões de cache */
+.cache-button {
+    background-color: #6366F1;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cache-button:hover {
+    background-color: #4F46E5;
+}
+
+.cache-button:disabled {
+    background-color: #6B7280;
+    cursor: not-allowed;
+}
+
+/* Indicador de sincronização */
+.sync-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    color: #9CA3AF;
+    margin-left: 0.5rem;
+}
+
+.sync-indicator.syncing {
+    color: #FFC107;
+}
+
+.sync-indicator.synced {
+    color: #10B981;
+}
+
+.sync-indicator.error {
+    color: #EF4444;
+}
+
+/* Spinner para sincronização */
+.sync-spinner {
+    width: 12px;
+    height: 12px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
 }
 
 /* NOVO: Estilos para a tela de carregamento (loading-overlay) */
@@ -2197,6 +2429,129 @@ input[type="password"] {
     background-color: #333;
     color: white;
     border: 1px solid #444;
+}
+
+/* Estilos para estatísticas de cache */
+.cache-stats {
+    background-color: #374151;
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+}
+
+.cache-stats h4 {
+    margin: 0 0 0.5rem 0;
+    color: #E5E7EB;
+    font-size: 1rem;
+}
+
+.cache-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.cache-stat-item {
+    background-color: #4B5563;
+    padding: 0.5rem;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.cache-stat-label {
+    display: block;
+    color: #9CA3AF;
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.cache-stat-value {
+    display: block;
+    color: #E5E7EB;
+    font-weight: bold;
+}
+
+/* Melhorias para PWA */
+@media (display-mode: standalone) {
+    .connection-indicator {
+        top: 2rem; /* Mais espaço do topo em modo PWA */
+    }
+}
+
+/* Estilos para notificação de atualização */
+.update-notification {
+    position: fixed;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #2563EB;
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 1002;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    max-width: 90%;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateX(-50%) translateY(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+}
+
+.update-notification button {
+    background-color: white;
+    color: #2563EB;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.update-notification button:hover {
+    background-color: #F3F4F6;
+}
+
+/* Estilos para modo offline avançado */
+.offline-mode {
+    filter: grayscale(20%); /* Leve dessaturação quando offline */
+}
+
+.offline-mode .connection-indicator {
+    animation: pulse 3s infinite; /* Indicador pulsante quando offline */
+}
+
+/* Melhorias para acessibilidade offline */
+@media (prefers-reduced-motion: reduce) {
+    .status-dot.reconnecting,
+    .sync-spinner,
+    .offline-mode .connection-indicator {
+        animation: none;
+    }
+}
+
+/* Estilos para alta densidade de pixels */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .connection-indicator {
+        border-width: 0.5px;
+    }
+    
+    .status-dot {
+        width: 10px;
+        height: 10px;
+    }
 }
 
 /*# sourceMappingURL=style.css.map */
