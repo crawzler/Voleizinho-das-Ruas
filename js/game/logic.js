@@ -189,6 +189,13 @@ export function incrementScore(teamId) {
         return;
     }
 
+    // Se o timer estiver pausado, inicia automaticamente
+    if (!isTimerRunning) {
+        startTimer();
+        startSetTimer();
+        updateTimerButtonIcon();
+    }
+
     if (teamId === 'team1') {
         team1Score++;
         if (vibrationEnabled) navigator.vibrate(50);
@@ -210,6 +217,13 @@ export function incrementScore(teamId) {
 export function decrementScore(teamId) {
     if (!isGameInProgress) {
         return;
+    }
+
+    // Se o timer estiver pausado, inicia automaticamente
+    if (!isTimerRunning) {
+        startTimer();
+        startSetTimer();
+        updateTimerButtonIcon();
     }
 
     if (teamId === 'team1' && team1Score > 0) {

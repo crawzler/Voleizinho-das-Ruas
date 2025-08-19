@@ -103,17 +103,17 @@ export function renderScoringPagePlayers(team1Players, team2Players, shouldDispl
     if (!shouldDisplayPlayers) {
         team1Column.innerHTML = '';
         team2Column.innerHTML = '';
-        team1Column.style.display = 'none'; // Oculta a coluna inteira
-        team2Column.style.display = 'none'; // Oculta a coluna inteira
+        team1Column.style.display = 'none';
+        team2Column.style.display = 'none';
         return;
     }
 
-    // Se deve exibir, garante que as colunas estejam visíveis
-    team1Column.style.display = 'block'; // Ou 'flex', dependendo do layout original
-    team2Column.style.display = 'block'; // Ou 'flex'
+    team1Column.style.display = 'block';
+    team2Column.style.display = 'block';
 
-    const renderPlayers = (columnElement, playersArray) => {
-        columnElement.innerHTML = ''; // Limpa antes de renderizar
+    const renderPlayers = (columnElement, playersArray, teamId) => {
+        columnElement.innerHTML = '';
+        
         const ul = document.createElement('ul');
         playersArray.forEach(player => {
             const li = document.createElement('li');
@@ -121,10 +121,26 @@ export function renderScoringPagePlayers(team1Players, team2Players, shouldDispl
             ul.appendChild(li);
         });
         columnElement.appendChild(ul);
+        
+        // Adiciona botão no painel do time
+        const teamPanel = document.getElementById(`${teamId}-panel`);
+        if (teamPanel && !teamPanel.querySelector('.team-change-button')) {
+            const changeButton = document.createElement('button');
+            changeButton.id = `${teamId}-change-button`;
+            changeButton.className = 'team-change-button';
+            changeButton.innerHTML = '<span class="material-icons">swap_horiz</span>';
+            changeButton.addEventListener('click', (event) => {
+                event.stopPropagation();
+                import('./pages.js').then(({ openTeamSelectionModal }) => {
+                    openTeamSelectionModal(teamId);
+                });
+            });
+            teamPanel.appendChild(changeButton);
+        }
     };
 
-    renderPlayers(team1Column, team1Players);
-    renderPlayers(team2Column, team2Players);
+    renderPlayers(team1Column, team1Players, 'team1');
+    renderPlayers(team2Column, team2Players, 'team2');
 }
 
 /**

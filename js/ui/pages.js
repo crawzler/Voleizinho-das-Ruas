@@ -573,10 +573,12 @@ export function setupScoreInteractions() {
         }
     };
 
-    addModalOpenListeners(team1NameDisplay, 'team1');
-    addModalOpenListeners(team2NameDisplay, 'team2');
-    addModalOpenListeners(team1PlayersColumn, 'team1');
-    addModalOpenListeners(team2PlayersColumn, 'team2');
+    // Adiciona listeners apenas nos botões discretos
+    const team1ChangeButton = document.getElementById('team1-change-button');
+    const team2ChangeButton = document.getElementById('team2-change-button');
+    
+    addModalOpenListeners(team1ChangeButton, 'team1');
+    addModalOpenListeners(team2ChangeButton, 'team2');
 }
 
 function handleScoreTouch(event, teamId) {

@@ -40,7 +40,7 @@ export function loadConfig() {
         config.numberOfSets = config.numberOfSets ?? 1;
         config.darkMode = config.darkMode ?? true;
         config.vibration = config.vibration ?? true;
-        config.displayPlayers = config.displayPlayers ?? true;
+        config.displayPlayers = true; // Sempre exibe jogadores
         // NOVO: Garante que showConnectionStatus está definido, padrão para false
         config.showConnectionStatus = config.showConnectionStatus ?? false;
 

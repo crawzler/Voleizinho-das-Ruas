@@ -1457,18 +1457,71 @@ select.form-input {
 
 .team-players-column {
     position: absolute;
-    display: block;
+    display: block !important;
     background-color: #2229;
     border-radius: 8px;
     padding: 10px;
     margin: 5px;
-    min-width: 80px;
-    max-width: 110px;
-    /* NOVO: Removes a demarcação azul em cliques/toques */
+    width: 100px;
     outline: none;
     -webkit-tap-highlight-color: transparent;
-    overflow-y: auto; /* Adicionado para garantir rolagem independente */
-    overscroll-behavior-y: auto; /* Adicionado para garantir rolagem independente */
+    overflow-y: auto;
+    overscroll-behavior-y: auto;
+    visibility: visible !important;
+}
+
+.team-players-column:empty::before {
+    content: '';
+    display: block;
+    width: 100%;
+    height: 20px;
+}
+
+#team1-change-button {
+    position: fixed;
+    top: 20%;
+    left: 10px;
+    background-color: rgba(0, 0, 0, 0.4);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 15;
+    transition: all 0.2s ease;
+}
+
+#team2-change-button {
+    position: fixed;
+    bottom: 20%;
+    left: 10px;
+    background-color: rgba(0, 0, 0, 0.4);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 15;
+    transition: all 0.2s ease;
+}
+
+#team1-change-button:hover,
+#team2-change-button:hover {
+    background-color: rgba(0, 0, 0, 0.8);
+    transform: scale(1.1);
+}
+
+#team1-change-button .material-icons,
+#team2-change-button .material-icons {
+    font-size: 18px;
 }
 
 .team-players-column ul {
@@ -1536,7 +1589,7 @@ select.form-input {
     outline: none;
     -webkit-tap-highlight-color: transparent;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
 }
 
 
@@ -2259,6 +2312,21 @@ select.form-input {
     #team2-stars {
         right: 10px;
         top: 50%;
+    }
+
+    #team1-change-button {
+        top: 20px;
+        left: auto;
+        right: 65%;
+        transform: translateY(-50%);
+    }
+
+    #team2-change-button {
+        top: 20px;
+        right: 10px;
+        left: 65%;
+        bottom: auto;
+        transform: translateY(-50%);
     }
 
     .teams-grid {
