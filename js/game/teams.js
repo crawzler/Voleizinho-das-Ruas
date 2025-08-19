@@ -44,6 +44,15 @@ export function generateTeams(appId) {
         const teamDisplayName = config[teamNameKey] || `Time ${teamIndex + 1}`;
         
         const teamPlayers = shuffledPlayers.splice(0, playersPerTeam);
+        
+        // Se é o último time e tem menos jogadores que o especificado, adiciona espaços vazios
+        if (shuffledPlayers.length === 0 && teamPlayers.length < playersPerTeam) {
+            const emptySlots = playersPerTeam - teamPlayers.length;
+            for (let i = 0; i < emptySlots; i++) {
+                teamPlayers.push(`[Vaga ${i + 1}]`);
+            }
+        }
+        
         generatedTeams.push({
             name: teamDisplayName,
             players: teamPlayers,

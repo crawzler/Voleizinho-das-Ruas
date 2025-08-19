@@ -129,6 +129,10 @@ export function setupFirestorePlayersListener(dbInstance, appIdentifier) {
             }
 
             renderPlayersList(players);
+            // Atualiza contador na tela de times
+            import('../ui/pages.js').then(({ updateSelectedPlayersCount }) => {
+                updateSelectedPlayersCount();
+            }).catch(() => {});
             hasInitialFirestoreLoadAttempted = true;
         },
         (error) => {
@@ -157,6 +161,7 @@ export function createPlayer(user) {
     const playerData = {
         uid: user.uid,
         name: user.displayName || user.email || "Sem Nome",
+        photoURL: user.photoURL || null,
         // ...outros campos...
     };
 
@@ -189,6 +194,7 @@ export async function adminAddPlayer(dbInstance, appId, name) {
         }
 
         const playerDocRef = doc(dbInstance, `artifacts/${appId}/public/data/players`, playerId);
+    
     await setDoc(playerDocRef, {
         uid: playerId,
         name: name.trim(),
@@ -235,7 +241,7 @@ export async function addPlayer(dbInstance, appId, name, uid = null, forceManual
 
     // Se não for admin ou estiver offline, adiciona tag [local]
     const playerName = (!navigator.onLine || !dbInstance || !isAdmin) ? `${name.trim()} [local]` : name.trim();
-
+    
     const playerData = {
         uid: playerId,
         name: playerName,
@@ -257,6 +263,10 @@ export async function addPlayer(dbInstance, appId, name, uid = null, forceManual
             localStorage.setItem('volleyballPlayers', JSON.stringify(localPlayers));
             players = localPlayers;
             renderPlayersList(players);
+            // Atualiza contador na tela de times
+            import('../ui/pages.js').then(({ updateSelectedPlayersCount }) => {
+                updateSelectedPlayersCount();
+            }).catch(() => {});
             return;
         } catch (e) {
             console.error("Erro ao salvar jogador localmente:", e);
@@ -277,6 +287,10 @@ export async function addPlayer(dbInstance, appId, name, uid = null, forceManual
         localStorage.setItem('volleyballPlayers', JSON.stringify(localPlayers));
         players = localPlayers;
         renderPlayersList(players);
+        // Atualiza contador na tela de times
+        import('../ui/pages.js').then(({ updateSelectedPlayersCount }) => {
+            updateSelectedPlayersCount();
+        }).catch(() => {});
     }
 }
 
@@ -314,6 +328,10 @@ export async function removePlayer(playerId, requesterUid, appId) {
                 localStorage.setItem('volleyballPlayers', JSON.stringify(localPlayers));
                 players = localPlayers;
                 renderPlayersList(players);
+                // Atualiza contador na tela de times
+                import('../ui/pages.js').then(({ updateSelectedPlayersCount }) => {
+                    updateSelectedPlayersCount();
+                }).catch(() => {});
             }
             return;
         } catch (e) {
@@ -344,6 +362,10 @@ export async function removePlayer(playerId, requesterUid, appId) {
                 // Atualiza localStorage
                 localStorage.setItem('volleyballPlayers', JSON.stringify(players));
                 renderPlayersList(players);
+                // Atualiza contador na tela de times
+                import('../ui/pages.js').then(({ updateSelectedPlayersCount }) => {
+                    updateSelectedPlayersCount();
+                }).catch(() => {});
                 return;
             } catch (e) {
                 console.error('Erro ao remover jogador localmente:', e);
@@ -358,12 +380,20 @@ export async function removePlayer(playerId, requesterUid, appId) {
             // Remove localmente também
             players = players.filter(p => p.id !== playerId);
             renderPlayersList(players);
+            // Atualiza contador na tela de times
+            import('../ui/pages.js').then(({ updateSelectedPlayersCount }) => {
+                updateSelectedPlayersCount();
+            }).catch(() => {});
         } catch (e) {
             console.error('Erro ao remover jogador do Firestore:', e);
             // Se falhar no Firestore, tenta remover apenas localmente
             players = players.filter(p => p.id !== playerId);
             localStorage.setItem('volleyballPlayers', JSON.stringify(players));
             renderPlayersList(players);
+            // Atualiza contador na tela de times
+            import('../ui/pages.js').then(({ updateSelectedPlayersCount }) => {
+                updateSelectedPlayersCount();
+            }).catch(() => {});
         }
     }
 }

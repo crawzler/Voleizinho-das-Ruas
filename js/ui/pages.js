@@ -102,6 +102,13 @@ export async function showPage(pageIdToShow) {
         if (playersPerTeamInput) {
             const config = loadConfig();
             playersPerTeamInput.value = config.playersPerTeam || 4;
+            
+            // Adicionar listener para salvar automaticamente
+            playersPerTeamInput.addEventListener('change', () => {
+                const currentConfig = loadConfig();
+                currentConfig.playersPerTeam = parseInt(playersPerTeamInput.value) || 4;
+                localStorage.setItem('volleyballConfig', JSON.stringify(currentConfig));
+            });
         }
         // Atualizar contador de jogadores selecionados
         updateSelectedPlayersCount();
@@ -303,25 +310,22 @@ export function setupSidebar(startGameHandler, getPlayersHandler) {
                     logoutBtn.className = 'profile-menu-item';
                     profileMenu.appendChild(logoutBtn);
                 }
-                // Atualiza o texto/ícone do botão
+                // Atualiza o conteúdo do menu
                 const currentUser = getCurrentUser();
-                if (currentUser && currentUser.isAnonymous) {
-                    logoutBtn.innerHTML = '<span class="material-icons">login</span> Logar';
-                } else {
-                    logoutBtn.innerHTML = '<span class="material-icons">logout</span> Sair';
-                }
-                // Remove event listeners antigos
-                logoutBtn.replaceWith(logoutBtn.cloneNode(true));
-                const freshLogoutBtn = Elements.profileLogoutButton();
-                freshLogoutBtn.addEventListener('click', () => {
-                    const user = getCurrentUser();
-                    if (user && user.isAnonymous) {
-                        loginWithGoogle();
-                    } else {
-                        logout();
-                    }
-                    closeSidebar();
-                });
+                const isGoogleUser = currentUser && !currentUser.isAnonymous;
+                profileMenu.innerHTML = `
+                    ${isGoogleUser ? `
+                    <button class="profile-menu-item" onclick="changeProfilePhoto()">
+                        <span class="material-icons">photo_camera</span>
+                        Alterar Foto
+                    </button>
+                    ` : ''}
+                    <button class="profile-menu-item" onclick="logout()">
+                        <span class="material-icons">logout</span>
+                        Sair
+                    </button>
+                `;
+                // Event listeners são adicionados via onclick no HTML
                 profileMenu.classList.toggle('active');
                 userProfileHeader.classList.toggle('active');
             }
@@ -336,18 +340,7 @@ export function setupSidebar(startGameHandler, getPlayersHandler) {
         }
     }
 
-    // Listener para o botão "Sair" (agora dinâmico "Logar"/"Sair") dentro do mini-menu
-    if (Elements.profileLogoutButton()) {
-        Elements.profileLogoutButton().addEventListener('click', () => {
-            const user = getCurrentUser();
-            if (user && user.isAnonymous) {
-                loginWithGoogle();
-            } else {
-                logout();
-            }
-            closeSidebar();
-        });
-    }
+    // Event listeners são adicionados via onclick no HTML
 
     // REMOVIDO: Listener para o botão "Configurações" dentro do mini-menu, movido para o sidebar principal
     // if (Elements.profileSettingsButton()) {
@@ -680,13 +673,23 @@ function handleCancelClick() {
 
 
 // Função para atualizar contador de jogadores selecionados na tela de times
-function updateSelectedPlayersCount() {
+export function updateSelectedPlayersCount() {
     const selectedPlayersCountElement = document.getElementById('selected-players-count');
     if (selectedPlayersCountElement) {
-        const selectedCheckboxes = document.querySelectorAll('#players-list-container .player-checkbox:checked');
-        const totalCheckboxes = document.querySelectorAll('#players-list-container .player-checkbox');
-        const selectedCount = selectedCheckboxes.length;
-        const totalCount = totalCheckboxes.length;
+        // Obter dados dos jogadores do localStorage
+        const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
+        const totalCount = players.length;
+        
+        // Contar jogadores selecionados de todas as categorias
+        let selectedCount = 0;
+        ['principais', 'esporadicos', 'random'].forEach(category => {
+            const categorySelections = localStorage.getItem(`selectedPlayers_${category}`);
+            if (categorySelections) {
+                const ids = JSON.parse(categorySelections);
+                selectedCount += ids.length;
+            }
+        });
+        
         selectedPlayersCountElement.textContent = `${selectedCount}/${totalCount}`;
     }
 }

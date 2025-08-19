@@ -203,7 +203,7 @@ export async function loginWithGoogle() {
                     await signOut(currentAuthInstance);
                     return;
                 }
-                await createPlayerInFirestore(dbInstance, appId, user.uid, playerName);
+                await createPlayerInFirestore(dbInstance, appId, user.uid, playerName, user.photoURL);
                 displayMessage(`Bem-vindo, ${playerName}!`, "success");
             } else {
                 displayMessage(`Bem-vindo de volta, ${playerName}!`, "success");
@@ -339,12 +339,15 @@ async function getPlayerNameFromFirestore(dbInstance, appId, uid) {
  * @param {string} appId
  * @param {string} uid
  * @param {string} name
+ * @param {string} photoURL
  */
-async function createPlayerInFirestore(dbInstance, appId, uid, name) {
+async function createPlayerInFirestore(dbInstance, appId, uid, name, photoURL = null) {
     const playerDocRef = doc(dbInstance, `artifacts/${appId}/public/data/players`, uid);
     await setDoc(playerDocRef, {
         uid,
         name,
+        photoURL,
+        isManual: false,
         createdAt: new Date().toISOString()
     }, { merge: true });
 }

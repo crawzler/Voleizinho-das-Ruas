@@ -215,13 +215,29 @@ export function renderTeams(teams) {
             playerItem.className = 'player-item';
             
             const playerName = document.createElement('span');
-            playerName.textContent = player;
+            const isEmptySlot = player.startsWith('[Vaga');
+            
+            if (isEmptySlot) {
+                playerName.textContent = player;
+                playerName.className = 'empty-slot';
+                playerItem.classList.add('empty-slot-item');
+            } else {
+                playerName.textContent = player;
+            }
+            
             playerItem.appendChild(playerName);
             
             const substituteBtn = document.createElement('button');
             substituteBtn.className = 'substitute-btn';
-            substituteBtn.innerHTML = '↔';
-            substituteBtn.title = 'Substituir jogador';
+            
+            if (isEmptySlot) {
+                substituteBtn.innerHTML = '+';
+                substituteBtn.title = 'Adicionar jogador';
+            } else {
+                substituteBtn.innerHTML = '↔';
+                substituteBtn.title = 'Substituir jogador';
+            }
+            
             substituteBtn.onclick = (e) => showSubstituteOptions(e, index, playerIndex, player);
             playerItem.appendChild(substituteBtn);
             
@@ -231,6 +247,18 @@ export function renderTeams(teams) {
 
         teamsGridLayoutElement.appendChild(teamCard);
     });
+
+    // Adiciona card para criar novo time
+    const addTeamCard = document.createElement('div');
+    addTeamCard.className = 'team-card add-team-card';
+    addTeamCard.innerHTML = `
+        <div class="add-team-content">
+            <span class="material-icons add-team-icon">add</span>
+            <span class="add-team-text">Adicionar Time</span>
+        </div>
+    `;
+    addTeamCard.onclick = () => addNewTeam();
+    teamsGridLayoutElement.appendChild(addTeamCard);
 }
 
 /**
@@ -339,7 +367,12 @@ window.showSubstituteOptions = function(event, teamIndex, playerIndex, currentPl
     
     const title = document.createElement('h3');
     title.className = 'substitute-modal-title';
-    title.textContent = `Substituir: ${currentPlayer}`;
+    
+    if (currentPlayer.startsWith('[Vaga')) {
+        title.textContent = `Preencher: ${currentPlayer}`;
+    } else {
+        title.textContent = `Substituir: ${currentPlayer}`;
+    }
     
     const closeBtn = document.createElement('button');
     closeBtn.className = 'substitute-modal-close';
@@ -399,10 +432,19 @@ function loadPlayersForSubstitution(container, searchInput, teamIndex, playerInd
             function renderPlayers(filter = '') {
                 container.innerHTML = '';
                 
-                const filteredPlayers = allPlayers.filter(player => 
-                    player.name.toLowerCase().includes(filter.toLowerCase()) &&
-                    player.name !== currentPlayer
-                );
+                const isCurrentPlayerEmptySlot = currentPlayer.startsWith('[Vaga');
+                
+                const filteredPlayers = allPlayers.filter(player => {
+                    const matchesFilter = player.name.toLowerCase().includes(filter.toLowerCase());
+                    
+                    if (isCurrentPlayerEmptySlot) {
+                        // Se é um espaço vazio, mostra todos os jogadores (exceto os já em times)
+                        return matchesFilter;
+                    } else {
+                        // Se é um jogador real, não mostra ele mesmo
+                        return matchesFilter && player.name !== currentPlayer;
+                    }
+                });
                 
                 if (filteredPlayers.length === 0) {
                     const noPlayers = document.createElement('div');
@@ -425,8 +467,19 @@ function loadPlayersForSubstitution(container, searchInput, teamIndex, playerInd
                     
                     const isInTeam = playersInTeams.has(player.name);
                     if (isInTeam) {
-                        status.textContent = `Time ${playersInTeams.get(player.name) + 1}`;
+                        const teamIndex = playersInTeams.get(player.name);
+                        const config = loadConfig();
+                        const teamNameKey = `customTeam${teamIndex + 1}Name`;
+                        const teamColorKey = `customTeam${teamIndex + 1}Color`;
+                        const defaultColors = ['#325fda', '#f03737', '#28a745', '#ffc107', '#6f42c1', '#17a2b8'];
+                        const teamDisplayName = config[teamNameKey] || `Time ${teamIndex + 1}`;
+                        const teamDisplayColor = config[teamColorKey] || defaultColors[teamIndex] || '#6c757d';
+                        
+                        status.textContent = teamDisplayName;
                         status.classList.add('status-in-team');
+                        status.style.backgroundColor = `${teamDisplayColor}33`; // 20% opacity
+                        status.style.color = teamDisplayColor;
+                        status.style.borderColor = teamDisplayColor;
                     } else {
                         status.textContent = 'Disponível';
                         status.classList.add('status-available');
@@ -464,56 +517,72 @@ function performSubstitution(teamIndex, playerIndex, oldPlayer, newPlayer, newPl
                     const teams = getAllGeneratedTeams();
                     const config = loadConfig();
                     const playersPerTeam = config.playersPerTeam || 4;
+                    const isOldPlayerEmptySlot = oldPlayer.startsWith('[Vaga');
                     
                     if (newPlayerTeamIndex !== null) {
                         // Jogador já está em um time - trocar de lugar
                         const newPlayerIndex = teams[newPlayerTeamIndex].players.indexOf(newPlayer);
                         teams[teamIndex].players[playerIndex] = newPlayer;
-                        teams[newPlayerTeamIndex].players[newPlayerIndex] = oldPlayer;
-                        displayMessage(`${oldPlayer} trocou de lugar com ${newPlayer}`, 'success');
+                        
+                        if (isOldPlayerEmptySlot) {
+                            // Se era um espaço vazio, criar novo espaço vazio no lugar do jogador movido
+                            teams[newPlayerTeamIndex].players[newPlayerIndex] = `[Vaga ${newPlayerIndex + 1}]`;
+                            displayMessage(`${newPlayer} preencheu a vaga`, 'success');
+                        } else {
+                            teams[newPlayerTeamIndex].players[newPlayerIndex] = oldPlayer;
+                            displayMessage(`${oldPlayer} trocou de lugar com ${newPlayer}`, 'success');
+                        }
                     } else {
                         // Jogador não está em nenhum time
                         teams[teamIndex].players[playerIndex] = newPlayer;
                         
-                        // Encontrar o ID do jogador pelo nome e marcar como selecionado
-                        import('../data/players.js').then(({ getPlayers }) => {
-                            const allPlayers = getPlayers();
-                            const playerData = allPlayers.find(p => p.name === newPlayer);
-                            if (playerData) {
-                                const checkbox = document.querySelector(`input[data-player-id="${playerData.id}"]`);
-                                if (checkbox) {
-                                    checkbox.checked = true;
-                                    // Salva o estado de seleção
-                                    import('../ui/players-ui.js').then(({ savePlayerSelectionState }) => {
-                                        savePlayerSelectionState();
-                                    });
+                        // Marcar jogador automaticamente na tela de jogadores
+                        autoSelectPlayerInUI(newPlayer);
+                        
+                        if (isOldPlayerEmptySlot) {
+                            // Era um espaço vazio, apenas preenche
+                            displayMessage(`${newPlayer} preencheu a vaga`, 'success');
+                        } else {
+                            // Encontrar vaga para o jogador substituído
+                            let placed = false;
+                            
+                            // Primeiro, procura por espaços vazios
+                            for (let i = 0; i < teams.length; i++) {
+                                for (let j = 0; j < teams[i].players.length; j++) {
+                                    if (teams[i].players[j].startsWith('[Vaga')) {
+                                        teams[i].players[j] = oldPlayer;
+                                        placed = true;
+                                        break;
+                                    }
+                                }
+                                if (placed) break;
+                            }
+                            
+                            // Se não encontrou espaço vazio, procura time com menos jogadores
+                            if (!placed) {
+                                for (let i = teams.length - 1; i >= 0; i--) {
+                                    if (teams[i].players.length < playersPerTeam) {
+                                        teams[i].players.push(oldPlayer);
+                                        placed = true;
+                                        break;
+                                    }
                                 }
                             }
-                        });
-                        
-                        // Encontrar vaga para o jogador substituído
-                        let placed = false;
-                        for (let i = teams.length - 1; i >= 0; i--) {
-                            if (teams[i].players.length < playersPerTeam) {
-                                teams[i].players.push(oldPlayer);
-                                placed = true;
-                                break;
-                            }
-                        }
-                        
-                        // Se não encontrou vaga, criar novo time
-                        if (!placed) {
-                            const newTeamIndex = teams.length;
-                            const teamNameKey = `customTeam${newTeamIndex + 1}Name`;
-                            const teamDisplayName = config[teamNameKey] || `Time ${newTeamIndex + 1}`;
                             
-                            teams.push({
-                                name: teamDisplayName,
-                                players: [oldPlayer]
-                            });
-                            displayMessage(`${newPlayer} entrou no lugar de ${oldPlayer}. ${oldPlayer} foi para o ${teamDisplayName}`, 'success');
-                        } else {
-                            displayMessage(`${newPlayer} entrou no lugar de ${oldPlayer}`, 'success');
+                            // Se não encontrou vaga, criar novo time
+                            if (!placed) {
+                                const newTeamIndex = teams.length;
+                                const teamNameKey = `customTeam${newTeamIndex + 1}Name`;
+                                const teamDisplayName = config[teamNameKey] || `Time ${newTeamIndex + 1}`;
+                                
+                                teams.push({
+                                    name: teamDisplayName,
+                                    players: [oldPlayer]
+                                });
+                                displayMessage(`${newPlayer} entrou no lugar de ${oldPlayer}. ${oldPlayer} foi para o ${teamDisplayName}`, 'success');
+                            } else {
+                                displayMessage(`${newPlayer} entrou no lugar de ${oldPlayer}`, 'success');
+                            }
                         }
                     }
                     
@@ -522,8 +591,76 @@ function performSubstitution(teamIndex, playerIndex, oldPlayer, newPlayer, newPl
                     salvarTimesGerados(teams);
                     renderTeams(teams);
                     updateSelectedPlayersCount();
+                    
+                    // Marcar jogador automaticamente se não era espaço vazio
+                    if (!isOldPlayerEmptySlot) {
+                        autoSelectPlayerInUI(newPlayer);
+                    }
                 });
             });
         });
     });
+}
+
+/**
+ * Adiciona um novo time manualmente.
+ */
+function addNewTeam() {
+    import('../game/logic.js').then(({ getAllGeneratedTeams, setAllGeneratedTeams }) => {
+        import('../utils/helpers.js').then(({ salvarTimesGerados }) => {
+            import('./messages.js').then(({ displayMessage }) => {
+                const teams = getAllGeneratedTeams();
+                const config = loadConfig();
+                const playersPerTeam = config.playersPerTeam || 4;
+                
+                const newTeamIndex = teams.length;
+                const teamNameKey = `customTeam${newTeamIndex + 1}Name`;
+                const teamDisplayName = config[teamNameKey] || `Time ${newTeamIndex + 1}`;
+                
+                // Cria novo time com espaços vazios
+                const newTeamPlayers = [];
+                for (let i = 0; i < playersPerTeam; i++) {
+                    newTeamPlayers.push(`[Vaga ${i + 1}]`);
+                }
+                
+                teams.push({
+                    name: teamDisplayName,
+                    players: newTeamPlayers
+                });
+                
+                setAllGeneratedTeams(teams);
+                salvarTimesGerados(teams);
+                renderTeams(teams);
+                displayMessage(`${teamDisplayName} adicionado com sucesso!`, 'success');
+            });
+        });
+    });
+}
+
+/**
+ * Marca automaticamente um jogador na tela de jogadores quando ele é adicionado aos times.
+ * @param {string} playerName - Nome do jogador a ser marcado
+ */
+function autoSelectPlayerInUI(playerName) {
+    import('../data/players.js').then(({ getPlayers }) => {
+        const allPlayers = getPlayers();
+        const playerData = allPlayers.find(p => p.name === playerName);
+        
+        if (playerData) {
+            const checkbox = document.querySelector(`input[data-player-id="${playerData.id}"]`);
+            if (checkbox && !checkbox.checked) {
+                checkbox.checked = true;
+                
+                // Salva o estado de seleção
+                import('../ui/players-ui.js').then(({ savePlayerSelectionState, updatePlayerCount }) => {
+                    savePlayerSelectionState();
+                    updatePlayerCount();
+                }).catch(() => {});
+                
+                import('./messages.js').then(({ displayMessage }) => {
+                    displayMessage(`${playerName} foi marcado automaticamente na lista de jogadores`, 'info');
+                }).catch(() => {});
+            }
+        }
+    }).catch(() => {});
 }

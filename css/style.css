@@ -19,18 +19,27 @@ body {
     color: #E5E7EB;
     display: flex;
     flex-direction: column;
-    min-height: 100vh; /* Garante que o body ocupe toda a altura da viewport */
-    height: 100%; /* Garante que o body ocupe toda a altura da viewport */
+    min-height: 100vh;
+    height: 100%;
     margin: 0;
     padding: 0;
-    width: 100%; /* Garante que o body ocupe toda a largura da viewport */
-    overscroll-behavior: none; /* Bloqueia completamente o pull-to-refresh */
-    overscroll-behavior-y: none; /* Bloqueia pull-to-refresh vertical */
-    overscroll-behavior-x: none; /* Bloqueia pull-to-refresh horizontal */
-
-    /* NOVO: Esconde as barras de rolagem, mas permite a rolagem */
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    width: 100%;
+    overscroll-behavior: none;
+    overscroll-behavior-y: none;
+    overscroll-behavior-x: none;
+    
+    /* Desabilita seleção de texto para app mobile */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    
+    /* Desabilita highlight de toque */
+    -webkit-tap-highlight-color: transparent;
+    
+    /* Esconde as barras de rolagem */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
 /* NOVO: Para navegadores baseados em WebKit (Chrome, Safari, etc.) */
@@ -41,7 +50,38 @@ body::-webkit-scrollbar,
 .accordion-content::-webkit-scrollbar,
 .select-team-modal-content-wrapper::-webkit-scrollbar,
 .team-players-column::-webkit-scrollbar {
-    display: none;
+    width: 4px;
+}
+
+body::-webkit-scrollbar-track,
+.app-main-content::-webkit-scrollbar-track,
+.sidebar-menu::-webkit-scrollbar-track,
+.players-list-container::-webkit-scrollbar-track,
+.accordion-content::-webkit-scrollbar-track,
+.select-team-modal-content-wrapper::-webkit-scrollbar-track,
+.team-players-column::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+body::-webkit-scrollbar-thumb,
+.app-main-content::-webkit-scrollbar-thumb,
+.sidebar-menu::-webkit-scrollbar-thumb,
+.players-list-container::-webkit-scrollbar-thumb,
+.accordion-content::-webkit-scrollbar-thumb,
+.select-team-modal-content-wrapper::-webkit-scrollbar-thumb,
+.team-players-column::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 2px;
+}
+
+body::-webkit-scrollbar-thumb:hover,
+.app-main-content::-webkit-scrollbar-thumb:hover,
+.sidebar-menu::-webkit-scrollbar-thumb:hover,
+.players-list-container::-webkit-scrollbar-thumb:hover,
+.accordion-content::-webkit-scrollbar-thumb:hover,
+.select-team-modal-content-wrapper::-webkit-scrollbar-thumb:hover,
+.team-players-column::-webkit-scrollbar-thumb:hover {
+    background: #666;
 }
 
 
@@ -55,6 +95,12 @@ input {
     color: white;
     outline: none;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    
+    /* Reabilita seleção de texto para inputs */
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
 }
 
 /* NOVO: Estilo para os ícones de data e hora nos inputs */
@@ -1085,6 +1131,40 @@ input:checked + .slider:before {
     gap: 0.5rem;
 }
 
+.input-with-clear {
+    position: relative;
+    flex: 1;
+}
+
+.input-with-clear .form-input {
+    padding-right: 2.5rem;
+}
+
+.clear-input-button {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #9CA3AF;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 50%;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.clear-input-button:hover {
+    background-color: rgba(156, 163, 175, 0.2);
+    color: #E5E7EB;
+}
+
 .player-category-tabs {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -1141,11 +1221,7 @@ select.form-input {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-.players-page-layout-add #player-input {
-    flex: 1;
-}
-
-.players-page-layout-add #clear-search-button {
+.players-page-layout-add #add-player-button {
     flex-shrink: 0;
     min-width: auto;
 }
@@ -1181,8 +1257,11 @@ select.form-input {
     min-height: 0;
     height: calc(100vh - 350px);
     padding-bottom: 20px;
-    overscroll-behavior: none;
+    overscroll-behavior-y: contain;
     touch-action: pan-y;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: #444 transparent;
 }
 
 .player-list-item {
@@ -1197,30 +1276,66 @@ select.form-input {
     cursor: pointer;
     transition: all 0.2s ease;
     user-select: none;
+    touch-action: pan-y;
+    position: relative;
+    
+    /* Previne seleção de texto durante drag */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    
+    /* Previne context menu no long press */
+    -webkit-touch-callout: none;
+    -webkit-context-menu: none;
+}
+
+.player-list-item:hover {
+    background-color: #333;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.player-list-item:active {
+    transform: translateY(0);
 }
 
 .player-list-item.dragging {
-    cursor: grabbing;
-}
-
-.player-list-item.dragging {
-    opacity: 0.5;
-    transform: rotate(5deg);
+    opacity: 0.3;
+    transform: rotate(3deg) scale(1.05);
     z-index: 1000;
+    cursor: grabbing;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    transition: none;
+    pointer-events: none;
+}
+
+.drag-ghost {
+    opacity: 0.9 !important;
+    transform: rotate(5deg) scale(1.1) !important;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4) !important;
+    border: 2px solid #2563EB !important;
+    background-color: #333 !important;
+    pointer-events: none !important;
+    z-index: 9999 !important;
+    transition: none !important;
 }
 
 .category-tab.drag-over {
     background-color: #10B981 !important;
     transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    border: 2px solid #10B981;
+    transition: all 0.2s ease;
 }
 
 /* Estilo para jogadores locais */
-.player-info span[data-local="true"] {
+.player-avatar-name span[data-local="true"] {
     position: relative;
     padding-right: 24px;
 }
 
-.player-info span[data-local="true"]:after {
+.player-avatar-name span[data-local="true"]:after {
     content: "";
     position: absolute;
     right: 0;
@@ -1243,6 +1358,28 @@ select.form-input {
     gap: 1rem;
 }
 
+.player-avatar-name {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.player-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: #333;
+    flex-shrink: 0;
+}
+
+/* Estilo específico para o ícone SVG padrão */
+.player-avatar[src*="default-user-icon.svg"] {
+    padding: 8px;
+    background-color: #444;
+}
+
 .player-info span {
     color: #E5E7EB;
     font-size: 1rem;
@@ -1256,12 +1393,53 @@ select.form-input {
     outline: none;
     -webkit-tap-highlight-color: transparent;
     display: none; /* Esconde por padrão */
+    transition: all 0.2s ease;
+    border-radius: 4px;
+    border: 1px solid transparent;
 }
 
 .remove-button.visible {
-    display: flex; /* Mostra apenas quando tiver a classe visible */
+    display: flex; /* Mostra o botão quando visível */
+    align-items: center;
+    justify-content: center;
 }
 
+.remove-button.highlight {
+    background-color: #DC2626;
+    color: white;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+    border-color: #EF4444;
+}
+
+.delete-zone {
+    position: fixed;
+    bottom: env(safe-area-inset-bottom, 20px);
+    left: 0;
+    right: 0;
+    background-color: #DC2626;
+    color: white;
+    padding: 1rem 1rem 5rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-weight: bold;
+    z-index: 1000;
+    transform: translateY(100%);
+    transition: all 0.3s ease;
+    margin-bottom: 0px;
+}
+
+.delete-zone.active {
+    transform: translateY(0);
+}
+
+.delete-zone.drag-over {
+    background-color: #EF4444;
+    transform: translateY(0) scale(1.05);
+    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.6);
+}
 /* Estilo para o botão de excluir jogo */
 .delete-game-button {
     background-color: transparent;
@@ -1338,6 +1516,135 @@ select.form-input {
 
 #swap-teams-button .material-icons {
     font-size: 2rem;
+}
+
+/* Botão de Configurações Rápidas */
+#quick-settings-button {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background-color: transparent;
+    color: white;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    z-index: 10;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+
+/* Modal de Configurações Rápidas */
+.quick-settings-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.quick-settings-modal.active {
+    display: flex;
+}
+
+.quick-settings-content {
+    background: #1a1a1a;
+    border-radius: 16px;
+    padding: 1.5rem 3rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+}
+
+.quick-settings-header {
+    text-align: center;
+    margin: 1rem 0rem;
+    position: relative;
+}
+
+.quick-settings-title {
+    color: #f9fafb;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.quick-settings-close {
+    position: absolute;
+    top: -30px;
+    right: -35px;
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    font-size: 1.25rem;
+    padding: 0.5rem;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.quick-settings-close:hover {
+    background: #4b5563;
+    color: white;
+}
+
+.quick-setting-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.quick-setting-item:hover {
+    background: #1a1a1a;
+}
+
+.quick-setting-label {
+    color: #e5e7eb;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.quick-setting-input {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #333;
+    border: 2px solid #444;
+    border-radius: 8px;
+    margin: 1rem;
+    color: #f9fafb;
+    font-size: 1.1rem;
+    text-align: center;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.quick-setting-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background-color: #2a2a2a;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(0, 0, 0, 0.3);
+    transform: scale(1.02);
+}
+
+.quick-setting-input:hover {
+    border-color: #555;
+    background-color: #3a3a3a;
 }
 
 .timer-and-set-timer-wrapper {
@@ -2625,13 +2932,10 @@ input[type="password"] {
 }
 
 .stat-value {
-    color: #2563EB;
     font-size: 1.125rem;
     font-weight: bold;
-    background-color: rgba(37, 99, 235, 0.1);
     padding: 0.25rem 0.75rem;
     border-radius: 20px;
-    border: 1px solid rgba(37, 99, 235, 0.3);
 }
 
 .teams-config-row {
@@ -2753,6 +3057,8 @@ input[type="password"] {
     max-width: 400px;
     max-height: 80vh;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
 }
 
 .substitute-modal-header {
@@ -2803,6 +3109,8 @@ input[type="password"] {
 .substitute-players-list {
     max-height: 300px;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
 }
 
 .substitute-player-item {
@@ -2831,16 +3139,17 @@ input[type="password"] {
     padding: 0.25rem 0.5rem;
     border-radius: 12px;
     font-weight: bold;
+    border: 1px solid transparent;
 }
 
 .status-available {
-    background-color: rgba(34, 197, 94, 0.2);
-    color: #22C55E;
+    background-color: rgba(156, 163, 175, 0.2);
+    color: #9CA3AF;
+    border-color: #9CA3AF;
 }
 
 .status-in-team {
-    background-color: rgba(249, 115, 22, 0.2);
-    color: #F97316;
+    /* Cores serão definidas dinamicamente via JavaScript */
 }
 
 .no-players-message {
@@ -2869,4 +3178,71 @@ input[type="password"] {
         min-width: auto;
         width: 100%;
     }
+}
+/* Estilos para espaços vazios nos times */
+.empty-slot {
+    color: #9CA3AF !important;
+    font-style: italic;
+    opacity: 0.7;
+}
+
+.empty-slot-item {
+    border-radius: 4px;
+    padding: 0.5rem 0rem !important;
+    margin: 0.25rem 0;
+}
+
+.empty-slot-item .substitute-btn {
+    background-color: #1D4ED8;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.empty-slot-item .substitute-btn:hover {
+    background-color: #1D4ED8;
+    transform: scale(1.1);
+}
+/* Estilos para o card de adicionar time */
+.add-team-card {
+    background-color: #2a2a2a !important;
+    border: 2px dashed #666 !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 150px;
+}
+
+.add-team-card:hover {
+    background-color: #333 !important;
+    border-color: #888 !important;
+    transform: translateY(-2px);
+}
+
+.add-team-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    color: #9CA3AF;
+}
+
+.add-team-icon {
+    font-size: 3rem !important;
+}
+
+.add-team-text {
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.add-team-card:hover .add-team-content {
+    color: #E5E7EB;
 }

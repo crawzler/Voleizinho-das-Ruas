@@ -41,8 +41,8 @@ export function loadConfig() {
         config.darkMode = config.darkMode ?? true;
         config.vibration = config.vibration ?? true;
         config.displayPlayers = config.displayPlayers ?? true;
-        // NOVO: Garante que showConnectionStatus está definido, padrão para true
-        config.showConnectionStatus = config.showConnectionStatus ?? true;
+        // NOVO: Garante que showConnectionStatus está definido, padrão para false
+        config.showConnectionStatus = config.showConnectionStatus ?? false;
 
 
         // Preenche o objeto config com os nomes e cores padrão, se não estiverem definidos
@@ -72,7 +72,7 @@ export function loadConfig() {
         if (Elements.vibrationToggle()) Elements.vibrationToggle().checked = config.vibration ?? true;
         if (Elements.displayPlayersToggle()) Elements.displayPlayersToggle().checked = config.displayPlayers ?? true;
         // NOVO: Aplica a configuração do status de conexão
-        if (Elements.showConnectionStatusToggle()) Elements.showConnectionStatusToggle().checked = config.showConnectionStatus ?? true;
+        if (Elements.showConnectionStatusToggle()) Elements.showConnectionStatusToggle().checked = config.showConnectionStatus ?? false;
 
 
         // Aplica as cores e nomes personalizados aos inputs de configuração
@@ -110,7 +110,7 @@ export function saveConfig() {
             vibration: Elements.vibrationToggle() ? Elements.vibrationToggle().checked : true,
             displayPlayers: Elements.displayPlayersToggle() ? Elements.displayPlayersToggle().checked : true,
             // NOVO: Salva o estado do toggle de status de conexão
-            showConnectionStatus: Elements.showConnectionStatusToggle() ? Elements.showConnectionStatusToggle().checked : true,
+            showConnectionStatus: Elements.showConnectionStatusToggle() ? Elements.showConnectionStatusToggle().checked : false,
             adminKey: Elements.adminKeyInput() ? Elements.adminKeyInput().value.trim() : "",
         };
 

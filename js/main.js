@@ -16,6 +16,8 @@ import { displayMessage } from './ui/messages.js';
 import { updatePlayerCount, updateSelectAllToggle, savePlayerSelectionState } from './ui/players-ui.js';
 import { setupHistoryPage } from './ui/history-ui.js';
 import { setupSchedulingPage } from './ui/scheduling-ui.js';
+import './ui/profile-menu.js';
+import { setupQuickSettings } from './ui/quick-settings.js';
 import connectivityManager from './utils/connectivity.js';
 import offlineStorage from './utils/offline-storage.js';
 
@@ -151,6 +153,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupTeamSelectionModal();
     setupHistoryPage();
     setupSchedulingPage(); // Garante que a página de agendamento seja configurada uma vez
+    setupQuickSettings(); // Configura as configurações rápidas da partida
 
     // Listeners for team page buttons
     const generateTeamsButton = document.getElementById('generate-teams-button');
