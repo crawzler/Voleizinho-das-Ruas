@@ -9,7 +9,7 @@ import { showConfirmationModal } from './pages.js'; // Importa o modal de confir
 import { updateConnectionIndicator } from '../main.js'; // Importa updateConnectionIndicator
 import { resetUser, getCurrentUser } from '../firebase/auth.js'; // Importa funções para resetar usuário
 
-console.log("[config-ui.js] Arquivo carregado"); // <-- Adicione isso no topo do arquivo
+
 
 // Nomes padrão para os times personalizados
 const defaultTeamNames = [
@@ -88,7 +88,7 @@ export function loadConfig() {
         // Aplica o tema escuro
         document.body.classList.toggle('dark-mode', config.darkMode ?? true);
 
-        // console.log("[config-ui.js] Configurações carregadas/processadas (incluindo padrões):", config); // Removido console.log excessivo
+
 
         return config; // O objeto config retornado agora inclui os padrões se não estiver salvos
     } catch (e) {
@@ -126,7 +126,7 @@ export function saveConfig() {
         }
 
         localStorage.setItem('volleyballConfig', JSON.stringify(config));
-        // console.log("[config-ui.js] Configurações salvas:", config); // Removido console.log excessivo
+
 
         // Atualiza a exibição de jogadores na tela de pontuação imediatamente após salvar
         // É importante que essa atualização venha do estado ATUAL do jogo, não do config salvo.
@@ -208,8 +208,6 @@ export function addResetUserButton() {
     try {
         const currentUser = getCurrentUser();
         if (!currentUser || currentUser.isAnonymous) {
-            // Usuário não está logado ou é anônimo. Não mostra o botão.
-            // console.log("Usuário não está logado ou é anônimo. Botão de reset não será adicionado.");
             return;
         }
 
@@ -258,15 +256,14 @@ export function addResetUserButton() {
  * Configura os event listeners para os inputs de configuração.
  */
 export function setupConfigUI() {
-    // console.log("[config-ui.js] Iniciando setupConfigUI."); // Removido console.log excessivo
-    // console.log("[config-ui.js] Conteúdo do objeto Elements:", Elements); // Removido console.log excessivo
+
 
     loadConfig();
 
     const elementsToSetup = [
         { getter: Elements.playersPerTeamInput, name: 'playersPerTeamInput' },
         { getter: Elements.pointsPerSetInput, name: 'pointsPerSetInput' },
-        { getter: Elements.pointsPerSetInput, name: 'pointsPerSetInput' }, // Esta linha estava duplicada no original. Mantendo-a.
+        { getter: Elements.numberOfSetsInput, name: 'numberOfSetsInput' },
         { getter: Elements.numberOfSetsInput, name: 'numberOfSetsInput' },
         { getter: Elements.darkModeToggle, name: 'darkModeToggle' },
         { getter: Elements.vibrationToggle, name: 'vibrationToggle' },
@@ -303,7 +300,7 @@ export function setupConfigUI() {
             if (nameEl) nameEl.addEventListener('change', saveConfig);
             else console.warn(`[config-ui.js] Elemento para nome de time personalizado não encontrado.`);
         } else {
-            // console.error(`[config-ui.js] Elements.customTeamInputs.name não é uma função válida.`); // Removido console.error excessivo
+
         }
 
         if (input.color && typeof input.color === 'function') {
@@ -311,7 +308,7 @@ export function setupConfigUI() {
             if (colorEl) colorEl.addEventListener('change', saveConfig);
             else console.warn(`[config-ui.js] Elemento para cor de time personalizado não encontrado.`);
         } else {
-            // console.error(`[config-ui.js] Elements.customTeamInputs.color não é uma função válida.`); // Removido console.error excessivo
+
         }
     });
 

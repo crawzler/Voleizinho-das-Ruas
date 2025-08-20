@@ -15,11 +15,19 @@ import { displayMessage } from '../ui/messages.js';
 export function generateTeams(appId) {
     // Log essencial removido: "[generateTeams] Iniciando geração de times."
     const players = getPlayers();
-    const selectedPlayerElements = document.querySelectorAll('#players-list-container .player-checkbox:checked');
-    const selectedPlayerIds = Array.from(selectedPlayerElements).map(checkbox => checkbox.dataset.playerId);
+    
+    // Obter jogadores selecionados de TODAS as categorias, não apenas os visíveis
+    const allSelectedIds = [];
+    ['principais', 'esporadicos', 'random'].forEach(category => {
+        const categorySelections = localStorage.getItem(`selectedPlayers_${category}`);
+        if (categorySelections) {
+            const ids = JSON.parse(categorySelections);
+            allSelectedIds.push(...ids);
+        }
+    });
 
     const selectedPlayersNames = players
-        .filter(player => selectedPlayerIds.includes(player.id))
+        .filter(player => allSelectedIds.includes(player.id))
         .map(player => player.name);
 
     if (selectedPlayersNames.length < 1) {

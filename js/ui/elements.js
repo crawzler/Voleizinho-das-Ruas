@@ -4,7 +4,7 @@
 // Sidebar e Menu
 export const sidebar = () => document.getElementById('sidebar');
 export const menuButton = () => document.getElementById('menu-button');
-// export const closeSidebarButton = () => document.getElementById('close-sidebar-button'); // Removido do HTML
+
 export const sidebarNavItems = () => document.querySelectorAll('.sidebar-nav-item'); // Pode continuar sendo um querySelectorAll
 export const userIdDisplay = () => document.getElementById('user-id-display');
 // Elementos para foto e nome do usuário no sidebar
@@ -57,8 +57,8 @@ export const team2Stars = () => document.getElementById('team2-stars');
 // Modal de Seleção de Time (usado na página de pontuação)
 export const teamSelectionModal = () => document.getElementById('team-selection-modal');
 export const modalTeamList = () => document.getElementById('modal-team-list');
-export const closeModalButton = () => document.getElementById('close-modal-button'); // Removido do HTML
-export const closeModalButtonTopRight = () => document.getElementById('close-modal-button-top-right'); // NOVO: Botão de fechar no canto superior direito do modal
+
+export const closeModalButtonTopRight = () => document.getElementById('close-modal-button-top-right');
 
 // Elementos da página de Times
 export const generateTeamsButton = () => document.getElementById('generate-teams-button');

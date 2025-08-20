@@ -70,23 +70,42 @@ export async function logout() {
 /**
  * UPDATED: Updates the text, icon, and options in the profile menu based on user login state
  */
-export function updateProfileMenuLoginState() {
+export async function updateProfileMenuLoginState() {
     const currentUser = getCurrentUser();
-    const userDisplayNameElement = document.getElementById('userDisplayName');
-    const userProfilePictureElement = document.querySelector('.user-profile-picture');
+    const userDisplayNameElement = document.getElementById('user-display-name');
+    const userProfilePictureElement = document.getElementById('user-profile-picture');
 
     if (userDisplayNameElement) {
         if (currentUser && currentUser.isAnonymous) {
             userDisplayNameElement.textContent = "Anônimo";
         } else if (currentUser) {
-            userDisplayNameElement.textContent = currentUser.displayName || currentUser.email || "Google User";
+            // Busca dados personalizados se usuário logado
+            try {
+                const appId = localStorage.getItem('appId');
+                if (currentDbInstance && appId) {
+                    const playerData = await getPlayerDataFromFirestore(currentDbInstance, appId, currentUser.uid);
+                    userDisplayNameElement.textContent = playerData?.name || currentUser.displayName || currentUser.email || "Google User";
+                    if (userProfilePictureElement) {
+                        userProfilePictureElement.src = playerData?.photoURL || currentUser.photoURL || "https://placehold.co/40x40/222/FFF?text=?";
+                    }
+                } else {
+                    userDisplayNameElement.textContent = currentUser.displayName || currentUser.email || "Google User";
+                    if (userProfilePictureElement) {
+                        userProfilePictureElement.src = currentUser.photoURL || "https://placehold.co/40x40/222/FFF?text=?";
+                    }
+                }
+            } catch (error) {
+                userDisplayNameElement.textContent = currentUser.displayName || currentUser.email || "Google User";
+                if (userProfilePictureElement) {
+                    userProfilePictureElement.src = currentUser.photoURL || "https://placehold.co/40x40/222/FFF?text=?";
+                }
+            }
         } else {
             userDisplayNameElement.textContent = "Visitante";
+            if (userProfilePictureElement) {
+                userProfilePictureElement.src = "https://placehold.co/40x40/222/FFF?text=?";
+            }
         }
-    }
-
-    if (userProfilePictureElement) {
-        userProfilePictureElement.src = currentUser?.photoURL || "https://placehold.co/40x40/222/FFF?text=?";
     }
 }
 
@@ -104,6 +123,12 @@ window.logout = logout;
 export function setupAuthListener(authInstance, dbInstance, appId) {
     currentAuthInstance = authInstance;
     currentDbInstance = dbInstance;
+    
+    // Salva o appId no localStorage para uso posterior
+    if (appId) {
+        localStorage.setItem('appId', appId);
+        console.log('[setupAuthListener] AppId salvo no localStorage:', appId);
+    }
 
     onAuthStateChanged(currentAuthInstance, async (user) => {
         console.log(`[onAuthStateChanged] Usuário: ${user ? user.uid : 'NULO'}, Online: ${navigator.onLine}`);
@@ -116,22 +141,24 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
         if (user) {
             console.log(`User logged in: ${user.uid}`);
             if (Elements.userIdDisplay()) Elements.userIdDisplay().textContent = `ID: ${user.uid}`;
-            if (Elements.userProfilePicture()) Elements.userProfilePicture().src = user.photoURL || "https://placehold.co/40x40/222/FFF?text=?";
             
-            // NOVO: Busca o nome do jogador no Firestore
-            if (Elements.userDisplayName()) {
-                if (user.isAnonymous) {
-                    Elements.userDisplayName().textContent = "Usuário Anônimo";
-                } else {
-                    // Busca o nome do Firestore
-                    try {
-                        const playerName = await getPlayerNameFromFirestore(currentDbInstance, appId, user.uid);
-                        Elements.userDisplayName().textContent = playerName || user.displayName || user.email || "Visitante";
-                    } catch (error) {
-                        console.error("Erro ao buscar nome do usuário:", error);
-                        Elements.userDisplayName().textContent = user.displayName || user.email || "Visitante";
+            if (user.isAnonymous) {
+                if (Elements.userProfilePicture()) Elements.userProfilePicture().src = "https://placehold.co/40x40/222/FFF?text=?";
+                if (Elements.userDisplayName()) Elements.userDisplayName().textContent = "Anônimo";
+            } else {
+                // Busca dados personalizados do Firestore
+                getPlayerDataFromFirestore(currentDbInstance, appId, user.uid).then(playerData => {
+                    if (Elements.userDisplayName()) {
+                        Elements.userDisplayName().textContent = playerData?.name || user.displayName || user.email || "Visitante";
                     }
-                }
+                    if (Elements.userProfilePicture()) {
+                        Elements.userProfilePicture().src = playerData?.photoURL || user.photoURL || "https://placehold.co/40x40/222/FFF?text=?";
+                    }
+                }).catch(() => {
+                    // Fallback para dados do Google se não encontrar no Firestore
+                    if (Elements.userDisplayName()) Elements.userDisplayName().textContent = user.displayName || user.email || "Visitante";
+                    if (Elements.userProfilePicture()) Elements.userProfilePicture().src = user.photoURL || "https://placehold.co/40x40/222/FFF?text=?";
+                });
             }
 
             console.log(`Setting up Firestore listener for user: ${user.uid}`);
@@ -139,6 +166,8 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
             setupSchedulingPage(); // Adicione esta linha para garantir que o listener de agendamentos seja refeito ao logar
             updatePlayerModificationAbility(true);
             showPage('start-page');
+            
+
             
             if (Elements.googleLoginButton()) Elements.googleLoginButton().disabled = false;
             if (Elements.anonymousLoginButton()) Elements.anonymousLoginButton().disabled = false;
@@ -215,11 +244,7 @@ export async function loginWithGoogle() {
         }
         // --- FIM NOVO ---
 
-        // Certifica que o nome correto é exibido
-        const displayName = user.displayName || user.email || "Usuário Google";
-        if (Elements.userDisplayName()) {
-            Elements.userDisplayName().textContent = displayName;
-        }
+        console.log("Google login successful!");
         // displayMessage(`Welcome, ${displayName}!`, "success"); // Mensagem já tratada acima
     } catch (error) {
         console.error("Error during Google login:", error);
@@ -329,6 +354,22 @@ async function getPlayerNameFromFirestore(dbInstance, appId, uid) {
     if (playerDoc.exists()) {
         const data = playerDoc.data();
         return data.name || null;
+    }
+    return null;
+}
+
+/**
+ * Busca os dados completos do jogador pelo UID no Firestore.
+ * @param {object} dbInstance
+ * @param {string} appId
+ * @param {string} uid
+ * @returns {Promise<object|null>} dados do jogador ou null se não existir
+ */
+async function getPlayerDataFromFirestore(dbInstance, appId, uid) {
+    const playerDocRef = doc(dbInstance, `artifacts/${appId}/public/data/players`, uid);
+    const playerDoc = await getDoc(playerDocRef);
+    if (playerDoc.exists()) {
+        return playerDoc.data();
     }
     return null;
 }

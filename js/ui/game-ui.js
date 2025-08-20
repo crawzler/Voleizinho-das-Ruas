@@ -493,11 +493,9 @@ function loadPlayersForSubstitution(container, searchInput, teamIndex, playerInd
                         
                         status.textContent = teamDisplayName;
                         status.classList.add('status-in-team');
-                        status.style.backgroundColor = `${teamDisplayColor}33`; // 20% opacity
-                        status.style.color = teamDisplayColor;
-                        status.style.borderColor = teamDisplayColor;
+                        status.style.setProperty('--team-color', teamDisplayColor);
                     } else {
-                        status.textContent = 'Disponível';
+                        status.textContent = 'Ausente';
                         status.classList.add('status-available');
                     }
                     

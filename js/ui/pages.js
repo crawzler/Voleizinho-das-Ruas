@@ -83,9 +83,13 @@ export async function showPage(pageIdToShow) {
         currentPageId = pageIdToShow;
     }
 
+    // NOVO: Gerencia classe CSS no body para ocultar elementos quando start-page está ativa
     if (pageIdToShow === 'start-page') {
+        document.body.classList.add('start-page-active');
         Elements.scoringPage().classList.add('app-page--active');
         renderScoringPagePlayers([], [], false);
+    } else {
+        document.body.classList.remove('start-page-active');
     }
 
     closeSidebar();
@@ -115,8 +119,7 @@ export async function showPage(pageIdToShow) {
     } else if (pageIdToShow === 'config-page') {
         setupConfigUI(); // Isso já chama loadConfig() internamente
     }
-    // REMOVIDO: Importação assíncrona e chamada de setupSchedulingPage aqui.
-    // Ela será chamada uma única vez no main.js.
+
     else if (pageIdToShow === 'scoring-page') {
         updateScoreDisplay(getTeam1Score(), getTeam2Score());
         updateTeamDisplayNamesAndColors(getActiveTeam1Name(), getActiveTeam2Name(), getActiveTeam1Color(), getActiveTeam2Color());
@@ -128,6 +131,20 @@ export async function showPage(pageIdToShow) {
         
         const shouldDisplayPlayers = displayPlayers && (currentTeam1Players.length > 0 || currentTeam2Players.length > 0);
         renderScoringPagePlayers(currentTeam1Players, currentTeam2Players, shouldDisplayPlayers);
+        
+        // NOVO: Força atualização dos ícones
+        setTimeout(() => {
+            const team1Btn = document.getElementById('team1-change-button');
+            const team2Btn = document.getElementById('team2-change-button');
+            if (team1Btn) {
+                const icon1 = team1Btn.querySelector('.material-icons');
+                if (icon1) icon1.textContent = 'cached';
+            }
+            if (team2Btn) {
+                const icon2 = team2Btn.querySelector('.material-icons');
+                if (icon2) icon2.textContent = 'cached';
+            }
+        }, 100);
     } else if (pageIdToShow === 'start-page') {
         // Não resetar o jogo automaticamente - apenas se não houver jogo em progresso
         if (!getIsGameInProgress()) {
@@ -313,18 +330,40 @@ export function setupSidebar(startGameHandler, getPlayersHandler) {
                 // Atualiza o conteúdo do menu
                 const currentUser = getCurrentUser();
                 const isGoogleUser = currentUser && !currentUser.isAnonymous;
-                profileMenu.innerHTML = `
-                    ${isGoogleUser ? `
-                    <button class="profile-menu-item" onclick="changeProfilePhoto()">
-                        <span class="material-icons">photo_camera</span>
-                        Alterar Foto
-                    </button>
-                    ` : ''}
-                    <button class="profile-menu-item" onclick="logout()">
-                        <span class="material-icons">logout</span>
-                        Sair
-                    </button>
-                `;
+                const isAnonymousUser = currentUser && currentUser.isAnonymous;
+                
+                if (isAnonymousUser) {
+                    // Para usuário anônimo, mostra opção de logar
+                    profileMenu.innerHTML = `
+                        <button class="profile-menu-item" id="profile-login-button">
+                            <span class="material-icons">login</span>
+                            Logar
+                        </button>
+                    `;
+                    // Adiciona event listener para o botão de login
+                    const loginBtn = document.getElementById('profile-login-button');
+                    if (loginBtn) {
+                        loginBtn.addEventListener('click', async () => {
+                            closeSidebar();
+                            const { loginWithGoogle } = await import('../firebase/auth.js');
+                            loginWithGoogle();
+                        });
+                    }
+                } else {
+                    // Para usuário Google ou não logado, mostra opções normais
+                    profileMenu.innerHTML = `
+                        ${isGoogleUser ? `
+                        <button class="profile-menu-item" onclick="changeProfilePhoto()">
+                            <span class="material-icons">photo_camera</span>
+                            Alterar Foto
+                        </button>
+                        ` : ''}
+                        <button class="profile-menu-item" onclick="logout()">
+                            <span class="material-icons">logout</span>
+                            Sair
+                        </button>
+                    `;
+                }
                 // Event listeners são adicionados via onclick no HTML
                 profileMenu.classList.toggle('active');
                 userProfileHeader.classList.toggle('active');
@@ -332,23 +371,12 @@ export function setupSidebar(startGameHandler, getPlayersHandler) {
         });
     }
 
-    // REMOVIDO: Lógica para adicionar botão de alterar nome de exibição
     if (Elements.profileMenu()) {
         const logoutBtn = Elements.profileLogoutButton();
         if (logoutBtn) {
             logoutBtn.parentNode.removeChild(logoutBtn);
         }
     }
-
-    // Event listeners são adicionados via onclick no HTML
-
-    // REMOVIDO: Listener para o botão "Configurações" dentro do mini-menu, movido para o sidebar principal
-    // if (Elements.profileSettingsButton()) {
-    //     Elements.profileSettingsButton().addEventListener('click', () => {
-    //         showPage('config-page'); // Navega para a página de configurações
-    //         closeSidebar();
-    //     });
-    // }
 }
 
 
@@ -449,8 +477,7 @@ export function setupAccordion() {
         });
     });
 
-    // REMOVIDO: Bloco redundante que estava causando o bug do accordion na tela de agendamentos.
-    // O loop acima já lida com todos os cabeçalhos de accordion, incluindo o de "Jogos Passados".
+
 }
 
 /**
@@ -459,7 +486,6 @@ export function setupAccordion() {
  */
 export function openTeamSelectionModal(panelId) {
     if (!Elements.teamSelectionModal()) {
-        // Removido: console.error("Elemento do modal de seleção de time não encontrado.");
         displayMessage("Erro: Modal de seleção de time não encontrado.", "error");
         return;
     }
@@ -498,13 +524,11 @@ export function selectTeamFromModal(teamIndex, panelId) {
 
     const teamNumberForConfig = teamIndex + 1;
 
-    // CORREÇÃO AQUI: Garante que as chaves de configuração sejam construídas corretamente
     const teamConfigNameKey = `customTeam${teamNumberForConfig}Name`;
     const teamConfigColorKey = `customTeam${teamNumberForConfig}Color`;
 
-    // Acessa as configurações usando as chaves corretas
     const teamDisplayName = config[teamConfigNameKey] || selectedTeam.name || `Time ${teamNumberForConfig}`;
-    const teamDisplayColor = config[teamConfigColorKey] || defaultColors[teamIndex] || '#6c757d'; // Usa teamConfigColorKey aqui
+    const teamDisplayColor = config[teamConfigColorKey] || defaultColors[teamIndex] || '#6c757d';
 
     if (panelId === 'team1') {
         setCurrentTeam1(selectedTeam.players);
@@ -530,9 +554,6 @@ export function selectTeamFromModal(teamIndex, panelId) {
  * Configura os event listeners para o modal de seleção de time.
  */
 export function setupTeamSelectionModal() {
-    if (Elements.closeModalButton()) {
-        Elements.closeModalButton().addEventListener('click', closeTeamSelectionModal);
-    }
     if (Elements.closeModalButtonTopRight()) {
         Elements.closeModalButtonTopRight().addEventListener('click', closeTeamSelectionModal);
     }
@@ -577,8 +598,40 @@ export function setupScoreInteractions() {
     const team1ChangeButton = document.getElementById('team1-change-button');
     const team2ChangeButton = document.getElementById('team2-change-button');
     
-    addModalOpenListeners(team1ChangeButton, 'team1');
-    addModalOpenListeners(team2ChangeButton, 'team2');
+    // NOVO: Força atualização dos ícones
+    if (team1ChangeButton) {
+        const icon1 = team1ChangeButton.querySelector('.material-icons');
+        if (icon1) icon1.textContent = 'cached';
+    }
+    if (team2ChangeButton) {
+        const icon2 = team2ChangeButton.querySelector('.material-icons');
+        if (icon2) icon2.textContent = 'cached';
+    }
+    
+    // NOVO: Adiciona stopPropagation para evitar pontuação
+    if (team1ChangeButton) {
+        team1ChangeButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            event.preventDefault();
+            openTeamSelectionModal('team1');
+        });
+        team1ChangeButton.addEventListener('touchend', (event) => {
+            event.stopPropagation();
+            event.preventDefault();
+        });
+    }
+    
+    if (team2ChangeButton) {
+        team2ChangeButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+            event.preventDefault();
+            openTeamSelectionModal('team2');
+        });
+        team2ChangeButton.addEventListener('touchend', (event) => {
+            event.stopPropagation();
+            event.preventDefault();
+        });
+    }
 }
 
 function handleScoreTouch(event, teamId) {
@@ -592,7 +645,12 @@ function handleScoreTouch(event, teamId) {
         const deltaY = touchEndY - touchStartY;
 
         const targetElement = event.target;
-        if (targetElement.closest('.team-name') || targetElement.closest('.team-players-column')) {
+        // NOVO: Evita pontuação quando clicar nos botões de substituir
+        if (targetElement.closest('.team-name') || 
+            targetElement.closest('.team-players-column') ||
+            targetElement.closest('.team-change-button') ||
+            targetElement.closest('#team1-change-button') ||
+            targetElement.closest('#team2-change-button')) {
             return; 
         }
 
@@ -622,7 +680,6 @@ export function showConfirmationModal(message, onConfirm, onCancel = null) {
     const noButton = Elements.confirmNoButton();
 
     if (!modal || !msgElement || !yesButton || !noButton) {
-        // Removido: console.error("Elementos do modal de confirmação não encontrados.");
         return;
     }
 
@@ -752,6 +809,40 @@ async function addPlayerWithCategory(playerName, category, appId) {
         console.error("Erro ao adicionar jogador:", error);
         displayMessage("Erro ao adicionar jogador. Tente novamente.", "error");
     }
+}
+
+// Função para obter nome de exibição da categoria
+function getCategoryDisplayName(category) {
+    const categoryNames = {
+        'principais': 'Principais',
+        'esporadicos': 'Esporádicos', 
+        'random': 'Random'
+    };
+    return categoryNames[category] || category;
+}
+
+// NOVO: Função para forçar atualização dos ícones
+export function forceUpdateIcons() {
+    const team1Btn = document.getElementById('team1-change-button');
+    const team2Btn = document.getElementById('team2-change-button');
+    
+    if (team1Btn) {
+        const icon1 = team1Btn.querySelector('.material-icons');
+        if (icon1) {
+            icon1.textContent = 'cached';
+            icon1.style.fontFamily = 'Material Icons';
+        }
+    }
+    
+    if (team2Btn) {
+        const icon2 = team2Btn.querySelector('.material-icons');
+        if (icon2) {
+            icon2.textContent = 'cached';
+            icon2.style.fontFamily = 'Material Icons';
+        }
+    }
+    
+    console.log('Ícones atualizados para cached');
 }
 
 

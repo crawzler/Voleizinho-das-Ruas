@@ -1,11 +1,9 @@
 html {
     box-sizing: border-box;
-    height: 100%; /* Garante que o html ocupe toda a altura da viewport */
-    width: 100%; /* Garante que o html ocupe toda a largura da viewport */
-    /* NOVO: Oculta a barra de rolagem horizontal para o html, mas permite rolagem */
+    height: 100%;
+    width: 100%;
     overflow-x: hidden;
-    /* NOVO: Oculta a barra de rolagem vertical para o html, mas permite rolagem */
-    overflow-y: hidden; /* Ajuste para evitar rolagem do HTML */
+    overflow-y: auto; /* Permite scroll vertical */
 }
 
 /* Regra universal de box-sizing deve ser aplicada globalmente */
@@ -24,8 +22,6 @@ body {
     margin: 0;
     padding: 0;
     width: 100%;
-    overscroll-behavior: none;
-    overscroll-behavior-y: none;
     overscroll-behavior-x: none;
     
     /* Desabilita seleção de texto para app mobile */
@@ -49,7 +45,9 @@ body::-webkit-scrollbar,
 .players-list-container::-webkit-scrollbar,
 .accordion-content::-webkit-scrollbar,
 .select-team-modal-content-wrapper::-webkit-scrollbar,
-.team-players-column::-webkit-scrollbar {
+.team-players-column::-webkit-scrollbar,
+.teams-page-layout::-webkit-scrollbar,
+.teams-page-layout-sub::-webkit-scrollbar {
     width: 4px;
 }
 
@@ -59,7 +57,9 @@ body::-webkit-scrollbar-track,
 .players-list-container::-webkit-scrollbar-track,
 .accordion-content::-webkit-scrollbar-track,
 .select-team-modal-content-wrapper::-webkit-scrollbar-track,
-.team-players-column::-webkit-scrollbar-track {
+.team-players-column::-webkit-scrollbar-track,
+.teams-page-layout::-webkit-scrollbar-track,
+.teams-page-layout-sub::-webkit-scrollbar-track {
     background: transparent;
 }
 
@@ -69,7 +69,9 @@ body::-webkit-scrollbar-thumb,
 .players-list-container::-webkit-scrollbar-thumb,
 .accordion-content::-webkit-scrollbar-thumb,
 .select-team-modal-content-wrapper::-webkit-scrollbar-thumb,
-.team-players-column::-webkit-scrollbar-thumb {
+.team-players-column::-webkit-scrollbar-thumb,
+.teams-page-layout::-webkit-scrollbar-thumb,
+.teams-page-layout-sub::-webkit-scrollbar-thumb {
     background: #444;
     border-radius: 2px;
 }
@@ -80,7 +82,9 @@ body::-webkit-scrollbar-thumb:hover,
 .players-list-container::-webkit-scrollbar-thumb:hover,
 .accordion-content::-webkit-scrollbar-thumb:hover,
 .select-team-modal-content-wrapper::-webkit-scrollbar-thumb:hover,
-.team-players-column::-webkit-scrollbar-thumb:hover {
+.team-players-column::-webkit-scrollbar-thumb:hover,
+.teams-page-layout::-webkit-scrollbar-thumb:hover,
+.teams-page-layout-sub::-webkit-scrollbar-thumb:hover {
     background: #666;
 }
 
@@ -510,29 +514,39 @@ input:checked + .slider:before {
 
 /* Main Content */
 .app-main-content {
-    position: relative; /* Essencial para que .app-page com position: absolute funcione */
+    position: relative;
     width: 100%;
-    height: 100vh; /* Ocupa a altura total da viewport */
-    overflow: hidden; /* Esconde o overflow para evitar barras de rolagem indesejadas */
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Controle de scroll para a página de times: bloqueia scroll da página inteira
+   e habilita scroll apenas na sub-área `.teams-page-layout-sub`. */
+#teams-page.app-page--active {
+    position: relative !important;
+    height: 100vh !important; /* ocupa toda a viewport */
+    overflow: hidden !important; /* impede scroll da página inteira */
 }
 
 /* Estilos base para todas as páginas */
 .app-page {
     width: 100%;
-    height: 100%; /* Ocupa a altura total do .app-main-content */
-    position: absolute; /* Permite que as páginas se sobreponham */
+    height: 100%;
+    position: absolute;
     top: 0;
     left: 0;
-    display: none; /* Esconde todas as páginas por padrão */
+    display: none;
     padding: 1rem;
     box-sizing: border-box;
     background-color: #1a1a1a;
     color: #E5E7EB;
-    flex-direction: column; /* Padrão para as páginas, pode ser sobrescrito */
-    align-items: center; /* Padrão para as páginas, pode ser sobrescrito */
-    justify-content: flex-start; /* Padrão para as páginas, pode ser sobrescrito */
-    z-index: 1; /* Z-index padrão para páginas inativas */
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    z-index: 1;
 }
+
+
 
 /* NOVO: Garante que as páginas, exceto a de pontuação, não tenham transições horizontais */
 /* Aplica overflow-x: hidden e remove qualquer transição ou transformação horizontal */
@@ -541,6 +555,13 @@ input:checked + .slider:before {
     transition: left 0s, transform 0s; /* Remove transições para left e transform */
     left: 0; /* Garante que a página esteja sempre na posição 0 à esquerda */
     transform: translateX(0); /* Garante que não haja translação horizontal */
+}
+
+/* Permite scroll vertical na página de times */
+#teams-page {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
 }
 
 
@@ -630,6 +651,28 @@ input:checked + .slider:before {
     width: 100%;
     height: 100%;
     z-index: 200; /* Acima da página de pontuação (z-index: 100), mas abaixo do sidebar (900) */
+}
+
+/* NOVO: Oculta elementos desnecessários quando start-page está ativa */
+.start-page-layout.app-page--active ~ * #swap-teams-button,
+.start-page-layout.app-page--active ~ * #team1-change-button,
+.start-page-layout.app-page--active ~ * #team2-change-button,
+.start-page-layout.app-page--active ~ * #team1-players-column,
+.start-page-layout.app-page--active ~ * #team2-players-column,
+.start-page-layout.app-page--active ~ * #quick-settings-button,
+.start-page-layout.app-page--active ~ * .timer-and-set-timer-wrapper {
+    display: none !important;
+}
+
+/* Alternativa mais específica usando seletor de página ativa */
+#start-page.app-page--active ~ #scoring-page #swap-teams-button,
+#start-page.app-page--active ~ #scoring-page #team1-change-button,
+#start-page.app-page--active ~ #scoring-page #team2-change-button,
+#start-page.app-page--active ~ #scoring-page #team1-players-column,
+#start-page.app-page--active ~ #scoring-page #team2-players-column,
+#start-page.app-page--active ~ #scoring-page #quick-settings-button,
+#start-page.app-page--active ~ #scoring-page .timer-and-set-timer-wrapper {
+    display: none !important;
 }
 
 .welcome-message {
@@ -1012,15 +1055,64 @@ input:checked + .slider:before {
 .teams-page-layout {
     display: flex;
     flex-direction: column;
+    min-height: 100vh;
 }
 
 .teams-page-layout-sub {
     display: flex;
     flex-direction: column;
     width: 100%;
-    height: 100%;
+    /* Ocupa o espaço disponível dentro da página e passa a ser rolável */
+    flex: 1 1 auto;
+    height: auto;
     gap: 1rem;
     padding: 0px;
+    overflow-y: auto; /* rolagem interna somente aqui */
+    -webkit-overflow-scrolling: touch; /* suaviza o scroll em iOS */
+    touch-action: pan-y;
+}
+
+/* Barra de rolagem fina e discreta para a subárea de times (igual players list) */
+.teams-page-layout-sub::-webkit-scrollbar {
+    width: 6px;
+}
+.teams-page-layout-sub::-webkit-scrollbar-track {
+    background: transparent;
+}
+.teams-page-layout-sub::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 2px;
+}
+/* Para Firefox */
+.teams-page-layout-sub {
+    scrollbar-width: thin; /* Firefox mostra fininha */
+    scrollbar-color: #444 transparent;
+}
+
+/* Sombra indicadora: usando pseudo-elementos no container quando houver overflow */
+.teams-page-layout-sub.has-scroll-top::before,
+.teams-page-layout-sub.has-scroll-bottom::after {
+    content: '';
+    position: sticky;
+    left: 0;
+    right: 0;
+    height: 20px;
+    pointer-events: none;
+    z-index: 10;
+}
+.teams-page-layout-sub.has-scroll-top::before {
+    top: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0));
+}
+.teams-page-layout-sub.has-scroll-bottom::after {
+    bottom: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.5), rgba(0,0,0,0));
+}
+
+.teams-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
 }
 
 .teams-action {
@@ -1073,11 +1165,7 @@ input:checked + .slider:before {
     -webkit-tap-highlight-color: transparent;
 }
 
-.teams-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-}
+
 
 .team-card {
     flex: 1;
@@ -1470,6 +1558,11 @@ select.form-input {
     visibility: visible !important;
 }
 
+/* NOVO: Oculta colunas de jogadores quando start-page está ativa */
+body.start-page-active .team-players-column {
+    display: none !important;
+}
+
 .team-players-column:empty::before {
     content: '';
     display: block;
@@ -1511,6 +1604,12 @@ select.form-input {
     cursor: pointer;
     z-index: 15;
     transition: all 0.2s ease;
+}
+
+/* NOVO: Oculta botões de trocar times quando start-page está ativa */
+body.start-page-active #team1-change-button,
+body.start-page-active #team2-change-button {
+    display: none !important;
 }
 
 #team1-change-button:hover,
@@ -1567,6 +1666,11 @@ select.form-input {
     -webkit-tap-highlight-color: transparent;
 }
 
+/* NOVO: Oculta quando start-page está ativa */
+body.start-page-active #swap-teams-button {
+    display: none !important;
+}
+
 #swap-teams-button .material-icons {
     font-size: 2rem;
 }
@@ -1590,6 +1694,11 @@ select.form-input {
     -webkit-tap-highlight-color: transparent;
     cursor: pointer;
     transition: all 0.2s ease;
+}
+
+/* NOVO: Oculta quando start-page está ativa */
+body.start-page-active #quick-settings-button {
+    display: none !important;
 }
 
 
@@ -1714,6 +1823,11 @@ select.form-input {
     /* NOVO: Removes a demarcação azul em cliques/toques */
     outline: none;
     -webkit-tap-highlight-color: transparent;
+}
+
+/* NOVO: Força ocultar timer quando start-page está ativa */
+body.start-page-active .timer-and-set-timer-wrapper {
+    display: none !important;
 }
 
 .timer-wrapper {
@@ -2978,6 +3092,7 @@ input[type="password"] {
     width: 100%;
     border-radius: 12px;
     margin-bottom: 1.5rem;
+    flex-shrink: 0; /* Impede que o painel de controle encolha */
 }
 
 .teams-stats {
@@ -3217,7 +3332,22 @@ input[type="password"] {
 }
 
 .status-in-team {
-    /* Cores serão definidas dinamicamente via JavaScript */
+    background-color: transparent !important;
+    color: #E5E7EB !important;
+    border: none !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+}
+
+.status-in-team::before {
+    content: '';
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background-color: var(--team-color, #666);
+    border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .no-players-message {

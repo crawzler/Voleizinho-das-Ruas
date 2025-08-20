@@ -5,7 +5,7 @@ import { initFirebaseApp, getAppId } from './firebase/config.js';
 import { logout, setupAuthListener, signInAnonymouslyUser, updateProfileMenuLoginState, getCurrentUser, loginWithGoogle } from './firebase/auth.js'; // Imports updateProfileMenuLoginState
 import { setupFirestorePlayersListener } from './data/players.js';
 import * as SchedulesData from './data/schedules.js';
-import { showPage, updatePlayerModificationAbility, setupSidebar, setupPageNavigation, setupAccordion, setupScoreInteractions, setupTeamSelectionModal, closeSidebar, showConfirmationModal, hideConfirmationModal } from './ui/pages.js';
+import { showPage, updatePlayerModificationAbility, setupSidebar, setupPageNavigation, setupAccordion, setupScoreInteractions, setupTeamSelectionModal, closeSidebar, showConfirmationModal, hideConfirmationModal, forceUpdateIcons } from './ui/pages.js';
 import { setupConfigUI, loadConfig } from './ui/config-ui.js'; // Importa loadConfig
 import { startGame, toggleTimer, swapTeams, endGame, restoreSavedGameIfAny } from './game/logic.js';
 import { generateTeams } from './game/teams.js';
@@ -61,7 +61,6 @@ export function updateConnectionIndicator(status) {
     const statusText = Elements.statusText();
 
     if (!indicator || !statusDot || !statusText) {
-        // console.warn("Elementos do indicador de conexão não encontrados."); // Removido console.warn excessivo
         return;
     }
 
@@ -102,13 +101,12 @@ export function updateConnectionIndicator(status) {
  */
 export function hideLoadingOverlay() {
     const loadingOverlay = Elements.loadingOverlay();
-    if (loadingOverlay && !loadingOverlay.classList.contains('hidden')) { // Verifica se já não está oculto
+    if (loadingOverlay && !loadingOverlay.classList.contains('hidden')) {
         loadingOverlay.classList.add('hidden');
         if (loadingTimeout) {
             clearTimeout(loadingTimeout);
             loadingTimeout = null;
         }
-        // Log essencial removido
     }
 }
 
@@ -123,7 +121,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Inicia o timer para forçar o modo offline após 10 segundos, se necessário
     loadingTimeout = setTimeout(() => {
         if (!authListenerInitialized) {
-            // Log essencial removido
             displayMessage("Não foi possível conectar. Modo offline ativado.", "info");
             showPage('start-page');
             updateConnectionIndicator('offline');
@@ -138,8 +135,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
         try {
             await signInWithCustomToken(auth, __initial_auth_token);
-            // Log essencial removido
-        } catch (error) {}
+        } catch (error) {
+            console.warn('Erro ao fazer login com token:', error);
+        }
     }
 
     setupAuthListener(auth, db, appId);
@@ -157,75 +155,82 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Listeners for team page buttons
     const generateTeamsButton = document.getElementById('generate-teams-button');
-    // console.log("Element 'generate-teams-button':", generateTeamsButton); // Removido console.log excessivo
     if (generateTeamsButton) {
         generateTeamsButton.addEventListener('click', () => {
-            console.log("Button 'Generate Teams' clicked.");
             generateTeams(appId);
         });
     }
 
-    // Listener for start/stop game button (which now starts the game or toggles the timer)
+    // --- Indicador visual de overflow (sombra) para a área de times ---
+    const teamsSub = document.querySelector('.teams-page-layout-sub');
+    if (teamsSub) {
+        const updateShadows = () => {
+            const scrollTop = teamsSub.scrollTop;
+            const scrollHeight = teamsSub.scrollHeight;
+            const clientHeight = teamsSub.clientHeight;
+
+            if (scrollTop > 5) {
+                teamsSub.classList.add('has-scroll-top');
+            } else {
+                teamsSub.classList.remove('has-scroll-top');
+            }
+
+            if (scrollTop + clientHeight < scrollHeight - 5) {
+                teamsSub.classList.add('has-scroll-bottom');
+            } else {
+                teamsSub.classList.remove('has-scroll-bottom');
+            }
+        };
+
+        teamsSub.addEventListener('scroll', updateShadows, { passive: true });
+        window.addEventListener('resize', updateShadows);
+        // roda uma vez para inicializar o estado
+        setTimeout(updateShadows, 100);
+    }
+
     const toggleTimerButton = document.getElementById('toggle-timer-button');
-    // console.log("Element 'toggle-timer-button':", toggleTimerButton); // Removido console.log excessivo
     if (toggleTimerButton) {
         toggleTimerButton.addEventListener('click', () => {
-            console.log("Button 'Toggle Timer' clicked.");
             toggleTimer();
         });
     }
 
-    // Listener for swap teams button
     const swapTeamsButton = document.getElementById('swap-teams-button');
-    // console.log("Element 'swap-teams-button':", swapTeamsButton); // Removido console.log excessivo
     if (swapTeamsButton) {
         swapTeamsButton.addEventListener('click', () => {
-            console.log("Button 'Swap Teams' clicked.");
             swapTeams();
         });
     }
 
-    // Sets up the timer toggle button
     const timerAndSetTimerWrapperElement = Elements.timerAndSetTimerWrapper();
-    // console.log("Element 'Elements.timerAndSetTimerWrapper()':", timerAndSetTimerWrapperElement); // Removido console.log excessivo
     if (timerAndSetTimerWrapperElement) {
         timerAndSetTimerWrapperElement.addEventListener('click', () => {
-            console.log("Timer Wrapper clicked.");
             toggleTimer();
         });
     }
 
-    // Sets up the end game button
     const endGameButton = document.getElementById('end-game-button');
-    // console.log("Element 'end-game-button':", endGameButton); // Removido console.log excessivo
     if (endGameButton) {
         endGameButton.addEventListener('click', () => {
-            console.log("Button 'End Game' clicked.");
             showConfirmationModal(
                 'Are you sure you want to end the game? The score will be saved to history.',
                 () => {
-                    console.log("Game end confirmation.");
                     endGame();
                 }
             );
         });
     }
 
-    // FIXED: Adds event listeners for login buttons with correct HTML IDs
     const googleLoginButton = document.getElementById('google-login-button');
-    // console.log("Element 'google-login-button':", googleLoginButton); // Removido console.log excessivo
     if (googleLoginButton) {
         googleLoginButton.addEventListener('click', () => {
-            console.log("Button 'Sign in with Google' clicked.");
             loginWithGoogle();
         });
     }
 
     const anonymousLoginButton = document.getElementById('anonymous-login-button');
-    // console.log("Element 'anonymous-login-button':", anonymousLoginButton); // Removido console.log excessivo
     if (anonymousLoginButton) {
         anonymousLoginButton.addEventListener('click', () => {
-            console.log("Button 'Sign in anonymously' clicked.");
             signInAnonymouslyUser(appId);
         });
     }
@@ -323,10 +328,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, { passive: false });
     
     document.body.addEventListener('touchmove', e => {
-        // Permite scroll em elementos específicos
-        if (e.target.closest('.players-list-container') || 
-            e.target.closest('.player-category-tabs')) {
-            return;
+        // Permite scroll em elementos específicos:
+        // - lista de jogadores / abas de categoria
+        // - subárea da página de times (.teams-page-layout-sub)
+        // - modal de substituição (conteúdo e lista de jogadores)
+        if (e.target.closest('.players-list-container') ||
+            e.target.closest('.player-category-tabs') ||
+            e.target.closest('.teams-page-layout-sub') ||
+            e.target.closest('.substitute-modal-content') ||
+            e.target.closest('.substitute-players-list')) {
+            return; // permite o touchmove/scroll natural nesses elementos
         }
         e.preventDefault();
     }, { passive: false });
@@ -340,8 +351,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (Elements.sidebarOverlay()) {
         Elements.sidebarOverlay().addEventListener('click', () => {
             closeSidebar();
-            // Log essencial removido
-        });    }
+        });
+    }
     
     // Tentar restaurar partida salva APÓS toda a configuração estar completa
     setTimeout(async () => {
@@ -351,6 +362,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.log("[main.js] Partida restaurada do armazenamento local.");
             }
             await updateStartButtonText();
+            // NOVO: Força atualização dos ícones
+            forceUpdateIcons();
         } catch (e) {
             console.warn("[main.js] Falha ao restaurar partida:", e);
         }

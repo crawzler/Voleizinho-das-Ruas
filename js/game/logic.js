@@ -98,10 +98,9 @@ export function setGameState(state, { resumeTimers = true } = {}) {
         if (isTimerRunning) {
             startTimer();
             startSetTimer();
-        } else {
-            // Garantir que botões/ícones exibam estado parado
-            updateTimerButtonIcon();
         }
+        // Sempre atualizar o ícone do timer, independente do estado
+        updateTimerButtonIcon();
         if (Elements.timerAndSetTimerWrapper()) {
             Elements.timerAndSetTimerWrapper().style.display = 'flex';
         }
@@ -449,10 +448,8 @@ export function startGame(appId) {
         currentTeam2 = allGeneratedTeams[currentTeam2Index].players;
 
         const team1ConfigName = config[`customTeam${currentTeam1Index + 1}Name`];
-        // CORREÇÃO: current1Index para currentTeam1Index
         const team2ConfigName = config[`customTeam${currentTeam2Index + 1}Name`];
         const team1ConfigColor = config[`customTeam${currentTeam1Index + 1}Color`];
-        // CORREÇÃO: current2Index para currentTeam2Index
         const team2ConfigColor = config[`customTeam${currentTeam2Index + 1}Color`];
 
         activeTeam1Name = team1ConfigName || allGeneratedTeams[currentTeam1Index].name || 'Time 1';
@@ -479,12 +476,9 @@ export function startGame(appId) {
     renderScoringPagePlayers(currentTeam1, currentTeam2, shouldDisplayPlayers);
 
     isGameInProgress = true;
-    console.log('DEBUG: Chamando updateNavScoringButton(true) em startGame.');
     updateNavScoringButton(true, 'scoring-page');
-    console.log('DEBUG: Elements.timerAndSetTimerWrapper no startGame:', Elements.timerAndSetTimerWrapper());
     if (Elements.timerAndSetTimerWrapper()) {
         Elements.timerAndSetTimerWrapper().style.display = 'flex';
-        console.log('DEBUG: Current display style of timerAndSetTimerWrapper:', Elements.timerAndSetTimerWrapper().style.display);
     }
     showPage('scoring-page');
     startTimer();

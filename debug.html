@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Firebase - Exclusão de Jogadores</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.success { background-color: #d4edda; color: #155724; }
+        .status.error { background-color: #f8d7da; color: #721c24; }
+        .status.warning { background-color: #fff3cd; color: #856404; }
+        .status.info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        button.danger { background-color: #dc3545; }
+        button.danger:hover { background-color: #c82333; }
+        #output {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .player-item {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 5px 0;
+        }
+        .player-item button {
+            font-size: 12px;
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Debug Firebase - Exclusão de Jogadores</h1>
+        
+        <div class="status info">
+            <strong>Instruções:</strong>
+            <ol>
+                <li>Abra o console do navegador (F12)</li>
+                <li>Faça login no aplicativo principal</li>
+                <li>Use os botões abaixo ou execute comandos no console</li>
+            </ol>
+        </div>
+
+        <div>
+            <h3>🔍 Diagnóstico</h3>
+            <button onclick="checkState()">Verificar Estado Atual</button>
+            <button onclick="listAllPlayers()">Listar Jogadores</button>
+            <button onclick="checkRules()">Testar Regras Firebase</button>
+        </div>
+
+        <div>
+            <h3>🗑️ Teste de Exclusão</h3>
+            <input type="text" id="playerIdInput" placeholder="ID do jogador para excluir" style="width: 300px; padding: 8px;">
+            <button class="danger" onclick="testDelete()">Testar Exclusão</button>
+        </div>
+
+        <div id="playersContainer">
+            <h3>👥 Jogadores Disponíveis</h3>
+            <div id="playersList"></div>
+            <button onclick="refreshPlayersList()">Atualizar Lista</button>
+        </div>
+
+        <div>
+            <h3>📋 Output</h3>
+            <button onclick="clearOutput()">Limpar</button>
+            <div id="output"></div>
+        </div>
+    </div>
+
+    <script src="debug-firebase.js"></script>
+    <script>
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️';
+            output.textContent += `[${timestamp}] ${prefix} ${message}\n`;
+            output.scrollTop = output.scrollHeight;
+            
+            if (type === 'error') {
+                console.error(message);
+            } else {
+                console.log(message);
+            }
+        }
+
+        function clearOutput() {
+            document.getElementById('output').textContent = '';
+        }
+
+        async function checkState() {
+            log('Verificando estado atual...');
+            try {
+                const state = window.debugFirebase.checkCurrentState();
+                log(`Usuário: ${state.currentUser ? state.currentUser.uid : 'Não logado'}`);
+                log(`AppId: ${state.appId || 'Não encontrado'}`);
+                log(`Jogadores: ${state.players.length}`);
+                log(`Firestore: ${state.hasFirestore ? 'Disponível' : 'Não disponível'}`);
+                log(`Online: ${state.isOnline ? 'Sim' : 'Não'}`);
+                log('Estado verificado com sucesso', 'success');
+            } catch (error) {
+                log(`Erro ao verificar estado: ${error.message}`, 'error');
+            }
+        }
+
+        async function listAllPlayers() {
+            log('Listando jogadores...');
+            try {
+                window.debugFirebase.listPlayers();
+                refreshPlayersList();
+                log('Jogadores listados no console', 'success');
+            } catch (error) {
+                log(`Erro ao listar jogadores: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkRules() {
+            log('Verificando regras do Firebase...');
+            try {
+                await window.debugFirebase.checkFirebaseRules();
+                log('Regras verificadas - veja detalhes no console', 'success');
+            } catch (error) {
+                log(`Erro ao verificar regras: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDelete() {
+            const playerId = document.getElementById('playerIdInput').value.trim();
+            if (!playerId) {
+                log('Por favor, insira um ID de jogador', 'warning');
+                return;
+            }
+
+            log(`Testando exclusão do jogador: ${playerId}`);
+            try {
+                const success = await window.debugFirebase.testDeletePlayer(playerId);
+                if (success) {
+                    log('Exclusão realizada com sucesso!', 'success');
+                    refreshPlayersList();
+                } else {
+                    log('Falha na exclusão', 'error');
+                }
+            } catch (error) {
+                log(`Erro durante teste de exclusão: ${error.message}`, 'error');
+            }
+        }
+
+        function refreshPlayersList() {
+            const playersList = document.getElementById('playersList');
+            const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
+            
+            if (players.length === 0) {
+                playersList.innerHTML = '<p>Nenhum jogador encontrado</p>';
+                return;
+            }
+
+            playersList.innerHTML = players.map(player => `
+                <div class="player-item">
+                    <strong>${player.name}</strong><br>
+                    <small>ID: ${player.id}</small><br>
+                    <small>Local: ${player.isLocal ? 'Sim' : 'Não'} | Criado por: ${player.createdBy || 'N/A'}</small><br>
+                    <button onclick="document.getElementById('playerIdInput').value='${player.id}'">Selecionar para Exclusão</button>
+                </div>
+            `).join('');
+        }
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', () => {
+            log('Debug Firebase carregado');
+            log('Aguardando carregamento do script principal...');
+            
+            // Verifica se o script principal está carregado
+            const checkMainScript = setInterval(() => {
+                if (window.debugFirebase) {
+                    clearInterval(checkMainScript);
+                    log('Script de debug carregado com sucesso', 'success');
+                    refreshPlayersList();
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

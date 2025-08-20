@@ -883,10 +883,14 @@ function hideDeleteZone() {
 }
 
 function deletePlayer(playerId) {
+    console.log('[deletePlayer] Iniciando exclusão do jogador:', playerId);
+    
     // Encontra o jogador
     const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
     const player = players.find(p => p.id === playerId);
     const playerName = player ? player.name.replace(' [local]', '') : 'este jogador';
+    
+    console.log('[deletePlayer] Jogador encontrado:', player);
     
     if (!player) {
         import('./messages.js').then(({ displayMessage }) => {
@@ -905,8 +909,17 @@ function deletePlayer(playerId) {
         const isCreator = currentUser && player.createdBy === currentUser.uid;
         const isLocal = player.isLocal;
         
+        console.log('[deletePlayer] Verificação de permissões:', {
+            currentUser: currentUser ? currentUser.uid : 'null',
+            isAdmin,
+            isCreator,
+            isLocal,
+            playerCreatedBy: player.createdBy
+        });
+        
         // Se não tem permissão para excluir
         if (!isLocal && !isAdmin && !isCreator) {
+            console.log('[deletePlayer] Sem permissão para excluir');
             import('./messages.js').then(({ displayMessage }) => {
                 displayMessage('Você não tem autorização para remover este jogador', 'error');
             });
@@ -932,25 +945,46 @@ function deletePlayer(playerId) {
             // Confirmar exclusão
             newConfirmBtn.addEventListener('click', () => {
                 modal.classList.remove('active');
+                console.log('[deletePlayer] Confirmação de exclusão');
+                
                 import('./messages.js').then(({ displayMessage }) => {
                     import('../data/players.js').then(({ removePlayer }) => {
+                        // Obtém o appId correto
                         const appId = localStorage.getItem('appId') || 'default';
+                        console.log('[deletePlayer] Chamando removePlayer com:', {
+                            playerId,
+                            requesterUid: currentUser ? currentUser.uid : null,
+                            appId
+                        });
+                        
                         removePlayer(playerId, currentUser ? currentUser.uid : null, appId)
                             .then(() => {
+                                console.log('[deletePlayer] Jogador removido com sucesso');
                                 displayMessage('Jogador removido com sucesso!', 'success');
                             })
                             .catch((error) => {
-                                displayMessage('Erro ao remover jogador', 'error');
+                                console.error('[deletePlayer] Erro ao remover jogador:', error);
+                                displayMessage(`Erro ao remover jogador: ${error.message}`, 'error');
                             });
+                    }).catch(error => {
+                        console.error('[deletePlayer] Erro ao importar removePlayer:', error);
+                        displayMessage('Erro interno ao remover jogador', 'error');
                     });
+                }).catch(error => {
+                    console.error('[deletePlayer] Erro ao importar displayMessage:', error);
                 });
             });
             
             // Cancelar exclusão
             newCancelBtn.addEventListener('click', () => {
+                console.log('[deletePlayer] Exclusão cancelada');
                 modal.classList.remove('active');
             });
+        } else {
+            console.error('[deletePlayer] Modal de confirmação não encontrado');
         }
+    }).catch(error => {
+        console.error('[deletePlayer] Erro ao importar getCurrentUser:', error);
     });
 }
 

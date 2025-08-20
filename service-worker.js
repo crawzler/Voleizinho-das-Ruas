@@ -19,7 +19,6 @@ const urlsToCache = [
   './images/icon-192x192.png',
   './images/icon-512x512.png',
   './js/main.js',
-  './js/script.js',
   './js/data/players.js',
   './js/data/history.js',
   './js/data/schedules.js',
