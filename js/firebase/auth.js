@@ -7,7 +7,7 @@ import { showPage, updatePlayerModificationAbility } from '../ui/pages.js';
 import * as Elements from '../ui/elements.js';
 import { displayMessage } from '../ui/messages.js';
 import { updateConnectionIndicator, hideLoadingOverlay } from '../main.js'; // Importa hideLoadingOverlay
-import { setupSchedulingPage, cleanupSchedulingListener } from '../ui/scheduling-ui.js';
+import { setupSchedulingPage, cleanupSchedulingListener, updateSchedulingPermissions } from '../ui/scheduling-ui.js';
 import { deleteDoc, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getAppId } from './config.js';
 
@@ -164,6 +164,7 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
             console.log(`Setting up Firestore listener for user: ${user.uid}`);
             setupFirestorePlayersListener(currentDbInstance, appId);
             setupSchedulingPage(); // Adicione esta linha para garantir que o listener de agendamentos seja refeito ao logar
+            updateSchedulingPermissions(); // Atualiza permissões de agendamento
             updatePlayerModificationAbility(true);
             showPage('start-page');
             
@@ -179,6 +180,7 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
             updatePlayerModificationAbility(false);
             setupFirestorePlayersListener(null, appId);
             cleanupSchedulingListener(); // NOVO: Remove o listener ao deslogar
+            updateSchedulingPermissions(); // Atualiza permissões de agendamento
             // REMOVIDO: setupSchedulingPage(); // NÃO reative o listener após limpar!
 
             if (!navigator.onLine) {

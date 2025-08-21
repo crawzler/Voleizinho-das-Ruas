@@ -7,7 +7,7 @@ import { getCurrentTeam1, getCurrentTeam2, getActiveTeam1Name, getActiveTeam2Nam
 import { displayMessage } from './messages.js'; // Importa para exibir mensagens
 import { showConfirmationModal } from './pages.js'; // Importa o modal de confirmação
 import { updateConnectionIndicator } from '../main.js'; // Importa updateConnectionIndicator
-import { resetUser, getCurrentUser } from '../firebase/auth.js'; // Importa funções para resetar usuário
+
 
 
 
@@ -38,11 +38,13 @@ export function loadConfig() {
         config.playersPerTeam = config.playersPerTeam ?? 4;
         config.pointsPerSet = config.pointsPerSet ?? 15;
         config.numberOfSets = config.numberOfSets ?? 1;
-        config.darkMode = config.darkMode ?? true;
+        config.darkMode = config.darkMode ?? false; // Padrão é tema claro
         config.vibration = config.vibration ?? true;
         config.displayPlayers = true; // Sempre exibe jogadores
         // NOVO: Garante que showConnectionStatus está definido, padrão para false
         config.showConnectionStatus = config.showConnectionStatus ?? false;
+        // NOVO: Garante que notificationsEnabled está definido, padrão para true
+        config.notificationsEnabled = config.notificationsEnabled ?? true;
 
 
         // Preenche o objeto config com os nomes e cores padrão, se não estiverem definidos
@@ -65,14 +67,16 @@ export function loadConfig() {
         }
 
         // Aplica as configurações aos inputs da UI
-        if (Elements.playersPerTeamInput()) Elements.playersPerTeamInput().value = config.playersPerTeam ?? 4;
-        if (Elements.pointsPerSetInput()) Elements.pointsPerSetInput().value = config.pointsPerSet ?? 15;
-        if (Elements.numberOfSetsInput()) Elements.numberOfSetsInput().value = config.numberOfSets ?? 1;
-        if (Elements.darkModeToggle()) Elements.darkModeToggle().checked = config.darkMode ?? true;
+        if (Elements.darkModeToggle()) Elements.darkModeToggle().checked = config.darkMode ?? false;
         if (Elements.vibrationToggle()) Elements.vibrationToggle().checked = config.vibration ?? true;
         if (Elements.displayPlayersToggle()) Elements.displayPlayersToggle().checked = config.displayPlayers ?? true;
         // NOVO: Aplica a configuração do status de conexão
         if (Elements.showConnectionStatusToggle()) Elements.showConnectionStatusToggle().checked = config.showConnectionStatus ?? false;
+        // NOVO: Aplica a configuração de notificações
+        if (Elements.notificationsToggle()) {
+            const hasPermission = 'Notification' in window && Notification.permission === 'granted';
+            Elements.notificationsToggle().checked = config.notificationsEnabled && hasPermission;
+        }
 
 
         // Aplica as cores e nomes personalizados aos inputs de configuração
@@ -85,8 +89,14 @@ export function loadConfig() {
         // NOVO: Aplica o valor ao input da chave admin
         if (Elements.adminKeyInput()) Elements.adminKeyInput().value = config.adminKey;
 
-        // Aplica o tema escuro
-        document.body.classList.toggle('dark-mode', config.darkMode ?? true);
+        // Aplica o tema
+        document.body.classList.toggle('dark-mode', config.darkMode ?? false);
+        
+        // Atualiza meta theme-color baseado no tema
+        const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+        if (metaThemeColor) {
+            metaThemeColor.content = config.darkMode ? '#1a1a1a' : '#ffffff';
+        }
 
 
 
@@ -102,15 +112,19 @@ export function loadConfig() {
  */
 export function saveConfig() {
     try {
+        // Mantém os valores existentes para compatibilidade
+        const existingConfig = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
         const config = {
-            playersPerTeam: Elements.playersPerTeamInput() ? parseInt(Elements.playersPerTeamInput().value, 10) : 4,
-            pointsPerSet: Elements.pointsPerSetInput() ? parseInt(Elements.pointsPerSetInput().value, 10) : 15,
-            numberOfSets: Elements.numberOfSetsInput() ? parseInt(Elements.numberOfSetsInput().value, 10) : 1,
-            darkMode: Elements.darkModeToggle() ? Elements.darkModeToggle().checked : true,
+            playersPerTeam: existingConfig.playersPerTeam ?? 4,
+            pointsPerSet: existingConfig.pointsPerSet ?? 15,
+            numberOfSets: existingConfig.numberOfSets ?? 1,
+            darkMode: Elements.darkModeToggle() ? Elements.darkModeToggle().checked : false,
             vibration: Elements.vibrationToggle() ? Elements.vibrationToggle().checked : true,
             displayPlayers: Elements.displayPlayersToggle() ? Elements.displayPlayersToggle().checked : true,
             // NOVO: Salva o estado do toggle de status de conexão
             showConnectionStatus: Elements.showConnectionStatusToggle() ? Elements.showConnectionStatusToggle().checked : false,
+            // NOVO: Salva o estado do toggle de notificações
+            notificationsEnabled: Elements.notificationsToggle() ? Elements.notificationsToggle().checked : false,
             adminKey: Elements.adminKeyInput() ? Elements.adminKeyInput().value.trim() : "",
         };
 
@@ -140,8 +154,17 @@ export function saveConfig() {
             renderScoringPagePlayers([], [], false); // Esconde os jogadores se a opção estiver desativada
         }
 
-        // Atualiza o tema escuro
+        // Atualiza o tema
         document.body.classList.toggle('dark-mode', config.darkMode);
+        
+        // Atualiza meta theme-color baseado no tema
+        const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+        if (metaThemeColor) {
+            metaThemeColor.content = config.darkMode ? '#1a1a1a' : '#ffffff';
+        }
+        
+        // Força atualização de estilos dependentes do tema
+        document.documentElement.style.setProperty('--theme-transition', 'all 0.3s ease');
 
         // NOVO: Atualiza a visibilidade do indicador de conexão imediatamente
         updateConnectionIndicator(navigator.onLine ? 'online' : 'offline');
@@ -201,56 +224,7 @@ async function resetAppAndClearCache() {
     );
 }
 
-/**
- * Adiciona um botão de 'Resetar Usuário' na tela de configurações.
- */
-export function addResetUserButton() {
-    try {
-        const currentUser = getCurrentUser();
-        if (!currentUser || currentUser.isAnonymous) {
-            return;
-        }
 
-        // Sempre tenta pegar o botão do DOM
-        const resetButton = document.getElementById('reset-user-button');
-        if (!resetButton) {
-            console.error("[ResetUser] Botão de reset não encontrado no DOM.");
-            return;
-        }
-
-        // Remove listeners antigos para evitar múltiplos binds
-        resetButton.replaceWith(resetButton.cloneNode(true));
-        const freshResetButton = document.getElementById('reset-user-button');
-
-        freshResetButton.addEventListener('click', () => {
-            console.log("[ResetUser] Botão clicado");
-            if (!navigator.onLine) {
-                displayMessage("Você precisa estar online para resetar seus dados.", "error");
-                return;
-            }
-
-            showConfirmationModal(
-                "Tem certeza que deseja redefinir seus dados de usuário? Isso irá excluir todos os seus dados e desconectá-lo.",
-                async () => {
-                    console.log("[ResetUser] Confirmado no modal");
-                    try {
-                        freshResetButton.disabled = true;
-                        await resetUser();
-                        console.log("[ResetUser] resetUser() chamado com sucesso");
-                    } catch (error) {
-                        console.error("Erro ao resetar dados do usuário:", error);
-                        displayMessage("Erro ao resetar os dados do usuário. Por favor, tente novamente.", "error");
-                    } finally {
-                        freshResetButton.disabled = false;
-                    }
-                }
-            );
-        });
-    } catch (error) {
-        console.error("Erro ao adicionar botão de reset:", error);
-        displayMessage("Erro ao adicionar botão de reset. Por favor, recarregue a página.", "error");
-    }
-}
 
 /**
  * Configura os event listeners para os inputs de configuração.
@@ -260,14 +234,27 @@ export function setupConfigUI() {
 
     loadConfig();
 
+    // Garante que toques dentro da área de configurações não subam até o body e sejam bloqueados
+    const settingsListEl = document.querySelector('.settings-list');
+    if (settingsListEl) {
+        settingsListEl.addEventListener('touchstart', (ev) => ev.stopPropagation(), { passive: false });
+        settingsListEl.addEventListener('touchmove', (ev) => ev.stopPropagation(), { passive: false });
+    }
+
+    // Também adiciona proteção ao container do acordeão (conteúdo) para cobrir outros elementos internos
+    const accordionContents = document.querySelectorAll('.accordion-content');
+    if (accordionContents && accordionContents.length) {
+        accordionContents.forEach(ac => {
+            ac.addEventListener('touchstart', (ev) => ev.stopPropagation(), { passive: false });
+            ac.addEventListener('touchmove', (ev) => ev.stopPropagation(), { passive: false });
+        });
+    }
+
     const elementsToSetup = [
-        { getter: Elements.playersPerTeamInput, name: 'playersPerTeamInput' },
-        { getter: Elements.pointsPerSetInput, name: 'pointsPerSetInput' },
-        { getter: Elements.numberOfSetsInput, name: 'numberOfSetsInput' },
-        { getter: Elements.numberOfSetsInput, name: 'numberOfSetsInput' },
         { getter: Elements.darkModeToggle, name: 'darkModeToggle' },
         { getter: Elements.vibrationToggle, name: 'vibrationToggle' },
         { getter: Elements.displayPlayersToggle, name: 'displayPlayersToggle' },
+        { getter: Elements.notificationsToggle, name: 'notificationsToggle' },
     ];
 
     elementsToSetup.forEach(({ getter, name }) => {
@@ -292,6 +279,31 @@ export function setupConfigUI() {
         });
     } else {
         console.warn(`[config-ui.js] Elemento 'showConnectionStatusToggle' não encontrado.`);
+    }
+
+    // NOVO: Adiciona listener para o toggle de notificações
+    if (Elements.notificationsToggle()) {
+        Elements.notificationsToggle().addEventListener('change', async () => {
+            const isEnabled = Elements.notificationsToggle().checked;
+            
+            if (isEnabled) {
+                // Tenta solicitar permissão quando ativado
+                const { requestNotificationPermission } = await import('../utils/notifications.js');
+                const granted = await requestNotificationPermission();
+                
+                if (!granted) {
+                    // Se permissão negada, desativa o toggle
+                    Elements.notificationsToggle().checked = false;
+                    const { displayMessage } = await import('./messages.js');
+                    displayMessage('Permissão de notificação negada. Ative nas configurações do navegador.', 'warning');
+                    return;
+                }
+            }
+            
+            saveConfig(); // Salva a configuração
+        });
+    } else {
+        console.warn(`[config-ui.js] Elemento 'notificationsToggle' não encontrado.`);
     }
 
     Elements.customTeamInputs.forEach(input => {
@@ -321,8 +333,15 @@ export function setupConfigUI() {
             displayMessage('Configurações resetadas para o padrão.', 'success');
             // Força a atualização dos jogadores na tela de pontuação após reset
             renderScoringPagePlayers(getCurrentTeam1(), getCurrentTeam2(), loadConfig().displayPlayers ?? true);
-            // NOVO: Atualiza a visibilidade do indicador de conexão após o reset
+            // Atualiza a visibilidade do indicador de conexão após o reset
             updateConnectionIndicator(navigator.onLine ? 'online' : 'offline');
+            
+            // Atualiza meta theme-color após reset
+            const config = loadConfig();
+            const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+            if (metaThemeColor) {
+                metaThemeColor.content = config.darkMode ? '#1a1a1a' : '#ffffff';
+            }
         });
     }
 
@@ -366,6 +385,15 @@ export function setupConfigUI() {
             if (config.adminKey === correctAdminKey) {
                 displayMessage('Chave autenticada', 'success');
                 
+                // Atualiza permissões de agendamento
+                import('./scheduling-ui.js').then(module => {
+                    if (module.updateSchedulingPermissions) {
+                        module.updateSchedulingPermissions();
+                    }
+                }).catch(e => {
+                    console.warn('Não foi possível atualizar permissões de agendamento:', e);
+                });
+                
                 // Recarrega a página automaticamente apenas se a chave for válida
                 setTimeout(() => {
                     window.location.reload();
@@ -376,8 +404,7 @@ export function setupConfigUI() {
         });
     }
 
-    addResetUserButton(); // Adiciona o botão de resetar usuário
-    console.log("Botão de resetar usuário adicionado às configurações.");
+
 
     console.log("[config-ui.js] setupConfigUI finalizado.");
 }

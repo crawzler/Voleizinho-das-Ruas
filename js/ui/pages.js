@@ -83,6 +83,9 @@ export async function showPage(pageIdToShow) {
         currentPageId = pageIdToShow;
     }
 
+    // Update scheduling UI permissions/visibility on page change
+    try { SchedulingUI.updateSchedulingPermissions(); } catch (e) { /* ignore */ }
+
     // NOVO: Gerencia classe CSS no body para ocultar elementos quando start-page está ativa
     if (pageIdToShow === 'start-page') {
         document.body.classList.add('start-page-active');

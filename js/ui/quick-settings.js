@@ -26,6 +26,14 @@ export function setupQuickSettings() {
     
     // Carrega valores iniciais
     loadValues();
+
+    // Protege o modal de configurações contra o listener global que previne touchmove
+    const quickSettingsContent = quickSettingsModal.querySelector('.quick-settings-content');
+    if (quickSettingsContent) {
+        // Evita que os eventos touch subam até document.body (onde um listener globall pode chamar preventDefault)
+        quickSettingsContent.addEventListener('touchstart', (ev) => ev.stopPropagation(), { passive: false });
+        quickSettingsContent.addEventListener('touchmove', (ev) => ev.stopPropagation(), { passive: false });
+    }
     
     // Abre o modal
     quickSettingsButton.addEventListener('click', (e) => {

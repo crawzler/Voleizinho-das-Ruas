@@ -366,6 +366,35 @@ self.addEventListener('message', (event) => {
   }
 });
 
+// Listener para cliques em notificações
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  
+  const action = event.action;
+  
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then((clientList) => {
+      // Se há uma janela aberta, foca nela
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          client.postMessage({ type: 'NOTIFICATION_ACTION', action });
+          return client.focus();
+        }
+      }
+      
+      // Se não há janela aberta, abre uma nova
+      if (clients.openWindow) {
+        return clients.openWindow('/');
+      }
+    })
+  );
+});
+
+// Listener para fechamento de notificações
+self.addEventListener('notificationclose', (event) => {
+  console.log('Notificação fechada:', event.notification.tag);
+});
+
 // Função para limpar todos os caches
 async function clearAllCaches() {
   const cacheNames = await caches.keys();

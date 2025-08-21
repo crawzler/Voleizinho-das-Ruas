@@ -1,20 +1,104 @@
+/* Variáveis CSS para temas */
+:root {
+    /* Tema Claro (padrão) */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --bg-tertiary: #e9ecef;
+    --bg-card: #ffffff;
+    --bg-input: #ffffff;
+    --bg-button: #007bff;
+    --bg-button-secondary: #6c757d;
+    --bg-sidebar: #ffffff;
+    --bg-modal: #ffffff;
+    --bg-overlay: rgba(0, 0, 0, 0.5);
+    --bg-scoring: #f0f2f5;
+    
+    --text-primary: #212529;
+    --text-secondary: #6c757d;
+    --text-muted: #868e96;
+    --text-inverse: #ffffff;
+    
+    --border-color: #dee2e6;
+    --border-light: #e9ecef;
+    --border-dark: #adb5bd;
+    
+    --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.15);
+    --shadow-heavy: 0 8px 16px rgba(0, 0, 0, 0.2);
+    
+    --accent-primary: #007bff;
+    --accent-success: #28a745;
+    --accent-warning: #ffc107;
+    --accent-danger: #dc3545;
+    --accent-info: #17a2b8;
+    
+    --gradient-primary: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    --gradient-card: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    --gradient-button: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    --gradient-login: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    
+    --scrollbar-thumb: #c1c7cd;
+    --scrollbar-track: transparent;
+}
+
+/* Tema Escuro */
+body.dark-mode {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #222222;
+    --bg-tertiary: #2d2d2d;
+    --bg-card: #222222;
+    --bg-input: #333333;
+    --bg-button: #2563EB;
+    --bg-button-secondary: #6b7280;
+    --bg-sidebar: #1f1f1f;
+    --bg-modal: #2d2d2d;
+    --bg-overlay: rgba(0, 0, 0, 0.7);
+    --bg-scoring: #181c24;
+    
+    --text-primary: #ffffff;
+    --text-secondary: #d1d5db;
+    --text-muted: #9ca3af;
+    --text-inverse: #1a1a1a;
+    
+    --border-color: #444444;
+    --border-light: #555555;
+    --border-dark: #333333;
+    
+    --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.4);
+    --shadow-heavy: 0 8px 16px rgba(0, 0, 0, 0.5);
+    
+    --accent-primary: #2563EB;
+    --accent-success: #10b981;
+    --accent-warning: #f59e0b;
+    --accent-danger: #ef4444;
+    --accent-info: #06b6d4;
+    
+    --gradient-primary: linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%);
+    --gradient-card: linear-gradient(135deg, #222222 0%, #2d2d2d 100%);
+    --gradient-button: linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%);
+    --gradient-login: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    
+    --scrollbar-thumb: #444;
+    --scrollbar-track: transparent;
+}
+
 html {
     box-sizing: border-box;
     height: 100%;
     width: 100%;
     overflow-x: hidden;
-    overflow-y: auto; /* Permite scroll vertical */
+    overflow-y: auto;
 }
 
-/* Regra universal de box-sizing deve ser aplicada globalmente */
 *, *::before, *::after {
     box-sizing: inherit;
 }
 
 body {
     font-family: 'Inter', sans-serif;
-    background-color: #1a1a1a;
-    color: #E5E7EB;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     display: flex;
     flex-direction: column;
     min-height: 100vh;
@@ -23,22 +107,20 @@ body {
     padding: 0;
     width: 100%;
     overscroll-behavior-x: none;
+    transition: background-color 0.3s ease, color 0.3s ease;
     
-    /* Desabilita seleção de texto para app mobile */
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
     
-    /* Desabilita highlight de toque */
     -webkit-tap-highlight-color: transparent;
     
-    /* Esconde as barras de rolagem */
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
 
-/* NOVO: Para navegadores baseados em WebKit (Chrome, Safari, etc.) */
+/* Scrollbars personalizadas */
 body::-webkit-scrollbar,
 .app-main-content::-webkit-scrollbar,
 .sidebar-menu::-webkit-scrollbar,
@@ -60,7 +142,7 @@ body::-webkit-scrollbar-track,
 .team-players-column::-webkit-scrollbar-track,
 .teams-page-layout::-webkit-scrollbar-track,
 .teams-page-layout-sub::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--scrollbar-track);
 }
 
 body::-webkit-scrollbar-thumb,
@@ -72,7 +154,7 @@ body::-webkit-scrollbar-thumb,
 .team-players-column::-webkit-scrollbar-thumb,
 .teams-page-layout::-webkit-scrollbar-thumb,
 .teams-page-layout-sub::-webkit-scrollbar-thumb {
-    background: #444;
+    background: var(--scrollbar-thumb);
     border-radius: 2px;
 }
 
@@ -85,7 +167,7 @@ body::-webkit-scrollbar-thumb:hover,
 .team-players-column::-webkit-scrollbar-thumb:hover,
 .teams-page-layout::-webkit-scrollbar-thumb:hover,
 .teams-page-layout-sub::-webkit-scrollbar-thumb:hover {
-    background: #666;
+    opacity: 0.8;
 }
 
 
@@ -94,61 +176,89 @@ input {
     flex-grow: 1;
     padding: 0.75rem;
     border-radius: 8px;
-    background-color: #333;
-    border: none;
-    color: white;
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
     outline: none;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-light);
+    transition: all 0.3s ease;
     
-    /* Reabilita seleção de texto para inputs */
     -webkit-user-select: text;
     -moz-user-select: text;
     -ms-user-select: text;
     user-select: text;
 }
 
-/* NOVO: Estilo para os ícones de data e hora nos inputs */
+input:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+input::placeholder {
+    color: var(--text-muted);
+}
+
+/* Ícones de data e hora nos inputs */
 input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="time"]::-webkit-calendar-picker-indicator {
-    filter: invert(1); /* Inverte a cor, tornando o ícone branco */
     cursor: pointer;
+    transition: filter 0.3s ease;
+}
+
+body.dark-mode input[type="date"]::-webkit-calendar-picker-indicator,
+body.dark-mode input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+}
+
+/* Tema claro - ícones normais */
+body:not(.dark-mode) input[type="date"]::-webkit-calendar-picker-indicator,
+body:not(.dark-mode) input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: none;
 }
 
 /* ESTILOS DE BOTÃO REVERTIDOS PARA O ESTADO ANTERIOR À GLOBALIZAÇÃO */
 button {
     font-weight: bold;
-    color: white;
-    background-color: #222; /* Fundo escuro genérico */
+    color: var(--text-primary);
+    background-color: var(--bg-card);
     padding: 0.75rem 1.25rem;
-    border: none; /* Sem borda por padrão */
+    border: 1px solid var(--border-color);
     border-radius: 8px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Sombra sutil original */
+    box-shadow: var(--shadow-light);
     outline: none;
     -webkit-tap-highlight-color: transparent;
     cursor: pointer;
-    transition: background-color 0.3s ease; /* Transição básica */
-    display: flex; /* Mantido para alinhamento de ícones, se usados */
+    transition: all 0.3s ease;
+    display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem; /* Espaçamento entre texto e ícone */
+    gap: 0.5rem;
+}
+
+button:hover {
+    background-color: var(--bg-tertiary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-medium);
 }
 
 /* Estilos para botões primários (manter para os que já usam, mas o foco é nos de reset) */
 .button--primary {
-    background-color: #222 /* Azul primário */
+    background: var(--gradient-button);
+    border-color: transparent;
 }
 
 .button--primary:hover {
-    background-color: #222; /* Azul mais escuro no hover */
+    filter: brightness(1.1);
 }
 
-/* Estilos para botões secundários (manter para os que já usam, mas o foco é nos de reset) */
 .button--secondary {
-    background-color: #4B5563; /* Cinza secundário */
+    background-color: var(--bg-button-secondary);
+    color: var(--text-inverse) !important;
+    border-color: transparent;
 }
 
 .button--secondary:hover {
-    background-color: #374151; /* Cinza mais escuro no hover */
+    filter: brightness(1.1);
 }
 
 /* Removidas as regras .button:hover e .button:active globais */
@@ -290,6 +400,291 @@ input:checked + .slider:before {
     border-radius: 50%;
 }
 
+/* Estilos para upload de arquivo */
+.modern-file-input {
+    padding: 0.75rem;
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.modern-file-input:hover {
+    border-color: var(--accent-primary);
+    background: var(--bg-tertiary);
+}
+
+.file-preview {
+    margin-top: 0.5rem;
+    position: relative;
+    display: inline-block;
+}
+
+.file-preview img {
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.remove-file-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #ff4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+/* Modal para visualizar comprovantes */
+.proof-viewer-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    /* Ensure viewer overlays other modals (schedule modal uses z-index:2000) */
+    z-index: 30000;
+}
+
+.proof-viewer-modal.active {
+    display: flex;
+}
+
+.proof-viewer-content {
+    background: var(--bg-primary);
+    border-radius: 12px;
+    max-width: 85vw;
+    max-height: 85vh;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.proof-viewer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+}
+
+.proof-viewer-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: var(--text-primary);
+}
+
+.proof-counter {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-left: 1rem;
+}
+
+.close-modal-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.close-modal-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+
+
+/* Custom styled file picker button */
+.file-input-wrapper {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    align-items: center;
+    gap: 0.75rem;
+    border-radius: 8px;
+    border: 1px dashed #777;
+    padding: 0.5rem;
+}
+
+.file-input-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.9rem;
+    background: #bbbbbbff;
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.04) inset;
+    border: 1px dashed #777;
+    text-align: center;
+}
+
+.file-input-button:hover {
+    filter: brightness(0.98);
+}
+
+.file-input-help {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+/* Previously we hid the external helper when badge present — keep it visible per user preference */
+
+/* Floating add button z-index controlled by CSS rather than inline style */
+.floating-add-btn {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 9999;
+}
+
+/* When files are selected, show a subtle badge on the file input button */
+.file-input-button /* badge removed: file count is shown in helper text */ {}
+
+/* Gallery of previews */
+.file-previews-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: stretch;
+}
+
+/* Make each thumbnail a responsive square and ensure the image covers the box */
+.thumbnail-item {
+    width: 100%;
+    height: 180px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+    cursor: pointer;
+    display: block;
+}
+
+.thumbnail-item::before {
+    content: '';
+    display: block;
+    padding-top: 100%; /* 1:1 aspect ratio */
+}
+
+.thumbnail-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* cover entire square */
+    display: block;
+}
+
+/* restyle thumbnail remove button to match the subtle pill used elsewhere */
+.thumbnail-remove-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(255,255,255,0.9);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 0.25rem 0.35rem;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    z-index: 5;
+}
+.thumbnail-remove-btn .material-icons { font-size: 16px; line-height: 1; }
+.thumbnail-remove-btn:hover { background: var(--bg-tertiary); }
+
+/* Replace the aggressive red circular remove with a subtle pill */
+.remove-file-btn {
+    position: relative;
+    margin-left: 0.5rem;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    padding: 0.35rem 0.6rem;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.remove-file-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+/* cleaned stray fragment above */
+
+.proof-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: auto;
+    height: auto;
+    padding: 0.5rem 0.75rem;
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.proof-button:hover {
+    background: var(--accent-primary);
+    color: var(--text-inverse);
+    transform: translateY(-2px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* File input visible label behavior */
+.file-input-button {
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.8rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card);
+}
+.file-input-button:focus {
+    outline: 3px solid rgba(37,99,235,0.15);
+}
+
+.file-input-help {
+    margin-left: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
 .header-button-container {
     background-color: #2229;
     border-radius: 8px;
@@ -321,15 +716,16 @@ input:checked + .slider:before {
     right: 0;
     height: 100vh;
     max-width: 14rem;
-    background-color: #222;
+    background-color: var(--bg-sidebar);
+    border-left: 1px solid var(--border-color);
     transform: translateX(100%);
-    transition: transform 0.3s ease-in-out;
-    z-index: 950; /* Z-index alto para estar acima das páginas, mas abaixo do botão de menu */
+    transition: all 0.3s ease-in-out;
+    z-index: 950;
     display: flex;
     flex-direction: column;
     padding: 10px 1rem 1rem 1rem;
     overflow: auto;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-medium);
 }
 
 .sidebar-menu.active {
@@ -341,9 +737,10 @@ input:checked + .slider:before {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
-    border-bottom: 1px solid #444;
-    position: relative; /* Para posicionar o mini-menu corretamente */
-    padding-bottom: 10px; /* Adiciona espaço para o mini-menu se ele estiver por baixo */
+    border-bottom: 1px solid var(--border-color);
+    position: relative;
+    padding-bottom: 10px;
+    transition: border-color 0.3s ease;
 }
 
 /* NOVO: Estilos para o cabeçalho do perfil do usuário */
@@ -378,13 +775,14 @@ input:checked + .slider:before {
 }
 
 .user-display-name {
-    color: white;
+    color: var(--text-primary);
     font-weight: bold;
     font-size: 1rem;
-    flex-grow: 1; /* Permite que ocupe o espaço disponível */
-    white-space: nowrap; /* Evita que o nome quebre a linha */
-    overflow: hidden; /* Oculta o texto que excede o contêiner */
-    text-overflow: ellipsis; /* Adiciona reticências se o texto for muito longo */
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.3s ease;
 }
 
 .profile-menu-arrow {
@@ -450,25 +848,32 @@ input:checked + .slider:before {
 }
 
 .sidebar-nav-item {
-    font-size: 0.1rem;
-    font-weight: 100;
     display: flex;
     align-items: center;
     justify-content: flex-start;
     gap: 0.75rem;
     background-color: transparent;
     border: none;
-    color: white;
+    box-shadow: none;
+    color: var(--text-secondary);
     border-radius: 0.5rem;
     font-size: 1rem;
     cursor: pointer;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    transition: all 0.3s ease;
     text-align: left;
     padding: 5px 0px;
-    box-shadow: inherit;
-    /* NOVO: Remove a demarcação azul em cliques/toques */
     outline: none;
     -webkit-tap-highlight-color: transparent;
+}
+
+.sidebar-nav-item:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.sidebar-nav-item.active {
+    background-color: var(--accent-primary);
+    color: var(--text-inverse) !important;
 }
 
 .sidebar-nav-icon {
@@ -476,15 +881,16 @@ input:checked + .slider:before {
 }
 
 .app-info {
-    margin-top: 20px; /* Empurra o footer para a parte inferior */
+    margin-top: 20px;
     padding-top: 1rem;
-    border-top: 1px solid #333;
+    border-top: 1px solid var(--border-color);
     text-align: center;
     font-size: 0.75rem;
-    color: #9CA3AF;
+    color: var(--text-muted);
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    transition: all 0.3s ease;
 }
 
 .user-id-display {
@@ -528,6 +934,22 @@ input:checked + .slider:before {
     overflow: hidden !important; /* impede scroll da página inteira */
 }
 
+/* Controle de scroll para a página de agendamentos */
+#scheduling-page.app-page--active {
+    /* Use posicionamento para preencher o espaço disponível em vez de 100vh
+       (evita problemas de viewport em mobile que causam "duplo scroll"). */
+    position: absolute !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    overflow-y: auto !important; /* permite scroll vertical */
+    overflow-x: hidden !important; /* impede scroll horizontal */
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    overscroll-behavior: contain; /* evita chaining para containers pai */
+}
+
 /* Estilos base para todas as páginas */
 .app-page {
     width: 100%;
@@ -538,12 +960,13 @@ input:checked + .slider:before {
     display: none;
     padding: 1rem;
     box-sizing: border-box;
-    background-color: #1a1a1a;
-    color: #E5E7EB;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
     z-index: 1;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 
@@ -562,6 +985,37 @@ input:checked + .slider:before {
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
     touch-action: pan-y !important;
+}
+
+/* Permite scroll vertical na página de agendamentos */
+#scheduling-page {
+    /* Preenche o container e permite rolagem interna apenas aqui */
+    position: absolute;
+    inset: 0;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    overscroll-behavior: contain;
+}
+
+/* Forçar que o container de agendamento não tenha scroll próprio
+   e que o conteúdo ocupe toda a área para evitar paradas "no meio" ao rolar. */
+.scheduling-container,
+.games-section,
+.tab-content,
+.games-list {
+    overflow: visible !important; /* evita scroll aninhado */
+    max-height: none !important;  /* remove limites que possam criar barras internas */
+}
+
+.scheduling-container {
+     /* Garante que o container ocupe o espaço da página, sem forçar overflow extra.
+         Usamos flex + min-height:0 para evitar que padding-bottom provoque um scroll
+         quando o conteúdo não ultrapassa a viewport. */
+     flex: 1 1 auto;
+     min-height: 0; /* permite que o filho flex encolha e não gere overflow desnecessário */
+     box-sizing: border-box;
+     padding-bottom: 2.5rem; /* espaço para o botão flutuante */
 }
 
 
@@ -744,40 +1198,47 @@ input:checked + .slider:before {
     margin: 0px 20px 20px 20px;
     left: 0px;
     top: 0px;
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    font-weight: 600;
+    text-align: center;
+    transition: color 0.3s ease;
 }
 
 /* #524931  CHAT, AQUI ESSA SESSÃO É PARA UTILIZAR NA CRIAÇÃO DO MODAL PARA SELECONAR OS TIMES */
 .select-team-modal-container {
-    display: none; /* Oculto por padrão */
+    display: none;
     align-items: center;
-    position: fixed; /* Alterado para fixed para cobrir toda a viewport */
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.7); /* Overlay semitransparente */
-    z-index: 1000; /* Acima de tudo */
-    justify-content: center; /* Centraliza o conteúdo verticalmente */
-    padding: 20px; /* Adicionado padding */
-    box-sizing: border-box; /* Garante que o padding não aumente o tamanho total */
+    background-color: var(--bg-overlay);
+    z-index: 1000;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 /* NOVO: Wrapper para o conteúdo do modal para centralização */
 .select-team-modal-content-wrapper {
-    position: relative; /* Para o botão de fechar */
-    background-color: #222; /* Fundo do modal */
+    position: relative;
+    background-color: var(--bg-modal);
+    border: 1px solid var(--border-color);
     padding: 20px;
     border-radius: 8px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-heavy);
     display: flex;
     flex-direction: column;
     align-items: center;
-    max-width: 500px; /* Limita a largura do modal */
-    width: 90%; /* Ocupa 90% da largura em telas menores */
-    margin: auto; /* Centraliza o wrapper dentro do container */
-    max-height: 90vh; /* Limita a altura e adiciona rolagem */
-    overflow-y: auto; /* Adiciona rolagem vertical */
-    overscroll-behavior-y: auto; /* Adicionado para garantir rolagem independente */
+    max-width: 500px;
+    width: 90%;
+    margin: auto;
+    max-height: 90vh;
+    overflow-y: auto;
+    overscroll-behavior-y: auto;
+    transition: all 0.3s ease;
 }
 
 
@@ -787,21 +1248,21 @@ input:checked + .slider:before {
     top: 10px;
     right: 10px;
     background-color: transparent;
-    color: white;
+    color: var(--text-primary);
     border: none;
     font-size: 1.5rem;
     padding: 0.5rem;
     border-radius: 50%;
     cursor: pointer;
-    z-index: 1001; /* Acima do conteúdo do modal */
+    z-index: 1001;
     box-shadow: none;
-    /* NOVO: Remove a demarcação azul em cliques/toques */
     outline: none;
     -webkit-tap-highlight-color: transparent;
+    transition: all 0.3s ease;
 }
 
 .close-modal-button-top-right:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: var(--bg-tertiary);
 }
 
 .select-team-modal-container.modal-active {
@@ -837,17 +1298,18 @@ input:checked + .slider:before {
 
 .select-team-list-item {
     display: flex;
-    flex-direction: column; /* Organiza cor e nome em coluna */
-    align-items: center; /* Centraliza horizontalmente */
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
     font-size: 1rem;
     font-weight: bold;
-    color: white;
+    color: var(--text-primary);
     padding: 10px;
-    background-color: #333;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
-    box-shadow: 0 4px 6px -1-px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    transition: background-color 0.2s ease, transform 0.1s ease;
+    box-shadow: var(--shadow-light);
+    transition: all 0.3s ease;
     outline: none;
     -webkit-tap-highlight-color: transparent;
     text-align: center;
@@ -861,8 +1323,9 @@ input:checked + .slider:before {
 }
 
 .select-team-list-item:hover {
-    background-color: #444; /* Efeito hover */
+    background-color: var(--bg-tertiary);
     transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
 }
 
 .select-team-color-box { /* Renomeado de select-team-color para select-team-color-box */
@@ -885,17 +1348,17 @@ input:checked + .slider:before {
 
 .score-display-container {
     display: flex;
-    flex-direction: column; /* Painéis de pontuação em coluna no modo retrato */
-    flex: 1; /* Ocupa o espaço vertical restante */
+    flex-direction: column;
+    flex: 1;
     width: 100%;
     position: relative;
-    background: #181c24;
-    border-radius: 1.5rem;
-    box-shadow: 0 4px 24px 0 rgba(0,0,0,0.18);
+    background: var(--bg-scoring);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-medium);
     overflow: hidden;
-    /* NOVO: Removes a demarcação azul em cliques/toques */
     outline: none;
     -webkit-tap-highlight-color: transparent;
+    transition: all 0.3s ease;
 }
 
 .score-panel {
@@ -1129,20 +1592,7 @@ input:checked + .slider:before {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    background-color: #222;
-    padding: 1rem;
-    border-radius: 8px;
-}
-
-.teams-config .form-input {
-    max-width: 100px;
-}
-
-.teams-config {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    background-color: #222;
+    background-color: var(--bg-card);
     padding: 1rem;
     border-radius: 8px;
 }
@@ -1159,7 +1609,7 @@ input:checked + .slider:before {
 
 .generate-teams-button {
     width: 100%;
-    background-color: #222;
+    background-color: var(--bg-card);
     /* NOVO: Remove a demarcação azul em cliques/toques */
     outline: none;
     -webkit-tap-highlight-color: transparent;
@@ -1169,16 +1619,18 @@ input:checked + .slider:before {
 
 .team-card {
     flex: 1;
-    background-color: #222;
+    background: var(--gradient-card);
+    border: 1px solid var(--border-color);
     padding: 1rem;
     border-radius: 0.5rem;
-    box-shadow: 0 4px 6px -1-px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-light);
     outline: none;
     -webkit-tap-highlight-color: transparent;
     display: flex;
     flex-direction: column;
     height: 100%;
     width: 100%;
+    transition: all 0.3s ease;
 }
 
 .team-card-list {
@@ -1194,24 +1646,27 @@ input:checked + .slider:before {
 .team-card-title {
     font-size: 1.125rem;
     font-weight: 600;
-    color: white;
+    color: var(--text-primary);
     padding-bottom: 10px;
     margin: 0px;
-    border-bottom: 1px solid #666;
+    border-bottom: 1px solid var(--border-color);
+    transition: color 0.3s ease;
 }
 
 .team-card-list {
-    color: #D1D5DB;
+    color: var(--text-secondary);
     list-style: inside;
     padding: 0px;
     margin: 0px;
     margin-top: 10px;
+    transition: color 0.3s ease;
 }
 
 .team-card-list li {
     padding-top: 0.25rem;
     padding-bottom: 0.25rem;
-    border-bottom: 1px dashed #444;
+    border-bottom: 1px dashed var(--border-color);
+    transition: border-color 0.3s ease;
 }
 
 .players-page-layout-add {
@@ -1258,19 +1713,21 @@ input:checked + .slider:before {
     grid-template-columns: repeat(4, 1fr);
     gap: 0.25rem;
     margin-bottom: 1rem;
-    background-color: #222;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 0.25rem;
+    transition: all 0.3s ease;
 }
 
 .category-tab {
     padding: 0.5rem 0.25rem;
     background-color: transparent;
-    color: #D1D5DB;
+    color: var(--text-secondary);
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     font-size: 0.75rem;
     font-weight: 500;
     display: flex;
@@ -1283,22 +1740,22 @@ input:checked + .slider:before {
 }
 
 .category-tab.active {
-    background-color: #2563EB;
-    color: white;
+    background-color: var(--accent-primary);
 }
 
 .category-tab:hover:not(.active) {
-    background-color: #374151;
-    color: white;
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
 }
 
 select.form-input {
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    background-color: #333;
-    color: white;
-    border: none;
+    background-color: var(--bg-input);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 0.75rem;
     border-radius: 8px;
     background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="%23ffffff" d="M2 0L0 2h4zm0 5L0 3h4z"/></svg>');
     background-repeat: no-repeat;
@@ -1306,7 +1763,8 @@ select.form-input {
     background-size: 0.65rem auto;
     padding-right: 1rem;
     padding-left: 0.5rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-light);
+    transition: all 0.3s ease;
 }
 
 .players-page-layout-add #add-player-button {
@@ -1331,6 +1789,56 @@ select.form-input {
     padding: 0px 10px;
 }
 
+/* Proof viewer layout */
+.proof-viewer-body {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center; /* center the media; buttons will be absolute */
+    gap: 1rem;
+    padding: 1rem 1.25rem 1.25rem 1.25rem;
+    flex: 1;
+    overflow: hidden;
+}
+
+.proof-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,0.35);
+    border: none;
+    color: #fff;
+    font-size: 1.5rem;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 5; /* ensure above image */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+}
+
+#proof-prev { left: 8px; }
+#proof-next { right: 8px; }
+
+.proof-nav-btn:hover {
+    background: rgba(0,0,0,0.55);
+    transform: translateY(-50%) scale(1.08);
+}
+
+.proof-viewer-body img {
+    max-width: 85vw;
+    max-height: 80vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
 .player-count-display {
     margin-left: auto;
 }
@@ -1353,8 +1861,9 @@ select.form-input {
 }
 
 .player-list-item {
-    background-color: #222;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-light);
     padding: 0.75rem;
     border-radius: 8px;
     display: flex;
@@ -1362,26 +1871,24 @@ select.form-input {
     justify-content: space-between;    
     flex-direction: row-reverse;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
     user-select: none;
     touch-action: pan-y;
     position: relative;
     
-    /* Previne seleção de texto durante drag */
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
     
-    /* Previne context menu no long press */
     -webkit-touch-callout: none;
     -webkit-context-menu: none;
 }
 
 .player-list-item:hover {
-    background-color: #333;
+    background-color: var(--bg-tertiary);
     transform: translateY(-1px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-medium);
 }
 
 .player-list-item:active {
@@ -1469,8 +1976,9 @@ select.form-input {
 }
 
 .player-info span {
-    color: #E5E7EB;
+    color: var(--text-primary);
     font-size: 1rem;
+    transition: color 0.3s ease;
 }
 
 .remove-button {
@@ -1709,7 +2217,7 @@ body.start-page-active #quick-settings-button {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: var(--bg-overlay);
     display: none;
     align-items: center;
     justify-content: center;
@@ -1721,10 +2229,21 @@ body.start-page-active #quick-settings-button {
 }
 
 .quick-settings-content {
-    background: #1a1a1a;
+    background: var(--bg-modal);
+    border: 1px solid var(--border-color);
     border-radius: 16px;
     padding: 1.5rem 3rem;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    box-shadow: var(--shadow-heavy);
+    transition: all 0.3s ease;
+}
+
+/* Torna o conteúdo do modal rolável em telas pequenas */
+.quick-settings-content {
+    max-height: 80vh; /* limitar altura para permitir scroll interno */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
+    overscroll-behavior: contain; /* evita propagação do overscroll para a página atrás */
+    touch-action: pan-y; /* garante que gestos verticais funcionem aqui */
 }
 
 .quick-settings-header {
@@ -1734,10 +2253,11 @@ body.start-page-active #quick-settings-button {
 }
 
 .quick-settings-title {
-    color: #f9fafb;
+    color: var(--text-primary);
     font-size: 1.25rem;
     font-weight: 600;
     margin: 0;
+    transition: color 0.3s ease;
 }
 
 .quick-settings-close {
@@ -1746,7 +2266,7 @@ body.start-page-active #quick-settings-button {
     right: -35px;
     background: transparent;
     border: none;
-    color: #9ca3af;
+    color: var(--text-muted);
     cursor: pointer;
     font-size: 1.25rem;
     padding: 0.5rem;
@@ -1756,12 +2276,12 @@ body.start-page-active #quick-settings-button {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
 }
 
 .quick-settings-close:hover {
-    background: #4b5563;
-    color: white;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
 }
 
 .quick-setting-item {
@@ -1776,37 +2296,38 @@ body.start-page-active #quick-settings-button {
 }
 
 .quick-setting-label {
-    color: #e5e7eb;
+    color: var(--text-primary);
     font-size: 1rem;
     font-weight: 500;
+    transition: color 0.3s ease;
 }
 
 .quick-setting-input {
     width: 100%;
     padding: 0.75rem;
-    background-color: #333;
-    border: 2px solid #444;
+    background-color: var(--bg-input);
+    border: 2px solid var(--border-color);
     border-radius: 8px;
     margin: 1rem;
-    color: #f9fafb;
+    color: var(--text-primary);
     font-size: 1.1rem;
     text-align: center;
     font-weight: 600;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-light);
 }
 
 .quick-setting-input:focus {
     outline: none;
-    border-color: #3b82f6;
-    background-color: #2a2a2a;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(0, 0, 0, 0.3);
+    border-color: var(--accent-primary);
+    background-color: var(--bg-input);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), var(--shadow-medium);
     transform: scale(1.02);
 }
 
 .quick-setting-input:hover {
-    border-color: #555;
-    background-color: #3a3a3a;
+    border-color: var(--border-dark);
+    background-color: var(--bg-secondary);
 }
 
 .timer-and-set-timer-wrapper {
@@ -1940,29 +2461,461 @@ body.start-page-active .timer-and-set-timer-wrapper {
     gap: 0.5rem;
 }
 
-.scheduling-form-grid {
+/* Novo Layout de Agendamentos */
+.scheduling-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.scheduling-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem;
+    transition: color 0.3s ease;
+}
+
+.scheduling-subtitle {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    margin: 0;
+    transition: color 0.3s ease;
+}
+
+.scheduling-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    width: 100%;
+    max-width: 1200px;
+}
+
+/* Card do Formulário */
+.schedule-form-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-light);
+    transition: all 0.3s ease;
+}
+
+.form-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.form-card-header .material-icons {
+    color: var(--accent-primary);
+    font-size: 1.5rem;
+}
+
+.form-card-header h3 {
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    transition: color 0.3s ease;
+}
+
+/* Campos do Formulário */
+.form-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.field-row {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: auto auto auto;
-    gap: 15px; /* Ligeiramente diferente para distinção */
-    margin-bottom: 20px;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.field-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.field-group label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.modern-input, .modern-select {
+    padding: 0.75rem;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.modern-input:focus, .modern-select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.modern-select {
+    appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="%23666" d="M2 0L0 2h4zm0 5L0 3h4z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 0.7rem center;
+    background-size: 0.65rem auto;
+    padding-right: 2.5rem;
+}
+
+/* Botão de Agendar */
+.schedule-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
     width: 100%;
-    padding: 15px; /* Adicionado padding */
-    background-color: #222; /* Adicionado background */
-    border-radius: 8px; /* Cantos arredondados */
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Sombra suave */
+    padding: 1rem;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 1rem;
 }
 
-.form-group:nth-child(4) {
-    grid-column: 0 / span 1; /* Ou grid-column: 1 / 3; */
+.schedule-btn:hover {
+    background: var(--accent-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3);
+    filter: brightness(1.1);
 }
 
-.form-group:nth-child(5) {
-    grid-column: 1 / span 2; /* Ou grid-column: 1 / 3; */
+/* Seção de Jogos */
+.games-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow-light);
+    transition: all 0.3s ease;
 }
 
-.form-button--full-width {
+.section-tabs {
+    display: flex;
+    background: var(--bg-secondary);
+    overflow: hidden;
+    border-bottom: 1px solid var(--border-color);
+    border-radius: 16px 16px 0 0;
+}
+
+.tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-radius: 0px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.tab-btn.active {
+    background: var(--bg-card);
+    color: var(--accent-primary);
+    border-bottom: 2px solid var(--accent-primary);
+}
+
+.tab-btn:hover:not(.active) {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.tab-content {
+    display: none;
+    padding: 1.5rem;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.games-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Cards de jogos no novo layout */
+.games-list .scheduled-game-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1rem;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.games-list .scheduled-game-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+    border-color: var(--border-dark);
+}
+
+.games-list .scheduled-game-card h3 {
+    margin: 0 0 0.75rem 0;
+    color: var(--text-primary);
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.games-list .scheduled-game-card p {
+    margin: 0.5rem 0;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.games-list .scheduled-game-card .material-icons {
+    font-size: 1rem;
+    color: var(--text-muted);
+}
+
+.games-list .card-actions {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.games-list .card-action-button {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.games-list .card-action-button.proof-button {
+    width: auto;
+    height: auto;
+    padding: 0.5rem 0.75rem;
+    margin-top: 0.5rem;
+    background-color: var(--accent-color);
+    color: var(--text-on-accent);
+}
+
+.games-list .card-action-button:hover {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    transform: scale(1.1);
+}
+
+.games-list .cancel-game-button {
+    color: #f59e0b !important;
+}
+
+.games-list .cancel-game-button:hover {
+    background: rgba(245, 158, 11, 0.1) !important;
+    border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+.games-list .delete-game-button {
+    color: #ef4444 !important;
+    display: none;
+}
+
+.games-list .delete-game-button.visible {
+    display: flex;
+}
+
+.games-list .delete-game-button:hover {
+    background: rgba(239, 68, 68, 0.1) !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+/* Status específicos */
+.games-list .status-cancelled {
+    opacity: 0.7;
+}
+
+.games-list .status-cancelled h3,
+.games-list .status-cancelled p {
+    text-decoration: line-through;
+}
+
+.games-list .status-past {
+    opacity: 0.8;
+}
+
+/* Mensagem de lista vazia */
+.games-list .empty-list-message {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 2rem;
+    font-style: italic;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    border: 1px dashed var(--border-color);
+}
+
+/* Botão Flutuante */
+.floating-add-btn {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 56px;
+    height: 56px;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.floating-add-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6);
+}
+
+.floating-add-btn .material-icons {
+    font-size: 1.5rem;
+}
+
+/* Modal do Formulário */
+.schedule-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 1rem;
+}
+
+.schedule-modal.active {
+    display: flex;
+}
+
+.schedule-modal-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    overscroll-behavior: contain; /* evita que o overscroll propague para o body */
+    -webkit-overflow-scrolling: touch; /* habilita momentum scrolling em iOS */
+    touch-action: pan-y; /* permite gestos de scroll vertical dentro do modal */
+    box-shadow: var(--shadow-heavy);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h3 {
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.close-modal-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.close-modal-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .scheduling-container {
+        gap: 1.5rem;
+    }
+    
+    .field-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .schedule-modal-content {
+        padding: 1rem;
+        margin: 0.5rem;
+    }
+    
+    .scheduling-title {
+        font-size: 1.5rem;
+    }
+    
+    .floating-add-btn {
+        bottom: 1rem;
+        right: 1rem;
+        width: 48px;
+        height: 48px;
+    }
 }
 
 .config-page-layout {
@@ -1979,11 +2932,13 @@ body.start-page-active .timer-and-set-timer-wrapper {
 }
 
 .accordion-item {
-    background-color: #222;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
     border-radius: 0.5rem;
     margin-bottom: 1rem;
     overflow: hidden;
-    box-shadow: 0 4px 6px -1-px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-light);
+    transition: all 0.3s ease;
 }
 
 .accordion-header {
@@ -1992,16 +2947,19 @@ body.start-page-active .timer-and-set-timer-wrapper {
     align-items: center;
     width: 100%;
     padding: 1rem;
-    background-color: #222; /* Cor de fundo padrão para o header */
-    color: white;
+    background-color: var(--bg-card);
+    color: var(--text-primary);
     border: none;
     cursor: pointer;
     font-size: 1.125rem;
     font-weight: 600;
-    transition: background-color 0.3s ease;
-    /* NOVO: Remove a demarcação azul em cliques/toques */
+    transition: all 0.3s ease;
     outline: none;
     -webkit-tap-highlight-color: transparent;
+}
+
+.accordion-header:hover {
+    background-color: var(--bg-secondary);
 }
 
 .accordion-header h3 {
@@ -2013,9 +2971,12 @@ body.start-page-active .timer-and-set-timer-wrapper {
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.3s ease-out;
-    color: #D1D5DB;
+    color: var(--text-secondary);
     overflow-y: auto;
-    overscroll-behavior-y: auto;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    background-color: var(--bg-secondary);
 }
 
 .accordion-item.active .accordion-content {
@@ -2024,11 +2985,20 @@ body.start-page-active .timer-and-set-timer-wrapper {
 
 .accordion-content-sub {
     display: grid;
-    grid-template-columns: 1fr 1fr;
     align-items: end;
     gap: 20px;
     padding: 20px;
-    border-top: 1px solid #666;
+    border-top: 1px solid var(--border-color);
+    transition: border-color 0.3s ease;
+}
+
+/* Permitir que a lista de configurações role por toque quando o conteúdo ultrapassar */
+.settings-list {
+    max-height: 60vh; /* Limita o tamanho e permite overflow quando necessário */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
 }
 
 /* NOVO: Regra específica para o 4º item dentro de .accordion-content-sub */
@@ -2053,6 +3023,16 @@ body.start-page-active .timer-and-set-timer-wrapper {
     display: flex;
 }
 
+/* Quando um modal está aberto, trava o body para evitar que o fundo role
+   e preserva a posição de scroll anterior (o script JS aplica top negativo). */
+body.modal-open {
+    position: fixed;
+    left: 0;
+    right: 0;
+    overflow: hidden;
+    width: 100%;
+}
+
 .form-input-color {
     margin-left: 10px;
     padding: 0px;
@@ -2072,6 +3052,44 @@ body.start-page-active .timer-and-set-timer-wrapper {
 }
 
 
+.scheduling-form-grid .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.scheduling-form-grid .form-label {
+    color: #e2e8f0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.scheduling-form-grid .form-input {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 0.875rem 1rem;
+    color: white;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.scheduling-form-grid .form-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.1);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    transform: translateY(-1px);
+}
+
+.scheduling-form-grid .form-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
 .form-group {
     display: flex;
     flex-direction: column;
@@ -2090,10 +3108,11 @@ body.start-page-active .timer-and-set-timer-wrapper {
 
 .form-label {
     display: block;
-    color: #D1D5DB;
+    color: var(--text-primary);
     font-size: 0.875rem;
     font-weight: bold;
     margin-bottom: 0.5rem;
+    transition: color 0.3s ease;
 }
 
 /* Container para mensagens de notificação */
@@ -2122,15 +3141,20 @@ body.start-page-active .timer-and-set-timer-wrapper {
 }
 
 .message-box.error {
-    background-color: #DC2626;
+    background-color: var(--accent-danger);
 }
 
 .message-box.success {
-    background-color: #10B981;
+    background-color: var(--accent-success);
 }
 
 .message-box.info {
-    background-color: #2563EB;
+    background-color: var(--accent-primary);
+}
+
+.message-box.warning {
+    background-color: var(--accent-warning);
+    color: var(--text-inverse);
 }
 
 
@@ -2156,69 +3180,108 @@ body.start-page-active .timer-and-set-timer-wrapper {
 
 
 /* Estilos para a lista de agendamentos */
+/* Manter compatibilidade com código existente */
 .scheduled-games-container {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 1rem;
-    margin-top: 1.5rem;
     width: 100%;
 }
 
 .scheduled-game-card {
-    background-color: #222;
-    border-radius: 8px;
-    /* NOVO: Ajuste do padding para dar espaço aos botões absolutos */
-    padding: 1rem 3.5rem 1rem 1rem;
-    position: relative; /* Essencial para o posicionamento absoluto dos filhos */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    border-left: 5px solid #2563EB;
-    /* Manter display: flex e flex-direction: row-reverse se o card-content ainda é flex item junto com card-actions */
+    background: var(--gradient-card);
+    border-radius: 16px;
+    padding: 1.5rem 4rem 1.5rem 1.5rem;
+    position: relative;
+    box-shadow: var(--shadow-medium);
+    border: 1px solid var(--border-color);
     display: flex;
-    flex-direction: row-reverse; /* Ícones de ação à direita */
+    flex-direction: row-reverse;
     gap: 0.5rem;
-    margin: 10px;
+    margin: 0;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.scheduled-game-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+}
+
+.scheduled-game-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-heavy);
+    border-color: var(--border-dark);
 }
 
 /* NOVO: Ajuste do card-actions para ser um contêiner absoluto e organizar os botões */
 .card-actions {
     position: absolute;
-    top: 0;
-    right: 0;
-    width: 3.5rem;
-    height: 100%;
+    top: 1rem;
+    right: 1rem;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    gap: 0.5rem;
     align-items: center;
-    padding: 0.5rem;
 }
 
 .scheduled-game-card h3 {
     margin-top: 0;
-    margin-bottom: 0.5rem;
-    color: #2563EB; /* Default blue for upcoming */
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 700;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    transition: color 0.3s ease;
 }
 
 .scheduled-game-card p {
-    margin: 0.25rem 0;
-    color: #E5E7EB;
+    margin: 0.75rem 0;
+    color: var(--text-secondary);
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    transition: color 0.3s ease;
 }
 
 .scheduled-game-card .material-icons {
-    font-size: 1.2em;
-    color: #E5E7EB; /* Changed from #9CA3AF to white */
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    transition: color 0.3s ease;
 }
 
 .page-subheading {
     width: 100%;
     text-align: left;
-    margin-top: 1.5rem;
-    margin-bottom: 0.5rem;
-    color: #E5E7EB;
-    font-size: 1.25rem;
+    margin-top: 2.5rem;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    font-weight: 700;
+    position: relative;
+    padding-left: 1rem;
+    transition: color 0.3s ease;
+}
+
+.page-subheading::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    border-radius: 2px;
 }
 
 /* Não é necessário position: relative aqui, já está no .scheduled-game-card */
@@ -2226,23 +3289,30 @@ body.start-page-active .timer-and-set-timer-wrapper {
     position: relative;
 } */
 
-.scheduled-game-card.status-upcoming {
-    border: 1px solid #3B82F6; /* Blue for upcoming */
+.scheduled-game-card.status-upcoming::before {
+    background: linear-gradient(135deg, #10b981, #059669);
 }
 
 .scheduled-game-card.status-cancelled {
-    border: 1px solid #EF4444; /* Red for cancelled */
-    opacity: 0.8; /* Slightly faded for cancelled */
+    opacity: 0.7;
+    filter: grayscale(0.3);
+}
+
+.scheduled-game-card.status-cancelled::before {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
 }
 
 .scheduled-game-card.status-past {
-    border: 1px solid #444; /* Gray for past */
+    opacity: 0.8;
+}
+
+.scheduled-game-card.status-past::before {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
 }
 
 .card-content h3 {
-    padding-bottom: 5px;
-    border-bottom: 1px dashed #444
-
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .scheduled-game-card.status-cancelled h3,
@@ -2252,18 +3322,36 @@ body.start-page-active .timer-and-set-timer-wrapper {
 
 /* Visual Improvements for Scheduled Games Action Buttons */
 .card-action-button {
-    background: transparent;
-    border: none;
-    color: #E5E7EB; /* Changed to a lighter color for better visibility */
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
     cursor: pointer;
-    padding: 0.5rem; /* Increased padding for better touch target */
-    border-radius: 50%;
+    padding: 0.5rem;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
-    box-shadow: none; /* Ensure no extra shadow */
-    /* NÃO É MAIS NECESSÁRIO position: absolute aqui, pois o .card-actions agora gerencia */
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    width: 36px;
+    height: 36px;
+}
+
+/* Exceção para o botão de comprovante que precisa ser maior */
+.card-action-button.proof-button {
+    width: auto;
+    height: auto;
+    padding: 0.5rem 0.75rem;
+    margin-top: 0.5rem;
+    background-color: var(--accent-color);
+    color: var(--text-on-accent);
+}
+
+.card-action-button:hover {
+    background: var(--bg-secondary);
+    border-color: var(--border-dark);
+    color: var(--text-primary);
+    transform: scale(1.1);
 }
 
 /* Estilo específico para o botão de excluir jogo */
@@ -2280,21 +3368,33 @@ body.start-page-active .timer-and-set-timer-wrapper {
     font-size: 1.6rem; /* Slightly larger icon */
 }
 
+.cancel-game-button {
+    color: #fbbf24 !important;
+    border-color: rgba(251, 191, 36, 0.3) !important;
+}
+
 .cancel-game-button:hover {
-    color: #FBBF24; /* Amber for warning */
-    background-color: rgba(251, 191, 36, 0.2); /* Slightly more opaque background */
+    background: rgba(251, 191, 36, 0.2) !important;
+    border-color: rgba(251, 191, 36, 0.5) !important;
+    color: #f59e0b !important;
 }
 
 .empty-list-message {
     text-align: center;
-    color: #6B7280;
-    padding: 1rem;
+    color: var(--text-muted);
+    padding: 3rem 1rem;
+    font-size: 1.1rem;
+    font-style: italic;
+    background: var(--gradient-card);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
 }
 
 /* Status-specific title colors - already defined, but good to keep track */
-.status-upcoming h3 { color: #3B82F6; } /* Blue */
-.status-cancelled h3 { color: #EF4444; } /* Red */
-.status-past h3 { color: #9CA3AF; } /* Gray */
+.status-upcoming h3 { color: #10b981; } /* Green */
+.status-cancelled h3 { color: #ef4444; } /* Red */
+.status-past h3 { color: #94a3b8; } /* Gray */
 
 /* Styles for the isolated Past Games Accordion */
 .past-games-accordion .accordion-header {
@@ -2312,14 +3412,14 @@ body.start-page-active .timer-and-set-timer-wrapper {
 
 /* Confirmation Modal Styles (NOVO) */
 .confirmation-modal-overlay {
-    display: none; /* Hidden by default */
+    display: none;
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.7); /* Dark overlay */
-    z-index: 1000; /* Above all other content */
+    background-color: var(--bg-overlay);
+    z-index: 1000;
     align-items: center;
     justify-content: center;
 }
@@ -2329,22 +3429,25 @@ body.start-page-active .timer-and-set-timer-wrapper {
 }
 
 .confirmation-modal-content {
-    background-color: #222;
+    background-color: var(--bg-modal);
+    border: 1px solid var(--border-color);
     padding: 2rem;
     border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-heavy);
     text-align: center;
     max-width: 300px;
     width: 90%;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    transition: all 0.3s ease;
 }
 
 .confirmation-message {
-    color: #E5E7EB;
+    color: var(--text-primary);
     font-size: 1.1rem;
     margin: 0;
+    transition: color 0.3s ease;
 }
 
 .confirmation-buttons {
@@ -2456,12 +3559,9 @@ body.start-page-active .timer-and-set-timer-wrapper {
     }
 
     .scheduling-form-grid {
-        display: grid;
         grid-template-columns: repeat(3, 1fr);
-        grid-template-rows: auto auto auto;
-        gap: 10px;
-        margin-bottom: 20px;
-        width: 100%;
+        gap: 1.5rem;
+        padding: 2.5rem;
     }
    
 
@@ -2469,16 +3569,20 @@ body.start-page-active .timer-and-set-timer-wrapper {
         grid-template-columns: 1fr 1fr;
     }
 
-    .form-group:nth-child(4) {
-        grid-column: 1 / span 3; /* Ou grid-column: 1 / 3; */
+    .scheduling-form-grid .form-group:nth-child(4) {
+        grid-column: 1 / span 2;
     }
 
-    .form-group:nth-child(5) {
-        grid-column: 1 / span 3; /* Ou grid-column: 1 / 3; */
+    .scheduling-form-grid .form-group:nth-child(5) {
+        grid-column: 3 / span 1;
+    }
+
+    .scheduling-form-grid .form-group:nth-child(6) {
+        grid-column: 1 / -1;
     }
 
     .accordion-content-sub {
-        grid-template-columns: 1fr 1fr 1fr;
+        grid-template-columns: 1fr;
     }
 
     .accordion-content-sub-teams {
@@ -2674,15 +3778,15 @@ body.start-page-active .timer-and-set-timer-wrapper {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: #1a1a1a; /* Cor de fundo escura */
+    background-color: var(--bg-primary);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    z-index: 5000; /* Garante que esteja acima de todos os outros elementos */
+    z-index: 5000;
     opacity: 1;
     visibility: visible;
-    transition: opacity 0.5s ease-out, visibility 0.5s ease-out; /* Transição para fade out */
+    transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
 }
 
 .loading-overlay.hidden {
@@ -2691,12 +3795,12 @@ body.start-page-active .timer-and-set-timer-wrapper {
 }
 
 .spinner {
-    border: 4px solid rgba(255, 255, 255, 0.3);
-    border-top: 4px solid #F9FAFB; /* Cor do spinner */
+    border: 4px solid var(--border-color);
+    border-top: 4px solid var(--accent-primary);
     border-radius: 50%;
     width: 40px;
     height: 40px;
-    animation: spin 1s linear infinite; /* Animação de rotação */
+    animation: spin 1s linear infinite;
     margin-bottom: 1rem;
 }
 
@@ -2706,13 +3810,14 @@ body.start-page-active .timer-and-set-timer-wrapper {
 }
 
 .loading-overlay p {
-    color: #F9FAFB;
+    color: var(--text-primary);
     font-size: 1rem;
+    transition: color 0.3s ease;
 }
 
 /* Wrapper dos painéis de pontuação */
 .score-panels-wrapper {
-  background: #181c24;
+  background: var(--bg-scoring);
   border-radius: 1.5rem;
   box-shadow: 0 4px 24px 0 rgba(0,0,0,0.18);
   display: flex;
@@ -3376,6 +4481,13 @@ input[type="password"] {
         min-width: auto;
         width: 100%;
     }
+    
+    .schedule-notification {
+        top: 0.5rem;
+        right: 0.5rem;
+        left: 0.5rem;
+        max-width: none;
+    }
 }
 /* Estilos para espaços vazios nos times */
 .empty-slot {
@@ -3406,6 +4518,311 @@ input[type="password"] {
     background-color: #1D4ED8;
     transform: scale(1.1);
 }
+/* Estilos para notificações de agendamento */
+.schedule-notification {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    background: linear-gradient(135deg, #2563EB, #1D4ED8);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3);
+    z-index: 1003;
+    max-width: 350px;
+    animation: slideInRight 0.4s ease-out;
+}
+
+.schedule-notification.cancelled {
+    background: linear-gradient(135deg, #DC2626, #B91C1C) !important;
+    box-shadow: 0 8px 25px rgba(220, 38, 38, 0.3);
+}
+
+.schedule-notification.today {
+    background: linear-gradient(135deg, #F59E0B, #D97706) !important;
+    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* Modal de Boas-vindas para Notificações */
+.welcome-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.welcome-modal-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.welcome-modal-content {
+    background: linear-gradient(135deg, #1F2937, #374151);
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    transform: scale(0.8);
+    transition: transform 0.3s ease;
+}
+
+.welcome-modal-overlay.show .welcome-modal-content {
+    transform: scale(1);
+}
+
+.welcome-modal-header {
+    margin-bottom: 1rem;
+}
+
+.welcome-icon {
+    font-size: 3rem !important;
+    color: #F59E0B;
+    margin-bottom: 0.5rem;
+}
+
+.welcome-modal-header h3 {
+    color: #F9FAFB;
+    font-size: 1.5rem;
+    margin: 0;
+    font-weight: 600;
+}
+
+.welcome-modal-text {
+    color: #D1D5DB;
+    font-size: 1rem;
+    line-height: 1.5;
+    margin-bottom: 2rem;
+}
+
+.welcome-modal-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.welcome-modal-buttons .button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.welcome-modal-buttons .button--primary {
+    background: linear-gradient(135deg, #059669, #10B981);
+    color: white;
+    border: none;
+}
+
+.welcome-modal-buttons .button--primary:hover {
+    background: linear-gradient(135deg, #047857, #059669);
+    transform: translateY(-1px);
+}
+
+.welcome-modal-buttons .button--secondary {
+    background-color: transparent;
+    color: #9CA3AF;
+    border: 1px solid #4B5563;
+}
+
+.welcome-modal-buttons .button--secondary:hover {
+    background-color: #374151;
+    color: #D1D5DB;
+}
+
+@media (max-width: 600px) {
+    .welcome-modal-content {
+        padding: 1.5rem;
+    }
+    
+    .welcome-modal-buttons {
+        flex-direction: column;
+    }
+}
+
+/* Layout profissional para configurações */
+.settings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.setting-item {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 0;
+    border-bottom: 1px solid #374151;
+    transition: background-color 0.2s ease;
+}
+
+.setting-item:last-child {
+    border-bottom: none;
+}
+
+.setting-item:hover {
+    background-color: rgba(55, 65, 81, 0.3);
+    margin: 0 -1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    border-radius: 8px;
+}
+
+.setting-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+}
+
+.setting-title {
+    color: #F9FAFB;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+.setting-description {
+    color: #9CA3AF;
+    font-size: 0.875rem;
+    line-height: 1.3;
+}
+
+.setting-item .switch {
+    margin-left: 1rem;
+    flex-shrink: 0;
+}
+
+/* Ajustes para o switch */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 24px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #4B5563;
+    transition: 0.3s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+input:checked + .slider {
+    background-color: #10B981;
+}
+
+input:checked + .slider:before {
+    transform: translateX(24px);
+}
+
+@media (max-width: 600px) {
+    .setting-item {
+        padding: 0.875rem 0;
+    }
+    
+    .setting-title {
+        font-size: 0.9rem;
+    }
+    
+    .setting-description {
+        font-size: 0.8rem;
+    }
+    
+    .switch {
+        width: 44px;
+        height: 22px;
+    }
+    
+    .slider:before {
+        height: 16px;
+        width: 16px;
+        left: 3px;
+        bottom: 3px;
+    }
+    
+    input:checked + .slider:before {
+        transform: translateX(22px);
+    }
+}
+
+.schedule-notification-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.schedule-notification-body {
+    font-size: 0.875rem;
+    line-height: 1.4;
+    opacity: 0.9;
+}
+
 /* Estilos para o card de adicionar time */
 .add-team-card {
     background-color: #2a2a2a !important;
@@ -3443,4 +4860,346 @@ input[type="password"] {
 
 .add-team-card:hover .add-team-content {
     color: #E5E7EB;
+}
+
+/* Tela de Login Profissional */
+.login-page-layout {
+    padding: 0;
+    margin: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.login-background {
+    width: 100%;
+    height: 100%;
+    background: var(--gradient-login);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.login-background::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="%23ffffff" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+    opacity: 0.3;
+}
+
+.login-container {
+    background: var(--bg-modal);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    padding: 3rem 2.5rem;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: var(--shadow-heavy);
+    position: relative;
+    z-index: 1;
+    animation: slideUp 0.6s ease-out;
+    transition: all 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.app-logo {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+}
+
+.logo-icon {
+    font-size: 2.5rem !important;
+    color: white;
+}
+
+.app-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem;
+    letter-spacing: -0.025em;
+    transition: color 0.3s ease;
+}
+
+.app-subtitle {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin: 0;
+    font-weight: 400;
+    transition: color 0.3s ease;
+}
+
+.login-form {
+    width: 100%;
+}
+
+.login-options {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.login-btn {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.login-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.login-btn:hover::before {
+    left: 100%;
+}
+
+.login-btn--google {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
+    box-shadow: var(--shadow-light);
+}
+
+.login-btn--google:hover {
+    background: var(--bg-secondary);
+    border-color: var(--border-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+}
+
+.login-btn--guest {
+    background: var(--gradient-primary);
+    color: var(--text-inverse);
+    border: 2px solid transparent;
+    box-shadow: var(--shadow-light);
+}
+
+.login-btn--guest:hover {
+    background: linear-gradient(135deg, #5a6fd8, #6a42a0);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(102, 126, 234, 0.4);
+}
+
+.btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+}
+
+.btn-text {
+    font-weight: 500;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    margin: 0.5rem 0;
+}
+
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-color);
+}
+
+.divider-text {
+    padding: 0 1rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.login-footer {
+    margin-top: 2rem;
+    text-align: center;
+}
+
+.footer-text {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.4;
+    transition: color 0.3s ease;
+}
+
+/* Responsividade */
+@media (max-width: 480px) {
+    .login-container {
+        margin: 1rem;
+        padding: 2rem 1.5rem;
+        max-width: none;
+    }
+    
+    .app-title {
+        font-size: 1.75rem;
+    }
+    
+    .login-btn {
+        padding: 0.875rem 1.25rem;
+    }
+}
+
+@media (max-height: 700px) {
+    .login-container {
+        padding: 2rem 2.5rem;
+    }
+    
+    .app-logo {
+        width: 60px;
+        height: 60px;
+        margin-bottom: 1rem;
+    }
+    
+    .logo-icon {
+        font-size: 2rem !important;
+    }
+}
+
+/* Estilos adicionais para página de agendamentos */
+.past-games-accordion {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    margin-top: 2rem;
+}
+
+.past-games-accordion .accordion-header {
+    width: 100%;
+    background: transparent;
+    padding: 1.5rem;
+    color: #f1f5f9;
+    font-size: 1.25rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.past-games-accordion .accordion-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.past-games-accordion .accordion-header h3 {
+    margin: 0;
+    color: inherit;
+}
+
+.past-games-accordion .accordion-arrow {
+    transition: transform 0.3s ease;
+    color: #94a3b8;
+}
+
+.past-games-accordion.active .accordion-arrow {
+    transform: rotate(180deg);
+    color: #3b82f6;
+}
+
+.past-games-accordion .accordion-content {
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Estilos específicos para o botão de excluir jogo */
+.delete-game-button {
+    color: #ef4444 !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+    display: none !important;
+}
+
+.delete-game-button.visible {
+    display: flex !important;
+}
+
+.delete-game-button:hover {
+    background: rgba(239, 68, 68, 0.2) !important;
+    border-color: rgba(239, 68, 68, 0.5) !important;
+    color: #dc2626 !important;
+}
+
+/* Media queries para responsividade da página de agendamentos */
+@media (min-width: 600px) {
+    .scheduled-games-container {
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+    }
+    
+    .scheduled-game-card {
+        padding: 2rem 4.5rem 2rem 2rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .scheduling-form-grid {
+        grid-template-columns: 1fr;
+        padding: 1.5rem;
+        gap: 1rem;
+    }
+    
+    .scheduling-form-grid .form-group:nth-child(4),
+    .scheduling-form-grid .form-group:nth-child(5),
+    .scheduling-form-grid .form-group:nth-child(6) {
+        grid-column: 1 / -1;
+    }
+    
+    .scheduled-game-card {
+        padding: 1.25rem 3.5rem 1.25rem 1.25rem;
+    }
+    
+    .page-subheading {
+        font-size: 1.25rem;
+        margin-top: 2rem;
+    }
 }

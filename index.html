@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#252525"/>
+    <meta name="theme-color" content="#ffffff"/>
     <title>Vôlei Score App</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/history.css">
@@ -78,14 +78,47 @@
     <main class="app-main-content">
         <!-- Página de Login -->
         <section id="login-page" class="app-page login-page-layout app-page--active">
-            <div class="login-content">
-                <h1 class="login-title">Vôlei Score App</h1>
-                <p class="login-description">Faça login para gerenciar seus times e pontuações de vôlei.</p>
-                <button id="google-login-button" class="google-login-button">
-                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo" class="google-logo">
-                    Entrar com Google
-                </button>
-                <button id="anonymous-login-button" class="button button--secondary">Entrar como Anônimo</button>
+            <div class="login-background">
+                <div class="login-container">
+                    <div class="login-header">
+                        <div class="app-logo">
+                            <span class="material-icons logo-icon">sports_volleyball</span>
+                        </div>
+                        <h1 class="app-title">Voleizinho das Ruas</h1>
+                        <p class="app-subtitle">Gerencie seus jogos de vôlei com facilidade</p>
+                    </div>
+                    
+                    <div class="login-form">
+                        <div class="login-options">
+                            <button id="google-login-button" class="login-btn login-btn--google">
+                                <div class="btn-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24">
+                                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                                    </svg>
+                                </div>
+                                <span class="btn-text">Continuar com Google</span>
+                            </button>
+                            
+                            <div class="divider">
+                                <span class="divider-text">ou</span>
+                            </div>
+                            
+                            <button id="anonymous-login-button" class="login-btn login-btn--guest">
+                                <div class="btn-icon">
+                                    <span class="material-icons">person_outline</span>
+                                </div>
+                                <span class="btn-text">Entrar como Visitante</span>
+                            </button>
+                        </div>
+                        
+                        <div class="login-footer">
+                            <p class="footer-text">Ao continuar, você concorda com nossos termos de uso</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -234,58 +267,61 @@
                     </button>
                     <div class="accordion-content">
                         <div class="accordion-content-sub">
-                            <div class="form-group">
-                                <label for="players-per-team" class="form-label">Jogadores por Time:</label>
-                                <input type="number" id="players-per-team" class="form-input" value="4" min="1" max="10">
-                            </div>
-                            <div class="form-group">
-                                <label for="points-per-set" class="form-label">Pontos por Set:</label>
-                                <input type="number" id="points-per-set" class="form-input" value="15" min="5" max="30">
-                            </div>
-                            <div class="form-group">
-                                <label for="number-of-sets" class="form-label">Número de Sets:</label>
-                                <input type="number" id="number-of-sets" class="form-input" value="1" min="1" max="5">
-                            </div>
-                            <div class="form-group form-group--toggle">
-                                <label for="dark-mode-toggle" class="form-label">Modo Escuro:</label>
-                                <label class="switch">
-                                    <input type="checkbox" id="dark-mode-toggle" checked>
-                                    <span class="slider round"></span>
-                                &nbsp;</label>
-                            </div>
-                            <div class="form-group form-group--toggle">
-                                <label for="vibration-toggle" class="form-label">Vibração:</label>
-                                <label class="switch">
-                                    <input type="checkbox" id="vibration-toggle" checked>
-                                    <span class="slider round"></span>
-                                </label>
-                            </div>
-                            <div class="form-group form-group--toggle">
-                                <label for="display-players-toggle" class="form-label">Exibir Jogadores:</label>
-                                <label class="switch">
-                                    <input type="checkbox" id="display-players-toggle" checked>
-                                    <span class="slider round"></span>
-                                </label>
-                            </div>
-                            <!-- NOVO: Toggle para exibir Status de Conexão -->
-                            <div class="form-group form-group--toggle">
-                                <label for="show-connection-status-toggle" class="form-label">Exibir Status:</label>
-                                <label class="switch">
-                                    <input type="checkbox" id="show-connection-status-toggle" checked>
-                                    <span class="slider round"></span>
-                                </label>
-                            </div>
-                            
-                            <!-- NOVO: Seção para resetar dados do usuário -->
-                            <div id="reset-user-section" class="form-group form-group--full-width">
-                                <h4>Dados do Usuário</h4>
-                                <button id="reset-user-button" class="danger-button form-button--full-width">
-                                    <span class="material-icons">delete_forever</span>
-                                    Resetar Dados do Usuário
-                                </button>
-                                <p class="setting-description">
-                                    Atenção: Isso irá excluir todos os seus dados pessoais e desconectá-lo. Esta ação não pode ser desfeita.
-                                </p>
+                            <div class="settings-list">
+                                <div class="setting-item">
+                                    <div class="setting-info">
+                                        <span class="setting-title">Modo Escuro</span>
+                                        <span class="setting-description">Tema escuro para o aplicativo</span>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="dark-mode-toggle">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-info">
+                                        <span class="setting-title">Vibração</span>
+                                        <span class="setting-description">Feedback tátil ao marcar pontos</span>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="vibration-toggle" checked>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-info">
+                                        <span class="setting-title">Exibir Jogadores</span>
+                                        <span class="setting-description">Mostrar nomes dos jogadores na pontuação</span>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="display-players-toggle" checked>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-info">
+                                        <span class="setting-title">Exibir Status</span>
+                                        <span class="setting-description">Indicador de conexão na tela</span>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="show-connection-status-toggle" checked>
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
+                                
+                                <div class="setting-item">
+                                    <div class="setting-info">
+                                        <span class="setting-title">Notificações</span>
+                                        <span class="setting-description">Alertas de novos jogos agendados</span>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="notifications-toggle">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
 
@@ -385,45 +421,108 @@
 
         <!-- Página de Agendamentos -->
         <section id="scheduling-page" class="app-page scheduling-page-layout">
-            <h2 class="page-heading">Agendamentos de Jogos</h2>
+            <div class="scheduling-header">
+                <h2 class="scheduling-title">Agendamentos</h2>
+                <p class="scheduling-subtitle">Organize seus jogos de vôlei</p>
+            </div>
             
-            <div class="scheduling-form-grid">
-                <div class="form-group">
-                    <label for="date-input" class="form-label">Data:</label>
-                    <input type="date" id="date-input" class="form-input">
-                </div>
-                <div class="form-group">
-                    <label for="start-time-input" class="form-label">Hora inicial:</label>
-                    <input type="time" id="start-time-input" class="form-input">
-                </div>
-                <div class="form-group">
-                    <label for="end-time-input" class="form-label">Hora final:</label>
-                    <input type="time" id="end-time-input" class="form-input">
-                </div>
-                <div class="form-group">
-                    <label for="location-input" class="form-label">Local:</label>
-                    <input type="text" id="location-input" placeholder="Ex: Praia, Ginásio X" class="form-input">
-                </div>
-                <div class="form-group form-group--full-width">
-                    <label for="notes-input" class="form-label">Observação</label>
-                    <input type="text" id="notes-input" placeholder="Ex: Praia, Ginásio X" class="form-input">
+            <!-- Botão Flutuante para Agendar (apenas para admins) -->
+            <button id="floating-add-btn" class="floating-add-btn">
+                <span class="material-icons">add</span>
+            </button>
+            
+            <!-- Modal do Formulário de Agendamento -->
+            <div id="schedule-modal" class="schedule-modal">
+                <div class="schedule-modal-content">
+                    <div class="modal-header">
+                        <h3>Novo Agendamento</h3>
+                        <button id="close-schedule-modal" class="close-modal-btn">
+                            <span class="material-icons">close</span>
+                        </button>
+                    </div>
+                    
+                    <div class="form-fields">
+                        <div class="field-row">
+                            <div class="field-group">
+                                <label for="date-input">Data</label>
+                                <input type="date" id="date-input" class="modern-input">
+                            </div>
+                            <div class="field-group">
+                                <label for="surface-select">Tipo</label>
+                                <select id="surface-select" class="modern-select">
+                                    <option value="">Selecione...</option>
+                                    <option value="Quadra">Quadra</option>
+                                    <option value="Areia">Areia</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="field-row">
+                            <div class="field-group">
+                                <label for="start-time-input">Início</label>
+                                <input type="time" id="start-time-input" class="modern-input">
+                            </div>
+                            <div class="field-group">
+                                <label for="end-time-input">Fim</label>
+                                <input type="time" id="end-time-input" class="modern-input">
+                            </div>
+                        </div>
+                        
+                        <div class="field-group full-width">
+                            <label for="location-input">Local</label>
+                            <input type="text" id="location-input" placeholder="Ex: Praia do Futuro, Ginásio Central" class="modern-input">
+                        </div>
+                        
+                        <div class="field-group full-width">
+                            <label for="notes-input">Observações</label>
+                            <input type="text" id="notes-input" placeholder="Informações adicionais (opcional)" class="modern-input">
+                        </div>
+                        
+                        <div class="field-group full-width">
+                            <label for="payment-proof-input">Comprovantes de reserva</label>
+                            <input type="file" id="payment-proof-input" accept="image/*" class="modern-file-input" multiple style="display:none">
+                            <div class="file-input-wrapper">
+                                <label for="payment-proof-input" class="file-input-button">Anexar comprovantes</label>
+                                <span id="file-input-help" class="file-input-help">PNG, JPG • Máx. 5</span>
+                            </div>
+                                <div class="file-preview" id="file-preview" style="display: none;">
+                                <div id="file-previews" class="file-previews-list"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button id="schedule-game-button" class="schedule-btn">
+                        <span class="material-icons">add_circle</span>
+                        Agendar Jogo
+                    </button>
                 </div>
             </div>
-            <button id="schedule-game-button" class="button button--primary form-button--full-width">Agendar Jogo</button>
-
-            <h3 class="page-subheading">Próximos Jogos</h3>
-            <div id="upcoming-games-list" class="scheduled-games-container">
-                <!-- Próximos jogos serão exibidos aqui -->
-            </div>
-
-            <div class="accordion-item">
-                <button class="accordion-header" id="past-games-accordion">
-                    <h3>Jogos Passados</h3>
-                    <span class="material-icons">expand_more</span>
-                </button>
-                <div class="accordion-content">
-                    <div id="past-games-list" class="scheduled-games-container">
-                        <!-- Jogos passados serão exibidos aqui -->
+            
+            <div class="scheduling-container">
+                
+                <!-- Lista de Jogos -->
+                <div class="games-section">
+                    <div class="section-tabs">
+                        <button class="tab-btn active" data-tab="upcoming">
+                            <span class="material-icons">upcoming</span>
+                            Próximos
+                        </button>
+                        <button class="tab-btn" data-tab="past">
+                            <span class="material-icons">history</span>
+                            Passados
+                        </button>
+                    </div>
+                    
+                    <div class="tab-content active" id="upcoming-tab">
+                        <div id="upcoming-games-list" class="games-list">
+                            <!-- Próximos jogos serão exibidos aqui -->
+                        </div>
+                    </div>
+                    
+                    <div class="tab-content" id="past-tab">
+                        <div id="past-games-list" class="games-list">
+                            <!-- Jogos passados serão exibidos aqui -->
+                        </div>
                     </div>
                 </div>
             </div>
@@ -451,6 +550,49 @@
 
     <!-- Container para mensagens de notificação -->
     <div id="message-container" class="message-container"></div>
+    
+    <!-- Modal para visualizar comprovantes -->
+    <div id="proof-viewer-modal" class="proof-viewer-modal">
+        <div class="proof-viewer-content">
+            <div class="proof-viewer-header">
+                <h3>Comprovantes</h3>
+                <button id="close-proof-viewer" class="close-modal-btn">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="proof-viewer-body">
+                <button id="proof-prev" class="proof-nav-btn" aria-label="Anterior">
+                    <span class="material-icons">chevron_left</span>
+                </button>
+                <img id="proof-image" src="" alt="Comprovante">
+                <button id="proof-next" class="proof-nav-btn" aria-label="Próximo">
+                    <span class="material-icons">chevron_right</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Boas-vindas para Notificações -->
+    <div id="welcome-notifications-modal" class="welcome-modal-overlay">
+        <div class="welcome-modal-content">
+            <div class="welcome-modal-header">
+                <span class="material-icons welcome-icon">🔔</span>
+                <h3>Quer receber notificações?</h3>
+            </div>
+            <p class="welcome-modal-text">
+                Receba alertas quando novos jogos forem agendados!
+            </p>
+            <div class="welcome-modal-buttons">
+                <button id="welcome-allow-notifications" class="button button--primary">
+                    <span class="material-icons">notifications_active</span>
+                    Permitir
+                </button>
+                <button id="welcome-deny-notifications" class="button button--secondary">
+                    Agora não
+                </button>
+            </div>
+        </div>
+    </div>
     
     <!-- Modal de Configurações Rápidas -->
     <div id="quick-settings-modal" class="quick-settings-modal">

@@ -80,6 +80,8 @@ export const vibrationToggle = () => document.getElementById('vibration-toggle')
 export const displayPlayersToggle = () => document.getElementById('display-players-toggle');
 // NOVO: Toggle para exibir Status de Conexão
 export const showConnectionStatusToggle = () => document.getElementById('show-connection-status-toggle');
+// NOVO: Toggle para notificações
+export const notificationsToggle = () => document.getElementById('notifications-toggle');
 export const configContainer = () => document.querySelector('.config-section'); // ou outro seletor apropriado para o container de configurações
 
 // Inputs de times personalizados (para fácil iteração)
@@ -122,6 +124,7 @@ export const dateInput = () => document.getElementById('date-input');
 export const startTimeInput = () => document.getElementById('start-time-input');
 export const endTimeInput = () => document.getElementById('end-time-input');
 export const locationInput = () => document.getElementById('location-input');
+export const surfaceSelect = () => document.getElementById('surface-select');
 export const notesInput = () => document.getElementById('notes-input');
 export const scheduleGameButton = () => document.getElementById('schedule-game-button');
 export const upcomingGamesList = () => document.getElementById('upcoming-games-list');

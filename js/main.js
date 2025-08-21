@@ -15,9 +15,12 @@ import * as Elements from './ui/elements.js';
 import { displayMessage } from './ui/messages.js';
 import { updatePlayerCount, updateSelectAllToggle, savePlayerSelectionState } from './ui/players-ui.js';
 import { setupHistoryPage } from './ui/history-ui.js';
-import { setupSchedulingPage } from './ui/scheduling-ui.js';
+import { setupSchedulingPage, updateSchedulingPermissions } from './ui/scheduling-ui.js';
 import './ui/profile-menu.js';
 import { setupQuickSettings } from './ui/quick-settings.js';
+import { registerNotificationServiceWorker } from './utils/notifications.js';
+import { initWelcomeNotifications } from './ui/welcome-notifications.js';
+import { initDailyReminders } from './utils/daily-reminders.js';
 import connectivityManager from './utils/connectivity.js';
 import offlineStorage from './utils/offline-storage.js';
 
@@ -152,6 +155,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupHistoryPage();
     setupSchedulingPage(); // Garante que a página de agendamento seja configurada uma vez
     setupQuickSettings(); // Configura as configurações rápidas da partida
+    
+    // Inicializa sistema de notificações
+    await registerNotificationServiceWorker();
 
     // Listeners for team page buttons
     const generateTeamsButton = document.getElementById('generate-teams-button');
@@ -257,6 +263,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await setupAuthListener(auth, db, appId);
                 await setupFirestorePlayersListener(db, appId);
                 updateProfileMenuLoginState();
+                updateSchedulingPermissions(); // Atualiza permissões de agendamento
                 
                 // Habilita botões de login
                 if (Elements.googleLoginButton()) Elements.googleLoginButton().disabled = false;
@@ -318,25 +325,52 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Define o estado inicial do indicador de conexão
     updateConnectionIndicator(connectivityManager.getStatus());
 
-    // Bloquear pull-to-refresh apenas no topo
+    // Bloquear pull-to-refresh apenas no topo, mas permitir quando modais estão abertos
     document.body.addEventListener('touchstart', e => {
         if (e.touches.length !== 1) return;
+
+        // Se algum modal está ativo, não bloquear (mais robusto que checar o target)
+    const modalOpen = document.querySelector('.quick-settings-modal.active') || document.querySelector('.substitute-modal') || document.querySelector('.select-team-modal-container.modal-active') || document.querySelector('.confirmation-modal-overlay.active') || document.querySelector('.schedule-modal.active');
+        if (modalOpen) return;
+
+        // Se o toque começou dentro de um elemento que deve rolar (modais/listas/páginas de configuração), não bloquear
+    if (e.target.closest('.substitute-modal-content') || e.target.closest('.substitute-players-list') || e.target.closest('.teams-page-layout-sub') || e.target.closest('.players-list-container') || e.target.closest('.quick-settings-content') || e.target.closest('.quick-settings-modal') || e.target.closest('.config-page-layout') || e.target.closest('.accordion-content') || e.target.closest('.accordion-content-sub') || e.target.closest('.settings-list') || e.target.closest('.accordion-content-sub-teams') || e.target.closest('.accordion-content-sub-full-width') || e.target.closest('#scheduling-page') || e.target.closest('.scheduling-container') || e.target.closest('.tab-content') || e.target.closest('.schedule-modal') || e.target.closest('.schedule-modal-content')) {
+            return;
+        }
         const startY = e.touches[0].clientY;
         if (startY <= 10 && window.scrollY === 0) {
             e.preventDefault();
         }
     }, { passive: false });
-    
+
     document.body.addEventListener('touchmove', e => {
+        // Se algum modal está ativo, permite o touchmove (permitir rolagem dentro do modal)
+    const modalOpen = document.querySelector('.quick-settings-modal.active') || document.querySelector('.substitute-modal') || document.querySelector('.select-team-modal-container.modal-active') || document.querySelector('.confirmation-modal-overlay.active') || document.querySelector('.schedule-modal.active');
+        if (modalOpen) return;
+
         // Permite scroll em elementos específicos:
         // - lista de jogadores / abas de categoria
         // - subárea da página de times (.teams-page-layout-sub)
         // - modal de substituição (conteúdo e lista de jogadores)
+        // - página de configurações / acordeão e suas listas internas
         if (e.target.closest('.players-list-container') ||
             e.target.closest('.player-category-tabs') ||
             e.target.closest('.teams-page-layout-sub') ||
             e.target.closest('.substitute-modal-content') ||
-            e.target.closest('.substitute-players-list')) {
+            e.target.closest('.substitute-players-list') ||
+            e.target.closest('.quick-settings-content') ||
+            e.target.closest('.quick-settings-modal') ||
+            e.target.closest('.config-page-layout') ||
+            e.target.closest('.accordion-content') ||
+            e.target.closest('.accordion-content-sub') ||
+            e.target.closest('.settings-list') ||
+            e.target.closest('.accordion-content-sub-teams') ||
+            e.target.closest('.accordion-content-sub-full-width') ||
+            e.target.closest('#scheduling-page') ||
+            e.target.closest('.scheduling-container') ||
+            e.target.closest('.tab-content') ||
+            e.target.closest('.schedule-modal') ||
+            e.target.closest('.schedule-modal-content')) {
             return; // permite o touchmove/scroll natural nesses elementos
         }
         e.preventDefault();
@@ -344,6 +378,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     loadAppVersion();
     registerServiceWorker();
+
+    // Developer helper: visit the app with ?clearCache=1 to ask the service worker to clear caches and reload
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('clearCache') === '1' && 'serviceWorker' in navigator) {
+            if (navigator.serviceWorker.controller) {
+                const messageChannel = new MessageChannel();
+                messageChannel.port1.onmessage = (event) => {
+                    if (event.data && event.data.success) {
+                        console.log('[main] service-worker cleared caches, reloading');
+                        window.location.reload(true);
+                    } else {
+                        console.warn('[main] service-worker cache clear failed', event.data && event.data.error);
+                    }
+                };
+                navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_CACHE' }, [messageChannel.port2]);
+            } else {
+                // no active controller; try unregistering and reloading as fallback
+                navigator.serviceWorker.getRegistrations().then(regs => Promise.all(regs.map(r => r.unregister()))).then(() => window.location.reload(true));
+            }
+        }
+    } catch (err) {
+        console.warn('clearCache helper failed', err);
+    }
+    
+    // Inicializa sistema de boas-vindas para notificações
+    initWelcomeNotifications();
+    
+    // Inicializa sistema de lembretes diários
+    initDailyReminders();
     
     // Configura salvamento automático de dados críticos
     setupAutoSave();
