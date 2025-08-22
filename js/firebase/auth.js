@@ -10,6 +10,7 @@ import { updateConnectionIndicator, hideLoadingOverlay } from '../main.js'; // I
 import { setupSchedulingPage, cleanupSchedulingListener, updateSchedulingPermissions } from '../ui/scheduling-ui.js';
 import { deleteDoc, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getAppId } from './config.js';
+import { initWelcomeNotifications } from '../ui/welcome-notifications.js';
 
 let currentUser = null;
 
@@ -156,6 +157,11 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
             updateSchedulingPermissions(); // Atualiza permissões de agendamento
             updatePlayerModificationAbility(true);
             showPage('start-page');
+
+            // Após login: inicia o modal de boas-vindas de notificações (se aplicável)
+            try {
+                initWelcomeNotifications();
+            } catch (_) { /* ignore */ }
             
             if (Elements.googleLoginButton()) Elements.googleLoginButton().disabled = false;
             if (Elements.anonymousLoginButton()) Elements.anonymousLoginButton().disabled = false;

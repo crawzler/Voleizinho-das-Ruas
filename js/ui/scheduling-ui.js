@@ -221,9 +221,21 @@ export function renderScheduledGames() {
     if (upcomingGames.length === 0) {
         upcomingListContainer.innerHTML = '<p class="empty-list-message">Nenhum jogo futuro agendado.</p>';
     } else {
-        upcomingGames.sort((a, b) => a.date.localeCompare(b.date)).forEach(game => {
-            upcomingListContainer.appendChild(createGameCard(game));
-        });
+        upcomingGames
+            .sort((a, b) => {
+                // Prioriza status: upcoming (0) antes de cancelled (1) e outros (2)
+                const prio = (g) => g.status === 'upcoming' ? 0 : (g.status === 'cancelled' ? 1 : 2);
+                const pa = prio(a);
+                const pb = prio(b);
+                if (pa !== pb) return pa - pb;
+                // Dentro do mesmo status, ordena por data e horário de início
+                const dateCmp = (a.date || '').localeCompare(b.date || '');
+                if (dateCmp !== 0) return dateCmp;
+                return (a.startTime || '').localeCompare(b.startTime || '');
+            })
+            .forEach(game => {
+                upcomingListContainer.appendChild(createGameCard(game));
+            });
     }
 
     if (pastGames.length === 0) {
@@ -259,7 +271,8 @@ function createGameCard(game) {
     const card = document.createElement('div');
     card.className = `scheduled-game-card status-${game.status}`;
     card.dataset.gameId = game.id;
-    card.draggable = true;
+    // Use a unified drag-and-drop: disable native drag until we intentionally enable it for permitted users
+    card.draggable = false;
 
     // Ensure game.date is a valid date string before splitting
     const [year, month, day] = game.date.split('-').map(Number);
@@ -284,21 +297,9 @@ function createGameCard(game) {
             statusTitle = 'Desconhecido';
     }
 
-    // Verifica autenticação e chave admin
+    // Verifica autenticação e chave admin (apenas chave admin necessária)
     const config = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
-    
-    // Tenta obter o usuário, mas com proteção contra erros de inicialização
-    let user = null;
-    let canDelete = false;
-    try {
-        user = getCurrentUser();
-        const isAdminKey = config.adminKey === 'admin998939';
-        const isGoogleUser = user && !user.isAnonymous;
-        canDelete = isAdminKey && isGoogleUser;
-    } catch (error) {
-        // Log removido
-        // Continue mesmo com erro, tratando como usuário não autenticado
-    }
+    let canDelete = config.adminKey === 'admin998939';
 
     // Cria o HTML do card diretamente
     card.innerHTML = `
@@ -332,15 +333,9 @@ function createGameCard(game) {
  */
 function canUserSchedule() {
     try {
-        const user = getCurrentUser();
         const config = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
-        
-        const isGoogleUser = user && !user.isAnonymous;
-        const hasAdminKey = config.adminKey === 'admin998939';
-        
-        return isGoogleUser && hasAdminKey;
+        return config.adminKey === 'admin998939';
     } catch (error) {
-        // Log removido
         return false;
     }
 }
@@ -692,6 +687,16 @@ function updateProofDots(modal) {
     
     // Limpa dots existentes
     dotsContainer.innerHTML = '';
+    // Adiciona guarda de clique em captura para suprimir cliques sintetizados pós-swipe
+    if (!dotsContainer.__guardAttached) {
+        dotsContainer.addEventListener('click', (e) => {
+            if (modal.__suppressDotClick) {
+                e.stopPropagation();
+                e.preventDefault();
+            }
+        }, true);
+        dotsContainer.__guardAttached = true;
+    }
     
     // Cria dots para cada imagem
     modal.__proofs.forEach((_, index) => {
@@ -702,7 +707,9 @@ function updateProofDots(modal) {
         }
         
         // Adiciona evento de clique no dot
-        dot.addEventListener('click', () => {
+        dot.addEventListener('click', (e) => {
+            // Se um swipe acabou de ocorrer, ignora o clique sintetizado
+            if (modal.__suppressDotClick || modal.__suppressClick) return;
             modal.__proofIndex = index;
             const image = modal.querySelector('#proof-image');
             if (image) {
@@ -765,6 +772,10 @@ function showProofViewer(proofData) {
     // store index and list on modal for navigation
     modal.__proofs = proofs;
     modal.__proofIndex = 0;
+    // Flag para suprimir cliques nos dots após um swipe
+    modal.__suppressDotClick = false;
+    // Flag para indicar swipe em andamento
+    modal.__isSwiping = false;
     image.src = proofs[0] || '';
     
     // Adicionar ou atualizar contador de imagens
@@ -785,6 +796,11 @@ function showProofViewer(proofData) {
     
     modal.classList.add('active');
 
+    // Setup click suppression guard in capture phase to avoid synthetic clicks after swipe
+    modal.__suppressClick = false;
+    const _clickGuard = (ev) => { if (modal.__suppressClick) { ev.preventDefault(); ev.stopPropagation(); } };
+    modal.addEventListener('click', _clickGuard, true);
+
     // attach keyboard navigation
     function keyHandler(e) {
         if (!modal.classList.contains('active')) return;
@@ -801,6 +817,7 @@ function showProofViewer(proofData) {
     function handleTouchStart(e) {
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
+        modal.__isSwiping = false;
     }
     
     function handleTouchEnd(e) {
@@ -811,8 +828,25 @@ function showProofViewer(proofData) {
         const deltaX = touchStartX - touchEndX;
         const deltaY = touchStartY - touchEndY;
         
-        // Only trigger if horizontal swipe is more significant than vertical
-        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+        // Só navega se foi detectado swipe horizontal válido durante o movimento
+        if (modal.__isSwiping && Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+            // Janela de supressão para evitar cliques sintetizados pós-swipe
+            modal.__suppressDotClick = true;
+            modal.__suppressClick = true;
+            const dots = modal.querySelector('#proof-dots');
+            const nav = modal.querySelector('.proof-carousel-nav');
+            if (dots) dots.style.pointerEvents = 'none';
+            if (nav) nav.style.pointerEvents = 'none';
+            setTimeout(() => {
+                modal.__suppressDotClick = false;
+                modal.__suppressClick = false;
+                if (dots) dots.style.pointerEvents = '';
+                if (nav) nav.style.pointerEvents = '';
+            }, 600);
+            
+            // Evita que o navegador gere um click após o touchend
+            if (e.cancelable) e.preventDefault();
+            
             if (deltaX > 0) {
                 showNext(); // Swipe left = next
             } else {
@@ -822,11 +856,26 @@ function showProofViewer(proofData) {
         
         touchStartX = 0;
         touchStartY = 0;
+        modal.__isSwiping = false;
+    }
+    
+    function handleTouchMove(e) {
+        if (!touchStartX || !touchStartY) return;
+        const x = e.touches[0].clientX;
+        const y = e.touches[0].clientY;
+        const dx = touchStartX - x;
+        const dy = touchStartY - y;
+        // Detecta swipe horizontal em andamento
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
+            modal.__isSwiping = true;
+            if (e.cancelable) e.preventDefault();
+        }
     }
     
     if (imageContainer) {
-        imageContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
-        imageContainer.addEventListener('touchend', handleTouchEnd, { passive: true });
+        imageContainer.addEventListener('touchstart', handleTouchStart, { passive: false });
+        imageContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
+        imageContainer.addEventListener('touchend', handleTouchEnd, { passive: false });
     }
 
     function showNext() {
@@ -856,6 +905,7 @@ function showProofViewer(proofData) {
     const removeListener = () => {
         document.removeEventListener('keydown', keyHandler);
         modal.removeEventListener('click', onModalClick);
+        modal.removeEventListener('click', _clickGuard, true);
         if (imageContainer) {
             imageContainer.removeEventListener('touchstart', handleTouchStart);
             imageContainer.removeEventListener('touchend', handleTouchEnd);
@@ -1003,6 +1053,13 @@ function setupScheduleDragAndDrop() {
             deleteZone.innerHTML = '<span class="material-icons">delete</span> Arraste aqui para excluir';
             deleteZone.style.display = 'none';
             document.body.appendChild(deleteZone);
+        } else {
+            // Ensure the delete zone is attached to document.body so position: fixed is relative to the viewport
+            try {
+                if (deleteZone.parentElement !== document.body) {
+                    document.body.appendChild(deleteZone);
+                }
+            } catch (e) { /* ignore */ }
         }
         
         deleteZone.addEventListener('dragover', (e) => {
@@ -1062,7 +1119,7 @@ function setupScheduleDragAndDrop() {
         const deleteZone = document.getElementById('scheduling-delete-zone');
         if (deleteZone) {
             deleteZone.style.display = 'flex';
-            deleteZone.style.zIndex = '1000';
+            // z-index is controlled in CSS; avoid lowering it via inline styles
             setTimeout(() => deleteZone.classList.add('active'), 10);
         }
     }
@@ -1076,24 +1133,37 @@ function setupScheduleDragAndDrop() {
         let touchStartY = 0;
         let isMouseDown = false;
         let dragGhost = null;
+        let ghostOffsetX = 50;
+        let ghostOffsetY = 25;
         
         const createDragGhost = (x, y) => {
             dragGhost = card.cloneNode(true);
+            const rect = card.getBoundingClientRect();
+            // Calculate offsets first to position ghost centered under cursor
+            ghostOffsetX = rect.width / 2;
+            ghostOffsetY = rect.height / 2;
+            // Base styles
             dragGhost.style.position = 'fixed';
-            dragGhost.style.left = x + 'px';
-            dragGhost.style.top = y + 'px';
+            dragGhost.style.width = rect.width + 'px';
+            dragGhost.style.height = rect.height + 'px';
+            dragGhost.style.left = (x - ghostOffsetX) + 'px';
+            dragGhost.style.top = (y - ghostOffsetY) + 'px';
             dragGhost.style.zIndex = '9999';
             dragGhost.style.pointerEvents = 'none';
             dragGhost.style.opacity = '0.8';
-            dragGhost.style.transform = 'rotate(5deg) scale(1.1)';
+            // Force-disable any rotation/animation that might come from CSS
+            try {
+                dragGhost.style.setProperty('transform', 'none', 'important');
+                dragGhost.style.setProperty('animation', 'none', 'important');
+            } catch (e) { /* ignore */ }
             dragGhost.classList.add('drag-ghost');
             document.body.appendChild(dragGhost);
         };
         
         const updateDragGhost = (x, y) => {
             if (dragGhost) {
-                dragGhost.style.left = (x - 50) + 'px';
-                dragGhost.style.top = (y - 25) + 'px';
+                dragGhost.style.left = (x - ghostOffsetX) + 'px';
+                dragGhost.style.top = (y - ghostOffsetY) + 'px';
             }
         };
         
@@ -1101,6 +1171,13 @@ function setupScheduleDragAndDrop() {
             if (dragGhost) {
                 dragGhost.remove();
                 dragGhost = null;
+            }
+        };
+        // Desktop helper to keep custom ghost synced with cursor during native drag
+        const onDocDragOver = (e) => {
+            if (isDragging && dragGhost) {
+                e.preventDefault();
+                updateDragGhost(e.clientX, e.clientY);
             }
         };
         
@@ -1111,8 +1188,7 @@ function setupScheduleDragAndDrop() {
             touchStartY = e.touches[0].clientY;
             longPressTimer = setTimeout(() => {
                 const config = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
-                const user = getCurrentUser();
-                const canDelete = config.adminKey === 'admin998939' && user && !user.isAnonymous;
+                const canDelete = config.adminKey === 'admin998939';
                 
                 if (!canDelete) {
                     displayMessage('Apenas administradores podem excluir agendamentos.', 'error');
@@ -1120,9 +1196,8 @@ function setupScheduleDragAndDrop() {
                 }
                 
                 isDragging = true;
-                card.classList.add('dragging');
+                try { card.style.setProperty('transform', 'none', 'important'); card.style.setProperty('animation', 'none', 'important'); } catch (e) {}
                 createDragGhost(e.touches[0].clientX, e.touches[0].clientY);
-                console.log('Showing delete zone for scheduling');
                 showDeleteZone();
                 e.preventDefault();
             }, 500);
@@ -1185,6 +1260,7 @@ function setupScheduleDragAndDrop() {
                 }
                 
                 isDragging = false;
+                try { card.style.removeProperty('transform'); card.style.removeProperty('animation'); } catch (e) {}
                 card.classList.remove('dragging');
                 removeDragGhost();
                 hideDeleteZone();
@@ -1198,18 +1274,18 @@ function setupScheduleDragAndDrop() {
             const startY = e.clientY;
             longPressTimer = setTimeout(() => {
                 const config = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
-                const user = getCurrentUser();
-                const canDelete = config.adminKey === 'admin998939' && user && !user.isAnonymous;
+                const canDelete = config.adminKey === 'admin998939';
                 
                 if (!canDelete) {
                     displayMessage('Apenas administradores podem excluir agendamentos.', 'error');
                     return;
                 }
                 
+                isDragging = true;
                 card.draggable = true;
-                card.classList.add('dragging');
+                try { card.style.setProperty('transform', 'none', 'important'); card.style.setProperty('animation', 'none', 'important'); } catch (e) {}
                 createDragGhost(startX, startY);
-                console.log('Showing delete zone for scheduling (mouse)');
+                document.addEventListener('dragover', onDocDragOver);
                 showDeleteZone();
             }, 500);
         });
@@ -1228,13 +1304,22 @@ function setupScheduleDragAndDrop() {
             if (e.dataTransfer) {
                 e.dataTransfer.setData('text/plain', card.dataset.gameId);
                 e.dataTransfer.effectAllowed = 'move';
+                // Hide the browser's default drag image; we render our own ghost
+                try {
+                    const transparentImg = new Image();
+                    transparentImg.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+                    e.dataTransfer.setDragImage(transparentImg, 0, 0);
+                } catch (err) { /* ignore */ }
             }
         });
         
         card.addEventListener('dragend', () => {
+            isDragging = false;
+            try { card.style.removeProperty('transform'); card.style.removeProperty('animation'); } catch (e) {}
             card.classList.remove('dragging');
             card.draggable = false;
             removeDragGhost();
+            document.removeEventListener('dragover', onDocDragOver);
             hideDeleteZone();
         });
         

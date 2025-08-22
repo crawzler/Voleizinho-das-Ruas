@@ -15,9 +15,52 @@ import { addPlayer, removePlayer } from '../data/players.js'; // <-- ADICIONE ES
 
 let touchStartY = 0;
 const DRAG_THRESHOLD = 30; // Limite de movimento para diferenciar clique de arrastar
+let touchStartedOnSwap = false; // Flag para evitar pontuar quando o toque começou no botão de inverter
 let hasGameBeenStartedExplicitly = false;
 let currentPageId = 'login-page';
 let selectingTeamPanelId = null;
+
+// Controle de overlay de orientação (mostra em paisagem exceto na tela de pontuação)
+let orientationOverlayListenerAdded = false;
+let orientationEnforcerAdded = false;
+function isScoringActive() {
+    const scoringEl = document.getElementById('scoring-page');
+    return (typeof currentPageId !== 'undefined' && currentPageId === 'scoring-page') || (scoringEl && scoringEl.classList.contains('app-page--active'));
+}
+function enforcePortraitLock() {
+    try {
+        if (isScoringActive()) return; // Não trava orientação na tela de pontuação
+        if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('portrait-primary');
+        }
+    } catch (_) { /* ignore */ }
+}
+function addOrientationEnforcerOnce() {
+    if (orientationEnforcerAdded) return;
+    window.addEventListener('orientationchange', enforcePortraitLock);
+    window.addEventListener('resize', enforcePortraitLock);
+    // One-time user-gesture hooks to allow lock in stricter browsers
+    window.addEventListener('click', enforcePortraitLock, { once: true });
+    window.addEventListener('touchend', enforcePortraitLock, { once: true });
+    orientationEnforcerAdded = true;
+}
+function updateOrientationOverlay() {
+    const overlay = document.getElementById('orientation-lock-overlay');
+    if (!overlay) return;
+    const isScoring = isScoringActive();
+    const isLandscape = window.matchMedia && window.matchMedia('(orientation: landscape)').matches;
+    if (isScoring) {
+        // Esconde overlay sempre na tela de pontuação
+        try { overlay.style.setProperty('display', 'none', 'important'); } catch (_) { overlay.style.display = 'none'; }
+        return;
+    }
+    // Outras telas: mostra overlay somente em paisagem
+    if (isLandscape) {
+        try { overlay.style.setProperty('display', 'flex', 'important'); } catch (_) { overlay.style.display = 'flex'; }
+    } else {
+        try { overlay.style.setProperty('display', 'none', 'important'); } catch (_) { overlay.style.display = 'none'; }
+    }
+}
 
 // Callbacks para o modal de confirmação
 let onConfirmCallback = null;
@@ -81,6 +124,45 @@ export async function showPage(pageIdToShow) {
     if (targetPage) {
         targetPage.classList.add('app-page--active');
         currentPageId = pageIdToShow;
+    }
+
+    // Tentativa de travar orientação: retrato em todas as telas exceto pontuação
+    const tryLockPortrait = async () => {
+        try {
+            if (screen.orientation && screen.orientation.lock) {
+                await screen.orientation.lock('portrait-primary');
+            }
+        } catch (_) { /* ignore */ }
+    };
+    const tryUnlockOrientation = async () => {
+        try {
+            if (screen.orientation && screen.orientation.unlock) {
+                screen.orientation.unlock();
+            } else if (screen.orientation && screen.orientation.lock) {
+                // fallback: deixa qualquer orientação
+                await screen.orientation.lock('any');
+            }
+        } catch (_) { /* ignore */ }
+    };
+
+    // Orientação: retrato nas telas gerais; liberar na pontuação
+    if (pageIdToShow === 'scoring-page') {
+        document.body.classList.remove('force-portrait');
+        tryUnlockOrientation();
+        document.body.classList.add('scoring-page-active');
+    } else {
+        document.body.classList.remove('scoring-page-active');
+        document.body.classList.add('force-portrait');
+        tryLockPortrait();
+    }
+    addOrientationEnforcerOnce();
+
+    // Atualiza overlay de orientação e listeners de rotação/redimensionamento
+    updateOrientationOverlay();
+    if (!orientationOverlayListenerAdded) {
+        window.addEventListener('resize', updateOrientationOverlay);
+        window.addEventListener('orientationchange', updateOrientationOverlay);
+        orientationOverlayListenerAdded = true;
     }
 
     // Update scheduling UI permissions/visibility on page change
@@ -635,11 +717,15 @@ export function setupScoreInteractions() {
             event.preventDefault();
         });
     }
-}
+
+    }
 
 function handleScoreTouch(event, teamId) {
     if (event.type === 'touchstart') {
         touchStartY = event.touches[0].clientY;
+        // Marca se o toque iniciou no botão de inverter lados
+        const targetEl = event.target;
+        touchStartedOnSwap = !!(targetEl && targetEl.closest && targetEl.closest('#swap-teams-button'));
         return;
     }
 
@@ -648,12 +734,19 @@ function handleScoreTouch(event, teamId) {
         const deltaY = touchEndY - touchStartY;
 
         const targetElement = event.target;
-        // NOVO: Evita pontuação quando clicar nos botões de substituir
-        if (targetElement.closest('.team-name') || 
+        // Se o toque começou no botão de inverter, não pontua
+        if (touchStartedOnSwap) {
+            touchStartedOnSwap = false;
+            return;
+        }
+        // NOVO: Evita pontuação quando clicar em elementos interativos (exceto o nome do time)
+        if (
             targetElement.closest('.team-players-column') ||
             targetElement.closest('.team-change-button') ||
             targetElement.closest('#team1-change-button') ||
-            targetElement.closest('#team2-change-button')) {
+            targetElement.closest('#team2-change-button') ||
+            targetElement.closest('#swap-teams-button')
+        ) {
             return; 
         }
 

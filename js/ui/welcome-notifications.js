@@ -5,15 +5,15 @@ import { requestNotificationPermission, setNotificationsEnabled } from '../utils
 import { displayMessage } from './messages.js';
 
 const WELCOME_SHOWN_KEY = 'welcomeNotificationsShown';
+const SUPPRESS_NOTIF_PROMPT_KEY = 'notificationsPromptSuppressed';
 
 /**
  * Verifica se deve mostrar o modal de boas-vindas
  */
 export function shouldShowWelcomeModal() {
-    const hasShown = localStorage.getItem(WELCOME_SHOWN_KEY);
-    const hasNotificationPermission = 'Notification' in window && Notification.permission !== 'default';
-    
-    return !hasShown && !hasNotificationPermission;
+    if (!('Notification' in window)) return false;
+    const suppressed = localStorage.getItem(SUPPRESS_NOTIF_PROMPT_KEY) === 'true';
+    return Notification.permission === 'default' && !suppressed;
 }
 
 /**
@@ -27,6 +27,7 @@ export function showWelcomeNotificationsModal() {
     
     // Configura botões
     const allowBtn = document.getElementById('welcome-allow-notifications');
+    const neverAskBtn = document.getElementById('welcome-never-ask');
     const denyBtn = document.getElementById('welcome-deny-notifications');
     
     if (allowBtn) {
@@ -41,15 +42,29 @@ export function showWelcomeNotificationsModal() {
                 displayMessage('Você pode ativar depois nas configurações', 'info');
             }
             
-            hideWelcomeModal();
+            // Fecha o modal sem gravar flag permanente; o estado do navegador rege a próxima exibição
+            const modal = document.getElementById('welcome-notifications-modal');
+            if (modal) modal.classList.remove('show');
         };
     }
     
+    if (neverAskBtn) {
+        neverAskBtn.onclick = () => {
+            try { localStorage.setItem(SUPPRESS_NOTIF_PROMPT_KEY, 'true'); } catch (_) {}
+            setNotificationsEnabled(false);
+            displayMessage('Não perguntaremos novamente. Você pode ativar depois nas configurações.', 'info');
+            const modal = document.getElementById('welcome-notifications-modal');
+            if (modal) modal.classList.remove('show');
+        };
+    }
+
     if (denyBtn) {
         denyBtn.onclick = () => {
             setNotificationsEnabled(false);
             displayMessage('Você pode ativar depois nas configurações', 'info');
-            hideWelcomeModal();
+            // Não marca como "mostrado permanentemente". Apenas fecha o modal.
+            const modal = document.getElementById('welcome-notifications-modal');
+            if (modal) modal.classList.remove('show');
         };
     }
 }
@@ -62,8 +77,7 @@ function hideWelcomeModal() {
     if (modal) {
         modal.classList.remove('show');
         
-        // Marca como mostrado
-        localStorage.setItem(WELCOME_SHOWN_KEY, 'true');
+        // Não grava mais a flag permanente aqui; a exibição será decidida por Notification.permission
         
         // Remove listeners
         setTimeout(() => {

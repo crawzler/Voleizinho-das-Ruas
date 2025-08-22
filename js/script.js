@@ -750,7 +750,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (playersPerTeamInput) playersPerTeamInput.value = config.playersPerTeam ?? 4;
             if (pointsPerSetInput) pointsPerSetInput.value = config.pointsPerSet ?? 15;
             if (numberOfSetsInput) numberOfSetsInput.value = config.numberOfSets ?? 1;
-            if (darkModeToggle) darkModeToggle.checked = config.darkMode ?? true;
+            if (darkModeToggle) darkModeToggle.checked = config.darkMode ?? false;
             if (vibrationToggle) vibrationToggle.checked = config.vibration ?? true;
             if (displayPlayersToggle) displayPlayersToggle.checked = config.displayPlayers ?? true;
 
@@ -770,7 +770,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 playersPerTeam: playersPerTeamInput ? parseInt(playersPerTeamInput.value) : 4,
                 pointsPerSet: pointsPerSetInput ? parseInt(pointsPerSetInput.value) : 15,
                 numberOfSets: numberOfSetsInput ? parseInt(numberOfSetsInput.value) : 1,
-                darkMode: darkModeToggle ? darkModeToggle.checked : true,
+                darkMode: darkModeToggle ? darkModeToggle.checked : false,
                 vibration: vibrationToggle ? vibrationToggle.checked : true,
                 displayPlayers: displayPlayersToggle ? displayPlayersToggle.checked : true
             };

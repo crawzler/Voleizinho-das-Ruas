@@ -1,19 +1,19 @@
-/* css/history.css */
-
+/* css/history.css - atualizado para usar variáveis de tema e garantir contraste nos modos claro/escuro */
 
 .history-list-container {
     width: 100%;
 }
 
 .match-history-card {
-    background-color: #121212;
+    background-color: var(--bg-card);
     border-radius: 8px;
     margin-bottom: 1rem;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    box-shadow: var(--shadow-medium);
     overflow: hidden;
-    color: #e0e0e0;
+    color: var(--text-primary);
     font-family: 'Inter', sans-serif;
     width: 100%;
+    border: 1px solid var(--border-color);
 }
 
 .match-history-header {
@@ -21,7 +21,7 @@
 }
 
 .team-winner {
-    color: #ffd700;
+    color: var(--accent-warning);
     font-weight: 600;
 }
 
@@ -31,8 +31,8 @@
     align-items: center;
     width: 100%;
     padding: 1rem;
-    background-color: #222;
-    color: white;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
     border: none;
     cursor: pointer;
     font-size: 1.125rem;
@@ -42,10 +42,12 @@
     -webkit-tap-highlight-color: transparent;
 }
 
-
+.date-time-info:hover {
+    background-color: var(--bg-tertiary);
+}
 
 .match-date span {
-    color: #e0e0e0;
+    color: var(--text-muted);
     font-size: 0.75rem;
     font-weight: 100;
 }
@@ -53,14 +55,14 @@
 .delete-match-button {
     background: transparent;
     border: none;
-    color: #e0e0e0;
+    color: var(--text-secondary);
     cursor: pointer;
     padding: 4px;
     box-shadow: none;
 }
 
 .delete-match-button:hover {
-    color: #ff5252;
+    color: var(--accent-danger);
 }
 
 .match-info {
@@ -69,12 +71,12 @@
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.3s ease-out;
-    color: #D1D5DB;
+    color: var(--text-secondary);
     overflow-y: auto;
     overscroll-behavior-y: auto;
     padding: 0px 20px;
-    border-top: 1px solid #333;
-    background-color: #222;
+    border-top: 1px solid var(--border-color);
+    background-color: var(--bg-secondary);
 }
 
 .match-info.active {
@@ -91,12 +93,12 @@
 .match-title {
     font-size: 1.1rem;
     font-weight: 600;
+    color: var(--text-primary);
 }
 
 .match-date {
     display: flex;
     flex-direction: row;
-    align-items: flex-end;
     align-items: center;
 }
 
@@ -108,12 +110,12 @@
 
 .match-date-value, .match-time-value {
     font-size: 0.9rem;
-    color: #bbb;
+    color: var(--text-muted);
 }
 
 .match-expand-icon {
     margin-left: 8px;
-    color: #bbb;
+    color: var(--text-muted);
     transition: transform 0.3s ease;
 }
 
@@ -130,12 +132,11 @@
 
 .match-section {
     display: flex;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid var(--border-color);
     padding-bottom: 16px;
     flex-direction: column;
     align-items: stretch;
     width: 100%;
-
 }
 
 .match-section li {
@@ -146,10 +147,10 @@
     text-align: center;
     font-size: 1rem;
     font-weight: 600;
-    color: #fff;
+    color: var(--text-primary);
     margin: 10px 0px;
     padding-bottom: 5px;
-    border-bottom: 1px dashed #666;
+    border-bottom: 1px dashed var(--border-light);
 }
 
 .section-title .material-icons {
@@ -170,7 +171,7 @@
 .team-players h5 {
     margin: 0 0 8px 0;
     font-size: 0.9rem;
-    color: #bbb;
+    color: var(--text-secondary);
 }
 
 .team-players ul {
@@ -180,13 +181,13 @@
 }
 
 .team-players li {
-    color: #bbb;
+    color: var(--text-secondary);
 }
 
-.winner-team h5, 
-.winner-team li, 
+.winner-team h5,
+.winner-team li,
 .winner-score {
-    color: #ffd700 !important;
+    color: var(--accent-warning) !important;
 }
 
 .sets-container {
@@ -228,7 +229,7 @@
 .set-time {
     display: flex;
     align-items: center;
-    color: #bbb;
+    color: var(--text-muted);
     font-size: 0.9rem;
 }
 
@@ -242,14 +243,14 @@
     justify-content: space-between;
     align-items: center;
     padding: 12px 16px;
-    background-color: #1a1a1a;
-    border-top: 1px solid #333;
+    background-color: var(--bg-tertiary);
+    border-top: 1px solid var(--border-color);
 }
 
 .match-location, .match-duration {
     display: flex;
     align-items: center;
-    color: #bbb;
+    color: var(--text-secondary);
     font-size: 0.9rem;
 }
 
@@ -278,6 +279,4 @@
     .match-section li {
         text-align: center;
     }
-
-
 }

@@ -74,8 +74,18 @@ export function loadConfig() {
         if (Elements.showConnectionStatusToggle()) Elements.showConnectionStatusToggle().checked = config.showConnectionStatus ?? false;
         // NOVO: Aplica a configuração de notificações
         if (Elements.notificationsToggle()) {
-            const hasPermission = 'Notification' in window && Notification.permission === 'granted';
-            Elements.notificationsToggle().checked = config.notificationsEnabled && hasPermission;
+            const supported = 'Notification' in window;
+            const hasPermission = supported && Notification.permission === 'granted';
+            // Toggle refletirá a preferência apenas se for suportado e houver permissão
+            Elements.notificationsToggle().checked = supported && config.notificationsEnabled && hasPermission;
+            // Desabilita o toggle se não suportado
+            Elements.notificationsToggle().disabled = !supported;
+            if (!supported) {
+                Elements.notificationsToggle().title = 'Notificações não são suportadas neste dispositivo/navegador.';
+            } else if (!hasPermission && config.notificationsEnabled) {
+                // Se usuário queria habilitar mas ainda não tem permissão, mantém desmarcado até conceder
+                Elements.notificationsToggle().checked = false;
+            }
         }
 
 
@@ -260,7 +270,7 @@ export function setupConfigUI() {
         { getter: Elements.darkModeToggle, name: 'darkModeToggle' },
         { getter: Elements.vibrationToggle, name: 'vibrationToggle' },
         { getter: Elements.displayPlayersToggle, name: 'displayPlayersToggle' },
-        { getter: Elements.notificationsToggle, name: 'notificationsToggle' },
+        // Removido: notificationsToggle tem tratamento especial abaixo
     ];
 
     elementsToSetup.forEach(({ getter, name }) => {
@@ -289,25 +299,93 @@ export function setupConfigUI() {
 
     // NOVO: Adiciona listener para o toggle de notificações
     if (Elements.notificationsToggle()) {
-        Elements.notificationsToggle().addEventListener('change', async () => {
-            const isEnabled = Elements.notificationsToggle().checked;
-            
-            if (isEnabled) {
-                // Tenta solicitar permissão quando ativado
-                const { requestNotificationPermission } = await import('../utils/notifications.js');
-                const granted = await requestNotificationPermission();
-                
-                if (!granted) {
-                    // Se permissão negada, desativa o toggle
-                    Elements.notificationsToggle().checked = false;
-                    const { displayMessage } = await import('./messages.js');
-                    displayMessage('Permissão de notificação negada. Ative nas configurações do navegador.', 'warning');
-                    return;
+        const checkbox = Elements.notificationsToggle();
+        const onChange = async (ev) => {
+            try {
+                const cb = ev.currentTarget;
+                const isTurningOn = !!cb.checked;
+
+                if (isTurningOn) {
+                    // Verifica suporte
+                    if (!('Notification' in window)) {
+                        cb.checked = false;
+                        try {
+                            const { displayMessage } = await import('./messages.js');
+                            displayMessage('Notificações não são suportadas neste dispositivo/navegador.', 'error');
+                        } catch (_) { /* fallback abaixo */ }
+                        alert('Notificações não são suportadas neste dispositivo/navegador.');
+                        ev.preventDefault();
+                        ev.stopImmediatePropagation();
+                        return;
+                    }
+
+                    const permission = Notification.permission;
+
+                    if (permission === 'granted') {
+                        // Caso granted: ativa normalmente
+                        saveConfig();
+                        return;
+                    }
+
+                    if (permission === 'default') {
+                        // Solicita permissão
+                        let result = 'default';
+                        try {
+                            result = await Notification.requestPermission();
+                        } catch (_) { /* ignore */ }
+
+                        if (result === 'granted') {
+                            cb.checked = true;
+                            saveConfig();
+                            return;
+                        }
+
+                        // Não concedido: desmarca e ensina como ativar manualmente
+                        cb.checked = false;
+                        try {
+                            const { showNotificationPermissionHelp } = await import('./notification-permission-help.js');
+                            showNotificationPermissionHelp();
+                        } catch (_) { /* ignore */ }
+                        try {
+                            const { displayMessage } = await import('./messages.js');
+                            displayMessage('Permissão de notificação negada. Ative nas configurações do navegador.', 'warning');
+                        } catch (_) { /* ignore */ }
+                        alert('Permissão de notificação negada.\n\nPara ativar, vá às configurações do navegador para este site e permita notificações.');
+                        ev.preventDefault();
+                        ev.stopImmediatePropagation();
+                        return;
+                    }
+
+                    // Caso denied: orienta habilitar manualmente
+                    if (permission === 'denied') {
+                        cb.checked = false;
+                        try {
+                            const { showNotificationPermissionHelp } = await import('./notification-permission-help.js');
+                            showNotificationPermissionHelp();
+                        } catch (_) {
+                            alert('Você negou as notificações anteriormente.\n\nPara ativar novamente, abra as configurações do navegador para este site e permita notificações.');
+                        }
+                        ev.preventDefault();
+                        ev.stopImmediatePropagation();
+                        return;
+                    }
+                } else {
+                    // Desligando
+                    saveConfig();
                 }
+            } catch (e) {
+                // Em caso de erro, reverte o toggle e informa o usuário
+                const cb = Elements.notificationsToggle();
+                if (cb) cb.checked = false;
+                try {
+                    const { displayMessage } = await import('./messages.js');
+                    displayMessage('Não foi possível atualizar as notificações agora.', 'error');
+                } catch (_) { /* ignore */ }
+                ev.preventDefault();
+                ev.stopImmediatePropagation();
             }
-            
-            saveConfig(); // Salva a configuração
-        });
+        };
+        checkbox.addEventListener('change', onChange);
     } else {
         // Log removido
     }

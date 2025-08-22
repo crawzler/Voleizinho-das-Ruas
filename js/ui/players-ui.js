@@ -634,6 +634,8 @@ function setupDragAndDrop(playerElement) {
     let touchStartY = 0;
     let isMouseDown = false;
     let dragGhost = null;
+    let ghostOffsetX = 50;
+    let ghostOffsetY = 25;
     const deleteZone = document.getElementById('delete-zone');
     
     // Função para mostrar zona de exclusão
@@ -647,13 +649,34 @@ function setupDragAndDrop(playerElement) {
     // Função para criar elemento fantasma
     const createDragGhost = (x, y) => {
         dragGhost = playerElement.cloneNode(true);
+        const rect = playerElement.getBoundingClientRect();
+        ghostOffsetX = rect.width / 2;
+        ghostOffsetY = rect.height / 2;
         dragGhost.style.position = 'fixed';
-        dragGhost.style.left = x + 'px';
-        dragGhost.style.top = y + 'px';
+        dragGhost.style.width = rect.width + 'px';
+        dragGhost.style.height = rect.height + 'px';
+        dragGhost.style.left = (x - ghostOffsetX) + 'px';
+        dragGhost.style.top = (y - ghostOffsetY) + 'px';
         dragGhost.style.zIndex = '9999';
         dragGhost.style.pointerEvents = 'none';
-        dragGhost.style.opacity = '0.8';
-        dragGhost.style.transform = 'rotate(5deg) scale(1.1)';
+        dragGhost.style.opacity = '0.6';
+        try {
+            dragGhost.style.setProperty('transform', 'none', 'important');
+            dragGhost.style.setProperty('animation', 'none', 'important');
+        } catch (e) { /* ignore */ }
+        // Copia estilos visuais do card original para evitar fallback escuro e borda
+        try {
+            const cs = window.getComputedStyle(playerElement);
+            const bg = cs.background || cs.backgroundColor;
+            if (bg) {
+                dragGhost.style.setProperty('background', bg, 'important');
+                dragGhost.style.setProperty('background-color', cs.backgroundColor, 'important');
+            }
+            if (cs.borderRadius) dragGhost.style.setProperty('border-radius', cs.borderRadius, 'important');
+            if (cs.boxShadow) dragGhost.style.setProperty('box-shadow', cs.boxShadow, 'important');
+            // Sem borda no fantasma
+            dragGhost.style.setProperty('border', 'none', 'important');
+        } catch (err) { /* ignore */ }
         dragGhost.classList.add('drag-ghost');
         document.body.appendChild(dragGhost);
     };
@@ -661,8 +684,8 @@ function setupDragAndDrop(playerElement) {
     // Função para atualizar posição do fantasma
     const updateDragGhost = (x, y) => {
         if (dragGhost) {
-            dragGhost.style.left = (x - 50) + 'px';
-            dragGhost.style.top = (y - 25) + 'px';
+            dragGhost.style.left = (x - ghostOffsetX) + 'px';
+            dragGhost.style.top = (y - ghostOffsetY) + 'px';
         }
     };
     
@@ -673,6 +696,13 @@ function setupDragAndDrop(playerElement) {
             dragGhost = null;
         }
     };
+    // Desktop helper para manter o ghost sincronizado durante drag nativo
+    const onDocDragOver = (e) => {
+        if (isDragging && dragGhost) {
+            e.preventDefault();
+            updateDragGhost(e.clientX, e.clientY);
+        }
+    };
     
     // Touch events para mobile
     playerElement.addEventListener('touchstart', (e) => {
@@ -681,7 +711,7 @@ function setupDragAndDrop(playerElement) {
         touchStartY = e.touches[0].clientY;
         longPressTimer = setTimeout(() => {
             isDragging = true;
-            playerElement.classList.add('dragging');
+            try { playerElement.style.setProperty('transform', 'none', 'important'); playerElement.style.setProperty('animation', 'none', 'important'); } catch (err) {}
             createDragGhost(e.touches[0].clientX, e.touches[0].clientY);
             showDeleteZone();
             // Previne scroll apenas quando inicia o drag
@@ -789,6 +819,7 @@ function setupDragAndDrop(playerElement) {
             }
             
             isDragging = false;
+            try { playerElement.style.removeProperty('transform'); playerElement.style.removeProperty('animation'); } catch (err) {}
             playerElement.classList.remove('dragging');
             removeDragGhost();
             hideDeleteZone();
@@ -808,9 +839,12 @@ function setupDragAndDrop(playerElement) {
         const startX = e.clientX;
         const startY = e.clientY;
         longPressTimer = setTimeout(() => {
+            isDragging = true;
             playerElement.draggable = true;
+            try { playerElement.style.setProperty('transform', 'none', 'important'); playerElement.style.setProperty('animation', 'none', 'important'); } catch (err) {}
             playerElement.classList.add('dragging');
             createDragGhost(startX, startY);
+            document.addEventListener('dragover', onDocDragOver);
             showDeleteZone();
         }, 500);
     });
@@ -829,13 +863,21 @@ function setupDragAndDrop(playerElement) {
         if (e.dataTransfer) {
             e.dataTransfer.setData('text/plain', playerElement.dataset.playerId);
             e.dataTransfer.effectAllowed = 'move';
+            try {
+                const transparentImg = new Image();
+                transparentImg.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+                e.dataTransfer.setDragImage(transparentImg, 0, 0);
+            } catch (err) { /* ignore */ }
         }
     });
     
     playerElement.addEventListener('dragend', () => {
+        isDragging = false;
+        try { playerElement.style.removeProperty('transform'); playerElement.style.removeProperty('animation'); } catch (err) {}
         playerElement.classList.remove('dragging');
         playerElement.draggable = false;
         removeDragGhost();
+        document.removeEventListener('dragover', onDocDragOver);
         hideDeleteZone();
         // Remove drag-over de todas as abas e highlight dos botões
         document.querySelectorAll('.category-tab').forEach(tab => {

@@ -1,7 +1,7 @@
 // js/ui/notification-settings.js
 // Interface para configurações de notificações
 
-import { requestNotificationPermission, areNotificationsEnabled } from '../utils/notifications.js';
+import { requestNotificationPermission, areNotificationsEnabled, setNotificationsEnabled, areNotificationsSupported } from '../utils/notifications.js';
 import { displayMessage } from './messages.js';
 
 /**
@@ -16,6 +16,16 @@ export function createNotificationButton() {
     `;
     
     updateButtonState(button);
+
+    // Check if notifications are supported at all
+    if (!areNotificationsSupported()) {
+        button.disabled = true;
+        button.title = 'Notificações não são suportadas neste dispositivo/navegador.';
+        button.querySelector('.btn-text').textContent = 'Não Suportado';
+        button.querySelector('.material-icons').textContent = 'notifications_off';
+        displayMessage('As notificações não são suportadas neste dispositivo ou navegador. 🚫', 'error');
+        return button; // Exit early if not supported
+    }
     
     button.addEventListener('click', async () => {
         if (areNotificationsEnabled()) {
@@ -25,9 +35,11 @@ export function createNotificationButton() {
             // Tenta solicitar permissão
             const granted = await requestNotificationPermission();
             if (granted) {
+                setNotificationsEnabled(true);
                 displayMessage('Notificações ativadas! Você será notificado sobre novos jogos. 🔔', 'success');
                 updateButtonState(button);
             } else {
+                setNotificationsEnabled(false);
                 displayMessage('Permissão negada. Ative nas configurações do navegador para receber notificações. ⚠️', 'warning');
             }
         }

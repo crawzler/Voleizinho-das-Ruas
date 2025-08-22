@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
     <meta name="theme-color" content="#ffffff"/>
     
     <!-- PWA - Ocultar barra de navegação -->
@@ -13,8 +13,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/history.css">
     <link rel="stylesheet" href="css/offline-fallback.css">
-    <link rel="stylesheet" href="css/safe-areas.css">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" crossorigin="anonymous">
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" crossorigin="anonymous">
     <link rel="manifest" href="manifest.json">
     
     <!-- Preload Firebase modules -->
@@ -444,7 +443,7 @@
         <section id="scheduling-page" class="app-page scheduling-page-layout">
             <div class="scheduling-header">
                 <h2 class="scheduling-title">Agendamentos</h2>
-                <p class="scheduling-subtitle">Organize seus jogos de vôlei</p>
+                <p class="scheduling-subtitle">Acompanhe os agendamentos dos jogos</p>
             </div>
             
             <!-- Botão Flutuante para Agendar (apenas para admins) -->
@@ -610,7 +609,7 @@
             <p class="welcome-modal-text">
                 Receba alertas quando novos jogos forem agendados!
             </p>
-            <div class="welcome-modal-buttons">
+            <div class="welcome-modal-actions">
                 <button id="welcome-allow-notifications" class="button button--primary">
                     <span class="material-icons">notifications_active</span>
                     Permitir
@@ -618,6 +617,9 @@
                 <button id="welcome-deny-notifications" class="button button--secondary">
                     Agora não
                 </button>
+            </div>
+            <div class="welcome-modal-footer">
+                <button id="welcome-never-ask" type="button" class="link-button">Não perguntar novamente</button>
             </div>
         </div>
     </div>
@@ -722,6 +724,14 @@
       };
     }
     </script>
+
+    <!-- Overlay para bloquear orientação paisagem em telas não permitidas -->
+    <div id="orientation-lock-overlay" class="orientation-lock-overlay" aria-hidden="true" style="display:none;">
+        <div class="orientation-lock-content">
+            <span class="material-icons" aria-hidden="true">screen_rotation</span>
+            <p>Gire o dispositivo para o modo retrato</p>
+        </div>
+    </div>
 
     <!-- Filtro SVG para efeito gooey/liquido -->
 <svg width="0" height="0">

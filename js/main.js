@@ -23,7 +23,6 @@ import { initWelcomeNotifications } from './ui/welcome-notifications.js';
 import { initDailyReminders } from './utils/daily-reminders.js';
 import connectivityManager from './utils/connectivity.js';
 import offlineStorage from './utils/offline-storage.js';
-import safeAreasManager from './utils/safe-areas.js';
 import pwaManager from './utils/pwa-manager.js';
 
 import { signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -116,15 +115,7 @@ export function hideLoadingOverlay() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Inicializa safe areas o mais cedo possível
-    try {
-        safeAreasManager.init();
-        safeAreasManager.applyPWAAdjustments();
-        // Log removido
-    } catch (error) {
-        // Log removido
-    }
-    
+        
     // Exibe a tela de carregamento imediatamente
     const loadingOverlay = Elements.loadingOverlay();
     if (loadingOverlay) {
@@ -420,9 +411,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (err) {
         // Log removido
     }
-    
-    // Inicializa sistema de boas-vindas para notificações
-    initWelcomeNotifications();
     
     // Inicializa sistema de lembretes diários
     initDailyReminders();

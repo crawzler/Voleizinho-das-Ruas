@@ -39,12 +39,10 @@
     
     --scrollbar-thumb: #c1c7cd;
     --scrollbar-track: transparent;
+    --focus-ring: rgba(0, 123, 255, 0.15);
+    --overlay-weak: rgba(0, 0, 0, 0.08);
     
-    /* Safe Area Insets para dispositivos móveis */
-    --safe-area-inset-top: env(safe-area-inset-top, 0px);
-    --safe-area-inset-right: env(safe-area-inset-right, 0px);
-    --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
-    --safe-area-inset-left: env(safe-area-inset-left, 0px);
+    /* Safe Area removidas */
 }
 
 /* Tema Escuro */
@@ -87,6 +85,8 @@ body.dark-mode {
     
     --scrollbar-thumb: #444;
     --scrollbar-track: transparent;
+    --focus-ring: rgba(37, 99, 235, 0.25);
+    --overlay-weak: rgba(255, 255, 255, 0.10);
 }
 
 html {
@@ -95,6 +95,28 @@ html {
     width: 100%;
     overflow-x: hidden;
     overflow-y: auto;
+}
+
+/* Overlay de orientação: bloqueia paisagem em todas as telas, exceto pontuação */
+.orientation-lock-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    color: #fff;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    text-align: center;
+    padding: 2rem;
+}
+.orientation-lock-content { display: flex; flex-direction: column; align-items: center; gap: 1rem; font-size: 1.1rem; }
+.orientation-lock-content .material-icons { font-size: 48px; }
+
+/* Regra: em orientação paisagem, mostramos overlay por padrão... */
+@media (orientation: landscape) {
+  /* Overlay desativado em todas as telas */
+  .orientation-lock-overlay { display: none !important; }
 }
 
 *, *::before, *::after {
@@ -114,11 +136,6 @@ body {
     width: 100%;
     overscroll-behavior-x: none;
     transition: background-color 0.3s ease, color 0.3s ease;
-    
-    /* Safe Area Insets simplificados */
-    padding-top: max(env(safe-area-inset-top), 10px);
-    padding-bottom: max(env(safe-area-inset-bottom), 20px);
-    
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -332,12 +349,58 @@ button:hover {
 
 /* Estilos para botões PWA */
 #install-pwa-button {
-    background-color: #2563EB; /* Azul para instalação */
+    background-color: var(--accent-primary); /* Azul para instalação */
     border-color: #1d4ed8;
 }
 
 #install-pwa-button:hover {
     background-color: #1d4ed8;
+}
+
+/* Custom visual for login install button */
+#install-pwa-login-button {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    border: 0;
+    border-radius: 14px;
+    box-shadow: 0 10px 22px rgba(34, 197, 94, 0.35), inset 0 1px 0 rgba(255,255,255,0.1);
+    transform: translateZ(0);
+    overflow: hidden;
+}
+#install-pwa-login-button:hover {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+    box-shadow: 0 14px 28px rgba(34, 197, 94, 0.45), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+#install-pwa-login-button .btn-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+#install-pwa-login-button .btn-text {
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+#install-pwa-login-button::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 16px;
+    padding: 2px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.25), rgba(255,255,255,0) 60%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
 }
 
 
@@ -407,7 +470,7 @@ button:hover {
 }
 
 input:checked + .slider {
-    background-color: #2563EB;
+    background-color: var(--accent-primary);
 }
 
 input:checked + .slider:before {
@@ -715,11 +778,11 @@ input:checked + .slider:before {
 }
 
 .header-button-container {
-    background-color: #2229;
+    background-color: var(--overlay-weak);
     border-radius: 8px;
     position: fixed;
-    top: max(env(safe-area-inset-top), 10px);
-    right: max(env(safe-area-inset-right), 10px);
+    top: 10px;
+    right: 10px;
     z-index: 900;
 }
 
@@ -732,11 +795,12 @@ input:checked + .slider:before {
     transition: background-color 0.3s ease;
     /* NOVO: Remove a demarcação azul em cliques/toques */
     outline: none;
-    -webkit-tap-highlight-color: transparent;
+    -webkit-tap-highlight-color: transparent;    
+    box-shadow: none;
 }
 
 .header-button:hover {
-    background-color: #333;
+    background-color: var(--bg-tertiary);
 }
 
 .sidebar-menu {
@@ -791,7 +855,7 @@ input:checked + .slider:before {
 }
 
 .user-profile-header:hover {
-    background-color: #333;
+    background-color: var(--bg-tertiary);
     border-radius: 8px;
 }
 
@@ -801,6 +865,9 @@ input:checked + .slider:before {
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid #555;
+    background-color: var(--bg-primary);
+    background-size: cover;
+    background-position: center
 }
 
 .user-display-name {
@@ -815,7 +882,7 @@ input:checked + .slider:before {
 }
 
 .profile-menu-arrow {
-    color: #D1D5DB;
+    color: var(--text-muted);
     transition: transform 0.2s ease;
 }
 
@@ -832,7 +899,7 @@ input:checked + .slider:before {
     top: 100%;
     left: 0;
     width: 100%;
-    background-color: #222;
+    background-color: var(--bg-secondary);
     border-radius: 0 0 8px 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     z-index: 960;
@@ -1059,7 +1126,7 @@ input:checked + .slider:before {
     justify-content: center;
     align-items: center;
     text-align: center;
-    background-color: #1a1a1a;
+    background-color: var(--bg-primary);
     box-shadow: none;
 }
 
@@ -1068,7 +1135,7 @@ input:checked + .slider:before {
 }
 
 .login-content {
-    background-color: #222;
+    background-color: var(--bg-secondary);
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
@@ -1079,7 +1146,7 @@ input:checked + .slider:before {
 }
 
 .login-title {
-    color: white;
+    color: var(--text-primary);
     font-size: 2rem;
     margin-bottom: 0px;
 }
@@ -1160,19 +1227,19 @@ input:checked + .slider:before {
 
 .welcome-message {
     font-size: 1.5rem;
-    color: white;
+    color: var(--text-primary);
     margin-bottom: 0.5rem;
 }
 
 .instructions {
     font-size: 1rem;
-    color: #D1D5DB;
+    color: var(--text-secondary);
     margin-bottom: 1rem;
 }
 
 .start-game-button {
-    background-color: #2563EB;
-    color: white;
+    background-color: var(--accent-primary);
+    color: var(--text-primary);
     font-size: 1.5rem;
     font-weight: bold;
     padding: 0px;
@@ -1770,6 +1837,7 @@ input:checked + .slider:before {
 
 .category-tab.active {
     background-color: var(--accent-primary);
+    color: var(--text-inverse);
 }
 
 .category-tab:hover:not(.active) {
@@ -1799,6 +1867,7 @@ select.form-input {
 .players-page-layout-add #add-player-button {
     flex-shrink: 0;
     min-width: auto;
+    color: var(--text-inverse);
 }
 
 .players-page-layout-sub {
@@ -1977,7 +2046,6 @@ select.form-input {
 }
 
 .player-list-item:hover {
-    background-color: var(--bg-tertiary);
     transform: translateY(-1px);
     box-shadow: var(--shadow-medium);
 }
@@ -2000,18 +2068,18 @@ select.form-input {
     opacity: 0.9 !important;
     transform: rotate(5deg) scale(1.1) !important;
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4) !important;
-    border: 2px solid #2563EB !important;
-    background-color: #333 !important;
+    border: 2px solid var(--accent-primary) !important;
+    background-color: var(--bg-tertiary) !important;
     pointer-events: none !important;
     z-index: 9999 !important;
     transition: none !important;
 }
 
 .category-tab.drag-over {
-    background-color: #2563EB !important;
+    background-color: var(--accent-primary) !important;
     transform: scale(1.05);
     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
-    border: 2px solid #2563EB;
+    border: 2px solid var(--accent-primary);
     transition: all 0.2s ease;
 }
 
@@ -2064,7 +2132,7 @@ select.form-input {
 /* Estilo específico para o ícone SVG padrão */
 .player-avatar[src*="default-user-icon.svg"] {
     padding: 8px;
-    background-color: #444;
+    background-color: var(--bg-primary);
 }
 
 .player-info span {
@@ -2100,11 +2168,12 @@ select.form-input {
     border-color: #EF4444;
 }
 
+/* Zona de exclusão geral (para jogadores) */
 .delete-zone {
     position: fixed;
-    bottom: max(env(safe-area-inset-bottom), 20px);
-    left: max(env(safe-area-inset-left), 0px);
-    right: max(env(safe-area-inset-right), 0px);
+    bottom: 0;
+    left: 0;
+    right: 0;
     height: 80px;
     background-color: #DC2626;
     color: white;
@@ -2114,7 +2183,7 @@ select.form-input {
     justify-content: center;
     gap: 0.5rem;
     font-weight: bold;
-    z-index: 1000;
+    z-index: 10000;
     transform: translateY(100%);
     transition: all 0.3s ease;
 }
@@ -2126,6 +2195,58 @@ select.form-input {
 .delete-zone.drag-over {
     background-color: #EF4444;
     transform: translateY(0) scale(1.05);
+    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.6);
+}
+
+/* Zona de exclusão específica para agendamentos - NOVA IMPLEMENTAÇÃO */
+#scheduling-delete-zone {
+    /* Força posicionamento fixo relativo à viewport, não ao container pai */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100vw;
+    height: 80px;
+    
+    /* Aparência */
+    background-color: #DC2626;
+    color: white;
+    padding: 1rem;
+    font-weight: bold;
+    
+    /* Layout interno */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    
+    /* Z-index alto para ficar acima de tudo */
+    z-index: 99999;
+    
+    /* Estado inicial: escondido */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(100%);
+    
+    /* Transições suaves */
+    transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease, background-color 0.3s ease;
+    
+    /* Garante que não seja afetado por transforms dos containers pais */
+    will-change: transform;
+    contain: layout style paint;
+}
+
+/* Estado ativo: visível */
+#scheduling-delete-zone.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Estado de drag over: destaque */
+#scheduling-delete-zone.drag-over {
+    background-color: #EF4444;
+    transform: translateY(0) scale(1.02);
     box-shadow: 0 8px 24px rgba(220, 38, 38, 0.6);
 }
 
@@ -2312,6 +2433,7 @@ body.start-page-active #swap-teams-button {
     -webkit-tap-highlight-color: transparent;
     cursor: pointer;
     transition: all 0.2s ease;
+    box-shadow: none;
 }
 
 /* NOVO: Oculta quando start-page está ativa */
@@ -2387,6 +2509,7 @@ body.start-page-active #quick-settings-button {
     align-items: center;
     justify-content: center;
     transition: all 0.3s ease;
+    box-shadow:  none;
 }
 
 .quick-settings-close:hover {
@@ -2818,6 +2941,11 @@ body.start-page-active .timer-and-set-timer-wrapper {
     gap: 0.5rem;
 }
 
+.card-content  {
+    width: 100%;
+    padding: 1rem 1rem 1rem 2rem;
+}
+
 .games-list .card-action-button {
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
@@ -2872,6 +3000,8 @@ body.start-page-active .timer-and-set-timer-wrapper {
 
 /* Motivo do cancelamento destacado */
 .cancel-reason {
+    display: flex;
+    flex-direction: column;
     background: rgba(239, 68, 68, 0.1) !important;
     border: 1px solid #ef4444 !important;
     border-radius: 8px !important;
@@ -2895,8 +3025,7 @@ body.start-page-active .timer-and-set-timer-wrapper {
 }
 
 .scheduled-game-card.dragging {
-    opacity: 0.3;
-    transform: rotate(3deg) scale(1.05);
+    opacity: 0.6;
     z-index: 1000;
     cursor: grabbing;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
@@ -2905,10 +3034,9 @@ body.start-page-active .timer-and-set-timer-wrapper {
 }
 
 .scheduled-game-card.drag-ghost {
-    opacity: 0.9 !important;
-    transform: rotate(5deg) scale(1.1) !important;
+    opacity: 0.6 !important;
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4) !important;
-    border: 2px solid #ef4444 !important;
+    border: none !important;
     background-color: #333 !important;
     pointer-events: none !important;
     z-index: 9999 !important;
@@ -2929,8 +3057,8 @@ body.start-page-active .timer-and-set-timer-wrapper {
 /* Botão Flutuante */
 .floating-add-btn {
     position: fixed;
-    bottom: max(env(safe-area-inset-bottom), 20px);
-    right: max(env(safe-area-inset-right), 20px);
+    bottom: 20px;
+    right: 20px;
     width: 56px;
     height: 56px;
     background: var(--accent-primary);
@@ -3466,7 +3594,7 @@ body.modal-open {
 /* Container para mensagens de notificação */
 .message-container {
     position: fixed;
-    top: max(calc(10px + var(--safe-area-inset-top)), 20px);
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 1000;
@@ -3475,8 +3603,8 @@ body.modal-open {
     gap: 10px;
     width: 90%;
     max-width: 400px;
-    padding-left: max(var(--safe-area-inset-left), 10px);
-    padding-right: max(var(--safe-area-inset-right), 10px);
+    padding-left: 10px;
+    padding-right: 10px;
 }
 
 .message-box {
@@ -3640,7 +3768,7 @@ body.modal-open {
 } */
 
 .scheduled-game-card.status-upcoming::before {
-    background: linear-gradient(135deg, #2563EB, #1d4ed8);
+    background: var(--gradient-primary);
 }
 
 .scheduled-game-card.status-cancelled {
@@ -3735,10 +3863,10 @@ body.modal-open {
     transition: all 0.3s ease;
 }
 
-/* Status-specific title colors - already defined, but good to keep track */
-.status-upcoming h3 { color: #2563EB; } /* Blue */
-.status-cancelled h3 { color: #ef4444; } /* Red */
-.status-past h3 { color: #94a3b8; } /* Gray */
+/* Status-specific title colors */
+.status-upcoming h3 { color: var(--accent-primary); }
+.status-cancelled h3 { color: #ef4444; }
+.status-past h3 { color: #94a3b8; }
 
 /* Styles for the isolated Past Games Accordion */
 .past-games-accordion .accordion-header {
@@ -3832,7 +3960,7 @@ body.modal-open {
 }
 
 .category-selection-buttons .button {
-    background-color: #2563EB;
+    background-color: var(--accent-primary);
     padding: 0.75rem 1rem;
 }
 
@@ -3939,8 +4067,8 @@ body.modal-open {
 /* NOVO: Estilos para o indicador de conexão */
 .connection-indicator {
     position: fixed;
-    top: max(env(safe-area-inset-top), 10px);
-    left: max(env(safe-area-inset-left), 10px);
+    top: 10px;
+    left: 10px;
     display: flex;
     align-items: center;
     gap: 0.4rem;
@@ -3975,13 +4103,13 @@ body.modal-open {
 
 /* Cores dos estados */
 .status-dot.online {
-    background-color: #2563EB; /* Azul para admin */
+    background-color: var(--accent-primary); /* Azul para admin */
 }
 .status-dot.not-admin-online {
     background-color: #bdbdbd; /* Cinza para não-admins autenticados */
 }
 .status-text.online {
-    color: #2563EB; /* Texto azul */
+    color: var(--accent-primary); /* Texto azul */
 }
 
 .status-dot.offline {
@@ -4040,8 +4168,8 @@ body.modal-open {
 
 .online-message {
     background-color: rgba(37, 99, 235, 0.1);
-    border: 1px solid #2563EB;
-    color: #2563EB;
+    border: 1px solid var(--accent-primary);
+    color: var(--accent-primary);
     padding: 0.75rem;
     border-radius: 8px;
     margin: 1rem 0;
@@ -4061,8 +4189,8 @@ body.modal-open {
 
 /* Estilos para botões de cache */
 .cache-button {
-    background-color: #2563EB;
-    color: white;
+    background-color: var(--accent-primary);
+    color: var(--text-inverse);
     border: none;
     padding: 0.5rem 1rem;
     border-radius: 6px;
@@ -4407,9 +4535,9 @@ input[type="password"] {
 }
 
 .form-input[type="password"] {
-    background-color: #333;
-    color: white;
-    border: 1px solid #444;
+    background-color: var(--bg-input);
+    color: var(--text-secondary);
+    border: 1px solid -var(--border-color);
 }
 
 /* Estilos para estatísticas de cache */
@@ -4458,19 +4586,19 @@ input[type="password"] {
 /* PWA - Ajustes para modo standalone */
 @media (display-mode: standalone) {
     body {
-        padding-top: max(env(safe-area-inset-top), 20px);
-        padding-bottom: max(env(safe-area-inset-bottom), 30px);
+        padding-top: 20px;
+        padding-bottom: 30px;
     }
 }
 
 /* Estilos para notificação de atualização */
 .update-notification {
     position: fixed;
-    bottom: calc(1rem + var(--safe-area-inset-bottom));
+    bottom: 1rem;
     left: 50%;
     transform: translateX(-50%);
-    background-color: #2563EB;
-    color: white;
+    background-color: var(--accent-primary);
+    color: var(--text-inverse);
     padding: 1rem 1.5rem;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -4494,8 +4622,8 @@ input[type="password"] {
 }
 
 .update-notification button {
-    background-color: white;
-    color: #2563EB;
+    background-color: var(--bg-card);
+    color: var(--accent-primary);
     border: none;
     padding: 0.5rem 1rem;
     border-radius: 4px;
@@ -4592,15 +4720,16 @@ input[type="password"] {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    color: #D1D5DB;
+    color: var(--text-primary);
     font-size: 0.875rem;
     font-weight: 500;
     margin: 0;
 }
 
 .config-input {
-    background-color: #333;
-    color: white;
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
     border-radius: 8px;
     padding: 0.75rem;
     font-size: 1rem;
@@ -4685,7 +4814,7 @@ input[type="password"] {
 }
 
 .substitute-modal-content {
-    background-color: #333;
+    background-color: var(--bg-modal);
     border-radius: 12px;
     padding: 1.5rem;
     width: 90%;
@@ -4706,7 +4835,7 @@ input[type="password"] {
 }
 
 .substitute-modal-title {
-    color: #E5E7EB;
+    color: var(--text-primary);
     font-size: 1.125rem;
     font-weight: bold;
     margin: 0;
@@ -4719,6 +4848,7 @@ input[type="password"] {
     cursor: pointer;
     font-size: 1.5rem;
     padding: 0.25rem;
+    box-shadow: none;
 }
 
 .substitute-modal-close:hover {
@@ -4729,8 +4859,8 @@ input[type="password"] {
     width: 100%;
     padding: 0.75rem;
     margin-bottom: 1rem;
-    background-color: #444;
-    border: 1px solid #555;
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-light);
     border-radius: 6px;
     color: #E5E7EB;
     font-size: 1rem;
@@ -4754,7 +4884,8 @@ input[type="password"] {
     justify-content: space-between;
     padding: 0.75rem;
     margin-bottom: 0.5rem;
-    background-color: #444;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
     border-radius: 6px;
     cursor: pointer;
     transition: background-color 0.2s ease;
@@ -4765,7 +4896,7 @@ input[type="password"] {
 }
 
 .substitute-player-name {
-    color: #E5E7EB;
+    color: var(--text-secondary);
     font-weight: 500;
 }
 
@@ -4785,7 +4916,7 @@ input[type="password"] {
 
 .status-in-team {
     background-color: transparent !important;
-    color: #E5E7EB !important;
+    color: var(--text-secondary) !important;
     border: none !important;
     display: flex !important;
     align-items: center !important;
@@ -4827,18 +4958,19 @@ input[type="password"] {
     .generate-teams-btn {
         min-width: auto;
         width: 100%;
+        color: var(--text-primary);
     }
     
     .schedule-notification {
-        top: calc(0.5rem + var(--safe-area-inset-top));
-        right: calc(0.5rem + var(--safe-area-inset-right));
-        left: calc(0.5rem + var(--safe-area-inset-left));
+        top: 0.5rem;
+        right: 0.5rem;
+        left: 0.5rem;
         max-width: none;
     }
     
     .floating-add-btn {
-        bottom: calc(1rem + var(--safe-area-inset-bottom));
-        right: calc(1rem + var(--safe-area-inset-right));
+        bottom: 1rem;
+        right: 1rem;
     }
 }
 /* Estilos para espaços vazios nos times */
@@ -4873,8 +5005,8 @@ input[type="password"] {
 /* Estilos para notificações de agendamento */
 .schedule-notification {
     position: fixed;
-    top: calc(1rem + var(--safe-area-inset-top));
-    right: calc(1rem + var(--safe-area-inset-right));
+    top: 1rem;
+    right: 1rem;
     background: linear-gradient(135deg, #2563EB, #1D4ED8);
     color: white;
     padding: 1rem 1.5rem;
@@ -4920,113 +5052,65 @@ input[type="password"] {
 /* Modal de Boas-vindas para Notificações */
 .welcome-modal-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
+    inset: 0;
+    background-color: var(--bg-overlay);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 2000;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.3s ease;
+    transition: opacity .25s ease, visibility .25s ease;
 }
 
-.welcome-modal-overlay.show {
-    opacity: 1;
-    visibility: visible;
-}
+.welcome-modal-overlay.show { opacity: 1; visibility: visible; }
 
 .welcome-modal-content {
-    background: linear-gradient(135deg, #1F2937, #374151);
+    background: var(--bg-card);
+    color: var(--text-primary);
     border-radius: 16px;
-    padding: 2rem;
-    max-width: 400px;
-    width: 90%;
-    text-align: center;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-    transform: scale(0.8);
-    transition: transform 0.3s ease;
+    padding: 1.75rem;
+    max-width: 420px;
+    width: min(92%, 420px);
+    box-shadow: var(--shadow-heavy);
+    transform: translateY(10px) scale(.98);
+    transition: transform .25s ease;
+    border: 1px solid var(--border-color);
 }
+.welcome-modal-overlay.show .welcome-modal-content { transform: translateY(0) scale(1); }
 
-.welcome-modal-overlay.show .welcome-modal-content {
-    transform: scale(1);
-}
+.welcome-modal-header { display: flex; flex-direction: column;align-items: center; gap: .75rem; margin-bottom: .75rem; }
+.welcome-icon { font-size: 28px !important; color: var(--accent-primary); }
+.welcome-modal-header h3 { margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--text-primary); }
 
-.welcome-modal-header {
-    margin-bottom: 1rem;
-}
+.welcome-modal-text { color: var(--text-secondary); margin: .5rem 0 1rem; line-height: 1.5; }
 
-.welcome-icon {
-    font-size: 3rem !important;
-    color: #F59E0B;
-    margin-bottom: 0.5rem;
-}
+.welcome-modal-actions { display: flex; gap: .75rem; }
+.welcome-modal-actions .button { flex: 1; padding: .8rem 1rem; border-radius: 10px; }
+.welcome-modal-actions .button--primary { background: var(--gradient-button); color: var(--text-inverse); border: 1px solid transparent; box-shadow: var(--shadow-light); }
+.welcome-modal-actions .button--primary:hover { filter: brightness(1.05); transform: translateY(-1px); }
+.welcome-modal-actions .button--primary:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
+.welcome-modal-actions .button--secondary { background: var(--bg-button-secondary); color: var(--text-primary); border: 1px solid var(--border-light); box-shadow: var(--shadow-light); }
+.welcome-modal-actions .button--secondary:hover { background: var(--bg-secondary); }
+.welcome-modal-actions .button--secondary:focus-visible { outline: 2px solid var(--border-dark); outline-offset: 2px; }
 
-.welcome-modal-header h3 {
-    color: #F9FAFB;
-    font-size: 1.5rem;
-    margin: 0;
-    font-weight: 600;
-}
-
-.welcome-modal-text {
-    color: #D1D5DB;
-    font-size: 1rem;
-    line-height: 1.5;
-    margin-bottom: 2rem;
-}
-
-.welcome-modal-buttons {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-}
-
-.welcome-modal-buttons .button {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.welcome-modal-buttons .button--primary {
-    background: linear-gradient(135deg, #1d4ed8, #2563EB);
-    color: white;
+.welcome-modal-footer { margin-top: .5rem; text-align: right; }
+.link-button {
+    background: transparent;
     border: none;
+    color: var(--text-muted);
+    padding: .25rem .5rem;
+    font-weight: 500;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    box-shadow: none;
 }
-
-.welcome-modal-buttons .button--primary:hover {
-    background: linear-gradient(135deg, #1e40af, #1d4ed8);
-    transform: translateY(-1px);
-}
-
-.welcome-modal-buttons .button--secondary {
-    background-color: transparent;
-    color: #9CA3AF;
-    border: 1px solid #4B5563;
-}
-
-.welcome-modal-buttons .button--secondary:hover {
-    background-color: #374151;
-    color: #D1D5DB;
-}
+.link-button:hover { color: var(--text-secondary); text-decoration-thickness: 2px; }
+.link-button:focus-visible { outline: none; color: var(--text-secondary); text-decoration-thickness: 2px; }
 
 @media (max-width: 600px) {
-    .welcome-modal-content {
-        padding: 1.5rem;
-    }
-    
-    .welcome-modal-buttons {
-        flex-direction: column;
-    }
+  .welcome-modal-actions { flex-direction: column; }
+  .welcome-modal-footer { text-align: center; }
 }
 
 /* Layout profissional para configurações */
@@ -5048,14 +5132,6 @@ input[type="password"] {
 
 .setting-item:last-child {
     border-bottom: none;
-}
-
-.setting-item:hover {
-    background-color: rgba(55, 65, 81, 0.3);
-    margin: 0 -1rem;
-    padding-left: 1rem;
-    padding-right: 1rem;
-    border-radius: 8px;
 }
 
 .setting-info {
@@ -5104,7 +5180,7 @@ input[type="password"] {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #4B5563;
+    background-color: var(--bg-tertiary);
     transition: 0.3s;
     border-radius: 24px;
 }
@@ -5123,7 +5199,7 @@ input[type="password"] {
 }
 
 input:checked + .slider {
-    background-color: #2563EB;
+    background-color: var(--accent-primary);
 }
 
 input:checked + .slider:before {
@@ -5354,7 +5430,6 @@ input:checked + .slider:before {
 .login-btn--google {
     background: var(--bg-card);
     color: var(--text-primary);
-    border: 2px solid var(--border-color);
     box-shadow: var(--shadow-light);
 }
 
@@ -5367,7 +5442,7 @@ input:checked + .slider:before {
 
 .login-btn--guest {
     background: var(--gradient-primary);
-    color: var(--text-inverse);
+    color: var(--text-primary);
     border: 2px solid transparent;
     box-shadow: var(--shadow-light);
 }
@@ -5553,3 +5628,38 @@ input:checked + .slider:before {
         margin-top: 2rem;
     }
 }
+/* ======================================== SOLU��O DEFINITIVA PARA ZONA DE EXCLUS�O DE AGENDAMENTOS ======================================== */
+
+/* FOR�A que a zona de exclus�o ignore QUALQUER contexto de posicionamento */
+html body #scheduling-delete-zone {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100vw !important;
+    height: 80px !important;
+    z-index: 2147483647 !important;
+    
+    /* Quebra TODOS os contextos de posicionamento */
+    transform: translateZ(0) !important;
+    backface-visibility: hidden !important;
+    perspective: 1000px !important;
+    
+    /* Estado inicial */
+    display: none !important;
+    background-color: #DC2626 !important;
+    color: white !important;
+    padding: 1rem !important;
+    font-weight: bold !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+    
+    /* Transi��es */
+    transition: all 0.3s ease !important;
+}
+
+/* Estado ativo */
+html body #scheduling-delete-zone.active {
+    display: flex !important;
+  
