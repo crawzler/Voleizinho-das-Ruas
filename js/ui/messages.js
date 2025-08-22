@@ -29,7 +29,7 @@ export function displayMessage(message, type = 'info', duration = 4000) {
     }
 
     if (!messageContainer) {
-        console.error("Elemento '#message-container' não encontrado no DOM.");
+        // Log removido
         return;
     }
 

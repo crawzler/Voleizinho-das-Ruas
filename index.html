@@ -2,14 +2,25 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
     <meta name="theme-color" content="#ffffff"/>
+    
+    <!-- PWA - Ocultar barra de navegação -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Vôlei Score App</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/history.css">
     <link rel="stylesheet" href="css/offline-fallback.css">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="css/safe-areas.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" crossorigin="anonymous">
     <link rel="manifest" href="manifest.json">
+    
+    <!-- Preload Firebase modules -->
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js">
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js">
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js">
 </head>
 <body>
 
@@ -112,6 +123,13 @@
                                 </div>
                                 <span class="btn-text">Entrar como Visitante</span>
                             </button>
+                            
+                            <button id="install-pwa-login-button" class="login-btn login-btn--install" style="display: none;">
+                                <div class="btn-icon">
+                                    <span class="material-icons">get_app</span>
+                                </div>
+                                <span class="btn-text">Instalar Aplicativo</span>
+                            </button>
                         </div>
                         
                         <div class="login-footer">
@@ -160,12 +178,11 @@
                 <div id="team1-panel" class="score-panel team1-panel">
                     <h3 id="team1-name" class="team-name">Time 1</h3>
                     <div id="team1-score" class="score-number">0</div>
-                    <div id="team1-players-column" class="team-players-column">
+                    <div id="team1-players-column" class="team-players-column" style="display: none;">
                         <button id="team1-change-button" class="team-change-button">
                             <span class="material-icons" style="font-size: 12px;">cached</span>
                         </button>
-
-                                        </div>
+                    </div>
                 <button id="swap-teams-button" class="button">
                     <span class="material-icons">swap_horiz</span>
                 </button>
@@ -175,7 +192,7 @@
                 <div id="team2-panel" class="score-panel team2-panel">
                     <h3 id="team2-name" class="team-name">Time 2</h3>
                     <div id="team2-score" class="score-number">0</div>
-                    <div id="team2-players-column" class="team-players-column">
+                    <div id="team2-players-column" class="team-players-column" style="display: none;">
                         <button id="team2-change-button" class="team-change-button">
                             <span class="material-icons" style="font-size: 12px;">cached</span>
                         </button>
@@ -401,6 +418,10 @@
                             <button id="reset-config-button" class="button button--secondary form-button--full-width mt-4"> <!-- Adicionado mt-4 para espaçamento -->
                                 <span class="material-icons">settings_backup_restore</span> Redefinir Configurações
                             </button>
+                            <button id="install-pwa-button" class="button button--primary form-button--full-width mt-4" style="display: none;">
+                                <span class="material-icons">get_app</span> Instalar Aplicativo
+                            </button>
+
                         </div>
                     </div>
                 </div>
@@ -444,16 +465,16 @@
                     <div class="form-fields">
                         <div class="field-row">
                             <div class="field-group">
-                                <label for="date-input">Data</label>
-                                <input type="date" id="date-input" class="modern-input">
-                            </div>
-                            <div class="field-group">
                                 <label for="surface-select">Tipo</label>
                                 <select id="surface-select" class="modern-select">
                                     <option value="">Selecione...</option>
                                     <option value="Quadra">Quadra</option>
                                     <option value="Areia">Areia</option>
                                 </select>
+                            </div>
+                            <div class="field-group">
+                                <label for="date-input">Data</label>
+                                <input type="date" id="date-input" class="modern-input">
                             </div>
                         </div>
                         
@@ -526,6 +547,12 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Zona de exclusão para drag and drop -->
+            <div id="scheduling-delete-zone" class="delete-zone" style="display: none;">
+                <span class="material-icons">delete</span>
+                <span>Solte aqui para excluir</span>
+            </div>
         </section>
 
         <section id="stats-page" class="app-page stats-page-layout">
@@ -561,13 +588,14 @@
                 </button>
             </div>
             <div class="proof-viewer-body">
-                <button id="proof-prev" class="proof-nav-btn" aria-label="Anterior">
-                    <span class="material-icons">chevron_left</span>
-                </button>
-                <img id="proof-image" src="" alt="Comprovante">
-                <button id="proof-next" class="proof-nav-btn" aria-label="Próximo">
-                    <span class="material-icons">chevron_right</span>
-                </button>
+                <div class="proof-image-container">
+                    <img id="proof-image" src="" alt="Comprovante">
+                </div>
+                <div class="proof-carousel-nav">
+                    <div class="proof-dots" id="proof-dots">
+                        <!-- Dots serão gerados dinamicamente -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -626,29 +654,52 @@
         </div>
     </div>
 
+    <!-- Modal de cancelamento com motivo -->
+    <div id="cancel-reason-modal" class="confirmation-modal-overlay">
+        <div class="confirmation-modal-content">
+            <h3 style="margin: 0 0 1rem; color: var(--text-primary);">Cancelar Agendamento</h3>
+            <p class="confirmation-message">Informe o motivo do cancelamento:</p>
+            <textarea id="cancel-reason-input" placeholder="Ex: Chuva, falta de jogadores, problema no local..." style="width: 100%; min-height: 80px; padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; background: var(--bg-input); color: var(--text-primary); resize: vertical; margin: 1rem 0;"></textarea>
+            <div class="confirmation-buttons">
+                <button id="confirm-cancel-btn" class="button confirmation-button--confirm">Cancelar Jogo</button>
+                <button id="cancel-cancel-btn" class="button confirmation-button--cancel">Voltar</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="js/main.js"></script>
     
     <script>
+    // Força fullscreen no PWA
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      document.documentElement.requestFullscreen?.();
+    }
+    
     // Registro do Service Worker com tratamento de erro
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./service-worker.js')
           .then(registration => {
-            console.log('SW registrado com sucesso:', registration.scope);
+            // Força verificação PWA após SW registrado
+            setTimeout(() => {
+              if (window.pwaManager) {
+                window.pwaManager.showLoginInstallButton();
+              }
+            }, 2000);
             
             // Força atualização se houver nova versão
             registration.addEventListener('updatefound', () => {
               const newWorker = registration.installing;
               newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  console.log('Nova versão disponível, recarregando...');
+                  // Nova versão disponível
                   window.location.reload();
                 }
               });
             });
           })
           .catch(error => {
-            console.warn('Falha ao registrar SW:', error);
+            // Silencioso
           });
       });
       

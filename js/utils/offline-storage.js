@@ -15,7 +15,7 @@ class OfflineStorage {
     
     async init() {
         if (!this.isSupported) {
-            console.warn('IndexedDB não suportado, usando localStorage como fallback');
+            // Log removido
             return;
         }
         
@@ -67,7 +67,7 @@ class OfflineStorage {
                 localStorage.setItem(key, JSON.stringify(data));
                 return true;
             } catch (error) {
-                console.warn('Erro ao salvar no localStorage:', error);
+                // Log removido
                 return false;
             }
         }
@@ -82,7 +82,7 @@ class OfflineStorage {
             
             request.onsuccess = () => resolve(true);
             request.onerror = () => {
-                console.warn(`Erro ao salvar em ${storeName}:`, request.error);
+                // Log removido
                 reject(request.error);
             };
         });
@@ -101,7 +101,7 @@ class OfflineStorage {
                 const data = localStorage.getItem(storageKey);
                 return data ? JSON.parse(data) : null;
             } catch (error) {
-                console.warn('Erro ao ler do localStorage:', error);
+                // Log removido
                 return null;
             }
         }
@@ -114,7 +114,7 @@ class OfflineStorage {
             
             request.onsuccess = () => resolve(request.result);
             request.onerror = () => {
-                console.warn(`Erro ao ler de ${storeName}:`, request.error);
+                // Log removido
                 reject(request.error);
             };
         });
@@ -127,7 +127,7 @@ class OfflineStorage {
                 localStorage.removeItem(key);
                 return true;
             } catch (error) {
-                console.warn('Erro ao limpar localStorage:', error);
+                // Log removido
                 return false;
             }
         }
@@ -224,7 +224,7 @@ class OfflineStorage {
             try {
                 await this.clearStore(store);
             } catch (error) {
-                console.warn(`Erro ao limpar store ${store}:`, error);
+                // Log removido
             }
         }
     }

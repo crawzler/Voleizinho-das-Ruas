@@ -100,7 +100,17 @@ export function renderScoringPagePlayers(team1Players, team2Players, shouldDispl
         return;
     }
 
+    // Sempre oculta se shouldDisplayPlayers for false
     if (!shouldDisplayPlayers) {
+        team1Column.innerHTML = '';
+        team2Column.innerHTML = '';
+        team1Column.style.display = 'none';
+        team2Column.style.display = 'none';
+        return;
+    }
+
+    // Oculta se não há jogadores em nenhum time
+    if (team1Players.length === 0 && team2Players.length === 0) {
         team1Column.innerHTML = '';
         team2Column.innerHTML = '';
         team1Column.style.display = 'none';

@@ -31,7 +31,7 @@ function getLocalPlayersWithTag() {
             });
         }
     } catch (e) {
-        console.warn('Erro ao ler jogadores locais:', e);
+        // Log removido
     }
     return localPlayers;
 }
@@ -46,12 +46,12 @@ try {
             try {
                 renderPlayersList(players); // Garante renderização offline
         } catch (e) {
-                console.warn('Erro ao renderizar lista de jogadores durante inicialização:', e);
+                // Log removido
         }
         }, 0);
     }
     } catch (e) {
-    console.warn('Erro durante inicialização de players:', e);
+    // Log removido
 }
 /**
  * Retorna a lista atual de jogadores.
@@ -125,7 +125,7 @@ export function setupFirestorePlayersListener(dbInstance, appIdentifier) {
             try {
                 localStorage.setItem('volleyballPlayers', JSON.stringify(players));
             } catch (e) {
-                console.error("Erro ao salvar jogadores no localStorage:", e);
+                // Log removido
             }
 
             renderPlayersList(players);
@@ -136,7 +136,7 @@ export function setupFirestorePlayersListener(dbInstance, appIdentifier) {
             hasInitialFirestoreLoadAttempted = true;
         },
         (error) => {
-            console.error("Erro ao observar coleção de jogadores:", error);
+            // Log removido
             const localPlayers = getLocalPlayersWithTag();
             if (localPlayers.length > 0) {
                 players = localPlayers;
@@ -190,7 +190,7 @@ export async function adminAddPlayer(dbInstance, appId, name) {
             createdBy = currentUser.uid;
         }
         } catch (e) {
-        console.warn('Erro ao obter usuário atual para criação de jogador:', e);
+        // Log removido
         }
 
         const playerDocRef = doc(dbInstance, `artifacts/${appId}/public/data/players`, playerId);
@@ -236,7 +236,7 @@ export async function addPlayer(dbInstance, appId, name, uid = null, forceManual
             isAdmin = ADMIN_UIDS.includes(currentUser.uid);
         }
     } catch (e) {
-        console.warn('Erro ao obter usuário atual para criação de jogador:', e);
+        // Log removido
     }
 
     // Se não for admin ou estiver offline, adiciona tag [local]
@@ -269,7 +269,7 @@ export async function addPlayer(dbInstance, appId, name, uid = null, forceManual
             }).catch(() => {});
             return;
         } catch (e) {
-            console.error("Erro ao salvar jogador localmente:", e);
+            // Log removido
             throw e;
         }
     }
@@ -280,7 +280,7 @@ export async function addPlayer(dbInstance, appId, name, uid = null, forceManual
         await setDoc(playerDocRef, playerData);
     } catch (e) {
         // Se falhar o Firestore, tenta salvar localmente
-        console.error("Erro ao salvar no Firestore, salvando localmente:", e);
+        // Log removido
         const stored = localStorage.getItem('volleyballPlayers');
         let localPlayers = stored ? JSON.parse(stored) : [];
         localPlayers.push(playerData);
@@ -302,7 +302,7 @@ export async function addPlayer(dbInstance, appId, name, uid = null, forceManual
  * @returns {Promise<void>}
  */
 export async function removePlayer(playerId, requesterUid, appId) {
-    console.log('[removePlayer] Iniciando remoção:', { playerId, requesterUid, appId });
+    // Log removido
     
     if (!appId) {
         throw new Error('App ID não informado');
@@ -313,7 +313,7 @@ export async function removePlayer(playerId, requesterUid, appId) {
     
     // Encontra o jogador na lista atual
     const playerToRemove = players.find(p => p.id === playerId);
-    console.log('[removePlayer] Jogador encontrado:', playerToRemove);
+    // Log removido
     
     // Se o jogador não existe ou não foi encontrado
     if (!playerToRemove) {
@@ -322,7 +322,7 @@ export async function removePlayer(playerId, requesterUid, appId) {
     
     // Verifica se o jogador é local
     if (playerToRemove.isLocal) {
-        console.log('[removePlayer] Removendo jogador local');
+        // Log removido
         // Remove apenas do localStorage
         try {
             const stored = localStorage.getItem('volleyballPlayers');
@@ -337,14 +337,14 @@ export async function removePlayer(playerId, requesterUid, appId) {
                     updateSelectedPlayersCount();
                 }).catch(() => {});
             }
-            console.log('[removePlayer] Jogador local removido com sucesso');
+            // Log removido
             return;
         } catch (e) {
-            console.error('Erro ao remover jogador local:', e);
+            // Log removido
             throw e;
         }
     } else {
-        console.log('[removePlayer] Processando jogador do Firebase');
+        // Log removido
         
         // Verifica se o usuário é admin ou criador
         let isAdmin = false;
@@ -353,7 +353,7 @@ export async function removePlayer(playerId, requesterUid, appId) {
         
         try {
             currentUser = getCurrentUser();
-            console.log('[removePlayer] Usuário atual:', currentUser ? currentUser.uid : 'null');
+            // Log removido
             
             if (currentUser) {
                 const ADMIN_UIDS = [
@@ -362,19 +362,19 @@ export async function removePlayer(playerId, requesterUid, appId) {
                 ];
                 isAdmin = ADMIN_UIDS.includes(currentUser.uid);
                 isCreator = playerToRemove.createdBy === currentUser.uid;
-                console.log('[removePlayer] Permissões:', { isAdmin, isCreator, createdBy: playerToRemove.createdBy });
+                // Log removido
             }
         } catch (e) {
-            console.warn('Erro ao verificar permissões do usuário:', e);
+            // Log removido
         }
         
         // Verifica se tem permissão para excluir
         const hasPermission = isAdmin || isCreator;
-        console.log('[removePlayer] Tem permissão:', hasPermission);
+        // Log removido
         
         // Se não tem permissão ou está offline, remove apenas localmente
         if (!hasPermission || !currentDbInstance || !navigator.onLine) {
-            console.log('[removePlayer] Removendo apenas localmente (sem permissão ou offline)');
+            // Log removido
             try {
                 // Remove da lista em memória
                 players = players.filter(p => p.id !== playerId);
@@ -385,32 +385,32 @@ export async function removePlayer(playerId, requesterUid, appId) {
                 import('../ui/pages.js').then(({ updateSelectedPlayersCount }) => {
                     updateSelectedPlayersCount();
                 }).catch(() => {});
-                console.log('[removePlayer] Jogador removido localmente');
+                // Log removido
                 return;
             } catch (e) {
-                console.error('Erro ao remover jogador localmente:', e);
+                // Log removido
                 throw e;
             }
         }
         
         // Se tem permissão, tenta remover do Firestore
-        console.log('[removePlayer] Tentando remover do Firestore');
+        // Log removido
         try {
             // Verifica se temos instância do banco
             if (!currentDbInstance) {
-                console.error('[removePlayer] Instância do Firestore não disponível');
+                // Log removido
                 throw new Error('Instância do Firestore não disponível');
             }
             
             const collectionPath = `artifacts/${appId}/public/data/players`;
-            console.log('[removePlayer] Caminho da coleção:', collectionPath);
-            console.log('[removePlayer] ID do documento:', playerId);
+            // Log removido
+            // Log removido
             
             const playerDocRef = doc(currentDbInstance, collectionPath, playerId);
-            console.log('[removePlayer] Referência do documento criada');
+            // Log removido
             
             await deleteDoc(playerDocRef);
-            console.log('[removePlayer] Documento removido do Firestore com sucesso');
+            // Log removido
             
             // Remove localmente também
             players = players.filter(p => p.id !== playerId);
@@ -421,18 +421,12 @@ export async function removePlayer(playerId, requesterUid, appId) {
                 updateSelectedPlayersCount();
             }).catch(() => {});
             
-            console.log('[removePlayer] Remoção completa (Firestore + local)');
+            // Log removido
         } catch (e) {
-            console.error('[removePlayer] Erro ao remover jogador do Firestore:', e);
-            console.error('[removePlayer] Detalhes do erro:', {
-                name: e.name,
-                message: e.message,
-                code: e.code,
-                stack: e.stack
-            });
+            // Log removido
             
             // Se falhar no Firestore, tenta remover apenas localmente
-            console.log('[removePlayer] Fallback: removendo apenas localmente');
+            // Log removido
             players = players.filter(p => p.id !== playerId);
             localStorage.setItem('volleyballPlayers', JSON.stringify(players));
             renderPlayersList(players);

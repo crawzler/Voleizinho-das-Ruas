@@ -44,7 +44,7 @@ async function updateUserPhoto(photoURL) {
             displayMessage('Foto atualizada com sucesso!', 'success');
         }
     } catch (error) {
-        console.error('Erro ao atualizar foto:', error);
+        // Log removido
         displayMessage('Erro ao atualizar foto', 'error');
     }
 }

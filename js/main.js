@@ -23,6 +23,8 @@ import { initWelcomeNotifications } from './ui/welcome-notifications.js';
 import { initDailyReminders } from './utils/daily-reminders.js';
 import connectivityManager from './utils/connectivity.js';
 import offlineStorage from './utils/offline-storage.js';
+import safeAreasManager from './utils/safe-areas.js';
+import pwaManager from './utils/pwa-manager.js';
 
 import { signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
@@ -114,12 +116,21 @@ export function hideLoadingOverlay() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Inicializa safe areas o mais cedo possível
+    try {
+        safeAreasManager.init();
+        safeAreasManager.applyPWAAdjustments();
+        // Log removido
+    } catch (error) {
+        // Log removido
+    }
+    
     // Exibe a tela de carregamento imediatamente
     const loadingOverlay = Elements.loadingOverlay();
     if (loadingOverlay) {
         loadingOverlay.classList.remove('hidden'); // Garante que a tela de carregamento esteja visível
     }
-    console.log("[main.js] DOMContentLoaded. Exibindo tela de carregamento. navigator.onLine:", navigator.onLine);
+    // Log removido
 
     // Inicia o timer para forçar o modo offline após 10 segundos, se necessário
     loadingTimeout = setTimeout(() => {
@@ -139,7 +150,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             await signInWithCustomToken(auth, __initial_auth_token);
         } catch (error) {
-            console.warn('Erro ao fazer login com token:', error);
+            // Log removido
         }
     }
 
@@ -240,13 +251,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             signInAnonymouslyUser(appId);
         });
     }
+    
+    // Inicializa botão PWA na tela de login após delay
+    setTimeout(() => {
+        if (window.pwaManager) {
+            window.pwaManager.showLoginInstallButton();
+        }
+    }, 2000);
 
     // Inicializa sistema de armazenamento offline
     try {
         await offlineStorage.init();
-        console.log('Sistema de armazenamento offline inicializado');
+        // Log removido
     } catch (error) {
-        console.warn('Erro ao inicializar armazenamento offline:', error);
+        // Log removido
     }
     
     // Configura gerenciador de conectividade
@@ -272,12 +290,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 displayMessage("Dados sincronizados com sucesso!", "success");
                 updateConnectionIndicator('online');
             } catch (error) {
-                console.error("Erro na sincronização:", error);
+                // Log removido
                 displayMessage("Erro ao sincronizar dados", "error");
                 updateConnectionIndicator('offline');
             }
         } else {
-            console.log('Modo offline ativado');
+            // Log removido
             displayMessage("Você está offline. Dados salvos localmente.", "warning");
             
             // Desabilita botões de login
@@ -387,10 +405,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const messageChannel = new MessageChannel();
                 messageChannel.port1.onmessage = (event) => {
                     if (event.data && event.data.success) {
-                        console.log('[main] service-worker cleared caches, reloading');
+                        // Log removido
                         window.location.reload(true);
                     } else {
-                        console.warn('[main] service-worker cache clear failed', event.data && event.data.error);
+                        // Log removido
                     }
                 };
                 navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_CACHE' }, [messageChannel.port2]);
@@ -400,7 +418,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
     } catch (err) {
-        console.warn('clearCache helper failed', err);
+        // Log removido
     }
     
     // Inicializa sistema de boas-vindas para notificações
@@ -423,13 +441,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const restored = restoreSavedGameIfAny();
             if (restored) {
-                console.log("[main.js] Partida restaurada do armazenamento local.");
+                // Log removido
             }
             await updateStartButtonText();
             // NOVO: Força atualização dos ícones
             forceUpdateIcons();
+            
+            // Inicializa botão PWA na tela de login
+            if (window.pwaManager) {
+                window.pwaManager.showLoginInstallButton();
+            }
         } catch (e) {
-            console.warn("[main.js] Falha ao restaurar partida:", e);
+            // Log removido
         }
     }, 100);
 });
@@ -454,25 +477,25 @@ async function loadOfflineData() {
         // Carrega jogadores do cache offline
         const cachedPlayers = await offlineStorage.getPlayers();
         if (cachedPlayers && cachedPlayers.length > 0) {
-            console.log('Carregando jogadores do cache offline:', cachedPlayers.length);
+            // Log removido
             // Aqui você pode atualizar a UI com os jogadores em cache
         }
         
         // Carrega configurações do cache offline
         const cachedConfig = await offlineStorage.getConfig();
         if (cachedConfig && Object.keys(cachedConfig).length > 0) {
-            console.log('Carregando configurações do cache offline');
+            // Log removido
             // Aplica configurações em cache
         }
         
         // Carrega histórico do cache offline
         const cachedHistory = await offlineStorage.getGameHistory();
         if (cachedHistory && cachedHistory.length > 0) {
-            console.log('Carregando histórico do cache offline:', cachedHistory.length);
+            // Log removido
         }
         
     } catch (error) {
-        console.warn('Erro ao carregar dados offline:', error);
+        // Log removido
     }
 }
 
@@ -494,7 +517,7 @@ function setupAutoSave() {
             }
             
         } catch (error) {
-            console.warn('Erro no salvamento automático:', error);
+            // Log removido
         }
     }, 30000); // Salva a cada 30 segundos
     
@@ -508,7 +531,7 @@ function setupAutoSave() {
             if (currentConfig) await offlineStorage.saveConfig(currentConfig);
             
         } catch (error) {
-            console.warn('Erro ao salvar antes de fechar:', error);
+            // Log removido
         }
     });
 }
@@ -532,7 +555,7 @@ window.clearOfflineCache = async () => {
         
         return true;
     } catch (error) {
-        console.error('Erro ao limpar cache offline:', error);
+        // Log removido
         displayMessage('Erro ao limpar cache offline', 'error');
         return false;
     }
@@ -542,10 +565,10 @@ window.clearOfflineCache = async () => {
 window.getStorageStats = async () => {
     try {
         const stats = await offlineStorage.getStorageStats();
-        console.log('Estatísticas de armazenamento:', stats);
+        // Log removido
         return stats;
     } catch (error) {
-        console.error('Erro ao obter estatísticas:', error);
+        // Log removido
         return null;
     }
 };

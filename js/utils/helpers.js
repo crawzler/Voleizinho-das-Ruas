@@ -30,7 +30,7 @@ export function salvarEstado(partida) {
     try {
         localStorage.setItem("estadoPartida", JSON.stringify(partida));
     } catch (e) {
-        console.error("[helpers] Erro ao salvar estado:", e);
+        // Log removido
     }
 }
 
@@ -39,7 +39,7 @@ export function carregarEstado() {
         const salvo = localStorage.getItem("estadoPartida");
         return salvo ? JSON.parse(salvo) : null;
     } catch (e) {
-        console.error("[helpers] Erro ao carregar estado:", e);
+        // Log removido
         return null;
     }
 }
@@ -48,7 +48,7 @@ export function limparEstado() {
     try {
         localStorage.removeItem("estadoPartida");
     } catch (e) {
-        console.error("[helpers] Erro ao limpar estado:", e);
+        // Log removido
     }
 }
 
@@ -57,7 +57,7 @@ export function limparTudo() {
         localStorage.removeItem("estadoPartida");
         localStorage.removeItem("timesGerados");
     } catch (e) {
-        console.error("[helpers] Erro ao limpar tudo:", e);
+        // Log removido
     }
 }
 
@@ -66,7 +66,7 @@ export function salvarTimesGerados(times) {
     try {
         localStorage.setItem("timesGerados", JSON.stringify(times));
     } catch (e) {
-        console.error("[helpers] Erro ao salvar times gerados:", e);
+        // Log removido
     }
 }
 
@@ -75,7 +75,7 @@ export function carregarTimesGerados() {
         const salvos = localStorage.getItem("timesGerados");
         return salvos ? JSON.parse(salvos) : [];
     } catch (e) {
-        console.error("[helpers] Erro ao carregar times gerados:", e);
+        // Log removido
         return [];
     }
 }

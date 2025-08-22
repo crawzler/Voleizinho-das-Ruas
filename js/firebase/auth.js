@@ -27,7 +27,6 @@ export function setCurrentUser(user) {
 
 export async function signInAnonymouslyUser(appId) {
     if (!currentAuthInstance) {
-        console.error("Authentication instance not available for anonymous login.");
         displayMessage("Login error: Authentication not initialized.", "error");
         return;
     }
@@ -38,16 +37,13 @@ export async function signInAnonymouslyUser(appId) {
     isManualAnonymousLogin = true;
     try {
         await signInAnonymously(currentAuthInstance);
-        console.log("Anonymous login successful!");
     } catch (error) {
-        console.error("Error during anonymous login:", error);
         displayMessage("Error during anonymous login. Please try again.", "error");
     }
 }
 
 export async function logout() {
     if (!currentAuthInstance) {
-        console.error("Authentication instance not available for logout.");
         displayMessage("Logout error: Authentication not initialized.", "error");
         return;
     }
@@ -58,11 +54,9 @@ export async function logout() {
 
     try {
         await signOut(currentAuthInstance);
-        console.log("Logout successful!");
         displayMessage("You have been disconnected.", "info");
     }
     catch (error) {
-        console.error("Error during logout:", error);
         displayMessage("Error logging out. Please try again.", "error");
     }
 }
@@ -127,19 +121,15 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
     // Salva o appId no localStorage para uso posterior
     if (appId) {
         localStorage.setItem('appId', appId);
-        console.log('[setupAuthListener] AppId salvo no localStorage:', appId);
     }
 
     onAuthStateChanged(currentAuthInstance, async (user) => {
-        console.log(`[onAuthStateChanged] Usuário: ${user ? user.uid : 'NULO'}, Online: ${navigator.onLine}`);
-
         setCurrentUser(user); // Update the currentUser
         updateProfileMenuLoginState();
         updateConnectionIndicator(navigator.onLine ? 'online' : 'offline');
         hideLoadingOverlay();
 
         if (user) {
-            console.log(`User logged in: ${user.uid}`);
             if (Elements.userIdDisplay()) Elements.userIdDisplay().textContent = `ID: ${user.uid}`;
             
             if (user.isAnonymous) {
@@ -161,19 +151,15 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
                 });
             }
 
-            console.log(`Setting up Firestore listener for user: ${user.uid}`);
             setupFirestorePlayersListener(currentDbInstance, appId);
             setupSchedulingPage(); // Adicione esta linha para garantir que o listener de agendamentos seja refeito ao logar
             updateSchedulingPermissions(); // Atualiza permissões de agendamento
             updatePlayerModificationAbility(true);
             showPage('start-page');
             
-
-            
             if (Elements.googleLoginButton()) Elements.googleLoginButton().disabled = false;
             if (Elements.anonymousLoginButton()) Elements.anonymousLoginButton().disabled = false;
         } else {
-            console.log("No user authenticated.");
             if (Elements.userIdDisplay()) Elements.userIdDisplay().textContent = 'ID: Not logged in';
             if (Elements.userProfilePicture()) Elements.userProfilePicture().src = "https://placehold.co/40x40/222/FFF?text=?";
             if (Elements.userDisplayName()) Elements.userDisplayName().textContent = "Visitor";
@@ -184,14 +170,12 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
             // REMOVIDO: setupSchedulingPage(); // NÃO reative o listener após limpar!
 
             if (!navigator.onLine) {
-                console.log("[Auth Listener] Offline e sem usuário logado. Tentando mostrar start-page.");
                 showPage('start-page'); // Direciona para a start-page para permitir acesso aos dados locais
                 displayMessage("Sua sessão expirou devido à falta de conexão, mas você pode continuar usando dados locais. Reconecte para logar novamente.", "info");
                 
                 if (Elements.googleLoginButton()) Elements.googleLoginButton().disabled = true;
                 if (Elements.anonymousLoginButton()) Elements.anonymousLoginButton().disabled = true;
             } else {
-                console.log("[Auth Listener] Online e sem usuário logado. Mostrando login-page.");
                 showPage('login-page');
                 if (Elements.googleLoginButton()) Elements.googleLoginButton().disabled = false;
                 if (Elements.anonymousLoginButton()) Elements.anonymousLoginButton().disabled = false;
@@ -202,7 +186,6 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
 
 export async function loginWithGoogle() {
     if (!currentAuthInstance) {
-        console.error("Authentication instance not available for Google login.");
         displayMessage("Login error: Authentication not initialized.", "error");
         return;
     }
@@ -246,10 +229,8 @@ export async function loginWithGoogle() {
         }
         // --- FIM NOVO ---
 
-        console.log("Google login successful!");
         // displayMessage(`Welcome, ${displayName}!`, "success"); // Mensagem já tratada acima
     } catch (error) {
-        console.error("Error during Google login:", error);
         displayMessage("Error during Google login. Please try again.", "error");
     }
 }
@@ -259,14 +240,12 @@ export async function loginWithGoogle() {
  */
 export async function resetUser() {
     if (!currentAuthInstance || !currentDbInstance) {
-        console.error("Firebase instances not initialized.");
         displayMessage("Erro: Firebase não inicializado.", "error");
         throw new Error("Firebase não inicializado.");
     }
 
     const user = getCurrentUser();
     if (!user) {
-        console.error("No user authenticated to reset.");
         displayMessage("Erro: Nenhum usuário autenticado.", "error");
         throw new Error("Nenhum usuário autenticado.");
     }
@@ -290,16 +269,12 @@ export async function resetUser() {
         if (userDoc.exists()) {
             try {
                 await deleteDoc(userDocRef);
-                console.log("Dados do usuário deletados com sucesso do Firestore.");
             } catch (deleteError) {
-                console.error("Erro ao deletar dados do Firestore:", deleteError);
                 if (deleteError.code === "permission-denied") {
                     throw new Error("permission-denied");
                 }
                 throw deleteError;
             }
-        } else {
-            console.log("Nenhum dado do usuário encontrado para deletar no Firestore.");
         }
 
         // Limpa dados do localStorage
@@ -314,24 +289,20 @@ export async function resetUser() {
             try {
                 localStorage.removeItem(key);
             } catch (e) {
-                console.warn(`Erro ao remover ${key} do localStorage:`, e);
+                // Silencioso
             }
         });
-        console.log("Dados do localStorage limpos.");
 
         // Faz logout do usuário
         try {
             await signOut(currentAuthInstance);
-            console.log("Usuário desconectado com sucesso.");
             displayMessage("Dados do usuário resetados com sucesso. Por favor, faça login novamente.", "success");
             showPage('login-page');
         } catch (signOutError) {
-            console.error("Erro ao fazer logout:", signOutError);
             throw signOutError;
         }
         
     } catch (error) {
-        console.error("Erro ao resetar usuário:", error);
         if (error.message === "permission-denied") {
             displayMessage("Permissão negada. Você pode não ter direitos para excluir seus dados.", "error");
         } else if (error.message === "App ID not found") {

@@ -132,7 +132,7 @@ export async function showPage(pageIdToShow) {
         const currentTeam1Players = getCurrentTeam1();
         const currentTeam2Players = getCurrentTeam2();
         
-        const shouldDisplayPlayers = displayPlayers && (currentTeam1Players.length > 0 || currentTeam2Players.length > 0);
+        const shouldDisplayPlayers = displayPlayers;
         renderScoringPagePlayers(currentTeam1Players, currentTeam2Players, shouldDisplayPlayers);
         
         // NOVO: Força atualização dos ícones
@@ -520,7 +520,7 @@ export function selectTeamFromModal(teamIndex, panelId) {
     const defaultColors = ['#325fda', '#f03737', '#28a745', '#ffc107', '#6f42c1', '#17a2b8'];
 
     if (!selectedTeam) {
-        console.error("Time selecionado no modal não encontrado.");
+        // Log removido
         displayMessage("Erro ao selecionar o time.", "error");
         return;
     }
@@ -544,7 +544,7 @@ export function selectTeamFromModal(teamIndex, panelId) {
     }
 
     updateTeamDisplayNamesAndColors(getActiveTeam1Name(), getActiveTeam2Name(), getActiveTeam1Color(), getActiveTeam2Color());
-    const shouldDisplayPlayers = (config.displayPlayers ?? true) && (getCurrentTeam1().length > 0 || getCurrentTeam2().length > 0);
+    const shouldDisplayPlayers = config.displayPlayers ?? true;
     renderScoringPagePlayers(getCurrentTeam1(), getCurrentTeam2(), shouldDisplayPlayers);
     
     // Fecha o modal
@@ -714,7 +714,7 @@ function handleConfirmClick() {
         try {
             onConfirmCallback();
         } catch (error) {
-            console.error('Erro ao executar a ação confirmada:', error);
+            // Log removido
             displayMessage('Erro ao executar a ação confirmada.', 'error');
         }
     }
@@ -809,7 +809,7 @@ async function addPlayerWithCategory(playerName, category, appId) {
         await addPlayer(db, appId, playerName, null, true, category);
         displayMessage(`Jogador "${playerName}" adicionado em ${getCategoryDisplayName(category)}!`, "success");
     } catch (error) {
-        console.error("Erro ao adicionar jogador:", error);
+        // Log removido
         displayMessage("Erro ao adicionar jogador. Tente novamente.", "error");
     }
 }
@@ -845,7 +845,7 @@ export function forceUpdateIcons() {
         }
     }
     
-    console.log('Ícones atualizados para cached');
+    // Log removido
 }
 
 

@@ -1,0 +1,190 @@
+/* Safe Areas CSS - Solução para inset areas em dispositivos móveis */
+
+/* Variáveis CSS dinâmicas - uso direto do env() */
+
+/* Aplicação global das safe areas */
+.safe-area-container {
+    padding-top: var(--safe-area-inset-top);
+    padding-right: var(--safe-area-inset-right);
+    padding-bottom: var(--safe-area-inset-bottom);
+    padding-left: var(--safe-area-inset-left);
+}
+
+/* Classes utilitárias para safe areas */
+.safe-top {
+    padding-top: var(--safe-area-inset-top);
+}
+
+.safe-right {
+    padding-right: var(--safe-area-inset-right);
+}
+
+.safe-bottom {
+    padding-bottom: var(--safe-area-inset-bottom);
+}
+
+.safe-left {
+    padding-left: var(--safe-area-inset-left);
+}
+
+/* Posicionamento com safe areas */
+.fixed-top-safe {
+    position: fixed;
+    top: var(--safe-area-inset-top);
+}
+
+.fixed-bottom-safe {
+    position: fixed;
+    bottom: var(--safe-area-inset-bottom);
+}
+
+.fixed-left-safe {
+    position: fixed;
+    left: var(--safe-area-inset-left);
+}
+
+.fixed-right-safe {
+    position: fixed;
+    right: var(--safe-area-inset-right);
+}
+
+/* Suporte para dispositivos sem safe areas */
+@supports not (padding: env(safe-area-inset-top)) {
+    :root {
+        --safe-area-inset-top: 0px;
+        --safe-area-inset-right: 0px;
+        --safe-area-inset-bottom: 0px;
+        --safe-area-inset-left: 0px;
+    }
+}
+
+/* Fallback para navegadores antigos */
+@supports not (padding: max(0px)) {
+    .safe-area-container {
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-right: env(safe-area-inset-right, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        padding-left: env(safe-area-inset-left, 0px);
+    }
+}
+
+/* Suporte aprimorado para diferentes navegadores */
+@supports (padding: constant(safe-area-inset-top)) {
+    :root {
+        --safe-area-inset-top: constant(safe-area-inset-top);
+        --safe-area-inset-right: constant(safe-area-inset-right);
+        --safe-area-inset-bottom: constant(safe-area-inset-bottom);
+        --safe-area-inset-left: constant(safe-area-inset-left);
+    }
+}
+
+/* Versões mais recentes do iOS */
+@supports (padding: env(safe-area-inset-top)) {
+    :root {
+        --safe-area-inset-top: env(safe-area-inset-top);
+        --safe-area-inset-right: env(safe-area-inset-right);
+        --safe-area-inset-bottom: env(safe-area-inset-bottom);
+        --safe-area-inset-left: env(safe-area-inset-left);
+    }
+}
+
+/* Orientação landscape em dispositivos móveis */
+@media screen and (orientation: landscape) and (max-height: 500px) {
+    .safe-area-container {
+        padding-top: max(var(--safe-area-inset-top), 10px);
+        padding-bottom: max(var(--safe-area-inset-bottom), 10px);
+    }
+}
+
+/* Ajustes específicos para PWA */
+@media (display-mode: standalone), (display-mode: fullscreen) {
+    body {
+        padding-bottom: max(var(--safe-area-inset-bottom), 30px) !important;
+    }
+    
+    .safe-area-container {
+        padding-top: max(var(--safe-area-inset-top), 20px);
+        padding-bottom: max(var(--safe-area-inset-bottom), 30px);
+    }
+    
+    .fixed-top-safe {
+        top: max(var(--safe-area-inset-top), 20px);
+    }
+    
+    .app-main-content {
+        height: calc(100vh - max(var(--safe-area-inset-bottom), 30px)) !important;
+    }
+}
+
+/* Ajustes para dispositivos com notch em landscape */
+@media screen and (orientation: landscape) and (max-height: 500px) {
+    .safe-left {
+        padding-left: max(var(--safe-area-inset-left), 44px);
+    }
+    
+    .safe-right {
+        padding-right: max(var(--safe-area-inset-right), 44px);
+    }
+}
+
+/* Debug para visualizar safe areas (remover em produção) */
+.debug-safe-areas {
+    position: relative;
+}
+
+.debug-safe-areas::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--safe-area-inset-top);
+    background: rgba(255, 0, 0, 0.3);
+    pointer-events: none;
+    z-index: 9999;
+    border-bottom: 2px solid red;
+}
+
+.debug-safe-areas::after {
+    content: '';
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--safe-area-inset-bottom);
+    background: rgba(0, 255, 0, 0.3);
+    pointer-events: none;
+    z-index: 9999;
+    border-top: 2px solid green;
+}
+
+/* Debug lateral para landscape */
+body.debug-safe-areas {
+    position: relative;
+}
+
+body.debug-safe-areas::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--safe-area-inset-left);
+    background: rgba(0, 0, 255, 0.3);
+    pointer-events: none;
+    z-index: 9999;
+    border-right: 2px solid blue;
+}
+
+body.debug-safe-areas::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: var(--safe-area-inset-right);
+    background: rgba(255, 255, 0, 0.3);
+    pointer-events: none;
+    z-index: 9999;
+    border-left: 2px solid yellow;
+}

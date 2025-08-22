@@ -40,7 +40,7 @@ export function loadConfig() {
         config.numberOfSets = config.numberOfSets ?? 1;
         config.darkMode = config.darkMode ?? false; // Padrão é tema claro
         config.vibration = config.vibration ?? true;
-        config.displayPlayers = true; // Sempre exibe jogadores
+        config.displayPlayers = config.displayPlayers ?? true;
         // NOVO: Garante que showConnectionStatus está definido, padrão para false
         config.showConnectionStatus = config.showConnectionStatus ?? false;
         // NOVO: Garante que notificationsEnabled está definido, padrão para true
@@ -63,7 +63,7 @@ export function loadConfig() {
         // Se for uma nova configuração, salva no localStorage
         if (isNewConfig) {
             localStorage.setItem('volleyballConfig', JSON.stringify(config));
-            console.log("[config-ui.js] Nova configuração padrão salva no localStorage:", config);
+            // Log removido
         }
 
         // Aplica as configurações aos inputs da UI
@@ -92,6 +92,9 @@ export function loadConfig() {
         // Aplica o tema
         document.body.classList.toggle('dark-mode', config.darkMode ?? false);
         
+        // NOVO: Aplica a classe para ocultar jogadores
+        document.body.classList.toggle('hide-players', !(config.displayPlayers ?? true));
+        
         // Atualiza meta theme-color baseado no tema
         const metaThemeColor = document.querySelector('meta[name="theme-color"]');
         if (metaThemeColor) {
@@ -102,7 +105,7 @@ export function loadConfig() {
 
         return config; // O objeto config retornado agora inclui os padrões se não estiver salvos
     } catch (e) {
-        console.error('Erro ao carregar configurações do localStorage:', e);
+        // Log removido
         return {};
     }
 }
@@ -157,6 +160,9 @@ export function saveConfig() {
         // Atualiza o tema
         document.body.classList.toggle('dark-mode', config.darkMode);
         
+        // NOVO: Atualiza a classe para ocultar jogadores
+        document.body.classList.toggle('hide-players', !config.displayPlayers);
+        
         // Atualiza meta theme-color baseado no tema
         const metaThemeColor = document.querySelector('meta[name="theme-color"]');
         if (metaThemeColor) {
@@ -171,7 +177,7 @@ export function saveConfig() {
 
 
     } catch (e) {
-        console.error('Erro ao salvar configurações:', e);
+        // Log removido
     }
 }
 
@@ -199,14 +205,14 @@ async function resetAppAndClearCache() {
                 if ('caches' in window) {
                     const cacheNames = await caches.keys();
                     await Promise.all(cacheNames.map(name => caches.delete(name)));
-                    console.log("Caches do Service Worker limpos.");
+                    // Log removido
                 }
 
                 // Desregistra o Service Worker
                 if ('serviceWorker' in navigator) {
                     const registrations = await navigator.serviceWorker.getRegistrations();
                     await Promise.all(registrations.map(registration => registration.unregister()));
-                    console.log("Service Workers desregistrados.");
+                    // Log removido
                 }
 
                 displayMessage("Aplicativo reiniciado e cache limpo com sucesso!", "success");
@@ -214,7 +220,7 @@ async function resetAppAndClearCache() {
                     window.location.reload(true); // Recarrega a página forçando o cache
                 }, 1000); // Pequeno atraso para a mensagem aparecer
             } catch (error) {
-                console.error("Erro ao reiniciar o aplicativo e limpar o cache:", error);
+                // Log removido
                 displayMessage("Erro ao tentar reiniciar o aplicativo e limpar o cache.", "error");
             }
         },
@@ -263,10 +269,10 @@ export function setupConfigUI() {
             if (element) {
                 element.addEventListener('change', saveConfig);
             } else {
-                console.warn(`[config-ui.js] Elemento DOM para '${name}' não encontrado. Listener não adicionado.`);
+                // Log removido
             }
         } else {
-            console.error(`[config-ui.js] Elements.${name} não é uma função. Verifique a importação de elements.js.`);
+            // Log removido
         }
     });
 
@@ -278,7 +284,7 @@ export function setupConfigUI() {
             // através de updateConnectionIndicator
         });
     } else {
-        console.warn(`[config-ui.js] Elemento 'showConnectionStatusToggle' não encontrado.`);
+        // Log removido
     }
 
     // NOVO: Adiciona listener para o toggle de notificações
@@ -303,24 +309,18 @@ export function setupConfigUI() {
             saveConfig(); // Salva a configuração
         });
     } else {
-        console.warn(`[config-ui.js] Elemento 'notificationsToggle' não encontrado.`);
+        // Log removido
     }
 
     Elements.customTeamInputs.forEach(input => {
         if (input.name && typeof input.name === 'function') {
             const nameEl = input.name();
             if (nameEl) nameEl.addEventListener('change', saveConfig);
-            else console.warn(`[config-ui.js] Elemento para nome de time personalizado não encontrado.`);
-        } else {
-
         }
 
         if (input.color && typeof input.color === 'function') {
             const colorEl = input.color();
             if (colorEl) colorEl.addEventListener('change', saveConfig);
-            else console.warn(`[config-ui.js] Elemento para cor de time personalizado não encontrado.`);
-        } else {
-
         }
     });
 
@@ -329,7 +329,7 @@ export function setupConfigUI() {
         Elements.resetConfigButton().addEventListener('click', () => {
             localStorage.removeItem('volleyballConfig');
             loadConfig(); // Recarrega as configurações padrão
-            console.log('[config-ui.js] Configurações resetadas para o padrão.');
+            // Log removido
             displayMessage('Configurações resetadas para o padrão.', 'success');
             // Força a atualização dos jogadores na tela de pontuação após reset
             renderScoringPagePlayers(getCurrentTeam1(), getCurrentTeam2(), loadConfig().displayPlayers ?? true);
@@ -349,6 +349,23 @@ export function setupConfigUI() {
     if (Elements.resetAppButton()) {
         Elements.resetAppButton().addEventListener('click', resetAppAndClearCache);
     }
+
+    // NOVO: Listener para o botão de instalação PWA
+    const installPwaButton = document.getElementById('install-pwa-button');
+    if (installPwaButton) {
+        installPwaButton.addEventListener('click', () => {
+            if (window.pwaManager) {
+                window.pwaManager.forceInstall();
+            }
+        });
+        
+        // Mostra/esconde o botão baseado na disponibilidade
+        if (window.pwaManager && window.pwaManager.canShowInstallPrompt()) {
+            installPwaButton.style.display = 'block';
+        }
+    }
+
+
 
     // Configura input da chave admin
     const adminKeyInput = document.getElementById('admin-key-input');
@@ -391,7 +408,7 @@ export function setupConfigUI() {
                         module.updateSchedulingPermissions();
                     }
                 }).catch(e => {
-                    console.warn('Não foi possível atualizar permissões de agendamento:', e);
+                    // Log removido
                 });
                 
                 // Recarrega a página automaticamente apenas se a chave for válida
@@ -406,5 +423,5 @@ export function setupConfigUI() {
 
 
 
-    console.log("[config-ui.js] setupConfigUI finalizado.");
+    // Log removido
 }

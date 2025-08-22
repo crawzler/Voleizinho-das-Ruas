@@ -18,12 +18,10 @@ let firebaseConfig;
 export async function initFirebaseApp() {
     // Determine appId e firebaseConfig
     appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-    console.log("App ID (do ambiente ou padrão):", appId);
 
     try {
         if (typeof __firebase_config !== 'undefined' && __firebase_config) {
             firebaseConfig = JSON.parse(__firebase_config);
-            console.log("Firebase Config (do ambiente):", firebaseConfig);
         } else {
             // Fallback para a configuração fornecida pelo usuário se __firebase_config não estiver definido ou for vazio
             firebaseConfig = {
@@ -34,10 +32,8 @@ export async function initFirebaseApp() {
                 messagingSenderId: "318529125182",
                 appId: "1:318529125182:web:5f77edf287bbd749948a6f"
             };
-            console.log("Firebase Config (fallback do usuário):", firebaseConfig);
         }
     } catch (e) {
-        console.error("Erro ao analisar __firebase_config, usando fallback:", e);
         firebaseConfig = {
             apiKey: "AIzaSyDNnPPdQziILeX9HjjJg5oW_hp6hDRCrB0",
             authDomain: "volei-das-ruas-dz.firebaseapp.com",
@@ -52,8 +48,6 @@ export async function initFirebaseApp() {
     app = initializeApp(firebaseConfig);
     db = getFirestore(app);
     auth = getAuth(app);
-
-    console.log("Firebase App inicializado.");
 
     // --- ADICIONADO PARA TESTE NO CONSOLE ---
     // Estas variáveis agora estarão acessíveis no console do navegador (apenas para desenvolvimento/depuração)

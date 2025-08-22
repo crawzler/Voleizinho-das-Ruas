@@ -13,7 +13,7 @@ export function setupQuickSettings() {
     const setsInput = document.getElementById('quick-number-of-sets');
 
     if (!quickSettingsButton || !quickSettingsModal) {
-        console.error('Elementos do modal de configurações rápidas não encontrados');
+        // Log removido
         return;
     }
 
@@ -39,14 +39,14 @@ export function setupQuickSettings() {
     quickSettingsButton.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log('Botão de configurações rápidas clicado');
+        // Log removido
         loadValues(); // Recarrega valores atuais
         quickSettingsModal.classList.add('active');
     });
 
     // Fecha o modal
     const closeModal = () => {
-        console.log('Fechando modal de configurações rápidas');
+        // Log removido
         quickSettingsModal.classList.remove('active');
     };
 
@@ -69,7 +69,7 @@ export function setupQuickSettings() {
                 ...loadConfig(),
                 pointsPerSet: value
             }));
-            console.log('Pontos por set salvos:', value);
+            // Log removido
         });
     }
 
@@ -80,7 +80,7 @@ export function setupQuickSettings() {
                 ...loadConfig(),
                 numberOfSets: value
             }));
-            console.log('Número de sets salvos:', value);
+            // Log removido
         });
     }
 }

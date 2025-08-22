@@ -77,6 +77,6 @@ export function subscribeSchedules(callback) {
         snapshot.forEach(docSnap => arr.push(docSnap.data()));
         callback(arr);
     }, 
-    // Removido: erro de console.error("Erro ao ouvir agendamentos em tempo real:", error);
+    // Removido: erro de // Log removido
     () => {});
 }

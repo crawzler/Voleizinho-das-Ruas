@@ -14,12 +14,12 @@ let matchHistory = [];
  */
 function loadMatchHistoryFromLocalStorage() {
     const storedHistory = localStorage.getItem(MATCH_HISTORY_STORAGE_KEY);
-    // console.log('Histórico carregado do localStorage:', storedHistory); // Removido log de depuração
+    // // Log removido // Removido log de depuração
     if (storedHistory) {
         try {
             matchHistory = JSON.parse(storedHistory);
         } catch (error) {
-            // Removido: console.error('Erro ao analisar o histórico do localStorage:', error);
+            // Removido: // Log removido
             matchHistory = [];
         }
     }
@@ -31,9 +31,9 @@ function loadMatchHistoryFromLocalStorage() {
 function saveMatchHistoryToLocalStorage() {
     try {
         localStorage.setItem(MATCH_HISTORY_STORAGE_KEY, JSON.stringify(matchHistory));
-        // console.log('Histórico salvo no localStorage com sucesso.'); // Removido log de depuração
+        // // Log removido // Removido log de depuração
     } catch (error) {
-        // Removido: console.error('Erro ao salvar o histórico no localStorage:', error);
+        // Removido: // Log removido
         // Removido: displayMessage('Erro ao salvar o histórico.', 'error');
     }
 }
@@ -100,7 +100,7 @@ export function addMatchToHistory(matchData) {
                     
                     renderMatchHistory(); // Renderiza novamente o histórico
                 } catch (error) {
-                    console.error('Erro ao salvar partida:', error);
+                    // Log removido
                     displayMessage('Erro ao salvar na nuvem. Partida salva apenas localmente.', 'error');
                     renderMatchHistory();
                 }
@@ -155,7 +155,7 @@ async function deleteMatch(matchId) {
                     displayMessage('Registro excluído apenas localmente.', 'info');
                 }
             } catch (error) {
-                console.error('Erro ao excluir partida do Firebase:', error);
+                // Log removido
                 displayMessage('Erro ao excluir da nuvem. Registro excluído apenas localmente.', 'error');
             }
         } else {
@@ -174,7 +174,7 @@ async function deleteMatch(matchId) {
 function renderMatchHistory() {
     const historyListContainer = Elements.historyListContainer(); // Chamada da função
     if (!historyListContainer) {
-        // Removido: console.log("Container do histórico não encontrado. A página de histórico está visível?");
+        // Removido: // Log removido
         return;
     }
 
@@ -429,7 +429,7 @@ async function loadMatchHistoryFromFirebase() {
             }
         }
     } catch (error) {
-        console.error('Erro ao carregar histórico do Firebase:', error);
+        // Log removido
     }
     
     return false;

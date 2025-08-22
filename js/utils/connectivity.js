@@ -70,7 +70,7 @@ class ConnectivityManager {
     
     handleOnline() {
         if (!this.isOnline) {
-            console.log('Conectividade restaurada');
+            // Log removido
             this.isOnline = true;
             this.consecutiveFailures = 0;
             this.notifyCallbacks('online');
@@ -80,7 +80,7 @@ class ConnectivityManager {
     
     handleOffline() {
         if (this.isOnline) {
-            console.log('Conectividade perdida');
+            // Log removido
             this.isOnline = false;
             this.notifyCallbacks('offline');
             this.startPeriodicCheck(); // Reinicia com intervalo para offline
@@ -92,7 +92,7 @@ class ConnectivityManager {
             try {
                 callback(status);
             } catch (error) {
-                console.warn('Erro no callback de conectividade:', error);
+                // Log removido
             }
         });
     }

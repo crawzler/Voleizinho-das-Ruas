@@ -66,7 +66,7 @@ function loadSchedulesFromLocalStorage() {
         try {
             scheduledGames = JSON.parse(storedSchedules);
         } catch (e) {
-            console.error('Erro ao analisar agendamentos do localStorage:', e);
+            // Log removido
             scheduledGames = []; // Reseta se houver erro de parsing
         }
     } else {
@@ -81,7 +81,7 @@ function saveSchedulesToLocalStorage() {
     try {
         localStorage.setItem(SCHEDULES_STORAGE_KEY, JSON.stringify(scheduledGames));
     } catch (e) {
-        console.error('Erro ao salvar agendamentos no localStorage:', e);
+        // Log removido
     }
 }
 
@@ -234,6 +234,8 @@ export function renderScheduledGames() {
         });
     }
 
+
+
     // Garante que o accordion de jogos passados ajuste sua altura se estiver aberto
     const accordionItem = Elements.pastGamesAccordion(); // Agora pega o item do accordion diretamente
     if (accordionItem) {
@@ -257,6 +259,7 @@ function createGameCard(game) {
     const card = document.createElement('div');
     card.className = `scheduled-game-card status-${game.status}`;
     card.dataset.gameId = game.id;
+    card.draggable = true;
 
     // Ensure game.date is a valid date string before splitting
     const [year, month, day] = game.date.split('-').map(Number);
@@ -293,7 +296,7 @@ function createGameCard(game) {
         const isGoogleUser = user && !user.isAnonymous;
         canDelete = isAdminKey && isGoogleUser;
     } catch (error) {
-        console.warn('Erro ao obter usuário atual:', error);
+        // Log removido
         // Continue mesmo com erro, tratando como usuário não autenticado
     }
 
@@ -301,7 +304,6 @@ function createGameCard(game) {
     card.innerHTML = `
         <div class="card-actions">
             ${game.status === 'upcoming' ? `<button class="cancel-game-button card-action-button" title="Cancelar Jogo"><span class="material-icons">cancel</span></button>` : ''}
-            <button class="delete-game-button card-action-button ${canDelete ? 'visible' : ''}" title="Excluir Jogo"><span class="material-icons">delete</span></button>
         </div>
         <div class="card-content">
             <h3>${statusTitle}</h3>
@@ -309,6 +311,7 @@ function createGameCard(game) {
             <p><span class="material-icons">schedule</span> ${game.startTime} ${game.endTime ? `- ${game.endTime}` : ''}</p>
             ${game.notes ? `<p><span class="material-icons">notes</span> ${game.notes}</p>` : ''}
             <p><span class="material-icons">place</span> ${game.location} - <strong>${game.surface || 'Quadra'}</strong></p>
+            ${game.status === 'cancelled' && game.cancelReason ? `<p class="cancel-reason"><span class="material-icons">warning</span> <strong>Motivo do cancelamento:</strong> ${game.cancelReason}</p>` : ''}
             ${game.paymentProofs && game.paymentProofs.length ? `<button class="proof-button card-action-button" data-game-id='${game.id}' data-proofs-count='${game.paymentProofs.length}'><span class="material-icons">receipt</span> <span>Ver Comprovante</span></button>` : ''}
         </div>
     `;
@@ -337,7 +340,7 @@ function canUserSchedule() {
         
         return isGoogleUser && hasAdminKey;
     } catch (error) {
-        console.warn('Erro ao verificar permissões:', error);
+        // Log removido
         return false;
     }
 }
@@ -369,7 +372,7 @@ function portalFloatingButtonToBody() {
         document.body.appendChild(floatingBtn);
         // keep the same display logic
     } catch (e) {
-        console.warn('[scheduling-ui] failed to portal floating button to body', e);
+        // Log removido
     }
 }
 
@@ -448,9 +451,9 @@ export function setupSchedulingPage() {
                 if (modal) {
                     modal.classList.remove('active');
                     // unlock body scroll when modal is closed programmatically
-                    console.debug('[scheduling-ui] programmatic modal close after save, unlocking body');
-                    try { unlockBodyScroll(); } catch (e) { console.warn('unlockBodyScroll failed', e); }
-                    try { disableTouchMoveBlocker(); } catch (e) { console.warn('disableTouchMoveBlocker failed', e); }
+                    // Log removido
+                    try { unlockBodyScroll(); } catch (e) { /* Log removido */ }
+                    try { disableTouchMoveBlocker(); } catch (e) { /* Log removido */ }
                 }
                 
             } catch (err) {
@@ -489,42 +492,7 @@ export function setupSchedulingPage() {
             const gameId = card.dataset.gameId;
 
             if (button.classList.contains('cancel-game-button')) {
-                showConfirmationModal(
-                    'Tem certeza que deseja cancelar este agendamento?',
-                    async () => {
-                        const game = scheduledGames.find(g => g.id === gameId);
-                        if (game) {
-                            game.status = 'cancelled';
-                            saveSchedulesToLocalStorage();
-                            try {
-                                await SchedulesData.updateSchedule(game);
-                            } catch (err) {
-                                if (err && err.code === "permission-denied") {
-                                    displayMessage('Você não tem permissão para cancelar jogos. Apenas administradores podem cancelar.', 'error');
-                                } else {
-                                    displayMessage('Erro ao cancelar jogo. Tente novamente.', 'error');
-                                }
-                            }
-                        }
-                    }
-                );
-            } else if (button.classList.contains('delete-game-button')) {
-                showConfirmationModal(
-                    'Tem certeza que deseja excluir este agendamento?',
-                    async () => {
-                        scheduledGames = scheduledGames.filter(g => g.id !== gameId);
-                        saveSchedulesToLocalStorage();
-                        try {
-                            await SchedulesData.deleteSchedule(gameId);
-                        } catch (err) {
-                            if (err && err.code === "permission-denied") {
-                                displayMessage('Você não tem permissão para excluir jogos. Apenas administradores podem excluir.', 'error');
-                            } else {
-                                displayMessage('Erro ao excluir agendamento. Tente novamente.', 'error');
-                            }
-                        }
-                    }
-                );
+                showCancelReasonModal(gameId);
             } else if (button.classList.contains('proof-button')) {
                 // Usar os comprovantes armazenados no elemento ou no objeto
                 const proofs = button.__proofs || proofsByGameId[gameId];
@@ -537,6 +505,9 @@ export function setupSchedulingPage() {
         });
     }
 
+    // Sistema de drag and drop para excluir agendamentos
+    setupScheduleDragAndDrop();
+    
     // Não chama renderScheduledGames aqui, pois o listener do Firestore já atualiza a UI
 }
 
@@ -626,12 +597,12 @@ function setupModal() {
                             modal.__origNext = modal.nextSibling;
                             document.body.appendChild(modal);
                         } catch (e) {
-                            console.warn('[scheduling-ui] portal modal failed', e);
+                            // Log removido
                         }
                     }
 
                     modal.classList.add('active');
-                    console.debug('[scheduling-ui] opening schedule modal, scrollY=', window.scrollY);
+                    // Log removido
                     lockBodyScroll();
                     enableTouchMoveBlocker();
                 }
@@ -644,7 +615,7 @@ function setupModal() {
         closeBtn.addEventListener('click', () => {
             if (modal) {
                 modal.classList.remove('active');
-                console.debug('[scheduling-ui] close modal via closeBtn, unlocking body');
+                // Log removido
                 // restore modal to original parent if it was portaled
                 if (modal.__origParent) {
                     try {
@@ -652,7 +623,7 @@ function setupModal() {
                         modal.__origParent = null;
                         modal.__origNext = null;
                     } catch (e) {
-                        console.warn('[scheduling-ui] restore modal parent failed', e);
+                        // Log removido
                     }
                 }
                 unlockBodyScroll();
@@ -666,7 +637,7 @@ function setupModal() {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
                 modal.classList.remove('active');
-                console.debug('[scheduling-ui] close modal via backdrop click, unlocking body');
+                // Log removido
                 // restore modal to original parent if it was portaled
                 if (modal.__origParent) {
                     try {
@@ -674,7 +645,7 @@ function setupModal() {
                         modal.__origParent = null;
                         modal.__origNext = null;
                     } catch (err) {
-                        console.warn('[scheduling-ui] restore modal parent failed', err);
+                        // Log removido
                     }
                 }
                 unlockBodyScroll();
@@ -711,6 +682,74 @@ function updateProofCounter(modal) {
 }
 
 /**
+ * Atualiza os dots de navegação do carrossel
+ */
+function updateProofDots(modal) {
+    if (!modal || !modal.__proofs || !Array.isArray(modal.__proofs)) return;
+    
+    const dotsContainer = modal.querySelector('#proof-dots');
+    if (!dotsContainer) return;
+    
+    // Limpa dots existentes
+    dotsContainer.innerHTML = '';
+    
+    // Cria dots para cada imagem
+    modal.__proofs.forEach((_, index) => {
+        const dot = document.createElement('div');
+        dot.className = 'proof-dot';
+        if (index === modal.__proofIndex) {
+            dot.classList.add('active');
+        }
+        
+        // Adiciona evento de clique no dot
+        dot.addEventListener('click', () => {
+            modal.__proofIndex = index;
+            const image = modal.querySelector('#proof-image');
+            if (image) {
+                image.src = modal.__proofs[index];
+            }
+            updateProofCounter(modal);
+            updateProofDots(modal);
+            updateNavButtons(modal);
+        });
+        
+        dotsContainer.appendChild(dot);
+    });
+}
+
+/**
+ * Atualiza o estado dos botões de navegação
+ */
+function updateNavButtons(modal) {
+    if (!modal || !modal.__proofs || !Array.isArray(modal.__proofs)) return;
+    
+    const prevBtn = modal.querySelector('#proof-prev');
+    const nextBtn = modal.querySelector('#proof-next');
+    const carouselNav = modal.querySelector('.proof-carousel-nav');
+    
+    // Se há apenas uma imagem, oculta toda a navegação
+    if (modal.__proofs.length <= 1) {
+        if (carouselNav) {
+            carouselNav.style.display = 'none';
+        }
+        return;
+    }
+    
+    // Mostra a navegação se há múltiplas imagens
+    if (carouselNav) {
+        carouselNav.style.display = 'flex';
+    }
+    
+    if (prevBtn) {
+        prevBtn.disabled = modal.__proofIndex === 0;
+    }
+    
+    if (nextBtn) {
+        nextBtn.disabled = modal.__proofIndex === modal.__proofs.length - 1;
+    }
+}
+
+/**
  * Mostra o modal de visualização de comprovante
  */
 function showProofViewer(proofData) {
@@ -739,8 +778,10 @@ function showProofViewer(proofData) {
         }
     }
     
-    // Atualizar contador
+    // Atualizar contador, dots e botões
     updateProofCounter(modal);
+    updateProofDots(modal);
+    updateNavButtons(modal);
     
     modal.classList.add('active');
 
@@ -752,18 +793,58 @@ function showProofViewer(proofData) {
         if (e.key === 'Escape') modal.classList.remove('active');
     }
 
+    // Touch/swipe navigation
+    let touchStartX = 0;
+    let touchStartY = 0;
+    const imageContainer = modal.querySelector('.proof-image-container');
+    
+    function handleTouchStart(e) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+    }
+    
+    function handleTouchEnd(e) {
+        if (!touchStartX || !touchStartY) return;
+        
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const deltaX = touchStartX - touchEndX;
+        const deltaY = touchStartY - touchEndY;
+        
+        // Only trigger if horizontal swipe is more significant than vertical
+        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+            if (deltaX > 0) {
+                showNext(); // Swipe left = next
+            } else {
+                showPrev(); // Swipe right = previous
+            }
+        }
+        
+        touchStartX = 0;
+        touchStartY = 0;
+    }
+    
+    if (imageContainer) {
+        imageContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
+        imageContainer.addEventListener('touchend', handleTouchEnd, { passive: true });
+    }
+
     function showNext() {
-        if (!modal.__proofs) return;
-        modal.__proofIndex = (modal.__proofIndex + 1) % modal.__proofs.length;
+        if (!modal.__proofs || modal.__proofIndex >= modal.__proofs.length - 1) return;
+        modal.__proofIndex++;
         image.src = modal.__proofs[modal.__proofIndex];
         updateProofCounter(modal);
+        updateProofDots(modal);
+        updateNavButtons(modal);
     }
 
     function showPrev() {
-        if (!modal.__proofs) return;
-        modal.__proofIndex = (modal.__proofIndex - 1 + modal.__proofs.length) % modal.__proofs.length;
+        if (!modal.__proofs || modal.__proofIndex <= 0) return;
+        modal.__proofIndex--;
         image.src = modal.__proofs[modal.__proofIndex];
         updateProofCounter(modal);
+        updateProofDots(modal);
+        updateNavButtons(modal);
     }
 
     // expose navigation on modal element for buttons
@@ -775,10 +856,10 @@ function showProofViewer(proofData) {
     const removeListener = () => {
         document.removeEventListener('keydown', keyHandler);
         modal.removeEventListener('click', onModalClick);
-        const btnNext = document.getElementById('proof-next');
-        const btnPrev = document.getElementById('proof-prev');
-        if (btnNext) btnNext.removeEventListener('click', showNext);
-        if (btnPrev) btnPrev.removeEventListener('click', showPrev);
+        if (imageContainer) {
+            imageContainer.removeEventListener('touchstart', handleTouchStart);
+            imageContainer.removeEventListener('touchend', handleTouchEnd);
+        }
     };
 
     function onModalClick(e) {
@@ -789,10 +870,6 @@ function showProofViewer(proofData) {
     }
 
     modal.addEventListener('click', onModalClick);
-    const btnNext = document.getElementById('proof-next');
-    const btnPrev = document.getElementById('proof-prev');
-    if (btnNext) btnNext.addEventListener('click', (e) => { e.stopPropagation(); showNext(); });
-    if (btnPrev) btnPrev.addEventListener('click', (e) => { e.stopPropagation(); showPrev(); });
     // Garantir que fechar pelo botão X também limpe listeners
     const closeBtn = document.getElementById('close-proof-viewer');
     if (closeBtn) {
@@ -843,7 +920,7 @@ function setupFileHandling() {
                     const base64 = await convertFileToBase64(f);
                     currentBase64List.push(base64);
                 } catch (err) {
-                    console.warn('Falha ao converter arquivo para base64', err);
+                    // Log removido
                 }
             }
 
@@ -908,6 +985,347 @@ function setupFileHandling() {
             }
         });
     }
+}
+
+// Função para configurar drag and drop dos agendamentos
+function setupScheduleDragAndDrop() {
+    let deleteZoneSetup = false;
+    
+    // Configura a zona de exclusão
+    function setupDeleteZone() {
+        if (deleteZoneSetup) return;
+        
+        let deleteZone = document.getElementById('scheduling-delete-zone');
+        if (!deleteZone) {
+            deleteZone = document.createElement('div');
+            deleteZone.id = 'scheduling-delete-zone';
+            deleteZone.className = 'delete-zone';
+            deleteZone.innerHTML = '<span class="material-icons">delete</span> Arraste aqui para excluir';
+            deleteZone.style.display = 'none';
+            document.body.appendChild(deleteZone);
+        }
+        
+        deleteZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            deleteZone.classList.add('drag-over');
+        });
+        
+        deleteZone.addEventListener('dragleave', (e) => {
+            if (!deleteZone.contains(e.relatedTarget)) {
+                deleteZone.classList.remove('drag-over');
+            }
+        });
+        
+        deleteZone.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            deleteZone.classList.remove('drag-over');
+            
+            const gameId = e.dataTransfer.getData('text/plain');
+            if (gameId && gameId.trim()) {
+                showConfirmationModal(
+                    'Tem certeza que deseja excluir este agendamento?',
+                    async () => {
+                        scheduledGames = scheduledGames.filter(g => g.id !== gameId);
+                        saveSchedulesToLocalStorage();
+                        try {
+                            await SchedulesData.deleteSchedule(gameId);
+                            displayMessage('Agendamento excluído com sucesso!', 'success');
+                        } catch (err) {
+                            if (err && err.code === "permission-denied") {
+                                displayMessage('Você não tem permissão para excluir jogos. Apenas administradores podem excluir.', 'error');
+                            } else {
+                                displayMessage('Erro ao excluir agendamento. Tente novamente.', 'error');
+                            }
+                        }
+                    }
+                );
+            }
+            
+            hideDeleteZone();
+        });
+        
+        deleteZoneSetup = true;
+    }
+    
+    function hideDeleteZone() {
+        const deleteZone = document.getElementById('scheduling-delete-zone');
+        if (deleteZone) {
+            deleteZone.classList.remove('active', 'drag-over');
+            setTimeout(() => {
+                deleteZone.style.display = 'none';
+            }, 300);
+        }
+    }
+    
+    function showDeleteZone() {
+        const deleteZone = document.getElementById('scheduling-delete-zone');
+        if (deleteZone) {
+            deleteZone.style.display = 'flex';
+            deleteZone.style.zIndex = '1000';
+            setTimeout(() => deleteZone.classList.add('active'), 10);
+        }
+    }
+    
+    // Configura drag and drop para um card específico
+    function setupCardDragAndDrop(card) {
+        if (!card || card.hasAttribute('data-drag-initialized')) return;
+        
+        let longPressTimer;
+        let isDragging = false;
+        let touchStartY = 0;
+        let isMouseDown = false;
+        let dragGhost = null;
+        
+        const createDragGhost = (x, y) => {
+            dragGhost = card.cloneNode(true);
+            dragGhost.style.position = 'fixed';
+            dragGhost.style.left = x + 'px';
+            dragGhost.style.top = y + 'px';
+            dragGhost.style.zIndex = '9999';
+            dragGhost.style.pointerEvents = 'none';
+            dragGhost.style.opacity = '0.8';
+            dragGhost.style.transform = 'rotate(5deg) scale(1.1)';
+            dragGhost.classList.add('drag-ghost');
+            document.body.appendChild(dragGhost);
+        };
+        
+        const updateDragGhost = (x, y) => {
+            if (dragGhost) {
+                dragGhost.style.left = (x - 50) + 'px';
+                dragGhost.style.top = (y - 25) + 'px';
+            }
+        };
+        
+        const removeDragGhost = () => {
+            if (dragGhost) {
+                dragGhost.remove();
+                dragGhost = null;
+            }
+        };
+        
+        // Touch events
+        card.addEventListener('touchstart', (e) => {
+            if (isMouseDown) return;
+            
+            touchStartY = e.touches[0].clientY;
+            longPressTimer = setTimeout(() => {
+                const config = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
+                const user = getCurrentUser();
+                const canDelete = config.adminKey === 'admin998939' && user && !user.isAnonymous;
+                
+                if (!canDelete) {
+                    displayMessage('Apenas administradores podem excluir agendamentos.', 'error');
+                    return;
+                }
+                
+                isDragging = true;
+                card.classList.add('dragging');
+                createDragGhost(e.touches[0].clientX, e.touches[0].clientY);
+                console.log('Showing delete zone for scheduling');
+                showDeleteZone();
+                e.preventDefault();
+            }, 500);
+        });
+        
+        card.addEventListener('touchmove', (e) => {
+            if (isDragging) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                
+                updateDragGhost(touch.clientX, touch.clientY);
+                
+                if (dragGhost) dragGhost.style.display = 'none';
+                const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+                if (dragGhost) dragGhost.style.display = 'block';
+                
+                const deleteZone = document.getElementById('scheduling-delete-zone');
+                if (elementBelow && elementBelow.closest('#scheduling-delete-zone')) {
+                    if (deleteZone) deleteZone.classList.add('drag-over');
+                } else {
+                    if (deleteZone) deleteZone.classList.remove('drag-over');
+                }
+            } else {
+                const touch = e.touches[0];
+                const deltaY = Math.abs(touch.clientY - touchStartY);
+                if (deltaY > 10) {
+                    clearTimeout(longPressTimer);
+                }
+            }
+        });
+        
+        card.addEventListener('touchend', (e) => {
+            clearTimeout(longPressTimer);
+            if (isDragging) {
+                const touch = e.changedTouches[0];
+                
+                if (dragGhost) dragGhost.style.display = 'none';
+                const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+                if (dragGhost) dragGhost.style.display = 'block';
+                
+                if (elementBelow && elementBelow.closest('#scheduling-delete-zone')) {
+                    const gameId = card.dataset.gameId;
+                    showConfirmationModal(
+                        'Tem certeza que deseja excluir este agendamento?',
+                        async () => {
+                            scheduledGames = scheduledGames.filter(g => g.id !== gameId);
+                            saveSchedulesToLocalStorage();
+                            try {
+                                await SchedulesData.deleteSchedule(gameId);
+                                displayMessage('Agendamento excluído com sucesso!', 'success');
+                            } catch (err) {
+                                if (err && err.code === "permission-denied") {
+                                    displayMessage('Você não tem permissão para excluir jogos. Apenas administradores podem excluir.', 'error');
+                                } else {
+                                    displayMessage('Erro ao excluir agendamento. Tente novamente.', 'error');
+                                }
+                            }
+                        }
+                    );
+                }
+                
+                isDragging = false;
+                card.classList.remove('dragging');
+                removeDragGhost();
+                hideDeleteZone();
+            }
+        });
+        
+        // Mouse events
+        card.addEventListener('mousedown', (e) => {
+            isMouseDown = true;
+            const startX = e.clientX;
+            const startY = e.clientY;
+            longPressTimer = setTimeout(() => {
+                const config = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
+                const user = getCurrentUser();
+                const canDelete = config.adminKey === 'admin998939' && user && !user.isAnonymous;
+                
+                if (!canDelete) {
+                    displayMessage('Apenas administradores podem excluir agendamentos.', 'error');
+                    return;
+                }
+                
+                card.draggable = true;
+                card.classList.add('dragging');
+                createDragGhost(startX, startY);
+                console.log('Showing delete zone for scheduling (mouse)');
+                showDeleteZone();
+            }, 500);
+        });
+        
+        card.addEventListener('mouseup', () => {
+            isMouseDown = false;
+            clearTimeout(longPressTimer);
+        });
+        
+        card.addEventListener('mouseleave', () => {
+            isMouseDown = false;
+            clearTimeout(longPressTimer);
+        });
+        
+        card.addEventListener('dragstart', (e) => {
+            if (e.dataTransfer) {
+                e.dataTransfer.setData('text/plain', card.dataset.gameId);
+                e.dataTransfer.effectAllowed = 'move';
+            }
+        });
+        
+        card.addEventListener('dragend', () => {
+            card.classList.remove('dragging');
+            card.draggable = false;
+            removeDragGhost();
+            hideDeleteZone();
+        });
+        
+        card.setAttribute('data-drag-initialized', 'true');
+    }
+    
+    // Configura todos os cards existentes
+    function setupAllCards() {
+        const cards = document.querySelectorAll('.scheduled-game-card');
+        cards.forEach(setupCardDragAndDrop);
+    }
+    
+    // Observa mudanças no DOM
+    const observer = new MutationObserver(() => {
+        setTimeout(setupAllCards, 50);
+    });
+    
+    const schedulingPage = document.getElementById('scheduling-page');
+    if (schedulingPage) {
+        observer.observe(schedulingPage, { childList: true, subtree: true });
+    }
+    
+    setupDeleteZone();
+    setupAllCards();
+}
+
+/**
+ * Mostra o modal para solicitar motivo do cancelamento
+ */
+function showCancelReasonModal(gameId) {
+    const modal = document.getElementById('cancel-reason-modal');
+    const reasonInput = document.getElementById('cancel-reason-input');
+    const confirmBtn = document.getElementById('confirm-cancel-btn');
+    const cancelBtn = document.getElementById('cancel-cancel-btn');
+    
+    if (!modal) return;
+    
+    // Limpa o input e mostra o modal
+    reasonInput.value = '';
+    modal.classList.add('active');
+    
+    // Foca no textarea
+    setTimeout(() => reasonInput.focus(), 100);
+    
+    // Remove listeners anteriores
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    const newCancelBtn = cancelBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+    
+    // Confirmar cancelamento
+    newConfirmBtn.addEventListener('click', async () => {
+        const reason = reasonInput.value.trim();
+        if (!reason) {
+            displayMessage('Por favor, informe o motivo do cancelamento.', 'error');
+            return;
+        }
+        
+        const game = scheduledGames.find(g => g.id === gameId);
+        if (game) {
+            game.status = 'cancelled';
+            game.cancelReason = reason;
+            game.cancelledAt = new Date().toISOString();
+            saveSchedulesToLocalStorage();
+            
+            try {
+                await SchedulesData.updateSchedule(game);
+                displayMessage('Jogo cancelado com sucesso.', 'success');
+            } catch (err) {
+                if (err && err.code === "permission-denied") {
+                    displayMessage('Você não tem permissão para cancelar jogos. Apenas administradores podem cancelar.', 'error');
+                } else {
+                    displayMessage('Erro ao cancelar jogo. Tente novamente.', 'error');
+                }
+            }
+        }
+        
+        modal.classList.remove('active');
+    });
+    
+    // Cancelar ação
+    newCancelBtn.addEventListener('click', () => {
+        modal.classList.remove('active');
+    });
+    
+    // Fechar clicando fora
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.classList.remove('active');
+        }
+    });
 }
 
 // Exporta função para atualizar visibilidade (para ser chamada quando login/logout)

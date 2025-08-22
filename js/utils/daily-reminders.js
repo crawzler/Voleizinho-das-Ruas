@@ -50,7 +50,7 @@ export async function checkTodayGames() {
 
         markCheckDone();
     } catch (error) {
-        console.warn('Erro ao verificar jogos do dia:', error);
+        // Log removido
     }
 }
 
@@ -67,10 +67,10 @@ export async function testTodayReminder() {
             game.status === 'upcoming'
         );
 
-        console.log(`Jogos encontrados para hoje (${today}):`, todayGames);
+        // Log removido
 
         if (todayGames.length === 0) {
-            console.log('Nenhum jogo encontrado para hoje');
+            // Log removido
             // Cria um jogo de teste para demonstração
             const testGame = {
                 id: 'test-game',
@@ -81,7 +81,7 @@ export async function testTodayReminder() {
                 status: 'upcoming'
             };
             await notifyTodayGame(testGame);
-            console.log('Notificação de teste enviada!');
+            // Log removido
         } else {
             // Notifica sobre jogos reais de hoje
             for (const game of todayGames) {
@@ -90,7 +90,7 @@ export async function testTodayReminder() {
             }
         }
     } catch (error) {
-        console.error('Erro no teste de lembretes:', error);
+        // Log removido
     }
 }
 
@@ -112,7 +112,7 @@ export function initDailyReminders() {
     window.testTodayReminder = testTodayReminder;
     window.resetDailyCheck = () => {
         localStorage.removeItem(LAST_CHECK_KEY);
-        console.log('Controle diário resetado. Próxima verificação irá executar.');
+        // Log removido
     };
     window.checkTodayGames = checkTodayGames;
 }

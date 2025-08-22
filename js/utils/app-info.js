@@ -19,11 +19,11 @@ export async function loadAppVersion() {
                 versionElement.textContent = 'Versão: Não disponível';
             }
         } catch (error) {
-            console.error('Erro ao carregar a versão do app:', error);
+            // Log removido
             versionElement.textContent = 'Versão: Erro ao carregar';
         }
     } else {
-        console.warn('Elemento app-version-display não encontrado');
+        // Log removido
     }
 }
 
@@ -36,7 +36,7 @@ export function registerServiceWorker() {
             navigator.serviceWorker.register('./service-worker.js')
                 .catch(error => {
                     // Apenas erro crítico mantido
-                    console.error('Falha no registro do Service Worker:', error);
+                    // Log removido
                 });
         });
     }

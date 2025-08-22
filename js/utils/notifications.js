@@ -6,7 +6,7 @@
  */
 export async function requestNotificationPermission() {
     if (!('Notification' in window)) {
-        console.warn('Este navegador não suporta notificações');
+        // Log removido
         return false;
     }
 
@@ -80,12 +80,13 @@ export async function notifyCancelledSchedule(schedule) {
     const gameDate = new Date(schedule.date + 'T' + schedule.startTime);
     const formattedDate = gameDate.toLocaleDateString('pt-BR');
     const formattedTime = schedule.startTime;
+    const reasonText = schedule.cancelReason ? `\n⚠️ ${schedule.cancelReason}` : '';
 
     try {
         // Tenta usar Service Worker para notificação persistente
         const registration = await navigator.serviceWorker.ready;
         await registration.showNotification('❌ Jogo Cancelado', {
-            body: `📅 ${formattedDate} às ${formattedTime}\n📍 ${schedule.location}`,
+            body: `📅 ${formattedDate} às ${formattedTime}\n📍 ${schedule.location}${reasonText}`,
             icon: './images/icon-192x192.png',
             badge: './images/icon-96x96.png',
             tag: 'cancelled-schedule',
@@ -98,7 +99,7 @@ export async function notifyCancelledSchedule(schedule) {
     } catch (error) {
         // Fallback para notificação simples
         const notification = new Notification('❌ Jogo Cancelado', {
-            body: `📅 ${formattedDate} às ${formattedTime}\n📍 ${schedule.location}`,
+            body: `📅 ${formattedDate} às ${formattedTime}\n📍 ${schedule.location}${reasonText}`,
             icon: './images/icon-192x192.png',
             tag: 'cancelled-schedule'
         });
@@ -155,6 +156,7 @@ function showInAppNotification(schedule, type = 'new') {
             📅 ${formattedDate} às ${formattedTime}<br>
             📍 ${schedule.location}
             ${schedule.notes ? `<br>📝 ${schedule.notes}` : ''}
+            ${type === 'cancelled' && schedule.cancelReason ? `<br><strong>⚠️ Motivo:</strong> ${schedule.cancelReason}` : ''}
         </div>
     `;
     
@@ -199,7 +201,7 @@ export async function registerNotificationServiceWorker() {
 
             return registration;
         } catch (error) {
-            console.error('Erro ao registrar service worker para notificações:', error);
+            // Log removido
         }
     }
     return null;
@@ -215,9 +217,12 @@ function handleNotificationAction(action) {
             if (window.location.hash !== '#scheduling') {
                 window.location.hash = '#scheduling';
             }
+            // Dispara evento para atualizar a página se necessário
+            const event = new CustomEvent('navigate-to-scheduling');
+            window.dispatchEvent(event);
             break;
         case 'close':
-            // Apenas fecha a notificação
+            // Apenas fecha a notificação - não faz nada
             break;
     }
 }

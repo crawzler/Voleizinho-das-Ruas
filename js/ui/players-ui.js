@@ -27,7 +27,7 @@ export function renderPlayersList(players) {
             selectedPlayerIds = JSON.parse(savedSelection);
         }
     } catch (e) {
-        console.warn('Erro ao carregar estado de seleção dos jogadores:', e);
+        // Log removido
         selectedPlayerIds = [];
     }
 
@@ -43,7 +43,7 @@ export function renderPlayersList(players) {
         const isGoogleUser = user && !user.isAnonymous;
         canDelete = isAdminKey && isGoogleUser;
     } catch (error) {
-        console.warn('Erro ao obter usuário atual:', error);
+        // Log removido
         // Continue mesmo com erro, tratando como usuário não autenticado
     }
 
@@ -64,7 +64,7 @@ export function renderPlayersList(players) {
                 }
             }
         } catch (e) {
-            console.warn('Erro ao ler jogadores do localStorage:', e);
+            // Log removido
             players = [];
         }
     }
@@ -334,7 +334,7 @@ function filterPlayers() {
             selectedPlayerIds = JSON.parse(savedSelection);
         }
     } catch (e) {
-        console.warn('Erro ao carregar estado de seleção:', e);
+        // Log removido
         selectedPlayerIds = [];
     }
     
@@ -348,7 +348,7 @@ function filterPlayers() {
         const isGoogleUser = user && !user.isAnonymous;
         canDelete = isAdminKey && isGoogleUser;
     } catch (error) {
-        console.warn('Erro ao obter usuário atual:', error);
+        // Log removido
     }
     
     matchingPlayers.sort((a, b) => a.name.localeCompare(b.name));
@@ -492,7 +492,7 @@ export function savePlayerSelectionState() {
         // Adiciona automaticamente novos jogadores aos times existentes
         autoAddPlayersToTeams();
     } catch (e) {
-        console.warn('Erro ao salvar estado de seleção dos jogadores:', e);
+        // Log removido
     }
 }
 
@@ -601,7 +601,7 @@ function updateGlobalSelections() {
         });
         localStorage.setItem('selectedPlayers_todos', JSON.stringify(allSelected));
     } catch (e) {
-        console.warn('Erro ao atualizar seleções globais:', e);
+        // Log removido
     }
 }
 
@@ -781,7 +781,7 @@ function setupDragAndDrop(playerElement) {
                         const playerId = playerElement.dataset.playerId;
                         if (playerId && newCategory) {
                             movePlayerToCategory(playerId, newCategory).catch(error => {
-                                console.error('Erro ao mover jogador via touch:', error);
+                                // Log removido
                             });
                         }
                     }
@@ -883,14 +883,14 @@ function hideDeleteZone() {
 }
 
 function deletePlayer(playerId) {
-    console.log('[deletePlayer] Iniciando exclusão do jogador:', playerId);
+    // Log removido
     
     // Encontra o jogador
     const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
     const player = players.find(p => p.id === playerId);
     const playerName = player ? player.name.replace(' [local]', '') : 'este jogador';
     
-    console.log('[deletePlayer] Jogador encontrado:', player);
+    // Log removido
     
     if (!player) {
         import('./messages.js').then(({ displayMessage }) => {
@@ -909,17 +909,11 @@ function deletePlayer(playerId) {
         const isCreator = currentUser && player.createdBy === currentUser.uid;
         const isLocal = player.isLocal;
         
-        console.log('[deletePlayer] Verificação de permissões:', {
-            currentUser: currentUser ? currentUser.uid : 'null',
-            isAdmin,
-            isCreator,
-            isLocal,
-            playerCreatedBy: player.createdBy
-        });
+        // Log removido
         
         // Se não tem permissão para excluir
         if (!isLocal && !isAdmin && !isCreator) {
-            console.log('[deletePlayer] Sem permissão para excluir');
+            // Log removido
             import('./messages.js').then(({ displayMessage }) => {
                 displayMessage('Você não tem autorização para remover este jogador', 'error');
             });
@@ -945,46 +939,42 @@ function deletePlayer(playerId) {
             // Confirmar exclusão
             newConfirmBtn.addEventListener('click', () => {
                 modal.classList.remove('active');
-                console.log('[deletePlayer] Confirmação de exclusão');
+                // Log removido
                 
                 import('./messages.js').then(({ displayMessage }) => {
                     import('../data/players.js').then(({ removePlayer }) => {
                         // Obtém o appId correto
                         const appId = localStorage.getItem('appId') || 'default';
-                        console.log('[deletePlayer] Chamando removePlayer com:', {
-                            playerId,
-                            requesterUid: currentUser ? currentUser.uid : null,
-                            appId
-                        });
+                        // Log removido
                         
                         removePlayer(playerId, currentUser ? currentUser.uid : null, appId)
                             .then(() => {
-                                console.log('[deletePlayer] Jogador removido com sucesso');
+                                // Log removido
                                 displayMessage('Jogador removido com sucesso!', 'success');
                             })
                             .catch((error) => {
-                                console.error('[deletePlayer] Erro ao remover jogador:', error);
+                                // Log removido
                                 displayMessage(`Erro ao remover jogador: ${error.message}`, 'error');
                             });
                     }).catch(error => {
-                        console.error('[deletePlayer] Erro ao importar removePlayer:', error);
+                        // Log removido
                         displayMessage('Erro interno ao remover jogador', 'error');
                     });
                 }).catch(error => {
-                    console.error('[deletePlayer] Erro ao importar displayMessage:', error);
+                    // Log removido
                 });
             });
             
             // Cancelar exclusão
             newCancelBtn.addEventListener('click', () => {
-                console.log('[deletePlayer] Exclusão cancelada');
+                // Log removido
                 modal.classList.remove('active');
             });
         } else {
-            console.error('[deletePlayer] Modal de confirmação não encontrado');
+            // Log removido
         }
     }).catch(error => {
-        console.error('[deletePlayer] Erro ao importar getCurrentUser:', error);
+        // Log removido
     });
 }
 
@@ -1095,7 +1085,7 @@ function setupDropZones() {
                 try {
                     await movePlayerToCategory(playerId, newCategory);
                 } catch (error) {
-                    console.error('Erro ao mover jogador:', error);
+                    // Log removido
                     const { displayMessage } = await import('./messages.js');
                     displayMessage('Erro ao mover jogador', 'error');
                 }
@@ -1171,7 +1161,7 @@ async function movePlayerToCategory(playerId, newCategory) {
                     }
                 }
             } catch (error) {
-                console.warn('Erro ao atualizar categoria no Firebase:', error);
+                // Log removido
             }
         }
         
@@ -1179,7 +1169,7 @@ async function movePlayerToCategory(playerId, newCategory) {
         displayMessage(`Jogador movido para ${getCategoryDisplayName(newCategory)}!`, 'success');
         
     } catch (error) {
-        console.error('Erro ao mover jogador:', error);
+        // Log removido
         const { displayMessage } = await import('./messages.js');
         displayMessage('Erro ao mover jogador', 'error');
     }

@@ -11,7 +11,7 @@ const HISTORY_STORAGE_KEY = 'voleiScoreMatchHistory';
 export const saveGameToHistory = async (gameData) => {
     // Função mantida apenas para compatibilidade, mas não faz mais nada
     // O salvamento agora é feito exclusivamente via addMatchToHistory que tem confirmação
-    console.log("saveGameToHistory está obsoleta, use addMatchToHistory");
+    // Função obsoleta
 };
 
 /**
@@ -22,10 +22,10 @@ export const loadGameHistory = async () => {
     try {
         const storedHistory = localStorage.getItem(HISTORY_STORAGE_KEY);
         const history = storedHistory ? JSON.parse(storedHistory) : [];
-        console.log("Histórico de jogos carregado do localStorage:", history);
+        // Histórico carregado
         return history;
     } catch (error) {
-        console.error("Erro ao carregar histórico de jogos do localStorage: ", error);
+        // Log removido
         return [];
     }
 };

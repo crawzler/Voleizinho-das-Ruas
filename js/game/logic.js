@@ -88,8 +88,8 @@ export function setGameState(state, { resumeTimers = true } = {}) {
     updateTimerDisplay(timeElapsed);
     updateSetTimerDisplay(setElapsedTime);
     updateTeamDisplayNamesAndColors(activeTeam1Name, activeTeam2Name, activeTeam1Color, activeTeam2Color);
-    const displayPlayers = true;
-    const shouldDisplayPlayers = displayPlayers && (currentTeam1.length > 0 || currentTeam2.length > 0);
+    const config = loadConfig();
+    const shouldDisplayPlayers = config.displayPlayers ?? true;
     renderScoringPagePlayers(currentTeam1, currentTeam2, shouldDisplayPlayers);
     updateNavScoringButton(isGameInProgress, isGameInProgress ? 'scoring-page' : '');
 
@@ -114,7 +114,7 @@ export function setGameState(state, { resumeTimers = true } = {}) {
                 try { 
                     salvarEstado(getGameState());
                 } catch(e) {
-                    console.error('[autoSave] Erro ao salvar estado:', e);
+                    // Log removido
                 }
             }
         }, 10000);
@@ -125,25 +125,25 @@ export function restoreSavedGameIfAny() {
     try {
         const saved = carregarEstado();
         if (saved && saved.isGameInProgress) {
-            console.log('[restoreSavedGameIfAny] Restaurando partida salva:', saved);
+            // Log removido
             setGameState(saved, { resumeTimers: true });
             setGameStartedExplicitly(true);
             showPage('scoring-page');
             return true;
         }
     } catch (e) {
-        console.error('[restoreSavedGameIfAny] Erro ao restaurar partida:', e);
+        // Log removido
     }
     
     // Sempre tentar restaurar times gerados, mesmo sem partida ativa
     try {
         const savedTeams = carregarTimesGerados();
         if (savedTeams && savedTeams.length > 0) {
-            console.log('[restoreSavedGameIfAny] Restaurando times gerados:', savedTeams);
+            // Log removido
             allGeneratedTeams = savedTeams;
         }
     } catch (e) {
-        console.error('[restoreSavedGameIfAny] Erro ao restaurar times gerados:', e);
+        // Log removido
     }
     
     return false;
@@ -416,8 +416,7 @@ export function swapTeams() {
     updateTeamDisplayNamesAndColors(activeTeam1Name, activeTeam2Name, activeTeam1Color, activeTeam2Color);
     updateSetsDisplay(team1Sets, team2Sets);
     const config = loadConfig();
-    // Condição para exibir jogadores: config.displayPlayers E (time1 ou time2 tem jogadores)
-    const shouldDisplayPlayers = (config.displayPlayers ?? true) && (currentTeam1.length > 0 || currentTeam2.length > 0);
+    const shouldDisplayPlayers = config.displayPlayers ?? true;
     renderScoringPagePlayers(currentTeam1, currentTeam2, shouldDisplayPlayers);
     // Persistir estado
     try { salvarEstado(getGameState()); } catch(e) {}
@@ -440,7 +439,7 @@ export function startGame(appId) {
     setGameStartedExplicitly(true);
 
     if (allGeneratedTeams && allGeneratedTeams.length >= 2) {
-        console.log('[startGame] Usando times gerados para a partida.');
+        // Log removido
         currentTeam1Index = 0;
         currentTeam2Index = 1;
         
@@ -458,7 +457,7 @@ export function startGame(appId) {
         activeTeam2Color = team2ConfigColor || '#f03737';
 
     } else {
-        console.log('[startGame] Nenhum time gerado suficiente. Iniciando partida sem jogadores visíveis.');
+        // Log removido
         currentTeam1 = [];
         currentTeam2 = [];
         currentTeam1Index = -1;
@@ -471,8 +470,7 @@ export function startGame(appId) {
     }
 
     updateTeamDisplayNamesAndColors(activeTeam1Name, activeTeam2Name, activeTeam1Color, activeTeam2Color);
-    // Condição para exibir jogadores: displayPlayers E (time1 ou time2 tem jogadores)
-    const shouldDisplayPlayers = displayPlayers && (currentTeam1.length > 0 || currentTeam2.length > 0);
+    const shouldDisplayPlayers = displayPlayers;
     renderScoringPagePlayers(currentTeam1, currentTeam2, shouldDisplayPlayers);
 
     isGameInProgress = true;
@@ -495,7 +493,7 @@ export function startGame(appId) {
             try { 
                 salvarEstado(getGameState());
             } catch(e) {
-                console.error('[autoSave] Erro ao salvar estado:', e);
+                // Log removido
             }
         }
     }, 10000); // Salva a cada 10 segundos
@@ -533,8 +531,7 @@ export function cycleTeam(teamPanel) {
     }
 
     updateTeamDisplayNamesAndColors(activeTeam1Name, activeTeam2Name, activeTeam1Color, activeTeam2Color);
-    // Condição para exibir jogadores: displayPlayers E (time1 ou time2 tem jogadores)
-    const shouldDisplayPlayers = displayPlayers && (currentTeam1.length > 0 || currentTeam2.length > 0);
+    const shouldDisplayPlayers = displayPlayers;
     renderScoringPagePlayers(currentTeam1, currentTeam2, shouldDisplayPlayers);
 }
 
@@ -594,7 +591,7 @@ export function getActiveTeam2Color() {
 export function setAllGeneratedTeams(teams) {
     allGeneratedTeams = teams;
     salvarTimesGerados(teams);
-    console.log('[setAllGeneratedTeams] Times gerados definidos e salvos:', allGeneratedTeams);
+    // Log removido
 }
 
 /**
@@ -748,9 +745,9 @@ window.addEventListener('beforeunload', () => {
         try { 
             const state = getGameState();
             salvarEstado(state);
-            console.log('[beforeunload] Estado da partida salvo:', state);
+            // Log removido
         } catch (e) {
-            console.error('[beforeunload] Erro ao salvar estado:', e);
+            // Log removido
         }
     }
 });
@@ -761,9 +758,9 @@ window.addEventListener('pagehide', () => {
         try { 
             const state = getGameState();
             salvarEstado(state);
-            console.log('[pagehide] Estado da partida salvo:', state);
+            // Log removido
         } catch (e) {
-            console.error('[pagehide] Erro ao salvar estado:', e);
+            // Log removido
         }
     }
 });
@@ -774,9 +771,9 @@ document.addEventListener('visibilitychange', () => {
         try { 
             const state = getGameState();
             salvarEstado(state);
-            console.log('[visibilitychange] Estado da partida salvo:', state);
+            // Log removido
         } catch (e) {
-            console.error('[visibilitychange] Erro ao salvar estado:', e);
+            // Log removido
         }
     }
 });
