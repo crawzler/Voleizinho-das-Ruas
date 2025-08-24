@@ -78,6 +78,7 @@ export const numberOfSetsInput = () => document.getElementById('number-of-sets')
 export const darkModeToggle = () => document.getElementById('dark-mode-toggle');
 export const vibrationToggle = () => document.getElementById('vibration-toggle');
 export const displayPlayersToggle = () => document.getElementById('display-players-toggle');
+export const displayTimerToggle = () => document.getElementById('display-timer-toggle');
 // NOVO: Toggle para exibir Status de Conexão
 export const showConnectionStatusToggle = () => document.getElementById('show-connection-status-toggle');
 // NOVO: Toggle para notificações

@@ -9,16 +9,27 @@ class PWAManager {
     }
 
     init() {
-        this.checkInstallStatus();
-        this.setupInstallPrompt();
-        this.setupIconUpdate();
+        // Aguarda um pouco para garantir que o DOM esteja pronto
+        setTimeout(() => {
+            this.checkInstallStatus();
+            this.setupInstallPrompt();
+            this.setupIconUpdate();
+        }, 100);
     }
 
     // Verifica se o app já está instalado
     checkInstallStatus() {
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
         const isIosStandalone = window.navigator.standalone === true;
-        this.isInstalled = isStandalone || isIosStandalone;
+        const isInWebApk = window.matchMedia('(display-mode: minimal-ui)').matches;
+        const wasInstalled = localStorage.getItem('pwa-was-installed') === 'true';
+        
+        this.isInstalled = isStandalone || isIosStandalone || isInWebApk || wasInstalled;
+        
+        // Se detectar que está instalado, salva no localStorage
+        if (this.isInstalled && !wasInstalled) {
+            localStorage.setItem('pwa-was-installed', 'true');
+        }
     }
 
     // Configura o prompt de instalação
@@ -27,11 +38,15 @@ class PWAManager {
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             this.deferredPrompt = e;
-            setTimeout(() => this.showLoginInstallButton(), 100);
+            // Só mostra o botão se não estiver instalado
+            if (!this.isInstalled) {
+                setTimeout(() => this.showLoginInstallButton(), 100);
+            }
         });
         
-        // Fallback: mostra botão mesmo sem o evento
+        // Fallback: mostra botão mesmo sem o evento, mas só se não estiver instalado
         setTimeout(() => {
+            this.checkInstallStatus(); // Verifica novamente
             if (!this.deferredPrompt && !this.isInstalled) {
                 this.showLoginInstallButton();
             }
@@ -44,6 +59,15 @@ class PWAManager {
             this.hideLoginInstallButton();
             localStorage.setItem('pwa-was-installed', 'true');
         });
+        
+        // Verifica periodicamente se o app foi instalado
+        setInterval(() => {
+            const wasInstalled = this.isInstalled;
+            this.checkInstallStatus();
+            if (!wasInstalled && this.isInstalled) {
+                this.hideLoginInstallButton();
+            }
+        }, 5000);
     }
 
     // Mostra o prompt de instalação
@@ -146,12 +170,33 @@ class PWAManager {
     canShowInstallPrompt() {
         return !this.isInstalled && this.deferredPrompt !== null;
     }
+    
+    // Limpa o estado de instalação (para casos de desinstalação)
+    clearInstallationState() {
+        localStorage.removeItem('pwa-was-installed');
+        this.isInstalled = false;
+        this.checkInstallStatus();
+    }
+    
+    // Força verificação de status (método público)
+    recheckInstallStatus() {
+        this.checkInstallStatus();
+        return this.isInstalled;
+    }
 
     // Mostra botão de instalação na tela de login
     showLoginInstallButton() {
         const loginButton = document.getElementById('install-pwa-login-button');
         
-        if (loginButton && !this.isInstalled) {
+        // Verifica novamente o status de instalação antes de mostrar o botão
+        this.checkInstallStatus();
+        
+        if (loginButton) {
+            if (this.isInstalled) {
+                loginButton.style.display = 'none';
+                return;
+            }
+            
             loginButton.style.display = 'flex';
             
             const newButton = loginButton.cloneNode(true);
@@ -177,5 +222,32 @@ const pwaManager = new PWAManager();
 
 // Exporta para uso global
 window.pwaManager = pwaManager;
+
+// Função de debug para verificar status PWA
+window.debugPWAStatus = () => {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    const isIosStandalone = window.navigator.standalone === true;
+    const isInWebApk = window.matchMedia('(display-mode: minimal-ui)').matches;
+    const wasInstalled = localStorage.getItem('pwa-was-installed') === 'true';
+    
+    console.log('PWA Debug Status:', {
+        isStandalone,
+        isIosStandalone,
+        isInWebApk,
+        wasInstalled,
+        isInstalled: pwaManager.isInstalled,
+        hasDeferredPrompt: !!pwaManager.deferredPrompt,
+        userAgent: navigator.userAgent
+    });
+    
+    return {
+        isStandalone,
+        isIosStandalone,
+        isInWebApk,
+        wasInstalled,
+        isInstalled: pwaManager.isInstalled,
+        hasDeferredPrompt: !!pwaManager.deferredPrompt
+    };
+};
 
 export default pwaManager;

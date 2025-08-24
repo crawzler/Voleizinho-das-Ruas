@@ -1,0 +1,90 @@
+/* Scrollbar visibility behavior: hidden by default, visible while scrolling */
+
+/* WebKit (Chrome, Edge, Safari) - hidden by default */
+body:not(.is-scrolling)::-webkit-scrollbar,
+.app-main-content:not(.is-scrolling)::-webkit-scrollbar,
+.sidebar-menu:not(.is-scrolling)::-webkit-scrollbar,
+.players-list-container:not(.is-scrolling)::-webkit-scrollbar,
+.accordion-content:not(.is-scrolling)::-webkit-scrollbar,
+.select-team-modal-content-wrapper:not(.is-scrolling)::-webkit-scrollbar,
+.team-players-column:not(.is-scrolling)::-webkit-scrollbar,
+.teams-page-layout:not(.is-scrolling)::-webkit-scrollbar,
+.teams-page-layout-sub:not(.is-scrolling)::-webkit-scrollbar,
+#players-page:not(.is-scrolling)::-webkit-scrollbar,
+#teams-page:not(.is-scrolling)::-webkit-scrollbar,
+#history-page:not(.is-scrolling)::-webkit-scrollbar,
+#config-page:not(.is-scrolling)::-webkit-scrollbar,
+#scheduling-page:not(.is-scrolling)::-webkit-scrollbar,
+.scheduling-container:not(.is-scrolling)::-webkit-scrollbar,
+.tab-content:not(.is-scrolling)::-webkit-scrollbar,
+.schedule-modal-content:not(.is-scrolling)::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* WebKit - while scrolling, show a thin scrollbar */
+body.is-scrolling::-webkit-scrollbar,
+.app-main-content.is-scrolling::-webkit-scrollbar,
+.sidebar-menu.is-scrolling::-webkit-scrollbar,
+.players-list-container.is-scrolling::-webkit-scrollbar,
+.accordion-content.is-scrolling::-webkit-scrollbar,
+.select-team-modal-content-wrapper.is-scrolling::-webkit-scrollbar,
+.team-players-column.is-scrolling::-webkit-scrollbar,
+.teams-page-layout.is-scrolling::-webkit-scrollbar,
+.teams-page-layout-sub.is-scrolling::-webkit-scrollbar,
+#players-page.is-scrolling::-webkit-scrollbar,
+#teams-page.is-scrolling::-webkit-scrollbar,
+#history-page.is-scrolling::-webkit-scrollbar,
+#config-page.is-scrolling::-webkit-scrollbar,
+#scheduling-page.is-scrolling::-webkit-scrollbar,
+.scheduling-container.is-scrolling::-webkit-scrollbar,
+.tab-content.is-scrolling::-webkit-scrollbar,
+.schedule-modal-content.is-scrolling::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+/* Thumb and track (inherits colors already set in style.css) */
+/* No need to redefine here; existing styles will apply when width > 0 */
+
+/* Firefox - hidden by default */
+body:not(.is-scrolling),
+.app-main-content:not(.is-scrolling),
+.sidebar-menu:not(.is-scrolling),
+.players-list-container:not(.is-scrolling),
+.accordion-content:not(.is-scrolling),
+.select-team-modal-content-wrapper:not(.is-scrolling),
+.team-players-column:not(.is-scrolling),
+.teams-page-layout:not(.is-scrolling),
+.teams-page-layout-sub:not(.is-scrolling),
+#players-page:not(.is-scrolling),
+#teams-page:not(.is-scrolling),
+#history-page:not(.is-scrolling),
+#config-page:not(.is-scrolling),
+#scheduling-page:not(.is-scrolling),
+.scheduling-container:not(.is-scrolling),
+.tab-content:not(.is-scrolling),
+.schedule-modal-content:not(.is-scrolling) {
+  scrollbar-width: none;
+}
+
+/* Firefox - while scrolling */
+body.is-scrolling,
+.app-main-content.is-scrolling,
+.sidebar-menu.is-scrolling,
+.players-list-container.is-scrolling,
+.accordion-content.is-scrolling,
+.select-team-modal-content-wrapper.is-scrolling,
+.team-players-column.is-scrolling,
+.teams-page-layout.is-scrolling,
+.teams-page-layout-sub.is-scrolling,
+#players-page.is-scrolling,
+#teams-page.is-scrolling,
+#history-page.is-scrolling,
+#config-page.is-scrolling,
+#scheduling-page.is-scrolling,
+.scheduling-container.is-scrolling,
+.tab-content.is-scrolling,
+.schedule-modal-content.is-scrolling {
+  scrollbar-width: thin;
+}

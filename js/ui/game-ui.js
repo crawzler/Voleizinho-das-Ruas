@@ -234,6 +234,32 @@ export function renderTeams(teams) {
         teamTitle.textContent = teamDisplayName;
         teamCard.appendChild(teamTitle);
 
+        // NOVO: Ícone para preencher vagas do time (canto superior direito)
+        const hasVacancy = team.players.some(p => typeof p === 'string' && p.startsWith('[Vaga'));
+        if (hasVacancy) {
+            if (!teamCard.style.position) teamCard.style.position = 'relative';
+            const fillBtn = document.createElement('button');
+            fillBtn.className = 'fill-team-button';
+            fillBtn.title = 'Preencher vagas com jogadores aleatórios';
+            fillBtn.innerHTML = '<span class="material-icons">group_add</span>';
+            fillBtn.style.position = 'absolute';
+            fillBtn.style.top = '8px';
+            fillBtn.style.right = '8px';
+            fillBtn.style.border = 'none';
+            fillBtn.style.background = 'transparent';
+            fillBtn.style.cursor = 'pointer';
+            fillBtn.style.padding = '4px';
+            fillBtn.style.borderRadius = '6px';
+            fillBtn.style.color = '#666';
+            fillBtn.addEventListener('mouseenter', () => { fillBtn.style.background = 'rgba(0,0,0,0.08)'; });
+            fillBtn.addEventListener('mouseleave', () => { fillBtn.style.background = 'transparent'; });
+            fillBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openOpponentSelect(index);
+            });
+            teamCard.appendChild(fillBtn);
+        }
+
         const teamList = document.createElement('ul');
         teamList.className = 'team-card-list';
         team.players.forEach((player, playerIndex) => {
@@ -402,7 +428,8 @@ window.showSubstituteOptions = function(event, teamIndex, playerIndex, currentPl
     
     const closeBtn = document.createElement('button');
     closeBtn.className = 'substitute-modal-close';
-    closeBtn.innerHTML = '×';
+    closeBtn.setAttribute('aria-label', 'Fechar');
+    closeBtn.innerHTML = '<span class="material-icons">close</span>';
     closeBtn.onclick = () => modal.remove();
     
     header.appendChild(title);
@@ -687,4 +714,175 @@ function autoSelectPlayerInUI(playerName) {
             }
         }
     }).catch(() => {});
+}
+
+// NOVO: Selecionar adversário e preencher vagas com jogadores aleatórios
+function openOpponentSelect(currentTeamIndex) {
+    import('../game/logic.js').then(({ getAllGeneratedTeams }) => {
+        const teams = getAllGeneratedTeams();
+        if (!teams || teams.length < 2) return;
+
+        const existing = document.querySelector('.opponent-select-modal');
+        if (existing) existing.remove();
+
+        const modal = document.createElement('div');
+        modal.className = 'opponent-select-modal substitute-modal';
+
+        const content = document.createElement('div');
+        content.className = 'substitute-modal-content';
+
+        const header = document.createElement('div');
+        header.className = 'substitute-modal-header';
+        const title = document.createElement('h3');
+        title.className = 'substitute-modal-title';
+        title.textContent = 'Selecionar adversário';
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'substitute-modal-close';
+        closeBtn.innerHTML = '<span class="material-icons">close</span>';
+        closeBtn.onclick = () => modal.remove();
+        header.appendChild(title);
+        header.appendChild(closeBtn);
+
+        const helperText = document.createElement('p');
+        helperText.style.margin = '0 0 8px 0';
+        helperText.style.fontSize = '0.9rem';
+        helperText.style.opacity = '0.8';
+        helperText.textContent = 'Selecione os o time adiversário, para que possa preencher o time com jogadores aleatórios disponíveis.';
+
+        const list = document.createElement('div');
+        list.className = 'substitute-players-list';
+
+        const footer = document.createElement('div');
+        footer.style.display = 'flex';
+        footer.style.justifyContent = 'flex-end';
+        footer.style.gap = '8px';
+        footer.style.marginTop = '8px';
+
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'button button--primary';
+        confirmBtn.textContent = 'Confirmar preenchimento';
+        confirmBtn.disabled = true;
+
+        let selectedIdx = null;
+
+        const config = loadConfig();
+        const defaultColors = ['#325fda', '#f03737', '#28a745', '#ffc107', '#6f42c1', '#17a2b8'];
+
+        teams.forEach((t, idx) => {
+            if (idx === currentTeamIndex) return;
+            const item = document.createElement('div');
+            item.className = 'substitute-player-item';
+
+            const name = document.createElement('span');
+            name.className = 'substitute-player-name';
+            const teamNameKey = `customTeam${idx + 1}Name`;
+            const teamColorKey = `customTeam${idx + 1}Color`;
+            const nameText = config[teamNameKey] || `Time ${idx + 1}`;
+            const color = config[teamColorKey] || defaultColors[idx] || '#6c757d';
+            name.textContent = nameText;
+
+            const status = document.createElement('span');
+            status.className = 'substitute-player-status status-in-team';
+            status.textContent = 'Adversário';
+            status.style.setProperty('--team-color', color);
+
+            item.appendChild(name);
+            item.appendChild(status);
+            item.onclick = () => {
+                selectedIdx = idx;
+                confirmBtn.disabled = false;
+                // marca visualmente selecionado
+                list.querySelectorAll('.substitute-player-item.selected')?.forEach(el => el.classList.remove('selected'));
+                item.classList.add('selected');
+            };
+
+            list.appendChild(item);
+        });
+
+        confirmBtn.onclick = () => {
+            if (selectedIdx === null) return;
+            fillTeamFromOthers(currentTeamIndex, selectedIdx);
+            modal.remove();
+        };
+
+        footer.appendChild(confirmBtn);
+
+        content.appendChild(header);
+        content.appendChild(helperText);
+        content.appendChild(list);
+        content.appendChild(footer);
+        modal.appendChild(content);
+        document.body.appendChild(modal);
+
+        modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+    });
+}
+
+function fillTeamFromOthers(currentTeamIndex, opponentIndex) {
+    import('../game/logic.js').then(({ getAllGeneratedTeams, setAllGeneratedTeams }) => {
+        import('../utils/helpers.js').then(({ salvarTimesGerados, shuffleArray }) => {
+            import('./messages.js').then(({ displayMessage }) => {
+                const teams = getAllGeneratedTeams();
+                if (!teams || teams.length === 0) return;
+
+                const currentTeam = teams[currentTeamIndex];
+                const vacancies = [];
+                for (let i = 0; i < currentTeam.players.length; i++) {
+                    if (typeof currentTeam.players[i] === 'string' && currentTeam.players[i].startsWith('[Vaga')) {
+                        vacancies.push(i);
+                    }
+                }
+                if (vacancies.length === 0) {
+                    displayMessage('Este time não possui vagas.', 'info');
+                    return;
+                }
+
+                // Coletar candidatos de outros times (exclui atual e adversário), como pares {name, teamIndex, playerIndex}
+                const pool = [];
+                for (let t = 0; t < teams.length; t++) {
+                    if (t === currentTeamIndex || t === opponentIndex) continue;
+                    for (let p = 0; p < teams[t].players.length; p++) {
+                        const name = teams[t].players[p];
+                        if (typeof name === 'string' && !name.startsWith('[Vaga')) {
+                            pool.push({ name, teamIndex: t, playerIndex: p });
+                        }
+                    }
+                }
+
+                if (pool.length === 0) {
+                    displayMessage('Não há jogadores disponíveis nos outros times.', 'warning');
+                    return;
+                }
+
+                // Embaralhar a pool para garantir aleatoriedade real
+                try { shuffleArray(pool); } catch (_) {
+                    for (let i = pool.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [pool[i], pool[j]] = [pool[j], pool[i]];
+                    }
+                }
+
+                let filled = 0;
+                let poolIdx = 0;
+                for (let i = 0; i < vacancies.length && poolIdx < pool.length; i++) {
+                    const slotIndex = vacancies[i];
+                    const cand = pool[poolIdx++];
+                    // Remove do time de origem e abre vaga
+                    teams[cand.teamIndex].players[cand.playerIndex] = `[Vaga ${cand.playerIndex + 1}]`;
+                    // Adiciona no time atual
+                    currentTeam.players[slotIndex] = cand.name;
+                    filled++;
+                }
+
+                if (filled > 0) {
+                    setAllGeneratedTeams(teams);
+                    salvarTimesGerados(teams);
+                    renderTeams(teams);
+                    displayMessage(`${filled} vaga(s) preenchida(s) com jogadores aleatórios!`, 'success');
+                } else {
+                    displayMessage('Não foi possível preencher as vagas.', 'warning');
+                }
+            });
+        });
+    });
 }

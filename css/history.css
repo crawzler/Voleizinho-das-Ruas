@@ -1,282 +1,252 @@
-/* css/history.css - atualizado para usar variáveis de tema e garantir contraste nos modos claro/escuro */
+/* css/history.css – Histórico em Timeline vertical minimalista (sem cards)
+   + Redesign completo do conteúdo expandido (match-info.active)
+   - Mantém estrutura e eventos do JS
+*/
 
+/* =========================
+   Cabeçalho e controles
+   ========================= */
+.history-header { padding: 0; }
+.history-header-content { margin: 0 auto; padding: 0.5rem 0 0.25rem; text-align: center; }
+.history-title-row { display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+.history-heading { margin: 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.01em; color: var(--text-primary); }
+.history-subtitle { margin: 0.15rem 0 0; color: var(--text-secondary); font-size: 0.9rem; }
+
+.history-controls { display: grid; grid-template-columns: 1fr; gap: 0.5rem; margin: 0.5rem auto 0; }
+.filter-chips { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
+.chip { background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-secondary); border-radius: 9999px; padding: 6px 10px; font-size: 0.8rem; }
+.chip.active { background: var(--accent-primary); color: #fff; border-color: transparent; }
+
+.history-summary { width: 100%; padding: 0; }
+.history-stats { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; justify-content: flex-end; padding: 1rem 0 0 0}
+.stat-badge { background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border-color); padding: 3px 8px; border-radius: 9999px; font-size: 0.75rem; }
+.stat-badge.win { color: #16a34a; border-color: #16a34a33; background: #16a34a11; }
+.stat-badge.loss { color: #dc2626; border-color: #dc262633; background: #dc262611; }
+
+/* =========================
+   Timeline container (espinha e nós)
+   ========================= */
 .history-list-container {
-    width: 100%;
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  margin: 0.5rem auto 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0 0 0 2rem; /* espaço para espinha e nó */
+}
+.history-list-container::before { /* espinha */
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border-color);
 }
 
+/* Data como marcador */
+.timeline-group-header {
+  position: relative;
+  color: var(--text-secondary);
+  font-weight: 800;
+  font-size: 0.85rem;
+  letter-spacing: 0.03em;
+  margin: 1.1rem 0 0.35rem;  
+  padding-left: 4px;
+}
+.timeline-group-header::before {
+  content: '';
+  position: absolute;
+  left: -21px;
+  top: 0.65em;
+  translate: -50% -50%;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--bg-primary);
+  border: 2px solid var(--border-color);
+  box-shadow: 0 0 0 3px var(--bg-primary);
+}
+
+/* =========================
+   Item da timeline (sem card)
+   ========================= */
 .match-history-card {
-    background-color: var(--bg-card);
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    box-shadow: var(--shadow-medium);
-    overflow: hidden;
-    color: var(--text-primary);
-    font-family: 'Inter', sans-serif;
-    width: 100%;
-    border: 1px solid var(--border-color);
+  position: relative;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  margin: 0;
+  padding: 0 0 6px;
+}
+.match-history-card + .match-history-card { border-top: 1px dashed var(--border-color); }
+
+/* Nó do item */
+.match-history-card .date-time-info::before {
+  content: '';
+  position: absolute;
+  left: -21px;
+  top: 50%;
+  translate: -50% -50%;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--bg-primary);
+  border: 2px solid var(--accent-primary);
 }
 
-.match-history-header {
-    font-size: 1.225rem;
-}
-
-.team-winner {
-    color: var(--accent-warning);
-    font-weight: 600;
-}
-
+/* =========================
+   Linha principal (gatilho accordion)
+   ========================= */
 .date-time-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    padding: 1rem;
-    background-color: var(--bg-secondary);
-    color: var(--text-primary);
-    border: none;
-    cursor: pointer;
-    font-size: 1.125rem;
-    font-weight: 600;
-    transition: background-color 0.3s ease;
-    outline: none;
-    -webkit-tap-highlight-color: transparent;
+  position: relative;
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px;
+  width: 100%;
+  padding: 10px 8px 10px 4px;
+  background: transparent;
+  color: var(--text-primary);
+  border: none;
+  cursor: pointer; font-size: 1rem; font-weight: 800;
+  transition: background-color 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
 }
+.date-time-info:hover { background: var(--bg-secondary); }
+.match-history-header { display: inline-flex; align-items: baseline; gap: 8px; font-variation-settings: 'wght' 800; letter-spacing: -0.01em; }
+.team-winner { color: var(--accent-warning); font-weight: 900; }
+.match-date { display: flex; align-items: center; gap: 8px; }
+.match-date-span { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.05; }
+.match-date-value, .match-time-value { font-size: 0.78rem; color: var(--text-secondary); }
+.match-expand-icon { color: var(--text-secondary); transition: transform .18s ease, color .18s ease; }
+.date-time-info.active .match-expand-icon { transform: rotate(180deg); color: var(--accent-primary); }
 
-.date-time-info:hover {
-    background-color: var(--bg-tertiary);
-}
-
-.match-date span {
-    color: var(--text-muted);
-    font-size: 0.75rem;
-    font-weight: 100;
-}
-
-.delete-match-button {
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    padding: 4px;
-    box-shadow: none;
-}
-
-.delete-match-button:hover {
-    color: var(--accent-danger);
-}
-
+/* =========================
+   Gaveta de detalhes – NOVO LAYOUT
+   ========================= */
 .match-info {
-    display: grid;
-    grid-template-columns: 1fr;
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease-out;
-    color: var(--text-secondary);
-    overflow-y: auto;
-    overscroll-behavior-y: auto;
-    padding: 0px 20px;
-    border-top: 1px solid var(--border-color);
-    background-color: var(--bg-secondary);
-}
+  display: grid; /* reordena meta no topo e conteúdo abaixo */
+  grid-template-areas: 'meta' 'content';
+  grid-auto-rows: auto;
+  row-gap: 10px;
 
+  max-height: 0; overflow: hidden;
+  transition: max-height .26s ease, padding .18s ease, background .16s ease, border-color .18s ease;
+  color: var(--text-secondary);
+  background: transparent;
+  padding: 0; /* ativado no estado ativo */
+  margin-left: 8px; /* alinhamento à espinha */
+  border-left: 2px solid transparent;
+}
 .match-info.active {
-    min-height: 50px;
-    max-height: 2000px; /* Valor alto para garantir que todo o conteúdo seja exibido */
+  max-height: 1400px;
+  padding: 6px 0 8px 0;
+  border-left-color: var(--border-color);
 }
 
-.match-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.match-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-.match-date {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-}
-
-.match-date-span {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-}
-
-.match-date-value, .match-time-value {
-    font-size: 0.9rem;
-    color: var(--text-muted);
-}
-
-.match-expand-icon {
-    margin-left: 8px;
-    color: var(--text-muted);
-    transition: transform 0.3s ease;
-}
-
-.date-time-info.active .match-expand-icon {
-    transform: rotate(180deg);
-}
-
-.match-content {
-    display: grid;
-    grid-template-columns: 3fr 2fr 6%;
-    gap: 16px;
-    margin-top: 16px;
-}
-
-.match-section {
-    display: flex;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 16px;
-    flex-direction: column;
-    align-items: stretch;
-    width: 100%;
-}
-
-.match-section li {
-    margin-bottom: 5px;
-}
-
-.section-title {
-    text-align: center;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 10px 0px;
-    padding-bottom: 5px;
-    border-bottom: 1px dashed var(--border-light);
-}
-
-.section-title .material-icons {
-    font-size: 1.2rem;
-    vertical-align: middle;
-}
-
-.players-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-}
-
-.team-players {
-    width: 100%;
-}
-
-.team-players h5 {
-    margin: 0 0 8px 0;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-}
-
-.team-players ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.team-players li {
-    color: var(--text-secondary);
-}
-
-.winner-team h5,
-.winner-team li,
-.winner-score {
-    color: var(--accent-warning) !important;
-}
-
-.sets-container {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.set-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-}
-
-.set-number {
-    font-weight: 600;
-    margin-right: 8px;
-    min-width: 40px;
-}
-
-.set-score {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.set-times-container {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.set-time-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-}
-
-.set-time {
-    display: flex;
-    align-items: center;
-    color: var(--text-muted);
-    font-size: 0.9rem;
-}
-
-.set-time .material-icons {
-    font-size: 1.1rem;
-    margin-right: 4px;
-}
-
+/* Barra de meta (agora no topo) */
 .match-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 16px;
-    background-color: var(--bg-tertiary);
-    border-top: 1px solid var(--border-color);
+  grid-area: meta;
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+.match-location, .match-duration { display: inline-flex; align-items: center; gap: 6px; color: var(--text-secondary); font-size: 0.9rem; }
+.match-location .material-icons, .match-duration .material-icons { font-size: 1rem; opacity: .9; }
+.delete-match-button {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  cursor: pointer; padding: 6px; border-radius: 8px; margin-left: 10px;
+  transition: background .12s ease, color .12s ease, border-color .12s ease, transform .08s ease;
+}
+.delete-match-button:hover { background: var(--bg-secondary); color: var(--text-primary); border-color: var(--border-dark); }
+.delete-match-button:active { transform: scale(0.98); }
+
+/* Conteúdo interno: três painéis limpos */
+.match-content {
+  grid-area: content;
+  display: grid; grid-template-columns: 1.8fr 1.2fr 0.9fr; gap: 12px;
 }
 
-.match-location, .match-duration {
-    display: flex;
-    align-items: center;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
+/* Painel base comum */
+.match-section {
+  display: flex; flex-direction: column; gap: 10px; min-width: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 10px;
+}
+.section-title {
+  margin: 0; padding: 0 0 8px; text-align: left;
+  font-size: 0.9rem; font-weight: 800; color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+.section-title .material-icons { font-size: 1rem; vertical-align: middle; }
+
+/* Jogadores – rótulos, chips consistentes e vencedor marcado */
+.players-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.team-players { position: relative; padding-top: 20px; }
+.team-a-players::before,
+.team-b-players::before {
+  position: absolute; top: 0; left: 0;
+  color: var(--text-secondary); font-size: 0.75rem; font-weight: 700;
+}
+.team-a-players::before { content: 'Time A'; }
+.team-b-players::before { content: 'Time B'; }
+
+.team-players ul { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.team-players li {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 999px; padding: 6px 10px; font-size: 0.8rem; white-space: nowrap;
+}
+/* Marca vencedor com tag */
+.winner-team { border: 1px dashed rgba(255, 193, 7, 0.55); border-radius: 10px; padding: 8px; }
+.winner-team::after {
+  content: 'Vencedor';
+  display: inline-block; margin-left: 6px;
+  background: rgba(255, 193, 7, 0.18);
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 193, 7, 0.45);
+  border-radius: 999px; padding: 2px 8px; font-size: 0.7rem; font-weight: 800;
 }
 
-.match-location .material-icons, .match-duration .material-icons {
-    font-size: 1.1rem;
-    margin-right: 6px;
+/* Sets – linhas limpas com badges */
+.sets-container { display: flex; flex-direction: column; gap: 8px; }
+.set-item { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 8px; }
+.set-number {
+  font-weight: 900; color: var(--text-secondary); min-width: 36px; text-align: center;
+  background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 999px; padding: 4px 8px; font-size: 0.8rem;
+}
+.set-score { display: inline-flex; align-items: center; gap: 8px; }
+.set-score > span { display: inline-flex; align-items: center; gap: 6px; }
+.set-score span:not(.winner-score) {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 10px; padding: 6px 10px; font-weight: 800; font-size: 0.85rem;
+}
+.winner-score {
+  background: rgba(255, 193, 7, 0.18);
+  border: 1px solid rgba(255, 193, 7, 0.45);
+  color: var(--text-primary);
+  border-radius: 10px; padding: 6px 10px; font-weight: 900; font-size: 0.85rem;
 }
 
-/* Responsividade */
-@media (max-width: 600px) {
-    /* Ajuste para a segunda linha no modo retrato */
-    .match-content {
-        display: grid;
-        grid-template-columns: 1fr 40px;
-    }
-    
-    .match-section:nth-child(1) {
-        grid-column: 1 / span 2;
-    }
-    
-    .match-section:nth-child(2), 
-    .match-section:nth-child(3) {
-        grid-row: 2;
-    }
-    
-    .match-section li {
-        text-align: center;
-    }
+/* Tempos – chips monospace */
+.set-times-container { display: flex; flex-direction: column; gap: 8px; }
+.set-time-item { display: flex; align-items: center; gap: 8px; }
+.set-time {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--text-secondary); font-size: 0.85rem; font-variant-numeric: tabular-nums;
+  background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 6px 10px;
 }
+.set-time .material-icons { font-size: 0.95rem; color: var(--text-secondary); }
+
+/* Estado vazio */
+.empty-list-message {
+  text-align: center; color: var(--text-muted); padding: 1.25rem; font-style: italic;
+  background: var(--bg-secondary); border-radius: 8px; border: 1px dashed var(--border-color);
+}
+

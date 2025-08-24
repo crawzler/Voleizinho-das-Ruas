@@ -7,6 +7,7 @@ import { showConfirmationModal } from './pages.js'; // Importa o modal de confir
 import * as SchedulesData from '../data/schedules.js';
 import { getCurrentUser } from '../firebase/auth.js';
 import { notifyNewSchedule, notifyCancelledSchedule, areNotificationsEnabled } from '../utils/notifications.js';
+import { initSchedulingAnimations, enhanceHoverEffects, setupLoadingAnimations } from './scheduling-animations.js';
 
 const SCHEDULES_STORAGE_KEY = 'voleiScoreSchedules';
 
@@ -55,6 +56,17 @@ function disableTouchMoveBlocker() {
     _touchMoveBlocker = null;
     document.documentElement.style.overflow = '';
     document.body.style.overflow = '';
+}
+
+// Fecha o modal de agendamento com restauração do scroll/touch
+function closeScheduleModal() {
+    const modal = document.getElementById('schedule-modal');
+    if (!modal) return;
+    modal.style.display = 'none';
+    modal.style.visibility = 'hidden';
+    modal.style.opacity = '0';
+    unlockBodyScroll();
+    disableTouchMoveBlocker();
 }
 
 /**
@@ -301,24 +313,37 @@ function createGameCard(game) {
     const config = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
     let canDelete = config.adminKey === 'admin998939';
 
-    // Cria o HTML do card diretamente
+    // Cria o HTML do card igual admin-action
     card.innerHTML = `
-        <div class="card-actions">
-            ${game.status === 'upcoming' ? `<button class="cancel-game-button card-action-button" title="Cancelar Jogo"><span class="material-icons">cancel</span></button>` : ''}
-        </div>
         <div class="card-content">
-            <h3>${statusTitle}</h3>
-            <p><span class="material-icons">event</span> ${formattedDate}</p>
-            <p><span class="material-icons">schedule</span> ${game.startTime} ${game.endTime ? `- ${game.endTime}` : ''}</p>
-            ${game.notes ? `<p><span class="material-icons">notes</span> ${game.notes}</p>` : ''}
-            <p><span class="material-icons">place</span> ${game.location} - <strong>${game.surface || 'Quadra'}</strong></p>
-            ${game.status === 'cancelled' && game.cancelReason ? `<p class="cancel-reason"><span class="material-icons">warning</span> <strong>Motivo do cancelamento:</strong> ${game.cancelReason}</p>` : ''}
-            ${game.paymentProofs && game.paymentProofs.length ? `<button class="proof-button card-action-button" data-game-id='${game.id}' data-proofs-count='${game.paymentProofs.length}'><span class="material-icons">receipt</span> <span>Ver Comprovante</span></button>` : ''}
+            <div class="game-details">
+                <h3>${statusTitle}</h3>
+                <p>
+                    <span class="material-icons">event</span>
+                    ${formattedDate}
+                </p>
+                <p>
+                    <span class="material-icons">schedule</span>
+                    ${game.startTime}${game.endTime ? ` - ${game.endTime}` : ''}
+                </p>
+                <p>
+                    <span class="material-icons">place</span>
+                    ${game.location}
+                </p>
+                <p>
+                    <span class="material-icons">sports_volleyball</span>
+                    ${game.surface || 'Quadra'}
+                </p>
+                ${game.notes ? `<p><span class="material-icons">notes</span>${game.notes}</p>` : ''}
+                ${game.status === 'cancelled' && game.cancelReason ? `<div class="cancel-reason" style="flex-direction: row; align-items: center; gap: 0.5rem;"><span class="material-icons">report_problem</span>Motivo: ${game.cancelReason}</div>` : ''}
+            </div>
         </div>
+        ${canDelete && game.status === 'upcoming' && game.status !== 'cancelled' ? `<button class="card-cancel-x" title="Cancelar"><span class="material-icons">close</span></button>` : ''}
+        ${game.paymentProofs && game.paymentProofs.length ? `<button class="card-proof-btn" data-game-id='${game.id}' data-proofs-count='${game.paymentProofs.length}' title="Ver comprovantes">Comprovantes</button>` : ''}
     `;
     // Attach proofs off-DOM to avoid embedding large base64 strings in attributes
     if (game.paymentProofs && game.paymentProofs.length) {
-        const proofBtn = card.querySelector('.proof-button');
+        const proofBtn = card.querySelector('.card-proof-btn');
         if (proofBtn) {
             // store the array reference directly on the element and in the object by game id
             proofBtn.__proofs = game.paymentProofs;
@@ -346,28 +371,32 @@ function canUserSchedule() {
 function updateFloatingButtonVisibility() {
     const floatingBtn = document.getElementById('floating-add-btn');
     if (floatingBtn) {
-    // Only show the floating button if the user can schedule AND the scheduling
-    // page is currently active. This prevents the button from appearing on other pages
-    // after we ported it to document.body.
-    const schedulingPage = document.getElementById('scheduling-page');
-    const schedulingActive = schedulingPage && schedulingPage.classList.contains('app-page--active');
-    floatingBtn.style.display = (canUserSchedule() && schedulingActive) ? 'flex' : 'none';
+        const schedulingPage = document.getElementById('scheduling-page');
+        const schedulingActive = schedulingPage && schedulingPage.classList.contains('app-page--active');
+        floatingBtn.style.display = (canUserSchedule() && schedulingActive) ? 'flex' : 'none';
     }
 }
 
-// Some containers in the app use CSS transforms which create a new containing block
-// and make `position: fixed` behave like `position: absolute` inside that container.
-// To guarantee the floating button is fixed relative to the viewport, port it to
-// document.body when the scheduling page is initialized.
 function portalFloatingButtonToBody() {
     const floatingBtn = document.getElementById('floating-add-btn');
     if (!floatingBtn) return;
-    if (floatingBtn.parentElement === document.body) return; // already portaled
+    if (floatingBtn.parentElement === document.body) return;
     try {
         document.body.appendChild(floatingBtn);
-        // keep the same display logic
     } catch (e) {
-        // Log removido
+        // ignore
+    }
+}
+
+// Garante que o modal de agendamento não fique dentro de um container rolável
+function portalScheduleModalToBody() {
+    const modal = document.getElementById('schedule-modal');
+    if (!modal) return;
+    if (modal.parentElement === document.body) return;
+    try {
+        document.body.appendChild(modal);
+    } catch (e) {
+        // ignore
     }
 }
 
@@ -381,6 +410,12 @@ export function setupSchedulingPage() {
     setupFileHandling(); // Configura o upload de arquivos
     updateFloatingButtonVisibility(); // Atualiza visibilidade do botão
     portalFloatingButtonToBody(); // move button to body so fixed positioning works
+    portalScheduleModalToBody(); // move modal to body to avoid scroll/container offset issues
+    
+    // Inicializa animações do novo design
+    initSchedulingAnimations();
+    enhanceHoverEffects();
+    setupLoadingAnimations();
 
     const scheduleButton = Elements.scheduleGameButton();
     const pageContainer = Elements.schedulingPage();
@@ -444,11 +479,11 @@ export function setupSchedulingPage() {
                 // Fecha o modal
                 const modal = document.getElementById('schedule-modal');
                 if (modal) {
-                    modal.classList.remove('active');
-                    // unlock body scroll when modal is closed programmatically
-                    // Log removido
-                    try { unlockBodyScroll(); } catch (e) { /* Log removido */ }
-                    try { disableTouchMoveBlocker(); } catch (e) { /* Log removido */ }
+                    modal.style.display = 'none';
+                    modal.style.visibility = 'hidden';
+                    modal.style.opacity = '0';
+                    unlockBodyScroll();
+                    disableTouchMoveBlocker();
                 }
                 
             } catch (err) {
@@ -480,15 +515,15 @@ export function setupSchedulingPage() {
     
     if(pageContainer) {
         pageContainer.addEventListener('click', async (event) => {
-            const button = event.target.closest('.card-action-button');
+            const button = event.target.closest('.card-cancel-x, .card-proof-btn');
             if (!button) return;
             const card = button.closest('.scheduled-game-card');
             if (!card) return;
             const gameId = card.dataset.gameId;
 
-            if (button.classList.contains('cancel-game-button')) {
+            if (button.classList.contains('card-cancel-x')) {
                 showCancelReasonModal(gameId);
-            } else if (button.classList.contains('proof-button')) {
+            } else if (button.classList.contains('card-proof-btn')) {
                 // Usar os comprovantes armazenados no elemento ou no objeto
                 const proofs = button.__proofs || proofsByGameId[gameId];
                 if (proofs && proofs.length) {
@@ -507,25 +542,25 @@ export function setupSchedulingPage() {
 }
 
 /**
- * Configura as abas da página de agendamentos
+ * Configura a navegação da página de agendamentos (igual config)
  */
 function setupTabs() {
-    const tabButtons = document.querySelectorAll('.tab-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
+    const navButtons = document.querySelectorAll('.scheduling-nav-item');
+    const sections = document.querySelectorAll('.scheduling-section');
     
-    tabButtons.forEach(button => {
+    navButtons.forEach(button => {
         button.addEventListener('click', () => {
-            const targetTab = button.dataset.tab;
+            const targetSection = button.dataset.section;
             
-            // Remove active de todos os botões e conteúdos
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            tabContents.forEach(content => content.classList.remove('active'));
+            // Remove active de todos os botões e seções
+            navButtons.forEach(btn => btn.classList.remove('active'));
+            sections.forEach(section => section.classList.remove('active'));
             
             // Adiciona active ao botão clicado
             button.classList.add('active');
             
-            // Mostra o conteúdo correspondente
-            const targetContent = document.getElementById(`${targetTab}-tab`);
+            // Mostra a seção correspondente
+            const targetContent = document.getElementById(targetSection);
             if (targetContent) {
                 targetContent.classList.add('active');
             }
@@ -574,79 +609,63 @@ function setupTabs() {
 function setupModal() {
     const floatingBtn = document.getElementById('floating-add-btn');
     const modal = document.getElementById('schedule-modal');
-    const closeBtn = document.getElementById('close-schedule-modal');
-
-    // uses module-level lockBodyScroll/unlockBodyScroll
     
-    // Abre o modal
-    if (floatingBtn) {
+    // Injeta botão de fechar no header do modal (apenas uma vez)
+    if (modal && !modal.__closeButtonInjected) {
+        const header = modal.querySelector('.modal-header');
+        if (header && !header.querySelector('#close-schedule-modal')) {
+            const btn = document.createElement('button');
+            btn.id = 'close-schedule-modal';
+            btn.className = 'close-modal-btn';
+            btn.title = 'Fechar';
+            btn.innerHTML = '<span class="material-icons">close</span>';
+            header.appendChild(btn);
+            btn.addEventListener('click', closeScheduleModal);
+        } else if (header) {
+            const btn = header.querySelector('#close-schedule-modal');
+            if (btn && !btn.__listenerAdded) {
+                btn.addEventListener('click', closeScheduleModal);
+                btn.__listenerAdded = true;
+            }
+        }
+        modal.__closeButtonInjected = true;
+    }
+
+    // Fecha ao clicar fora (overlay)
+    if (modal && !modal.__overlayListenerAdded) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeScheduleModal();
+            }
+        });
+        modal.__overlayListenerAdded = true;
+    }
+
+    // Abre o modal ao clicar no botão flutuante
+    if (floatingBtn && !floatingBtn.__openListenerAdded) {
         floatingBtn.addEventListener('click', () => {
             if (canUserSchedule()) {
                 if (modal) {
-                    // Portal the modal to document.body so it's positioned relative to the
-                    // viewport and not affected by ancestor transforms/positioning.
-                    if (modal.parentElement !== document.body) {
-                        try {
-                            // save original place to restore later
-                            modal.__origParent = modal.parentElement;
-                            modal.__origNext = modal.nextSibling;
-                            document.body.appendChild(modal);
-                        } catch (e) {
-                            // Log removido
-                        }
-                    }
-
-                    modal.classList.add('active');
-                    // Log removido
+                    modal.style.display = 'flex';
+                    modal.style.opacity = '1';
+                    modal.style.visibility = 'visible';
                     lockBodyScroll();
                     enableTouchMoveBlocker();
                 }
             }
         });
+        floatingBtn.__openListenerAdded = true;
     }
-    
-    // Fecha o modal
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            if (modal) {
-                modal.classList.remove('active');
-                // Log removido
-                // restore modal to original parent if it was portaled
-                if (modal.__origParent) {
-                    try {
-                        modal.__origParent.insertBefore(modal, modal.__origNext || null);
-                        modal.__origParent = null;
-                        modal.__origNext = null;
-                    } catch (e) {
-                        // Log removido
-                    }
-                }
-                unlockBodyScroll();
-                disableTouchMoveBlocker();
+
+    // Fecha com ESC (uma vez)
+    if (modal && !modal.__escListenerAdded) {
+        const escHandler = (e) => {
+            if (e.key === 'Escape' && modal.style.display !== 'none' && modal.style.visibility !== 'hidden') {
+                closeScheduleModal();
             }
-        });
-    }
-    
-    // Fecha o modal clicando fora
-    if (modal) {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.classList.remove('active');
-                // Log removido
-                // restore modal to original parent if it was portaled
-                if (modal.__origParent) {
-                    try {
-                        modal.__origParent.insertBefore(modal, modal.__origNext || null);
-                        modal.__origParent = null;
-                        modal.__origNext = null;
-                    } catch (err) {
-                        // Log removido
-                    }
-                }
-                unlockBodyScroll();
-                disableTouchMoveBlocker();
-            }
-        });
+        };
+        document.addEventListener('keydown', escHandler);
+        modal.__escListenerAdded = true;
     }
 }
 
@@ -780,11 +799,16 @@ function showProofViewer(proofData) {
     
     // Adicionar ou atualizar contador de imagens
     let counter = modal.querySelector('.proof-counter');
+    const headerEl = modal.querySelector('.proof-viewer-header');
     if (!counter) {
         counter = document.createElement('div');
         counter.className = 'proof-counter';
-        const headerEl = modal.querySelector('.proof-viewer-header');
-        if (headerEl) {
+    }
+    if (headerEl) {
+        const closeBtn = headerEl.querySelector('#close-proof-viewer');
+        if (closeBtn) {
+            headerEl.insertBefore(counter, closeBtn);
+        } else {
             headerEl.appendChild(counter);
         }
     }
@@ -1364,12 +1388,22 @@ function showCancelReasonModal(gameId) {
     // Foca no textarea
     setTimeout(() => reasonInput.focus(), 100);
     
-    // Remove listeners anteriores
+    // Remove listeners anteriores (evita múltiplos handlers)
     const newConfirmBtn = confirmBtn.cloneNode(true);
     const newCancelBtn = cancelBtn.cloneNode(true);
     confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
     cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-    
+
+    // Utilitário para fechar e limpar listeners de teclado
+    const escHandler = (e) => {
+        if (e.key === 'Escape') close();
+    };
+    function close() {
+        modal.classList.remove('active');
+        document.removeEventListener('keydown', escHandler);
+    }
+    document.addEventListener('keydown', escHandler);
+
     // Confirmar cancelamento
     newConfirmBtn.addEventListener('click', async () => {
         const reason = reasonInput.value.trim();
@@ -1377,40 +1411,39 @@ function showCancelReasonModal(gameId) {
             displayMessage('Por favor, informe o motivo do cancelamento.', 'error');
             return;
         }
-        
+
         const game = scheduledGames.find(g => g.id === gameId);
         if (game) {
             game.status = 'cancelled';
             game.cancelReason = reason;
             game.cancelledAt = new Date().toISOString();
             saveSchedulesToLocalStorage();
-            
+
             try {
                 await SchedulesData.updateSchedule(game);
                 displayMessage('Jogo cancelado com sucesso.', 'success');
+                close();
             } catch (err) {
                 if (err && err.code === "permission-denied") {
                     displayMessage('Você não tem permissão para cancelar jogos. Apenas administradores podem cancelar.', 'error');
                 } else {
                     displayMessage('Erro ao cancelar jogo. Tente novamente.', 'error');
                 }
+                // Mantém modal aberto para correção do motivo ou tentar novamente
             }
+        } else {
+            displayMessage('Agendamento não encontrado.', 'error');
         }
-        
-        modal.classList.remove('active');
     });
-    
+
     // Cancelar ação
-    newCancelBtn.addEventListener('click', () => {
-        modal.classList.remove('active');
-    });
-    
+    newCancelBtn.addEventListener('click', close);
+
     // Fechar clicando fora
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.classList.remove('active');
-        }
-    });
+    const onOverlayClick = (e) => { if (e.target === modal) close(); };
+    // Evita múltiplos bindings: remove antes de adicionar
+    modal.removeEventListener('click', onOverlayClick);
+    modal.addEventListener('click', onOverlayClick);
 }
 
 // Exporta função para atualizar visibilidade (para ser chamada quando login/logout)

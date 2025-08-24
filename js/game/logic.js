@@ -344,7 +344,8 @@ function checkMatchEnd(setsToWin) {
         team2Sets = 0;
         updateScoreDisplay(team1Score, team2Score);
         updateSetsDisplay(team1Sets, team2Sets);
-        endGame();
+        // Final por pontuação: salva automaticamente sem perguntar
+        endGame({ auto: true });
         return true;
     }
     return false;
@@ -629,7 +630,7 @@ export function setActiveTeam2Color(color) {
 /**
  * Encerra o jogo atual.
  */
-export function endGame() {
+export function endGame(options = {}) {
     if (!isGameInProgress) {
         return;
     }
@@ -662,8 +663,8 @@ export function endGame() {
             location: 'Não informado'
         };
         
-        // Adicionar ao histórico usando a função do history-ui.js que já tem o modal de confirmação
-        addMatchToHistory(matchData);
+        // Adicionar ao histórico: se auto (fim por pontuação), salva silenciosamente
+        addMatchToHistory(matchData, { silent: options && options.auto });
     }
 
     clearInterval(timerInterval);
@@ -676,6 +677,18 @@ export function endGame() {
     setTimerInterval = null;
     isTimerRunning = false;
     isGameInProgress = false;
+
+    // Reset timers and update UI explicitly on game end
+    timeElapsed = 0;
+    setElapsedTime = 0;
+    updateTimerDisplay(timeElapsed);
+    updateSetTimerDisplay(setElapsedTime);
+    // Update timer button icon and hide wrapper
+    updateTimerButtonIcon();
+    if (Elements.timerAndSetTimerWrapper()) {
+        Elements.timerAndSetTimerWrapper().style.display = 'none';
+    }
+
     setGameStartedExplicitly(false);
     showPage('start-page');
     // Limpar estado persistido ao endGame

@@ -121,7 +121,7 @@ export function showNotificationPermissionHelp() {
     </div>
 
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
-      <button id="notif-permission-cancel" class="button" style="padding:10px 14px;border-radius:8px;background:#e5e7eb;">Fechar</button>
+      <button id="notif-permission-cancel" class="button" style="padding:10px 14px;border-radius:8px;">Fechar</button>
       <button id="notif-permission-open-settings" class="button button--primary" style="padding:10px 14px;border-radius:8px;background:#2563EB;color:#fff;">Ativar notificações</button>
     </div>
   `;

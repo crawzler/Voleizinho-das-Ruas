@@ -13,6 +13,11 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/history.css">
     <link rel="stylesheet" href="css/offline-fallback.css">
+    <!-- Sidebar fix overrides -->
+    <link rel="stylesheet" href="css/sidebar-fix.css">
+
+
+    <link rel="stylesheet" href="css/scrollbar-visibility.css">
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" crossorigin="anonymous">
     <link rel="manifest" href="manifest.json">
     
@@ -68,11 +73,11 @@
             <button id="nav-players" class="sidebar-nav-item">
                 <span class="material-icons sidebar-nav-icon">person</span> Jogadores
             </button>
-            <button id="nav-history" class="sidebar-nav-item">
-                <span class="material-icons sidebar-nav-icon">history</span> Histórico
-            </button>
             <button id="nav-scheduling" class="sidebar-nav-item">
                 <span class="material-icons sidebar-nav-icon">calendar_month</span> Agendamentos
+            </button>
+            <button id="nav-history" class="sidebar-nav-item">
+                <span class="material-icons sidebar-nav-icon">history</span> Histórico
             </button>
             <button id="nav-stats" class="sidebar-nav-item">
                 <span class="material-icons sidebar-nav-icon">insights</span> Estatísticas
@@ -213,7 +218,12 @@
 
         <!-- Página de Times -->
         <section id="teams-page" class="app-page teams-page-layout">
-            <h2 class="page-heading">Gerenciar Times</h2>
+            <div class="teams-header">
+                <div class="teams-header-content">
+                    <h1 class="teams-title">Times</h1>
+                    <p class="teams-subtitle">Configure e visualize seus times personalizados</p>
+                </div>
+            </div>
             
             <div class="teams-control-panel">
                 <div class="teams-config-row">
@@ -239,7 +249,12 @@
 
         <!-- Página de Jogadores -->
         <section id="players-page" class="app-page players-page-layout">
-            <h2 class="page-heading">Gerenciar Jogadores</h2>
+            <div class="teams-header">
+                <div class="teams-header-content">
+                    <h1 class="teams-title">Jogadores</h1>
+                    <p class="teams-subtitle">Gerencie seus jogadores por categoria e selecione quem participa</p>
+                </div>
+            </div>
             <div class="players-page-layout-sub">
                 <div class="player-category-tabs">
                     <button id="tab-todos" class="category-tab active" data-category="todos">Todos</button>
@@ -274,176 +289,358 @@
 
         <!-- Página de Configurações -->
         <section id="config-page" class="app-page config-page-layout">
-            <h2 class="page-heading">Configurações</h2>
-            <div class="accordion-container">
-                <div class="accordion-item">
-                    <button class="accordion-header">
-                        <h3>Geral</h3>
-                        <span class="material-icons">expand_more</span>
-                    </button>
-                    <div class="accordion-content">
-                        <div class="accordion-content-sub">
-                            <div class="settings-list">
-                                <div class="setting-item">
-                                    <div class="setting-info">
-                                        <span class="setting-title">Modo Escuro</span>
-                                        <span class="setting-description">Tema escuro para o aplicativo</span>
-                                    </div>
-                                    <label class="switch">
-                                        <input type="checkbox" id="dark-mode-toggle">
-                                        <span class="slider round"></span>
-                                    </label>
-                                </div>
-                                
-                                <div class="setting-item">
-                                    <div class="setting-info">
-                                        <span class="setting-title">Vibração</span>
-                                        <span class="setting-description">Feedback tátil ao marcar pontos</span>
-                                    </div>
-                                    <label class="switch">
-                                        <input type="checkbox" id="vibration-toggle" checked>
-                                        <span class="slider round"></span>
-                                    </label>
-                                </div>
-                                
-                                <div class="setting-item">
-                                    <div class="setting-info">
-                                        <span class="setting-title">Exibir Jogadores</span>
-                                        <span class="setting-description">Mostrar nomes dos jogadores na pontuação</span>
-                                    </div>
-                                    <label class="switch">
-                                        <input type="checkbox" id="display-players-toggle" checked>
-                                        <span class="slider round"></span>
-                                    </label>
-                                </div>
-                                
-                                <div class="setting-item">
-                                    <div class="setting-info">
-                                        <span class="setting-title">Exibir Status</span>
-                                        <span class="setting-description">Indicador de conexão na tela</span>
-                                    </div>
-                                    <label class="switch">
-                                        <input type="checkbox" id="show-connection-status-toggle" checked>
-                                        <span class="slider round"></span>
-                                    </label>
-                                </div>
-                                
-                                <div class="setting-item">
-                                    <div class="setting-info">
-                                        <span class="setting-title">Notificações</span>
-                                        <span class="setting-description">Alertas de novos jogos agendados</span>
-                                    </div>
-                                    <label class="switch">
-                                        <input type="checkbox" id="notifications-toggle">
-                                        <span class="slider round"></span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <!-- CORREÇÃO: Alterado de <div> para <button> para corrigir o bug do accordion -->
-                    <button class="accordion-header">
-                        <h3>Times Personalizados</h3>
-                        <span class="material-icons">expand_more</span>
-                    </button>
-                    <div class="accordion-content">  
-                        <div class="accordion-content-sub-teams">
-                            <div>
-                                <label for="custom-team-1-name" class="form-label">Time 1:</label>
-                                <div class="config-group personalized-teams">
-                                    <input type="text" id="custom-team-1-name" class="form-input" value="Time Personalizado 1">
-                                    <input type="color" id="custom-team-1-color" class="form-input-color" value="#325fda">
-                                </div>
-                            </div>
-                            <div>
-                                <label for="custom-team-2-name" class="form-label">Time 2:</label>                               
-                                <div class="config-group personalized-teams">
-                                    <input type="text" id="custom-team-2-name" class="form-input" value="Time Personalizado 2">
-                                    <input type="color" id="custom-team-2-color" class="form-input-color" value="#f03737">
-                                </div>
-                            </div>
-                            <div>
-                                <label for="custom-team-3-name" class="form-label">Time 3:</label>
-                                <div class="config-group personalized-teams">
-                                    <input type="text" id="custom-team-3-name" class="form-input" value="Time Personalizado 3">
-                                    <input type="color" id="custom-team-3-color" class="form-input-color" value="#4CAF50">
-                                </div>
-                            </div>
-                            <div>
-                                <label for="custom-team-4-name" class="form-label">Time 4:</label>
-                                <div class="config-group personalized-teams">
-                                    <input type="text" id="custom-team-4-name" class="form-input" value="Time Personalizado 4">
-                                    <input type="color" id="custom-team-4-color" class="form-input-color" value="#FFC107">
-                                </div>
-                            </div>
-                            <div>
-                                <label for="custom-team-5-name" class="form-label">Time 5:</label>
-                                <div class="config-group personalized-teams">
-                                    <input type="text" id="custom-team-5-name" class="form-input" value="Time Personalizado 5">
-                                    <input type="color" id="custom-team-5-color" class="form-input-color" value="#9C27B0">
-                                </div>
-                            </div>
-                            <div>
-                                <label for="custom-team-6-name" class="form-label">Time 6:</label>
-                                <div class="config-group personalized-teams">
-                                    <input type="text" id="custom-team-6-name" class="form-input" value="Time Personalizado 6">
-                                    <input type="color" id="custom-team-6-color" class="form-input-color" value="#00BCD4">
-                                </div>
-                            </div>
-                        </div>
+            <div class="config-header">
+                <div class="config-header-content">
+                    <h1 class="config-title">Configurações</h1>
+                    <p class="config-description">Personalize sua experiência no aplicativo</p>
                 </div>
             </div>
-
-                <!-- NOVO: Acordeão para Reiniciar Aplicativo -->
-                <div class="accordion-item">
-                    <button class="accordion-header">
-                        <h3>Aplicativo</h3>
-                        <span class="material-icons">expand_more</span>
-                    </button>
-                    <div class="accordion-content">
-                        <div class="accordion-content-sub-full-width"> <!-- Classe para botões em linha única -->
-                            <!-- NOVO: Campo para chave admin -->
-                            <div class="form-group">
-                                <label for="admin-key-input" class="form-label">Chave Admin:</label>
-                                <input type="text" id="admin-key-input" class="form-input admin-key-input" placeholder="Digite a chave admin" autocomplete="off">
+            
+            <div class="config-main">
+                <div class="config-sidebar">
+                    <nav class="config-nav">
+                        <a href="#general" class="config-nav-item active" data-section="general">
+                            <span class="material-icons">tune</span>
+                            <span>Geral</span>
+                        </a>
+                        <a href="#teams" class="config-nav-item" data-section="teams">
+                            <span class="material-icons">palette</span>
+                            <span>Times</span>
+                        </a>
+                        <a href="#admin" class="config-nav-item" data-section="admin">
+                            <span class="material-icons">admin_panel_settings</span>
+                            <span>Admin</span>
+                        </a>
+                    </nav>
+                </div>
+                
+                <div class="config-content">
+                    <!-- Seção Geral -->
+                    <div class="config-section active" id="general">
+                        <div class="section-header">
+                            <h2>Preferências Gerais</h2>
+                            <p>Configure a aparência e comportamento do app</p>
+                        </div>
+                        
+                        <div class="settings-group">
+                            <div class="setting-row">
+                                <div class="setting-content">
+                                    <div class="setting-icon">
+                                        <span class="material-icons">dark_mode</span>
+                                    </div>
+                                    <div class="setting-details">
+                                        <h3>Modo Escuro</h3>
+                                        <p>Ative o tema escuro para reduzir o cansaço visual</p>
+                                    </div>
+                                </div>
+                                <label class="modern-switch">
+                                    <input type="checkbox" id="dark-mode-toggle">
+                                    <span class="switch-slider"></span>
+                                </label>
                             </div>
-                            <button id="reset-app-button" class="button button--secondary form-button--full-width">
-                                <span class="material-icons">cleaning_services</span> Limpar Cache e Reiniciar App
-                            </button>
-                            <button id="reset-config-button" class="button button--secondary form-button--full-width mt-4"> <!-- Adicionado mt-4 para espaçamento -->
-                                <span class="material-icons">settings_backup_restore</span> Redefinir Configurações
-                            </button>
-                            <button id="install-pwa-button" class="button button--primary form-button--full-width mt-4" style="display: none;">
-                                <span class="material-icons">get_app</span> Instalar Aplicativo
-                            </button>
+                            
+                            <div class="setting-row">
+                                <div class="setting-content">
+                                    <div class="setting-icon">
+                                        <span class="material-icons">vibration</span>
+                                    </div>
+                                    <div class="setting-details">
+                                        <h3>Vibração</h3>
+                                        <p>Feedback háptico ao marcar pontos</p>
+                                    </div>
+                                </div>
+                                <label class="modern-switch">
+                                    <input type="checkbox" id="vibration-toggle" checked>
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </div>
+                            
+                            <div class="setting-row">
+                                <div class="setting-content">
+                                    <div class="setting-icon">
+                                        <span class="material-icons">visibility</span>
+                                    </div>
+                                    <div class="setting-details">
+                                        <h3>Exibir Jogadores</h3>
+                                        <p>Mostrar nomes dos jogadores durante a partida</p>
+                                    </div>
+                                </div>
+                                <label class="modern-switch">
+                                    <input type="checkbox" id="display-players-toggle" checked>
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </div>
 
+                            <!-- NOVO: Exibir Timer -->
+                            <div class="setting-row">
+                                <div class="setting-content">
+                                    <div class="setting-icon">
+                                        <span class="material-icons">schedule</span>
+                                    </div>
+                                    <div class="setting-details">
+                                        <h3>Exibir Timer</h3>
+                                        <p>Mostrar o cronômetro da partida</p>
+                                    </div>
+                                </div>
+                                <label class="modern-switch">
+                                    <input type="checkbox" id="display-timer-toggle" checked>
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </div>
+                            
+                            <div class="setting-row">
+                                <div class="setting-content">
+                                    <div class="setting-icon">
+                                        <span class="material-icons">wifi</span>
+                                    </div>
+                                    <div class="setting-details">
+                                        <h3>Status de Conexão</h3>
+                                        <p>Indicador visual do status da internet</p>
+                                    </div>
+                                </div>
+                                <label class="modern-switch">
+                                    <input type="checkbox" id="show-connection-status-toggle" checked>
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </div>
+                            
+                            <div class="setting-row">
+                                <div class="setting-content">
+                                    <div class="setting-icon">
+                                        <span class="material-icons">notifications</span>
+                                    </div>
+                                    <div class="setting-details">
+                                        <h3>Notificações</h3>
+                                        <p>Receber alertas sobre novos jogos agendados</p>
+                                    </div>
+                                </div>
+                                <label class="modern-switch">
+                                    <input type="checkbox" id="notifications-toggle">
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Seção Times -->
+                    <div class="config-section" id="teams">
+                        <div class="section-header">
+                            <h2>Times Personalizados</h2>
+                            <p>Configure nomes e cores dos seus times</p>
+                        </div>
+                        
+                        <div class="teams-list">
+                            <div class="team-row">
+                                <input type="color" id="custom-team-1-color" value="#325fda">
+                                <input type="text" id="custom-team-1-name" placeholder="Nome do time" value="Time Personalizado 1">
+                            </div>
+                            
+                            <div class="team-row">
+                                <input type="color" id="custom-team-2-color" value="#f03737">
+                                <input type="text" id="custom-team-2-name" placeholder="Nome do time" value="Time Personalizado 2">
+                            </div>
+                            
+                            <div class="team-row">
+                                <input type="color" id="custom-team-3-color" value="#4CAF50">
+                                <input type="text" id="custom-team-3-name" placeholder="Nome do time" value="Time Personalizado 3">
+                            </div>
+                            
+                            <div class="team-row">
+                                <input type="color" id="custom-team-4-color" value="#FFC107">
+                                <input type="text" id="custom-team-4-name" placeholder="Nome do time" value="Time Personalizado 4">
+                            </div>
+                            
+                            <div class="team-row">
+                                <input type="color" id="custom-team-5-color" value="#9C27B0">
+                                <input type="text" id="custom-team-5-name" placeholder="Nome do time" value="Time Personalizado 5">
+                            </div>
+                            
+                            <div class="team-row">
+                                <input type="color" id="custom-team-6-color" value="#00BCD4">
+                                <input type="text" id="custom-team-6-name" placeholder="Nome do time" value="Time Personalizado 6">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Seção Admin -->
+                    <div class="config-section" id="admin">
+                        <div class="section-header">
+                            <h2>Administração</h2>
+                            <p>Configurações avançadas e manutenção do app</p>
+                        </div>
+                        
+                        <div class="admin-panel">
+                            <div class="admin-auth">
+                                <h3>
+                                    <span class="material-icons">key</span>
+                                    Autenticação
+                                </h3>
+                                <div class="admin-auth-form">
+                                    <div class="admin-key-group">
+                                        <input type="password" id="admin-key-input" class="admin-key-input" placeholder="Digite a chave de administrador" autocomplete="off">
+                                        <button type="button" id="toggle-admin-key" class="toggle-password-btn">
+                                            <span class="material-icons">visibility</span>
+                                        </button>
+                                    </div>
+                                    <button id="admin-auth-btn" class="admin-auth-btn">
+                                        <span class="material-icons">lock_open</span>
+                                        Autenticar
+                                    </button>
+                                </div>
+                                <div id="admin-auth-status" class="admin-auth-status">
+                                    <span class="material-icons">check_circle</span>
+                                    <span class="status-text">Autenticado com sucesso</span>
+                                </div>
+                            </div>
+                            
+                            <div class="admin-actions">
+                                <div class="admin-action">
+                                    <div class="admin-action-info">
+                                        <div class="admin-action-icon">
+                                            <span class="material-icons">settings_backup_restore</span>
+                                        </div>
+                                        <div class="admin-action-details">
+                                            <h4>Redefinir Configurações</h4>
+                                            <p>Restaurar todas as configurações para os valores padrão</p>
+                                        </div>
+                                    </div>
+                                    <button id="reset-config-button" class="admin-action-btn">Redefinir</button>
+                                </div>
+                                
+                                <div class="admin-action">
+                                    <div class="admin-action-info">
+                                        <div class="admin-action-icon">
+                                            <span class="material-icons">cleaning_services</span>
+                                        </div>
+                                        <div class="admin-action-details">
+                                            <h4>Limpar Cache</h4>
+                                            <p>Remover dados temporários e reiniciar o aplicativo</p>
+                                        </div>
+                                    </div>
+                                    <button id="reset-app-button" class="admin-action-btn danger">Limpar</button>
+                                </div>
+                                
+                                <div class="admin-action" id="install-pwa-action" style="display: none;">
+                                    <div class="admin-action-info">
+                                        <div class="admin-action-icon">
+                                            <span class="material-icons">get_app</span>
+                                        </div>
+                                        <div class="admin-action-details">
+                                            <h4>Instalar Aplicativo</h4>
+                                            <p>Adicionar à tela inicial do dispositivo</p>
+                                        </div>
+                                    </div>
+                                    <button id="install-pwa-button" class="admin-action-btn primary">Instalar</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+            </div>
             
-            <div class="app-info">
-                <span id="user-id-display">ID: Carregando...</span>
-                <span id="app-version-display">Versão: Carregando...</span>
+            <div class="config-footer">
+                <div class="app-info">
+                    <div class="info-group">
+                        <span class="material-icons">fingerprint</span>
+                        <span id="user-id-display">ID: Carregando...</span>
+                    </div>
+                    <div class="info-group">
+                        <span class="material-icons">info</span>
+                        <span id="app-version-display">Versão: Carregando...</span>
+                    </div>
+                </div>
             </div>
         </section>
 
         <!-- Página de Histórico -->
         <section id="history-page" class="app-page history-page-layout">
-            <h2 class="page-heading">Histórico de Jogos</h2>
-            <div id="history-list-container" class="history-list-container">
-                <!-- O histórico de jogos será renderizado aqui pelo history-ui.js -->
+            <div class="history-header">
+                <div class="history-header-content">
+                    <div class="history-title-row">
+                        <h1 class="history-heading">Histórico</h1>
+                    </div>
+                    <p class="history-subtitle">Revise suas partidas salvas e filtre por autor ou busque por times, jogadores e locais</p>
+                </div>
+                <div class="history-controls">
+                    <div class="input-with-clear">
+                        <input type="text" id="history-search" class="form-input" placeholder="Buscar por time, jogador ou local" autocomplete="off" oninput="document.getElementById('history-clear-search').style.display = this.value ? 'block' : 'none'" />
+                        <button id="history-clear-search" class="clear-input-button" style="display: none;" title="Limpar" onclick="(function(){var i=document.getElementById('history-search'); if(i){ i.value=''; document.getElementById('history-clear-search').style.display='none'; i.dispatchEvent(new Event('input',{bubbles:true}));}})()">×</button>
+                    </div>
+                    <div class="filter-chips scheduling-nav">
+                        <button class="chip scheduling-nav-item active" data-filter="all">
+                            <span class="material-icons">list</span>
+                            <span>Todos</span>
+                        </button>
+                        <button class="chip scheduling-nav-item" data-filter="mine">
+                            <span class="material-icons">person</span>
+                            <span>Meus</span>
+                        </button>
+                    </div>
+                    <div class="view-switch" style="display:none"></div>
+                </div>
             </div>
+            <div class="history-summary" style=" width: 100%; padding: 0px;">
+                <div class="history-stats">
+                    <span class="stat-badge" id="history-total">0 partidas</span>
+                    <span class="stat-badge win" id="history-wins">0 vitórias</span>
+                    <span class="stat-badge loss" id="history-losses">0 derrotas</span>
+                </div>
+            </div>
+            <div id="history-list-container" class="history-list-container"></div>
         </section>
 
         <!-- Página de Agendamentos -->
         <section id="scheduling-page" class="app-page scheduling-page-layout">
             <div class="scheduling-header">
-                <h2 class="scheduling-title">Agendamentos</h2>
-                <p class="scheduling-subtitle">Acompanhe os agendamentos dos jogos</p>
+                <div class="scheduling-header-content">
+                    <h1 class="scheduling-title">Agendamentos</h1>
+                    <p class="scheduling-subtitle">Acompanhe os agendamentos dos jogos</p>
+                </div>
+            </div>
+            
+            <div class="scheduling-main">
+                <div class="scheduling-sidebar">
+                    <nav class="scheduling-nav">
+                        <button class="scheduling-nav-item active" data-section="upcoming">
+                            <span class="material-icons">upcoming</span>
+                            <span>Próximos</span>
+                        </button>
+                        <button class="scheduling-nav-item" data-section="past">
+                            <span class="material-icons">history</span>
+                            <span>Passados</span>
+                        </button>
+                    </nav>
+                </div>
+                
+                <div class="scheduling-content">
+                    <!-- Seção Próximos -->
+                    <div class="scheduling-section active" id="upcoming">
+                        <div class="section-header">
+                            <h2>Próximos Jogos</h2>
+                            <p>Jogos agendados para os próximos dias</p>
+                        </div>
+                        
+                        <div class="games-group">
+                            <div id="upcoming-games-list" class="games-list">
+                                <!-- Próximos jogos serão exibidos aqui -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Seção Passados -->
+                    <div class="scheduling-section" id="past">
+                        <div class="section-header">
+                            <h2>Jogos Passados</h2>
+                            <p>Histórico de jogos já realizados</p>
+                        </div>
+                        
+                        <div class="games-group">
+                            <div id="past-games-list" class="games-list">
+                                <!-- Jogos passados serão exibidos aqui -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <!-- Botão Flutuante para Agendar (apenas para admins) -->
@@ -451,14 +648,13 @@
                 <span class="material-icons">add</span>
             </button>
             
+
+            
             <!-- Modal do Formulário de Agendamento -->
             <div id="schedule-modal" class="schedule-modal">
                 <div class="schedule-modal-content">
                     <div class="modal-header">
                         <h3>Novo Agendamento</h3>
-                        <button id="close-schedule-modal" class="close-modal-btn">
-                            <span class="material-icons">close</span>
-                        </button>
                     </div>
                     
                     <div class="form-fields">
@@ -518,35 +714,6 @@
                 </div>
             </div>
             
-            <div class="scheduling-container">
-                
-                <!-- Lista de Jogos -->
-                <div class="games-section">
-                    <div class="section-tabs">
-                        <button class="tab-btn active" data-tab="upcoming">
-                            <span class="material-icons">upcoming</span>
-                            Próximos
-                        </button>
-                        <button class="tab-btn" data-tab="past">
-                            <span class="material-icons">history</span>
-                            Passados
-                        </button>
-                    </div>
-                    
-                    <div class="tab-content active" id="upcoming-tab">
-                        <div id="upcoming-games-list" class="games-list">
-                            <!-- Próximos jogos serão exibidos aqui -->
-                        </div>
-                    </div>
-                    
-                    <div class="tab-content" id="past-tab">
-                        <div id="past-games-list" class="games-list">
-                            <!-- Jogos passados serão exibidos aqui -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
             <!-- Zona de exclusão para drag and drop -->
             <div id="scheduling-delete-zone" class="delete-zone" style="display: none;">
                 <span class="material-icons">delete</span>
@@ -579,20 +746,20 @@
     
     <!-- Modal para visualizar comprovantes -->
     <div id="proof-viewer-modal" class="proof-viewer-modal">
-        <div class="proof-viewer-content">
+        <div class="proof-viewer-content">            
             <div class="proof-viewer-header">
                 <h3>Comprovantes</h3>
                 <button id="close-proof-viewer" class="close-modal-btn">
                     <span class="material-icons">close</span>
                 </button>
             </div>
-            <div class="proof-viewer-body">
+
+            <div class="proof-viewer-body">                
                 <div class="proof-image-container">
                     <img id="proof-image" src="" alt="Comprovante">
                 </div>
                 <div class="proof-carousel-nav">
                     <div class="proof-dots" id="proof-dots">
-                        <!-- Dots serão gerados dinamicamente -->
                     </div>
                 </div>
             </div>
@@ -670,6 +837,7 @@
     </div>
 
     <script type="module" src="js/main.js"></script>
+    <script src="js/config-navigation.js"></script>
     
     <script>
     // Força fullscreen no PWA

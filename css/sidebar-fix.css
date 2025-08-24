@@ -1,0 +1,52 @@
+/* Sidebar como gaveta em todas as larguras: fechado por padrão, abre com .open */
+
+/* Desktop (>=1024px) - gaveta */
+@media (min-width: 1024px) {
+  .sidebar-menu {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 260px;
+    height: 100vh;
+    box-shadow: none;
+    border-left: 1px solid var(--sidebar-border);
+    transform: translateX(100%) !important; /* fechado por padrão */
+    -webkit-transform: translateX(100%) !important;
+  }
+  .sidebar-menu.open {
+    transform: translateX(0) !important; /* abre ao clicar */
+    -webkit-transform: translateX(0) !important;
+  }
+  .header-button-container { display: block !important; }
+  .sidebar-overlay { display: block !important; }
+  .app-main-content { margin-right: 0 !important; }
+}
+
+/* 768px–1023px - gaveta */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .sidebar-menu {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    transform: translateX(100%) !important; /* fechado por padrão */
+    -webkit-transform: translateX(100%) !important;
+  }
+  .sidebar-menu.open {
+    transform: translateX(0) !important; /* abre ao clicar */
+    -webkit-transform: translateX(0) !important;
+  }
+  .header-button-container { display: block !important; }
+  .sidebar-overlay { display: block !important; }
+  .app-main-content { margin-right: 0 !important; }
+}
+
+/* <1024px - garantir posição fixa e altura */
+@media (max-width: 1023px) {
+  .sidebar-menu {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+  }
+}

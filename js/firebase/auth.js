@@ -6,7 +6,7 @@ import { setupFirestorePlayersListener } from '../data/players.js';
 import { showPage, updatePlayerModificationAbility } from '../ui/pages.js';
 import * as Elements from '../ui/elements.js';
 import { displayMessage } from '../ui/messages.js';
-import { updateConnectionIndicator, hideLoadingOverlay } from '../main.js'; // Importa hideLoadingOverlay
+import { updateConnectionIndicator, hideLoadingOverlay, markAuthInitialized } from '../main.js'; // Importa hideLoadingOverlay
 import { setupSchedulingPage, cleanupSchedulingListener, updateSchedulingPermissions } from '../ui/scheduling-ui.js';
 import { deleteDoc, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getAppId } from './config.js';
@@ -125,6 +125,7 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
     }
 
     onAuthStateChanged(currentAuthInstance, async (user) => {
+        try { markAuthInitialized(); } catch (_) {}
         setCurrentUser(user); // Update the currentUser
         updateProfileMenuLoginState();
         updateConnectionIndicator(navigator.onLine ? 'online' : 'offline');

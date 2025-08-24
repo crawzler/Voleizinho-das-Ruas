@@ -5,7 +5,7 @@ import * as Elements from './elements.js';
 import { getIsGameInProgress, resetGameForNewMatch, getCurrentTeam1, getCurrentTeam2, getActiveTeam1Name, getActiveTeam2Name, getActiveTeam1Color, getActiveTeam2Color, incrementScore, decrementScore, getAllGeneratedTeams, setCurrentTeam1, setCurrentTeam2, setActiveTeam1Name, setActiveTeam2Name, setActiveTeam1Color, setActiveTeam2Color, getTeam1Score, getTeam2Score } from '../game/logic.js';
 import { updateScoreDisplay, updateTimerDisplay, updateSetTimerDisplay, renderScoringPagePlayers, updateTeamDisplayNamesAndColors, updateNavScoringButton, renderTeams, renderTeamsInModal } from './game-ui.js';
 import { loadConfig, saveConfig, setupConfigUI } from './config-ui.js';
-import { renderPlayersList, updatePlayerCount, updateSelectAllToggle } from './players-ui.js';
+import { renderPlayersList, updatePlayerCount, updateSelectAllToggle, savePlayerSelectionState } from './players-ui.js';
 import { getCurrentUser, logout } from '../firebase/auth.js';
 import { displayMessage } from './messages.js';
 // Importa as funções de scheduling-ui.js que serão usadas nos callbacks do modal
@@ -93,7 +93,8 @@ export function closeSidebar() {
     const sidebarOverlay = Elements.sidebarOverlay();
 
     if (sidebar) {
-        sidebar.classList.remove('active');
+        // Fecha usando a classe correta que controla a transição
+        sidebar.classList.remove('open');
     }
     if (profileMenu && profileMenu.classList.contains('active')) {
         profileMenu.classList.remove('active');
@@ -324,11 +325,21 @@ export function updateSidebarUserName(playerName) {
 export function setupSidebar(startGameHandler, getPlayersHandler) {
     Elements.menuButton().addEventListener('click', (event) => {
         event.stopPropagation();
+        // Bloqueia abertura do menu na tela de pontuação em modo paisagem
+        try {
+            if (typeof isScoringActive === 'function' && isScoringActive()) {
+                const isLandscape = window.matchMedia && window.matchMedia('(orientation: landscape)').matches;
+                if (isLandscape) {
+                    return; // não abre o sidebar em paisagem durante a partida
+                }
+            }
+        } catch (_) { /* ignore */ }
         const sidebar = Elements.sidebar();
         const sidebarOverlay = Elements.sidebarOverlay();
 
         if (sidebar) {
-            sidebar.classList.add('active');
+            // Abre usando a classe correta que controla a transição
+            sidebar.classList.add('open');
         }
         if (sidebarOverlay) {
             sidebarOverlay.classList.add('active'); // Agora o overlay aparece ao abrir
@@ -359,7 +370,7 @@ export function setupSidebar(startGameHandler, getPlayersHandler) {
                                             'Deseja salvar a partida atual no histórico?',
                                             () => {
                                                 // Se confirmar, salva a partida atual
-                                                endGame(); // endGame já salva a partida
+                                                endGame({ auto: true }); // salvar silenciosamente e encerrar
                                                 // Mostra a tela inicial em vez de iniciar nova partida
                                                 showPage('start-page');
                                             },
@@ -502,12 +513,26 @@ export function setupPageNavigation(startGameHandler, getPlayersHandler, appId) 
     if (Elements.selectAllPlayersToggle()) {
         Elements.selectAllPlayersToggle().addEventListener('change', (event) => {
             const isChecked = event.target.checked;
-            const checkboxes = document.querySelectorAll('#players-list-container .player-checkbox');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = isChecked;
-            });
-            updatePlayerCount();
-            updateSelectAllToggle();
+            const actionText = isChecked ? 'marcar' : 'desmarcar';
+
+            showConfirmationModal(
+                `Deseja ${actionText} todos os jogadores visíveis?`,
+                () => {
+                    const checkboxes = document.querySelectorAll('#players-list-container .player-checkbox');
+                    checkboxes.forEach(checkbox => {
+                        checkbox.checked = isChecked;
+                    });
+                    // Persiste a seleção por categoria
+                    try { savePlayerSelectionState(); } catch (_) {}
+                    updatePlayerCount();
+                    updateSelectAllToggle();
+                },
+                () => {
+                    // Reverte o estado do toggle se cancelar
+                    event.target.checked = !isChecked;
+                    updateSelectAllToggle();
+                }
+            );
         });
     }
 

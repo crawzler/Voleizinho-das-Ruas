@@ -18,6 +18,7 @@ import { setupHistoryPage } from './ui/history-ui.js';
 import { setupSchedulingPage, updateSchedulingPermissions } from './ui/scheduling-ui.js';
 import './ui/profile-menu.js';
 import { setupQuickSettings } from './ui/quick-settings.js';
+import { setupSidebar as setupModernSidebar } from './ui/sidebar-ui.js';
 import { registerNotificationServiceWorker } from './utils/notifications.js';
 import { initWelcomeNotifications } from './ui/welcome-notifications.js';
 import { initDailyReminders } from './utils/daily-reminders.js';
@@ -28,6 +29,7 @@ import pwaManager from './utils/pwa-manager.js';
 import { signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
 let authListenerInitialized = false;
+export function markAuthInitialized() { authListenerInitialized = true; }
 let loadingTimeout = null;
 
 // Use exatamente os UIDs das regras do Firebase
@@ -123,15 +125,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     // Log removido
 
-    // Inicia o timer para forçar o modo offline após 10 segundos, se necessário
+    // Inicia o timer para forçar a liberação da UI caso a autenticação demore
     loadingTimeout = setTimeout(() => {
-        if (!authListenerInitialized) {
-            displayMessage("Não foi possível conectar. Modo offline ativado.", "info");
+        const overlay = Elements.loadingOverlay ? Elements.loadingOverlay() : null;
+        if (!authListenerInitialized || (overlay && !overlay.classList.contains('hidden'))) {
+            // Se o callback de auth não chegou ainda, libera a UI em modo offline/reduzido
+            displayMessage("Carregando demorou, iniciando sem login.", "info");
             showPage('start-page');
             updateConnectionIndicator('offline');
             hideLoadingOverlay();
         }
-    }, 10000); // 10 segundos
+    }, 5000); // fallback mais rápido para melhorar UX no PWA instalado
 
     // Initializes the Firebase App and gets instances
     const { app, db, auth } = await initFirebaseApp();
@@ -146,9 +150,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     setupAuthListener(auth, db, appId);
-    authListenerInitialized = true;
+    // authListenerInitialized será marcado no primeiro onAuthStateChanged
 
     setupSidebar();
+    setupModernSidebar();
     setupPageNavigation(startGame, getPlayers, appId);
     setupAccordion();
     setupConfigUI();
@@ -165,7 +170,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const generateTeamsButton = document.getElementById('generate-teams-button');
     if (generateTeamsButton) {
         generateTeamsButton.addEventListener('click', () => {
-            generateTeams(appId);
+            showConfirmationModal(
+                'Deseja gerar os times agora? Isso pode reorganizar os times atuais.',
+                () => {
+                    generateTeams(appId);
+                }
+            );
         });
     }
 
@@ -246,7 +256,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Inicializa botão PWA na tela de login após delay
     setTimeout(() => {
         if (window.pwaManager) {
-            window.pwaManager.showLoginInstallButton();
+            // Verifica o status antes de mostrar
+            window.pwaManager.checkInstallStatus();
+            if (!window.pwaManager.isInstalled) {
+                window.pwaManager.showLoginInstallButton();
+            }
         }
     }, 2000);
 
@@ -333,6 +347,34 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Define o estado inicial do indicador de conexão
     updateConnectionIndicator(connectivityManager.getStatus());
+
+    // Scrollbar visibility: mark containers as scrolling during scroll, remove after idle
+    (function setupScrollbarVisibility() {
+        const scrollables = new Set();
+        // candidates: body/main pages and known scroll containers
+        const selectors = [
+            'body', '.app-main-content', '.sidebar-menu',
+            '#players-page', '#teams-page', '#history-page', '#config-page', '#scheduling-page',
+            '.players-list-container', '.teams-page-layout-sub', '.scheduling-container', '.tab-content', '.schedule-modal-content', '.accordion-content', '.select-team-modal-content-wrapper', '.team-players-column'
+        ];
+        const elems = selectors.flatMap(sel => Array.from(document.querySelectorAll(sel)));
+        elems.forEach(el => {
+            if (!el) return;
+            const handler = () => {
+                el.classList.add('is-scrolling');
+                clearTimeout(el.__sbTimer);
+                el.__sbTimer = setTimeout(() => el.classList.remove('is-scrolling'), 550);
+            };
+            el.addEventListener('scroll', handler, { passive: true });
+            scrollables.add(el);
+        });
+        // Fallback: also toggle on window scroll for page-level containers
+        window.addEventListener('scroll', () => {
+            document.body.classList.add('is-scrolling');
+            clearTimeout(window.__sbTimer);
+            window.__sbTimer = setTimeout(() => document.body.classList.remove('is-scrolling'), 550);
+        }, { passive: true });
+    })();
 
     // Bloquear pull-to-refresh apenas no topo, mas permitir quando modais estão abertos
     document.body.addEventListener('touchstart', e => {
@@ -437,7 +479,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             // Inicializa botão PWA na tela de login
             if (window.pwaManager) {
-                window.pwaManager.showLoginInstallButton();
+                window.pwaManager.checkInstallStatus();
+                if (!window.pwaManager.isInstalled) {
+                    window.pwaManager.showLoginInstallButton();
+                }
             }
         } catch (e) {
             // Log removido

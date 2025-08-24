@@ -157,27 +157,7 @@ export function renderPlayersList(players) {
         checkbox.addEventListener('change', savePlayerSelectionState);
     });
     
-    // Adiciona event listener para o botão "Selecionar Todos"
-    const selectAllToggle = Elements.selectAllPlayersToggle();
-    if (selectAllToggle) {
-        // Remove listener antigo para evitar duplicação
-        selectAllToggle.replaceWith(selectAllToggle.cloneNode(true));
-        const newSelectAllToggle = Elements.selectAllPlayersToggle();
-        
-        if (newSelectAllToggle) {
-            newSelectAllToggle.addEventListener('change', () => {
-                // Marca ou desmarca todos os checkboxes APENAS da categoria atual
-                const checkboxes = document.querySelectorAll('#players-list-container .player-checkbox');
-                checkboxes.forEach(checkbox => {
-                    checkbox.checked = newSelectAllToggle.checked;
-                });
-                
-                // Salva o estado
-                savePlayerSelectionState();
-                updatePlayerCount();
-            });
-        }
-    }
+    // Toggle "Selecionar Todos" removido temporariamente para evitar conflitos com busca
 
     updatePlayerCount();
     updateSelectAllToggle();
@@ -288,6 +268,12 @@ function clearSearch() {
         if (clearButton) {
             clearButton.style.display = 'none';
         }
+        // Reseta o toggle antes de re-renderizar
+        const selectAllToggle = Elements.selectAllPlayersToggle();
+        if (selectAllToggle) {
+            selectAllToggle.checked = false;
+            selectAllToggle.indeterminate = false;
+        }
         // Re-renderiza a lista completa da categoria atual
         const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
         renderPlayersList(players);
@@ -325,14 +311,17 @@ function filterPlayers() {
         return;
     }
     
-    // Carrega estado de seleção da categoria atual
+    // Carrega estado de seleção de TODAS as categorias para busca
     let selectedPlayerIds = [];
     try {
-        const key = `selectedPlayers_${currentCategory}`;
-        const savedSelection = localStorage.getItem(key);
-        if (savedSelection) {
-            selectedPlayerIds = JSON.parse(savedSelection);
-        }
+        ['principais', 'esporadicos', 'random'].forEach(category => {
+            const key = `selectedPlayers_${category}`;
+            const savedSelection = localStorage.getItem(key);
+            if (savedSelection) {
+                const categoryIds = JSON.parse(savedSelection);
+                selectedPlayerIds.push(...categoryIds);
+            }
+        });
     } catch (e) {
         // Log removido
         selectedPlayerIds = [];
@@ -446,8 +435,48 @@ export function updatePlayerCount() {
 /**
  * Salva o estado de seleção dos jogadores no localStorage por categoria
  */
-export function savePlayerSelectionState() {
+export function savePlayerSelectionState(e) {
     try {
+        // Detecta se a busca está ativa
+        const playerInput = document.getElementById('player-input');
+        const isSearchActive = playerInput && playerInput.value.trim().length > 0;
+
+        // Quando a busca está ativa, atualiza SOMENTE o checkbox alterado,
+        // preservando o restante das seleções já salvas por categoria.
+        if (isSearchActive && e && e.target && e.target.classList && e.target.classList.contains('player-checkbox')) {
+            const playerId = e.target.dataset.playerId;
+            const isChecked = e.target.checked;
+
+            const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
+            const player = players.find(p => p.id === playerId);
+            const playerCategory = (player && player.category) ? player.category : 'principais';
+
+            let categoryIds = [];
+            try {
+                const saved = localStorage.getItem(`selectedPlayers_${playerCategory}`);
+                if (saved) categoryIds = JSON.parse(saved);
+            } catch (_) { categoryIds = []; }
+
+            const idx = categoryIds.indexOf(playerId);
+            if (isChecked && idx === -1) categoryIds.push(playerId);
+            if (!isChecked && idx !== -1) categoryIds.splice(idx, 1);
+
+            localStorage.setItem(`selectedPlayers_${playerCategory}`, JSON.stringify(categoryIds));
+
+            // Atualiza seleções globais e contadores
+            updateGlobalSelections();
+            import('./pages.js').then(({ updateSelectedPlayersCount }) => {
+                updateSelectedPlayersCount();
+            }).catch(() => {});
+            autoAddPlayersToTeams();
+            autoRemoveDeselectedPlayersFromTeams();
+
+            // Atualiza UI local (contador e toggle visual)
+            updatePlayerCount();
+            updateSelectAllToggle();
+            return; // Evita sobrescrever seleções usando os checkboxes visíveis do filtro
+        }
+
         if (currentCategory === 'todos') {
             // Na aba "Todos", atualiza as categorias específicas dos jogadores
             const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
@@ -491,6 +520,8 @@ export function savePlayerSelectionState() {
         
         // Adiciona automaticamente novos jogadores aos times existentes
         autoAddPlayersToTeams();
+        // Remove automaticamente dos times os jogadores desmarcados
+        autoRemoveDeselectedPlayersFromTeams();
     } catch (e) {
         // Log removido
     }
@@ -589,6 +620,61 @@ function autoAddPlayersToTeams() {
 /**
  * Atualiza as seleções globais combinando todas as categorias
  */
+function autoRemoveDeselectedPlayersFromTeams() {
+    import('../game/logic.js').then(({ getAllGeneratedTeams, setAllGeneratedTeams }) => {
+        import('../utils/helpers.js').then(({ salvarTimesGerados }) => {
+            import('./messages.js').then(({ displayMessage }) => {
+                const teams = getAllGeneratedTeams();
+                if (!teams || teams.length === 0) return;
+
+                // Obter todos os IDs selecionados atualmente (todas as categorias)
+                const allSelectedIds = [];
+                ['principais', 'esporadicos', 'random'].forEach(category => {
+                    const categorySelections = localStorage.getItem(`selectedPlayers_${category}`);
+                    if (categorySelections) {
+                        try {
+                            const ids = JSON.parse(categorySelections);
+                            allSelectedIds.push(...ids);
+                        } catch (_) {}
+                    }
+                });
+
+                // Mapear IDs selecionados para nomes
+                const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
+                const selectedIdsSet = new Set(allSelectedIds);
+                const selectedNamesSet = new Set(
+                    players.filter(p => selectedIdsSet.has(p.id)).map(p => p.name)
+                );
+
+                let removedCount = 0;
+
+                // Remover dos times todos os jogadores que não estão selecionados
+                for (let t = 0; t < teams.length; t++) {
+                    const team = teams[t];
+                    for (let i = 0; i < team.players.length; i++) {
+                        const name = team.players[i];
+                        if (typeof name === 'string' && !name.startsWith('[Vaga')) {
+                            if (!selectedNamesSet.has(name)) {
+                                team.players[i] = `[Vaga ${i + 1}]`;
+                                removedCount++;
+                            }
+                        }
+                    }
+                }
+
+                if (removedCount > 0) {
+                    setAllGeneratedTeams(teams);
+                    salvarTimesGerados(teams);
+                    import('./game-ui.js').then(({ renderTeams }) => {
+                        renderTeams(teams);
+                    }).catch(() => {});
+                    displayMessage(`${removedCount} jogador(es) removido(s) dos times!`, 'info');
+                }
+            });
+        });
+    });
+}
+
 function updateGlobalSelections() {
     try {
         const allSelected = [];
@@ -1238,22 +1324,32 @@ export function updateSelectAllToggle() {
     const selectAllToggle = Elements.selectAllPlayersToggle();
     if (!selectAllToggle) return;
 
+    // Verifica se há busca ativa
+    const playerInput = document.getElementById('player-input');
+    const isSearchActive = playerInput && playerInput.value.trim().length > 0;
+    
+    // Durante busca, desabilita o toggle para evitar comportamento indesejado
+    if (isSearchActive) {
+        selectAllToggle.disabled = true;
+        return;
+    }
+    
+    // Reabilita o toggle quando não há busca
+    selectAllToggle.disabled = false;
+
     const checkboxes = document.querySelectorAll('#players-list-container .player-checkbox');
     const checkedBoxes = document.querySelectorAll('#players-list-container .player-checkbox:checked');
 
-    // Apenas atualiza o estado visual do toggle, sem alterar as seleções
+    // Nova lógica: o toggle fica ativo se houver pelo menos um selecionado
     if (checkboxes.length === 0) {
         selectAllToggle.checked = false;
         selectAllToggle.indeterminate = false;
-    } else if (checkedBoxes.length === 0) {
-        selectAllToggle.checked = false;
-        selectAllToggle.indeterminate = false;
-    } else if (checkedBoxes.length === checkboxes.length) {
+    } else if (checkedBoxes.length > 0) {
         selectAllToggle.checked = true;
         selectAllToggle.indeterminate = false;
     } else {
         selectAllToggle.checked = false;
-        selectAllToggle.indeterminate = true;
+        selectAllToggle.indeterminate = false;
     }
 }
 
