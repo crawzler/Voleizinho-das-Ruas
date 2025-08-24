@@ -3,7 +3,7 @@
 
 const SW_CONFIG = {
     // Versão do cache - incremente para forçar atualização
-    CACHE_VERSION: 'VdR-DZ-v0.5.3_RFT_Test',
+    CACHE_VERSION: 'VdR-0.5.5_RMK',
     
     // Estratégias de cache
     STRATEGIES: {
@@ -82,3 +82,4 @@ if (typeof self !== 'undefined') {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = SW_CONFIG;
 }
+
