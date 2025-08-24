@@ -106,6 +106,11 @@ export function closeSidebar() {
         sidebarOverlay.classList.add('hidden');
         sidebarOverlay.classList.remove('active');
     }
+    // Restaura scroll do body caso tenha sido bloqueado pelo handler moderno
+    document.body.style.overflow = '';
+    document.body.classList.remove('sidebar-open');
+    const menuButtonEl = document.getElementById('menu-button');
+    if (menuButtonEl) menuButtonEl.classList.remove('active');
 }
 
 /**
@@ -325,26 +330,8 @@ export function updateSidebarUserName(playerName) {
 export function setupSidebar(startGameHandler, getPlayersHandler) {
     Elements.menuButton().addEventListener('click', (event) => {
         event.stopPropagation();
-        // Bloqueia abertura do menu na tela de pontuação em modo paisagem
-        try {
-            if (typeof isScoringActive === 'function' && isScoringActive()) {
-                const isLandscape = window.matchMedia && window.matchMedia('(orientation: landscape)').matches;
-                if (isLandscape) {
-                    return; // não abre o sidebar em paisagem durante a partida
-                }
-            }
-        } catch (_) { /* ignore */ }
-        const sidebar = Elements.sidebar();
-        const sidebarOverlay = Elements.sidebarOverlay();
-
-        if (sidebar) {
-            // Abre usando a classe correta que controla a transição
-            sidebar.classList.add('open');
-        }
-        if (sidebarOverlay) {
-            sidebarOverlay.classList.add('active'); // Agora o overlay aparece ao abrir
-            sidebarOverlay.classList.remove('hidden'); // Remove a classe 'hidden' se estiver lá
-        }
+        // Deixe o handler moderno (sidebar-ui.js) controlar abertura/fechamento
+        // Evita conflito de toggles duplicados
     });
 
     Elements.sidebarNavItems().forEach(item => {
