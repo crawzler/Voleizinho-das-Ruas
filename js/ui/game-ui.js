@@ -246,6 +246,7 @@ export function renderTeams(teams) {
             fillBtn.style.top = '8px';
             fillBtn.style.right = '8px';
             fillBtn.style.border = 'none';
+            fillBtn.style.boxShadow = 'none';
             fillBtn.style.background = 'transparent';
             fillBtn.style.cursor = 'pointer';
             fillBtn.style.padding = '4px';

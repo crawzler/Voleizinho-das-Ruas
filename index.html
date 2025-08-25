@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no, viewport-fit=cover">
     <meta name="theme-color" content="#ffffff"/>
     
     <!-- PWA - Ocultar barra de navegação -->
@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/history.css">
     <link rel="stylesheet" href="css/offline-fallback.css">
+    <link rel="stylesheet" href="css/safe-areas.css">
     <!-- Sidebar fix overrides -->
     <link rel="stylesheet" href="css/sidebar-fix.css">
 
@@ -189,11 +190,19 @@
                             <span class="material-icons" style="font-size: 12px;">cached</span>
                         </button>
                     </div>
-                <button id="swap-teams-button" class="button">
-                    <span class="material-icons">swap_horiz</span>
-                </button>
+                </div>
 
+                <div id="scoreboard-menu-button" class="button">
+                    <span class="material-icons">more_vert</span>
+                    <div id="scoreboard-menu-dropdown">
+                        <button class="scoreboard-menu-button">Inverter Times</button>
+                        <button class="scoreboard-menu-button">Substituir Time A</button>
+                        <button class="scoreboard-menu-button">Substituir Time B</button>
+                        <button class="scoreboard-menu-button">Configurar Partida</button>
                     </div>
+                </div>
+
+
 
                 <div id="team2-panel" class="score-panel team2-panel">
                     <h3 id="team2-name" class="team-name">Time 2</h3>

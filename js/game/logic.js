@@ -102,7 +102,8 @@ export function setGameState(state, { resumeTimers = true } = {}) {
         // Sempre atualizar o ícone do timer, independente do estado
         updateTimerButtonIcon();
         if (Elements.timerAndSetTimerWrapper()) {
-            Elements.timerAndSetTimerWrapper().style.display = 'flex';
+            const cfg = loadConfig();
+            Elements.timerAndSetTimerWrapper().style.display = (cfg.displayTimer ?? true) ? 'flex' : 'none';
         }
         
         // Iniciar salvamento automático se o jogo estiver em progresso
@@ -477,7 +478,8 @@ export function startGame(appId) {
     isGameInProgress = true;
     updateNavScoringButton(true, 'scoring-page');
     if (Elements.timerAndSetTimerWrapper()) {
-        Elements.timerAndSetTimerWrapper().style.display = 'flex';
+        const cfg = loadConfig();
+        Elements.timerAndSetTimerWrapper().style.display = (cfg.displayTimer ?? true) ? 'flex' : 'none';
     }
     showPage('scoring-page');
     startTimer();

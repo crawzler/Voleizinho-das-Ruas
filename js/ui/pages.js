@@ -44,6 +44,27 @@ function addOrientationEnforcerOnce() {
     window.addEventListener('touchend', enforcePortraitLock, { once: true });
     orientationEnforcerAdded = true;
 }
+// Fullscreen helpers para tela de pontuação
+function supportsFullscreen() {
+    return document.fullscreenEnabled || document.webkitFullscreenEnabled || document.msFullscreenEnabled;
+}
+async function enterFullscreen() {
+    const el = document.documentElement;
+    if (!supportsFullscreen() || document.fullscreenElement || document.webkitFullscreenElement) return;
+    try {
+        if (el.requestFullscreen) { await el.requestFullscreen(); }
+        else if (el.webkitRequestFullscreen) { el.webkitRequestFullscreen(); }
+        else if (el.msRequestFullscreen) { el.msRequestFullscreen(); }
+    } catch (_) { /* ignore */ }
+}
+async function exitFullscreen() {
+    try {
+        if (document.exitFullscreen && document.fullscreenElement) { await document.exitFullscreen(); }
+        else if (document.webkitExitFullscreen && document.webkitFullscreenElement) { document.webkitExitFullscreen(); }
+        else if (document.msExitFullscreen) { document.msExitFullscreen(); }
+    } catch (_) { /* ignore */ }
+}
+
 function updateOrientationOverlay() {
     const overlay = document.getElementById('orientation-lock-overlay');
     if (!overlay) return;
@@ -156,11 +177,35 @@ export async function showPage(pageIdToShow) {
         document.body.classList.remove('force-portrait');
         tryUnlockOrientation();
         document.body.classList.add('scoring-page-active');
+        // Entrar em tela cheia apenas na tela de pontuação
+        enterFullscreen();
     } else {
         document.body.classList.remove('scoring-page-active');
         document.body.classList.add('force-portrait');
         tryLockPortrait();
+        // Sair de tela cheia nas demais telas
+        exitFullscreen();
     }
+    // Back button handling: always go to scoring page from any other page
+    try {
+        if (pageIdToShow !== 'scoring-page') {
+            history.pushState({ appBackTrap: true }, '');
+        }
+    } catch (_) { /* ignore */ }
+
+    if (!window.__backTrapAdded) {
+        window.addEventListener('popstate', (event) => {
+            try {
+                if (getCurrentPageId && getCurrentPageId() !== 'scoring-page') {
+                    event.preventDefault?.();
+                    showPage('scoring-page');
+                    try { history.pushState({ appBackTrap: true }, ''); } catch (_) {}
+                }
+            } catch (_) { /* ignore */ }
+        });
+        window.__backTrapAdded = true;
+    }
+
     addOrientationEnforcerOnce();
 
     // Atualiza overlay de orientação e listeners de rotação/redimensionamento
@@ -185,6 +230,22 @@ export async function showPage(pageIdToShow) {
 
     closeSidebar();
     updateNavScoringButton(getIsGameInProgress(), currentPageId);
+
+    // Atualiza item ativo do menu conforme a página atual
+    try {
+        const navItems = document.querySelectorAll('.sidebar-nav-item');
+        navItems.forEach(i => i.classList.remove('active'));
+        let navId = null;
+        if (pageIdToShow === 'scoring-page' || pageIdToShow === 'start-page') {
+            navId = 'nav-scoring';
+        } else if (pageIdToShow && pageIdToShow.endsWith('-page')) {
+            navId = 'nav-' + pageIdToShow.replace('-page', '');
+        }
+        if (navId) {
+            const btn = document.getElementById(navId);
+            if (btn) btn.classList.add('active');
+        }
+    } catch (_) { /* ignore */ }
 
     if (pageIdToShow === 'players-page') {
         const currentUser = getCurrentUser();
@@ -222,6 +283,14 @@ export async function showPage(pageIdToShow) {
         
         const shouldDisplayPlayers = displayPlayers;
         renderScoringPagePlayers(currentTeam1Players, currentTeam2Players, shouldDisplayPlayers);
+        
+        // Respeita a configuração de exibir timer ao entrar na tela
+        try {
+            const wrapper = document.getElementById('timer-and-set-timer-wrapper') || Elements.timerAndSetTimerWrapper?.();
+            if (wrapper) {
+                wrapper.style.display = (config.displayTimer ?? true) ? 'flex' : 'none';
+            }
+        } catch (_) { /* ignore */ }
         
         // NOVO: Força atualização dos ícones
         setTimeout(() => {

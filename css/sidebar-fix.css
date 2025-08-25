@@ -32,10 +32,18 @@
     transform: translateX(100%) !important; /* fechado por padrão */
     -webkit-transform: translateX(100%) !important;
   }
+
   .sidebar-menu.open {
+    padding: 0.5rem 1rem;
     transform: translateX(0) !important; /* abre ao clicar */
     -webkit-transform: translateX(0) !important;
   }
+
+  .user-profile-picture  {
+    width: 30px;
+    height: 30px;
+  }
+
   .header-button-container { display: block !important; }
   .sidebar-overlay { display: block !important; }
   .app-main-content { margin-right: 0 !important; }

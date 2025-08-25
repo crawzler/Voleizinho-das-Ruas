@@ -25,6 +25,8 @@ import { initDailyReminders } from './utils/daily-reminders.js';
 import connectivityManager from './utils/connectivity.js';
 import offlineStorage from './utils/offline-storage.js';
 import pwaManager from './utils/pwa-manager.js';
+import { getActiveTeam1Name } from '../js/game/logic.js';
+import { getActiveTeam2Name } from '../js/game/logic.js';
 
 import { signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
@@ -117,6 +119,78 @@ export function hideLoadingOverlay() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+
+    // --- SCOREBOARD MENU DROPDOWN ---
+    const scoreboardMenuButton = document.getElementById("scoreboard-menu-button");
+    const scoreboardMenuDropdown = document.getElementById("scoreboard-menu-dropdown");
+
+    // Toggle abrir/fechar ao clicar no botão
+    scoreboardMenuButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        scoreboardMenuDropdown.classList.toggle("show");
+    });
+
+    // Fechar ao clicar fora
+    document.addEventListener("click", () => {
+        scoreboardMenuDropdown.classList.remove("show");
+    });
+
+
+
+
+
+
+
+    // Seleciona o primeiro botão do scoreboard-menu-dropdown
+    const invertTeamsButton = document.querySelector('#scoreboard-menu-dropdown button:first-child');
+
+    // Adiciona um evento de clique ao botão
+    invertTeamsButton.addEventListener('click', () => {
+    // Chama a função swapTeams quando o botão for clicado
+    import('../js/game/logic.js').then(mod => {
+        mod.swapTeams();
+    });
+    });
+
+    
+    // Seleciona o terceiro botão do scoreboard-menu-dropdown
+    const team2ChangeButtonOption = document.querySelector('#scoreboard-menu-dropdown button:nth-child(3)');
+
+    // Obtém o nome do time que está na partida
+    const activeTeam2Name = getActiveTeam2Name();
+
+    // Adiciona o texto ao botão
+    team2ChangeButtonOption.textContent = `Substituir ${getActiveTeam2Name()}`;
+
+    // Adiciona um evento de clique ao botão
+    team2ChangeButtonOption.addEventListener('click', () => {
+    // Dispara o evento de clique do team2-change-button
+    document.getElementById('team2-change-button').click();
+    });
+
+
+    // Seleciona o segundo botão do scoreboard-menu-dropdown
+    const team1ChangeButtonOption = document.querySelector('#scoreboard-menu-dropdown button:nth-child(2)');
+
+    // Obtém o nome do time que está na partida
+    const activeTeam1Name = getActiveTeam1Name();
+
+    // Adiciona o texto ao botão
+    team1ChangeButtonOption.textContent = `Substituir ${getActiveTeam1Name()}`;
+
+    // Adiciona um evento de clique ao botão
+    team1ChangeButtonOption.addEventListener('click', () => {
+    // Dispara o evento de clique do team1-change-button
+    document.getElementById('team1-change-button').click();
+    });
+
+
+
+
+
+
+
+
         
     // Exibe a tela de carregamento imediatamente
     const loadingOverlay = Elements.loadingOverlay();
