@@ -24,17 +24,24 @@ function removePlayerFromTeam(teamIndex, playerIndex) {
     import('../game/logic.js').then(({ getAllGeneratedTeams, setAllGeneratedTeams }) => {
         import('../utils/helpers.js').then(({ salvarTimesGerados }) => {
             import('./messages.js').then(({ displayMessage }) => {
-                const teams = getAllGeneratedTeams();
-                const player = teams[teamIndex].players[playerIndex];
-                teams[teamIndex].players.splice(playerIndex, 1);
-                
-                // Adiciona uma vaga na lista de jogadores
-                teams[teamIndex].players.push(`[Vaga ${teams[teamIndex].players.length + 1}]`);
+                import('./players-ui.js').then(({ unselectPlayerInUI }) => {
+                    const teams = getAllGeneratedTeams();
+                    const player = teams[teamIndex].players[playerIndex];
+                    teams[teamIndex].players.splice(playerIndex, 1);
+                    
+                    // Adiciona uma vaga na lista de jogadores
+                    teams[teamIndex].players.push(`[Vaga ${teams[teamIndex].players.length + 1}]`);
 
-                setAllGeneratedTeams(teams);
-                salvarTimesGerados(teams);
-                renderTeams(teams);
-                displayMessage(`${player} removido do time.`, 'success');
+                    setAllGeneratedTeams(teams);
+                    salvarTimesGerados(teams);
+                    renderTeams(teams);
+                    displayMessage(`${player} removido do time.`, 'success');
+
+                    // Desmarca o jogador na tela de jogadores
+                    if (player && !player.startsWith('[Vaga')) {
+                        unselectPlayerInUI(player);
+                    }
+                }).catch(err => console.error('Failed to load players-ui module', err));
             });
         });
     });

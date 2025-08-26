@@ -2696,38 +2696,67 @@ select.form-input {
 }
 
 
-/* Zona de exclusão geral (para drag and drop) */
+/* =============================================
+   ZONA DE EXCLUSÃO (DELETE ZONE) - VISUAL SOMBRA
+   ============================================== */
+
 .delete-zone {
     position: fixed;
-    bottom: 2rem;
-    left: 50%;
-    transform: translateX(-50%);
-    background: linear-gradient(135deg, #fee2e2, #fecaca);
-    border: 2px dashed #f87171;
-    border-radius: 12px;
-    padding: 1rem 2rem;
-    color: #dc2626;
-    font-weight: 600;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 120px; /* Altura da área da sombra */
+    
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    z-index: 1000;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+    justify-content: center;
+    
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.4), transparent); /* Sombra gradual */
+    color: var(--text-primary);
+    
+    z-index: 10000;
     opacity: 0;
+    visibility: hidden;
     pointer-events: none;
+    
+    transform: translateY(100%);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.delete-zone.visible {
+/* Oculta o texto, mantendo apenas o ícone */
+.delete-zone span:not(.material-icons) {
+    display: none;
+}
+
+.delete-zone .material-icons {
+    font-size: 2rem; /* Ícone maior */
+    padding: 1rem;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-radius: 50%;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+/* Estado ativo: visível e posicionado */
+.delete-zone.active {
     opacity: 1;
+    visibility: visible;
     pointer-events: all;
+    transform: translateY(0);
 }
 
-.delete-zone.drag-over {
-    background: linear-gradient(135deg, #dc2626, #b91c1c);
-    color: white;
-    transform: translateX(-50%) scale(1.1);
-    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.4);
+/* Estado de "drag over": destaque visual no ícone */
+.delete-zone.drag-over .material-icons {
+    transform: scale(1.2) rotate(15deg);
+    background: var(--bg-tertiary);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+#scheduling-delete-zone {
+    z-index: 99999;
+    will-change: transform, opacity;
+    contain: layout style paint;
 }
 
 /* ==============================================
@@ -3684,6 +3713,7 @@ input:checked + .switch-slider:before {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
+    pointer-events: all;
 }
 
 /* Estado de drag over: destaque */
@@ -6390,7 +6420,7 @@ input[type="password"] {
 
 /* PWA - Ajustes para modo standalone */
 @media (display-mode: standalone) {
-    body {
+    body:not(.scoring-page-active) {
         padding-top: 20px;
         padding-bottom: 30px;
     }

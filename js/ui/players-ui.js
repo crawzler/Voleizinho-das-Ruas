@@ -1112,6 +1112,14 @@ function setupDeleteZone() {
     const deleteZone = document.getElementById('delete-zone');
     if (!deleteZone) return;
     
+    // Garante que a zona de exclusão esteja anexada ao body para que position: fixed
+    // seja relativo à viewport e não a um container com transform/scroll
+    try {
+        if (deleteZone.parentElement !== document.body) {
+            document.body.appendChild(deleteZone);
+        }
+    } catch (e) { /* ignore */ }
+    
     // Desktop drag and drop
     deleteZone.addEventListener('dragover', (e) => {
         e.preventDefault();
@@ -1316,6 +1324,47 @@ function getCategoryDisplayName(category) {
 }
 
 
+
+/**
+ * Desmarca um jogador na tela de jogadores quando removido de um time.
+ * @param {string} playerName - Nome do jogador a ser desmarcado.
+ */
+export function unselectPlayerInUI(playerName) {
+    const allPlayers = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
+    const playerData = allPlayers.find(p => p.name === playerName);
+
+    if (playerData) {
+        const playerCategory = playerData.category || 'principais';
+        const key = `selectedPlayers_${playerCategory}`;
+        let selectedPlayerIds = [];
+        try {
+            const savedSelection = localStorage.getItem(key);
+            if (savedSelection) {
+                selectedPlayerIds = JSON.parse(savedSelection);
+            }
+        } catch (e) {
+            selectedPlayerIds = [];
+        }
+
+        const index = selectedPlayerIds.indexOf(playerData.id);
+        if (index > -1) {
+            selectedPlayerIds.splice(index, 1);
+            localStorage.setItem(key, JSON.stringify(selectedPlayerIds));
+
+            // ATUALIZADO: Chamar updateGlobalSelections para manter a aba "Todos" em sincronia
+            updateGlobalSelections();
+
+            // Atualiza a contagem de jogadores
+            updatePlayerCount();
+
+            // Se a página de jogadores estiver visível, re-renderiza a lista
+            const playersPage = document.getElementById('players-page');
+            if (playersPage && playersPage.classList.contains('app-page--active')) {
+                renderPlayersList(allPlayers);
+            }
+        }
+    }
+}
 
 /**
  * Atualiza o estado do toggle "Selecionar Todos".
