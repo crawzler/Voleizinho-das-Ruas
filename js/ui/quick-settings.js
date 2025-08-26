@@ -12,7 +12,8 @@ export function setupQuickSettings() {
     const pointsInput = document.getElementById('quick-points-per-set');
     const setsInput = document.getElementById('quick-number-of-sets');
 
-    if (!quickSettingsButton || !quickSettingsModal) {
+    // Continua inicialização mesmo sem o botão (foi removido da UI)
+    if (!quickSettingsModal) {
         // Log removido
         return;
     }
@@ -35,14 +36,16 @@ export function setupQuickSettings() {
         quickSettingsContent.addEventListener('touchmove', (ev) => ev.stopPropagation(), { passive: false });
     }
     
-    // Abre o modal
-    quickSettingsButton.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        // Log removido
-        loadValues(); // Recarrega valores atuais
-        quickSettingsModal.classList.add('active');
-    });
+    // Abre o modal se o botão existir (backward compatibility)
+    if (quickSettingsButton) {
+        quickSettingsButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // Log removido
+            loadValues(); // Recarrega valores atuais
+            quickSettingsModal.classList.add('active');
+        });
+    }
 
     // Fecha o modal
     const closeModal = () => {
@@ -83,4 +86,18 @@ export function setupQuickSettings() {
             // Log removido
         });
     }
+}
+
+// Exposto para abrir o modal diretamente pelo menu do placar
+export function openQuickSettingsModal() {
+    const quickSettingsModal = document.getElementById('quick-settings-modal');
+    const pointsInput = document.getElementById('quick-points-per-set');
+    const setsInput = document.getElementById('quick-number-of-sets');
+    if (!quickSettingsModal) return;
+
+    const config = loadConfig();
+    if (pointsInput) pointsInput.value = config.pointsPerSet || 15;
+    if (setsInput) setsInput.value = config.numberOfSets || 1;
+
+    quickSettingsModal.classList.add('active');
 }

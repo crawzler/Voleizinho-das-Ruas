@@ -123,20 +123,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- SCOREBOARD MENU DROPDOWN ---
     const scoreboardMenuButton = document.getElementById("scoreboard-menu-button");
     const scoreboardMenuDropdown = document.getElementById("scoreboard-menu-dropdown");
+    const scoreboardMenuOverlay = document.getElementById("scoreboard-menu-overlay");
 
-    // Toggle abrir/fechar ao clicar no botão
+
+
+
     scoreboardMenuButton.addEventListener("click", (event) => {
-        event.stopPropagation();
-        scoreboardMenuDropdown.classList.toggle("show");
-    });
-
-    // Fechar ao clicar fora
-    document.addEventListener("click", () => {
-        scoreboardMenuDropdown.classList.remove("show");
-    });
-
-
-
+    event.stopPropagation();
+    const isOpen = scoreboardMenuDropdown.classList.toggle("show");
+    if (isOpen) {
+        scoreboardMenuOverlay.classList.add("active");
+    } else {
+        scoreboardMenuOverlay.classList.remove("active");
+    }
+});
+    
+// Fechar ao clicar no overlay
+scoreboardMenuOverlay.addEventListener("click", () => {
+    scoreboardMenuDropdown.classList.remove("show");
+    scoreboardMenuOverlay.classList.remove("active");
+});
 
 
 
@@ -156,33 +162,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Seleciona o terceiro botão do scoreboard-menu-dropdown
     const team2ChangeButtonOption = document.querySelector('#scoreboard-menu-dropdown button:nth-child(3)');
 
-    // Obtém o nome do time que está na partida
-    const activeTeam2Name = getActiveTeam2Name();
-
-    // Adiciona o texto ao botão
-    team2ChangeButtonOption.textContent = `Substituir ${getActiveTeam2Name()}`;
-
-    // Adiciona um evento de clique ao botão
-    team2ChangeButtonOption.addEventListener('click', () => {
-    // Dispara o evento de clique do team2-change-button
-    document.getElementById('team2-change-button').click();
-    });
+    // Define o texto com o nome atual do time 2 preservando o ícone
+    if (team2ChangeButtonOption) {
+        const iconEl = team2ChangeButtonOption.querySelector('.material-icons');
+        const iconHTML = iconEl ? iconEl.outerHTML : '';
+        team2ChangeButtonOption.innerHTML = `Substituir ${getActiveTeam2Name()} ${iconHTML}`;
+        // Adiciona um evento de clique ao botão
+        team2ChangeButtonOption.addEventListener('click', async () => {
+            // Abre o modal de seleção diretamente para o painel do Time 2
+            const mod = await import('./ui/pages.js');
+            if (mod && typeof mod.openTeamSelectionModal === 'function') {
+                mod.openTeamSelectionModal('team2');
+            }
+        });
+    }
 
 
     // Seleciona o segundo botão do scoreboard-menu-dropdown
     const team1ChangeButtonOption = document.querySelector('#scoreboard-menu-dropdown button:nth-child(2)');
 
-    // Obtém o nome do time que está na partida
-    const activeTeam1Name = getActiveTeam1Name();
-
-    // Adiciona o texto ao botão
-    team1ChangeButtonOption.textContent = `Substituir ${getActiveTeam1Name()}`;
-
-    // Adiciona um evento de clique ao botão
-    team1ChangeButtonOption.addEventListener('click', () => {
-    // Dispara o evento de clique do team1-change-button
-    document.getElementById('team1-change-button').click();
-    });
+    // Define o texto com o nome atual do time 1 preservando o ícone
+    if (team1ChangeButtonOption) {
+        const iconEl = team1ChangeButtonOption.querySelector('.material-icons');
+        const iconHTML = iconEl ? iconEl.outerHTML : '';
+        team1ChangeButtonOption.innerHTML = `Substituir ${getActiveTeam1Name()} ${iconHTML}`;
+        // Adiciona um evento de clique ao botão
+        team1ChangeButtonOption.addEventListener('click', async () => {
+            // Abre o modal de seleção diretamente para o painel do Time 1
+            const mod = await import('./ui/pages.js');
+            if (mod && typeof mod.openTeamSelectionModal === 'function') {
+                mod.openTeamSelectionModal('team1');
+            }
+        });
+    }
 
 
 
@@ -192,6 +204,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
         
+    // Última opção: Configuração rápida da partida
+    const quickSettingsOption = document.querySelector('#scoreboard-menu-dropdown button:nth-child(4)');
+    if (quickSettingsOption) {
+        const iconEl = quickSettingsOption.querySelector('.material-icons');
+        const iconHTML = iconEl ? iconEl.outerHTML : '';
+        quickSettingsOption.innerHTML = `Configurar partida ${iconHTML}`;
+        quickSettingsOption.addEventListener('click', async () => {
+            // Abre o modal de configurações rápidas diretamente (sem depender do botão removido)
+            const mod = await import('./ui/quick-settings.js');
+            if (mod && typeof mod.openQuickSettingsModal === 'function') {
+                mod.openQuickSettingsModal();
+            }
+        });
+    }
+
     // Exibe a tela de carregamento imediatamente
     const loadingOverlay = Elements.loadingOverlay();
     if (loadingOverlay) {

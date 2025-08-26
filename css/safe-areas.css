@@ -1,8 +1,22 @@
 /* Safe Areas CSS - Solução para inset areas em dispositivos móveis */
 
 /* Variáveis CSS dinâmicas - uso direto do env() */
+:root {
+    --safe-area-inset-top: env(safe-area-inset-top, 0px);
+    --safe-area-inset-right: env(safe-area-inset-right, 0px);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-inset-left: env(safe-area-inset-left, 0px);
+}
 
 /* Aplicação global das safe areas */
+/* Aplica padding do notch nas páginas que NÃO são a tela de pontuação */
+body:not(.scoring-page-active) {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+}
+
 .safe-area-container {
     padding-top: var(--safe-area-inset-top);
     padding-right: var(--safe-area-inset-right);
@@ -48,84 +62,31 @@
     right: var(--safe-area-inset-right);
 }
 
-/* Suporte para dispositivos sem safe areas */
-@supports not (padding: env(safe-area-inset-top)) {
-    :root {
-        --safe-area-inset-top: 0px;
-        --safe-area-inset-right: 0px;
-        --safe-area-inset-bottom: 0px;
-        --safe-area-inset-left: 0px;
-    }
-}
 
-/* Fallback para navegadores antigos */
-@supports not (padding: max(0px)) {
-    .safe-area-container {
-        padding-top: env(safe-area-inset-top, 0px);
-        padding-right: env(safe-area-inset-right, 0px);
-        padding-bottom: env(safe-area-inset-bottom, 0px);
-        padding-left: env(safe-area-inset-left, 0px);
-    }
-}
 
-/* Suporte aprimorado para diferentes navegadores */
-@supports (padding: constant(safe-area-inset-top)) {
-    :root {
-        --safe-area-inset-top: constant(safe-area-inset-top);
-        --safe-area-inset-right: constant(safe-area-inset-right);
-        --safe-area-inset-bottom: constant(safe-area-inset-bottom);
-        --safe-area-inset-left: constant(safe-area-inset-left);
-    }
-}
 
-/* Versões mais recentes do iOS */
-@supports (padding: env(safe-area-inset-top)) {
-    :root {
-        --safe-area-inset-top: env(safe-area-inset-top);
-        --safe-area-inset-right: env(safe-area-inset-right);
-        --safe-area-inset-bottom: env(safe-area-inset-bottom);
-        --safe-area-inset-left: env(safe-area-inset-left);
-    }
-}
 
-/* Orientação landscape em dispositivos móveis */
-@media screen and (orientation: landscape) and (max-height: 500px) {
-    .safe-area-container {
-        padding-top: max(var(--safe-area-inset-top), 10px);
-        padding-bottom: max(var(--safe-area-inset-bottom), 10px);
-    }
-}
+/* Removidos fallbacks legacy (constant/old iOS). Usamos env() com fallback 0px no :root. */
+
+/* Removido ajuste especial para landscape com padding extra: manter apenas os insets reais */
 
 /* Ajustes específicos para PWA */
+/* Mantemos somente o respeito aos insets, sem forçar extras globais */
 @media (display-mode: standalone), (display-mode: fullscreen) {
-    body {
-        padding-bottom: max(var(--safe-area-inset-bottom), 30px) !important;
+    body:not(.scoring-page-active) {
+        /* Já aplicamos env() globalmente; não adicionar extras aqui */
     }
-    
-    .safe-area-container {
-        padding-top: max(var(--safe-area-inset-top), 20px);
-        padding-bottom: max(var(--safe-area-inset-bottom), 30px);
-    }
-    
     .fixed-top-safe {
-        top: max(var(--safe-area-inset-top), 20px);
+        top: var(--safe-area-inset-top);
     }
-    
     .app-main-content {
-        height: calc(100vh - max(var(--safe-area-inset-bottom), 30px)) !important;
+        /* Evita reduzir a altura globalmente; cada tela ajusta seu próprio layout */
+        height: auto !important;
+        min-height: 100vh;
     }
 }
 
-/* Ajustes para dispositivos com notch em landscape */
-@media screen and (orientation: landscape) and (max-height: 500px) {
-    .safe-left {
-        padding-left: max(var(--safe-area-inset-left), 44px);
-    }
-    
-    .safe-right {
-        padding-right: max(var(--safe-area-inset-right), 44px);
-    }
-}
+/* Removidos ajustes específicos forçando 44px em landscape; usar apenas os insets reais */
 
 /* Debug para visualizar safe areas (remover em produção) */
 .debug-safe-areas {

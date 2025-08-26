@@ -6,6 +6,40 @@ import { formatTime } from '../utils/helpers.js';
 import { getIsGameInProgress } from '../game/logic.js';
 import { loadConfig } from './config-ui.js'; // Importa loadConfig para obter nomes e cores personalizados
 
+function closeAllDropdowns(except = null) {
+    const dropdowns = document.querySelectorAll('.substitute-dropdown');
+    dropdowns.forEach(dropdown => {
+        if (dropdown !== except) dropdown.classList.remove('show');
+    });
+}
+
+// Fecha dropdowns ao clicar fora
+document.addEventListener('click', (e) => {
+    // Se clicou dentro de um container de substituição, não fecha
+    if (e.target.closest('.substitute-container')) return;
+    closeAllDropdowns();
+});
+
+function removePlayerFromTeam(teamIndex, playerIndex) {
+    import('../game/logic.js').then(({ getAllGeneratedTeams, setAllGeneratedTeams }) => {
+        import('../utils/helpers.js').then(({ salvarTimesGerados }) => {
+            import('./messages.js').then(({ displayMessage }) => {
+                const teams = getAllGeneratedTeams();
+                const player = teams[teamIndex].players[playerIndex];
+                teams[teamIndex].players.splice(playerIndex, 1);
+                
+                // Adiciona uma vaga na lista de jogadores
+                teams[teamIndex].players.push(`[Vaga ${teams[teamIndex].players.length + 1}]`);
+
+                setAllGeneratedTeams(teams);
+                salvarTimesGerados(teams);
+                renderTeams(teams);
+                displayMessage(`${player} removido do time.`, 'success');
+            });
+        });
+    });
+}
+
 /**
  * Atualiza o placar exibido na tela.
  * @param {number} team1Score - Pontuação do Time 1.
@@ -132,21 +166,21 @@ export function renderScoringPagePlayers(team1Players, team2Players, shouldDispl
         });
         columnElement.appendChild(ul);
         
-        // Adiciona botão no painel do time
-        const teamPanel = document.getElementById(`${teamId}-panel`);
-        if (teamPanel && !teamPanel.querySelector('.team-change-button')) {
-            const changeButton = document.createElement('button');
-            changeButton.id = `${teamId}-change-button`;
-            changeButton.className = 'team-change-button';
-            changeButton.innerHTML = '<span class="material-icons">swap_horiz</span>';
-            changeButton.addEventListener('click', (event) => {
-                event.stopPropagation();
-                import('./pages.js').then(({ openTeamSelectionModal }) => {
-                    openTeamSelectionModal(teamId);
-                });
-            });
-            teamPanel.appendChild(changeButton);
-        }
+        // Removido: criação de botões de troca no painel do time (agora via menu do placar)
+        // const teamPanel = document.getElementById(`${teamId}-panel`);
+        // if (teamPanel && !teamPanel.querySelector('.team-change-button')) {
+        //     const changeButton = document.createElement('button');
+        //     changeButton.id = `${teamId}-change-button`;
+        //     changeButton.className = 'team-change-button';
+        //     changeButton.innerHTML = '<span class="material-icons">swap_horiz</span>';
+        //     changeButton.addEventListener('click', (event) => {
+        //         event.stopPropagation();
+        //         import('./pages.js').then(({ openTeamSelectionModal }) => {
+        //             openTeamSelectionModal(teamId);
+        //         });
+        //     });
+        //     teamPanel.appendChild(changeButton);
+        // }
     };
 
     renderPlayers(team1Column, team1Players, 'team1');
@@ -180,6 +214,20 @@ export function updateTeamDisplayNamesAndColors(team1Name, team2Name, team1Color
 
     if (team2PanelElement) {
         team2PanelElement.style.backgroundColor = team2Color;
+    }
+
+    // Atualiza rótulos do menu do placar com os nomes atuais dos times
+    const team1ChangeOption = document.querySelector('#scoreboard-menu-dropdown button:nth-child(2)');
+    if (team1ChangeOption) {
+        const iconEl = team1ChangeOption.querySelector('.material-icons');
+        const iconHTML = iconEl ? iconEl.outerHTML : '';
+        team1ChangeOption.innerHTML = `Substituir ${team1Name} ${iconHTML}`;
+    }
+    const team2ChangeOption = document.querySelector('#scoreboard-menu-dropdown button:nth-child(3)');
+    if (team2ChangeOption) {
+        const iconEl = team2ChangeOption.querySelector('.material-icons');
+        const iconHTML = iconEl ? iconEl.outerHTML : '';
+        team2ChangeOption.innerHTML = `Substituir ${team2Name} ${iconHTML}`;
     }
 }
 
@@ -280,19 +328,56 @@ export function renderTeams(teams) {
             
             playerItem.appendChild(playerName);
             
+            const substituteContainer = document.createElement('div');
+            substituteContainer.className = 'substitute-container';
+
             const substituteBtn = document.createElement('button');
             substituteBtn.className = 'substitute-btn';
-            
+
             if (isEmptySlot) {
-                substituteBtn.innerHTML = '+';
+                substituteBtn.innerHTML = '<span class="material-icons">add</span>';
                 substituteBtn.title = 'Adicionar jogador';
+                substituteBtn.onclick = (e) => showSubstituteOptions(e, index, playerIndex, player);
+                substituteContainer.appendChild(substituteBtn);
             } else {
-                substituteBtn.innerHTML = '↔';
-                substituteBtn.title = 'Substituir jogador';
+                substituteBtn.innerHTML = '<span class="material-icons">more_vert</span>';
+                substituteBtn.title = 'Opções';
+
+                const dropdown = document.createElement('div');
+                dropdown.className = 'substitute-dropdown';
+
+                const substituteOption = document.createElement('div');
+                substituteOption.className = 'substitute-option';
+                substituteOption.textContent = 'Substituir';
+                substituteOption.onclick = (e) => {
+                    e.stopPropagation();
+                    showSubstituteOptions(e, index, playerIndex, player);
+                    dropdown.classList.remove('show');
+                };
+
+                const removeOption = document.createElement('div');
+                removeOption.className = 'substitute-option';
+                removeOption.textContent = 'Remover';
+                removeOption.onclick = (e) => {
+                    e.stopPropagation();
+                    removePlayerFromTeam(index, playerIndex);
+                    dropdown.classList.remove('show');
+                };
+
+                dropdown.appendChild(substituteOption);
+                dropdown.appendChild(removeOption);
+                substituteContainer.appendChild(dropdown);
+
+                substituteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    // fecha outros, exceto este
+                    closeAllDropdowns(dropdown);
+                    dropdown.classList.toggle('show');
+                };
             }
             
-            substituteBtn.onclick = (e) => showSubstituteOptions(e, index, playerIndex, player);
-            playerItem.appendChild(substituteBtn);
+            substituteContainer.appendChild(substituteBtn);
+            playerItem.appendChild(substituteContainer);
             
             teamList.appendChild(playerItem); 
         });

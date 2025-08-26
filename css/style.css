@@ -12,6 +12,7 @@
     --bg-modal: #ffffff;
     --bg-overlay: rgba(0, 0, 0, 0.5);
     --bg-scoring: #f0f2f5;
+    --bg-dropdown: rgba(37, 99, 235, 0.1);
     
     --text-primary: #212529;
     --text-secondary: #6c757d;
@@ -3868,19 +3869,56 @@ body.start-page-active #team2-change-button {
 #scoreboard-menu-dropdown {
     display:none;
     position: absolute;
+    background-color: var(--new-bg-card, var(--bg-card));
+    color: var(--text-primary);
     top: 50%;
     left: 50%;
+    padding: 0;
     transform: translate(-50%, -50%);
     transform: translateX(-50%) translateY(-50%);
     background-color: var(--new-bg-primary);
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
 }
 
 #scoreboard-menu-dropdown.show {
     display: flex;
     flex-direction: column;
 }
+
+.scoreboard-dropdown-button {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+    background-color: var(--new-bg-card, var(--bg-card));
+    padding: 1rem;
+}
+
+.scoreboard-dropdown-button .material-icons {
+    font-size: 1rem;
+}
+
+.scoreboard-overlay {
+     position: fixed;
+     inset: 0;
+     background: var(--bg-overlay);
+     display: none;
+    backdrop-filter: blur(2px); 
+    z-index: 1;
+}
+
+.scoreboard-overlay.active {
+  display: block;
+}
+
 
 
 /* NOVO: Oculta quando start-page está ativa */
@@ -4056,7 +4094,6 @@ body.start-page-active #quick-settings-button {
     padding: 0.75rem 1.5rem;
     border-radius: 8px 8px 0px 0px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
-    z-index: 10;
     /* NOVO: Removes a demarcação azul em cliques/toques */
     outline: none;
     -webkit-tap-highlight-color: transparent;
@@ -5104,7 +5141,7 @@ body.modal-open {
 .modern-select:focus {
     outline: none;
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    box-shadow: 0 0 0 3px var(--bg-dropdown);
 }
 
 .modern-input::placeholder {
@@ -5987,7 +6024,7 @@ body:has(#login-page.app-page--active) .header-button-container {
 }
 
 .online-message {
-    background-color: rgba(37, 99, 235, 0.1);
+    background-color: var(--bg-dropdown);
     border: 1px solid var(--accent-primary);
     color: var(--accent-primary);
     padding: 0.75rem;
@@ -6548,38 +6585,36 @@ input[type="password"] {
 }
 
 .substitute-btn:hover {
-    background-color: rgba(37, 99, 235, 0.1);
-    color: #2563EB;
+    color: var(--new-accent-primary);
 }
 
 .substitute-dropdown {
+    display: none;
     position: absolute;
-    top: 100%;
-    right: 0;
-    background-color: #333;
-    border: 1px solid #444;
+    transform: translateX(-100%);
+    background-color: var(--sidebar-bg);
     border-radius: 6px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     z-index: 1000;
-    min-width: 150px;
-    max-height: 200px;
     overflow-y: auto;
+}
+
+.substitute-dropdown.show {
+    display: block;
 }
 
 .substitute-option {
     padding: 0.5rem 0.75rem;
     cursor: pointer;
-    color: #E5E7EB;
-    border-bottom: 1px solid #444;
+    color: var(--text-secondary);
     transition: background-color 0.2s ease;
-}
-
-.substitute-option:hover {
-    background-color: #444;
+    white-space: nowrap;
 }
 
 .substitute-option:last-child {
     border-bottom: none;
+    height: 100%;
+    text-align: center;
 }
 
 /* Modal de substituição */
