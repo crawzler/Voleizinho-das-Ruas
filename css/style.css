@@ -999,10 +999,6 @@ input:checked + .slider:before {
     font-size: 1.25rem;
 }
 
-.header-button.active .material-icons {
-    transform: rotate(90deg);
-}
-
 .sidebar-menu {
     position: fixed;
     top: 0;
@@ -3086,7 +3082,7 @@ body.dark-mode {
     display: inline-block;
     width: 48px;
     height: 28px;
-    margin: 1rem;
+    margin: 1rem 0 1rem 1rem;
 }
 
 .modern-switch input {
@@ -3743,12 +3739,33 @@ input:checked + .switch-slider:before {
 .card-proof-btn {
     position: absolute;
     bottom: 0px;
-    Right: 0px;
+    right: 0px;
     margin: 1rem;
     padding: 0.4rem 0.6rem;
     color: var(--new-text-primary);
     font-size: 0.75rem;
     font-weight: 500;
+}
+
+/* New scheduling card buttons */
+.card-responses-btn {
+    position: absolute;
+    margin: 1rem;
+    padding: 0.4rem 0.6rem;
+    color: var(--new-text-primary);
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 1px solid var(--new-border-color, var(--border-color));
+    background: var(--new-bg-card, var(--bg-card));
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+
+
+.card-responses-btn {
+    right: 0px;
+    bottom: 40px;
 }
 
 .card-cancel-x {

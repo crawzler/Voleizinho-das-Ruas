@@ -5,7 +5,7 @@ import { initFirebaseApp, getAppId } from './firebase/config.js';
 import { logout, setupAuthListener, signInAnonymouslyUser, updateProfileMenuLoginState, getCurrentUser, loginWithGoogle } from './firebase/auth.js'; // Imports updateProfileMenuLoginState
 import { setupFirestorePlayersListener } from './data/players.js';
 import * as SchedulesData from './data/schedules.js';
-import { showPage, updatePlayerModificationAbility, setupSidebar, setupPageNavigation, setupAccordion, setupScoreInteractions, setupTeamSelectionModal, closeSidebar, showConfirmationModal, hideConfirmationModal, forceUpdateIcons } from './ui/pages.js';
+import { showPage, updatePlayerModificationAbility, setupSidebar, setupPageNavigation, setupAccordion, setupScoreInteractions, setupTeamSelectionModal, closeSidebar, hideConfirmationModal, forceUpdateIcons } from './ui/pages.js';
 import { setupConfigUI, loadConfig } from './ui/config-ui.js'; // Importa loadConfig
 import { startGame, toggleTimer, swapTeams, endGame, restoreSavedGameIfAny } from './game/logic.js';
 import { generateTeams } from './game/teams.js';
@@ -271,7 +271,7 @@ scoreboardMenuOverlay.addEventListener("click", () => {
     const generateTeamsButton = document.getElementById('generate-teams-button');
     if (generateTeamsButton) {
         generateTeamsButton.addEventListener('click', () => {
-            showConfirmationModal(
+            window.showConfirmationModal(
                 'Deseja gerar os times agora? Isso pode reorganizar os times atuais.',
                 () => {
                     generateTeams(appId);
@@ -531,17 +531,7 @@ scoreboardMenuOverlay.addEventListener("click", () => {
     loadAppVersion();
     registerServiceWorker();
 
-    // Optional: initialize Mi Band test notifications module if enabled (isolated and removable)
-    try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const miBandTestEnabled = urlParams.get('testNotif') === '1' || localStorage.getItem('miBandTestNotifEnabled') === 'true';
-        if (miBandTestEnabled) {
-            const mod = await import('./test/mi-band-test-notifications.js');
-            if (mod && typeof mod.initMiBandTestNotifications === 'function') {
-                await mod.initMiBandTestNotifications();
-            }
-        }
-    } catch (_) { /* noop */ }
+    // Mi Band: bloco de testes removido
 
     // Developer helper: visit the app with ?clearCache=1 to ask the service worker to clear caches and reload
     try {
@@ -780,3 +770,4 @@ window.getStorageStats = async () => {
         return null;
     }
 };
+

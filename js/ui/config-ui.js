@@ -5,7 +5,7 @@ import * as Elements from './elements.js';
 import { updateTeamDisplayNamesAndColors, renderScoringPagePlayers } from '../ui/game-ui.js';
 import { getCurrentTeam1, getCurrentTeam2, getActiveTeam1Name, getActiveTeam2Name, getActiveTeam1Color, getActiveTeam2Color } from '../game/logic.js';
 import { displayMessage } from './messages.js'; // Importa para exibir mensagens
-import { showConfirmationModal } from './pages.js'; // Importa o modal de confirmação
+// import { showConfirmationModal } from './pages.js'; // Importa o modal de confirmação
 import { updateConnectionIndicator } from '../main.js'; // Importa updateConnectionIndicator
 
 
@@ -110,8 +110,8 @@ export function loadConfig() {
         // Atualiza meta theme-color baseado no tema
         const metaThemeColor = document.querySelector('meta[name="theme-color"]');
         if (metaThemeColor) {
-            metaThemeColor.content = config.darkMode ? '#1a1a1a' : '#ffffff';
-        }
+    metaThemeColor.content = '#000000';
+}
 
 
 
@@ -187,8 +187,8 @@ export function saveConfig() {
         // Atualiza meta theme-color baseado no tema
         const metaThemeColor = document.querySelector('meta[name="theme-color"]');
         if (metaThemeColor) {
-            metaThemeColor.content = config.darkMode ? '#1a1a1a' : '#ffffff';
-        }
+    metaThemeColor.content = '#000000';
+}
         
         // Força atualização de estilos dependentes do tema
         document.documentElement.style.setProperty('--theme-transition', 'all 0.3s ease');

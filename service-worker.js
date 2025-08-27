@@ -338,8 +338,9 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   
   const action = event.action;
+  const payload = event.notification && event.notification.data ? event.notification.data : null;
   
-  // Se for o botão "Fechar", apenas fecha a notificação
+  // Se for o botão "Fechar" (legado), apenas fecha a notificação
   if (action === 'close') {
     return;
   }
@@ -349,8 +350,11 @@ self.addEventListener('notificationclick', (event) => {
       // Procura por uma janela já aberta
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
-          // Se for "Ver Detalhes", navega para agendamentos
-          if (action === 'view') {
+          // Encaminha ações para o cliente
+          if (action === 'going' || action === 'not_going' || action === 'maybe') {
+            client.postMessage({ type: 'NOTIFICATION_ACTION', action, data: payload });
+          } else if (action === 'view') {
+            // Compatibilidade com ações antigas
             client.postMessage({ type: 'NOTIFICATION_ACTION', action: 'view' });
           }
           return client.focus();
@@ -359,7 +363,8 @@ self.addEventListener('notificationclick', (event) => {
       
       // Se não há janela aberta, abre uma nova
       if (clients.openWindow) {
-        const url = action === 'view' ? '/#scheduling' : '/';
+        const shouldOpenScheduling = (action === 'going' || action === 'not_going' || action === 'maybe' || action === 'view');
+        const url = shouldOpenScheduling ? '/#scheduling' : '/';
         return clients.openWindow(url);
       }
     })

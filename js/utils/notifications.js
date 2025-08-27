@@ -46,9 +46,11 @@ export async function notifyNewSchedule(schedule) {
             tag: 'new-schedule',
             requireInteraction: true,
             actions: [
-                { action: 'view', title: '👀 Ver Detalhes' },
-                { action: 'close', title: '❌ Fechar' }
-            ]
+                { action: 'going', title: '✅ Vou' },
+                { action: 'not_going', title: '🚫 Não vou' },
+                { action: 'maybe', title: 'Talvez' }
+            ],
+            data: { type: 'schedule', id: schedule.id }
         });
     } catch (error) {
         // Fallback para notificação simples
@@ -91,10 +93,8 @@ export async function notifyCancelledSchedule(schedule) {
             badge: './images/icon-96x96.png',
             tag: 'cancelled-schedule',
             requireInteraction: true,
-            actions: [
-                { action: 'view', title: '👀 Ver Detalhes' },
-                { action: 'close', title: '❌ Fechar' }
-            ]
+            // Removido: ações de presença não devem aparecer nesta notificação
+            data: { type: 'schedule', id: schedule.id }
         });
     } catch (error) {
         // Fallback para notificação simples
@@ -159,28 +159,21 @@ function showInAppNotification(schedule, type = 'new') {
             ${type === 'cancelled' && schedule.cancelReason ? `<br><strong>⚠️ Motivo:</strong> ${schedule.cancelReason}` : ''}
         </div>
     `;
-    
-    // Adiciona ao body
+
+    // Adiciona ao topo da página
     document.body.appendChild(notification);
-    
-    // Remove após 5 segundos
-    setTimeout(() => {
-        notification.style.animation = 'slideOutRight 0.3s ease-in';
+
+    // Animação de entrada e saída
+    requestAnimationFrame(() => {
+        notification.classList.add('show');
         setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 300);
-    }, 5000);
-    
-    // Permite fechar clicando
-    notification.addEventListener('click', () => {
-        notification.style.animation = 'slideOutRight 0.3s ease-in';
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 300);
+            notification.classList.remove('show');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 5000);
     });
 }
 
@@ -195,7 +188,7 @@ export async function registerNotificationServiceWorker() {
             // Adiciona listener para ações de notificação
             navigator.serviceWorker.addEventListener('message', (event) => {
                 if (event.data && event.data.type === 'NOTIFICATION_ACTION') {
-                    handleNotificationAction(event.data.action);
+                    handleNotificationAction(event.data.action, event.data.data || null);
                 }
             });
 
@@ -210,14 +203,23 @@ export async function registerNotificationServiceWorker() {
 /**
  * Trata ações das notificações
  */
-function handleNotificationAction(action) {
+function handleNotificationAction(action, data) {
     switch (action) {
-        case 'view':
-            // Navega para a página de agendamentos
+        case 'going':
+        case 'not_going':
+        case 'maybe':
+            // Navega para a página de agendamentos e emite evento de RSVP
             if (window.location.hash !== '#scheduling') {
                 window.location.hash = '#scheduling';
             }
-            // Dispara evento para atualizar a página se necessário
+            const rsvpEvent = new CustomEvent('schedule-rsvp', { detail: { action, scheduleId: data && data.id ? data.id : null } });
+            window.dispatchEvent(rsvpEvent);
+            break;
+        case 'view':
+            // Compat: se ainda existir alguma notificação antiga
+            if (window.location.hash !== '#scheduling') {
+                window.location.hash = '#scheduling';
+            }
             const event = new CustomEvent('navigate-to-scheduling');
             window.dispatchEvent(event);
             break;
@@ -225,40 +227,6 @@ function handleNotificationAction(action) {
             // Apenas fecha a notificação - não faz nada
             break;
     }
-}
-
-/**
- * Verifica se as notificações estão habilitadas
- */
-export function areNotificationsEnabled() {
-    const config = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
-    return 'Notification' in window && 
-           Notification.permission === 'granted' && 
-           config.notificationsEnabled !== false;
-}
-
-/**
- * Salva preferência de notificações
- */
-export function setNotificationsEnabled(enabled) {
-    const config = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
-    config.notificationsEnabled = enabled;
-    localStorage.setItem('volleyballConfig', JSON.stringify(config));
-}
-
-/**
- * Obtém preferência de notificações
- */
-export function getNotificationsPreference() {
-    const config = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
-    return config.notificationsEnabled !== false; // padrão é true
-}
-
-/**
- * Verifica se as notificações são suportadas
- */
-export function areNotificationsSupported() {
-    return 'Notification' in window;
 }
 
 /**
@@ -283,10 +251,8 @@ export async function notifyTodayGame(schedule) {
             badge: './images/icon-96x96.png',
             tag: 'today-game',
             requireInteraction: true,
-            actions: [
-                { action: 'view', title: '👀 Ver Detalhes' },
-                { action: 'close', title: '❌ Fechar' }
-            ]
+            // Removido: ações de presença não devem aparecer nesta notificação
+            data: { type: 'schedule', id: schedule.id }
         });
     } catch (error) {
         // Fallback para notificação simples
@@ -303,4 +269,32 @@ export async function notifyTodayGame(schedule) {
 
         setTimeout(() => notification.close(), 10000);
     }
+}
+
+export function areNotificationsEnabled() {
+    try {
+        const value = localStorage.getItem('notificationsEnabled');
+        return value === null ? true : value === 'true';
+    } catch (_) {
+        return true;
+    }
+}
+
+export function setNotificationsEnabled(enabled) {
+    try {
+        localStorage.setItem('notificationsEnabled', enabled ? 'true' : 'false');
+    } catch (_) { /* noop */ }
+}
+
+export function getNotificationsPreference() {
+    try {
+        const raw = localStorage.getItem('notificationsSettings');
+        return raw ? JSON.parse(raw) : {};
+    } catch (_) {
+        return {};
+    }
+}
+
+export function areNotificationsSupported() {
+    return 'Notification' in window && 'serviceWorker' in navigator;
 }

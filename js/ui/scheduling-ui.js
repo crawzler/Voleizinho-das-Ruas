@@ -3,11 +3,12 @@
 
 import * as Elements from './elements.js';
 import { displayMessage } from './messages.js';
-import { showConfirmationModal } from './pages.js'; // Importa o modal de confirmação
 import * as SchedulesData from '../data/schedules.js';
 import { getCurrentUser } from '../firebase/auth.js';
 import { notifyNewSchedule, notifyCancelledSchedule, areNotificationsEnabled } from '../utils/notifications.js';
 import { initSchedulingAnimations, enhanceHoverEffects, setupLoadingAnimations } from './scheduling-animations.js';
+import { showConfirmationModal } from './pages.js';
+import { getPlayers } from '../data/players.js';
 
 const SCHEDULES_STORAGE_KEY = 'voleiScoreSchedules';
 
@@ -340,6 +341,7 @@ function createGameCard(game) {
         </div>
         ${canDelete && game.status === 'upcoming' && game.status !== 'cancelled' ? `<button class="card-cancel-x" title="Cancelar"><span class="material-icons">close</span></button>` : ''}
         ${game.paymentProofs && game.paymentProofs.length ? `<button class="card-proof-btn" data-game-id='${game.id}' data-proofs-count='${game.paymentProofs.length}' title="Ver comprovantes">Comprovantes</button>` : ''}
+        ${canDelete && game.status === 'upcoming' ? `<button class="card-responses-btn" data-game-id='${game.id}' title="Ver respostas de presença"><span class="material-icons">group</span> Respostas</button>` : ''}
     `;
     // Attach proofs off-DOM to avoid embedding large base64 strings in attributes
     if (game.paymentProofs && game.paymentProofs.length) {
@@ -401,6 +403,96 @@ function portalScheduleModalToBody() {
 }
 
 /**
+ * NOVO: Mostra um modal de ações unificado para RSVP e comprovantes.
+ * @param {string} gameId - O ID do jogo.
+ */
+function showActionModal(gameId) {
+    const game = scheduledGames.find(g => g.id === gameId);
+    if (!game) return;
+
+    const user = getCurrentUser();
+    if (!user) {
+        displayMessage('Faça login para interagir com o agendamento.', 'error');
+        return;
+    }
+
+    lockBodyScroll();
+    enableTouchMoveBlocker();
+    const overlay = document.createElement('div');
+    overlay.className = 'confirmation-modal-overlay';
+    overlay.style.display = 'flex';
+    overlay.style.visibility = 'visible';
+    overlay.style.opacity = '1';
+
+    const hasProofs = game.paymentProofs && game.paymentProofs.length > 0;
+    const isUpcoming = game.status === 'upcoming' && game.status !== 'cancelled';
+
+    const content = document.createElement('div');
+    content.className = 'confirmation-modal-content';
+    content.innerHTML = `
+        <h3 style="margin: 0 0 1rem; color: var(--text-primary);">Opções do Jogo</h3>
+        <div class="confirmation-buttons" style="flex-direction: column; align-items: stretch; gap: 0.75rem;">
+            ${isUpcoming ? `
+                <button class="button confirmation-button--confirm rsvp-going"><span class="material-icons" style="vertical-align: middle; margin-right: 0.25rem;">check_circle</span> Vou</button>
+                <button class="button confirmation-button--confirm rsvp-maybe" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color);"><span class="material-icons" style="vertical-align: middle; margin-right: 0.25rem;">help</span> Talvez</button>
+                <button class="button confirmation-button--cancel rsvp-not-going"><span class="material-icons" style="vertical-align: middle; margin-right: 0.25rem;">cancel</span> Não vou</button>
+            ` : ''}
+            ${hasProofs ? `
+                <button class="button view-proofs-btn" style="background: var(--info); margin-top: ${isUpcoming ? '0.5rem' : '0'};">
+                    <span class="material-icons" style="vertical-align: middle; margin-right: 0.25rem;">receipt</span> Ver Comprovantes
+                </button>` : ''}
+        </div>
+        <div class="confirmation-buttons" style="justify-content:flex-end; margin-top:1.5rem;">
+            <button class="button confirmation-button--cancel close-action-modal">Fechar</button>
+        </div>
+    `;
+
+    overlay.appendChild(content);
+    document.body.appendChild(overlay);
+
+    function close() {
+        try {
+            overlay.remove();
+        } catch (e) { /* ignore */ }
+        unlockBodyScroll();
+        disableTouchMoveBlocker();
+    }
+
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            close();
+        }
+    });
+
+    content.querySelector('.close-action-modal')?.addEventListener('click', close);
+
+    const dispatchRsvp = (action) => {
+        const rsvpEvent = new CustomEvent('schedule-rsvp', { detail: { action, scheduleId: gameId } });
+        window.dispatchEvent(rsvpEvent);
+        close();
+    };
+
+    if (isUpcoming) {
+        content.querySelector('.rsvp-going')?.addEventListener('click', () => dispatchRsvp('going'));
+        content.querySelector('.rsvp-maybe')?.addEventListener('click', () => dispatchRsvp('maybe'));
+        content.querySelector('.rsvp-not-going')?.addEventListener('click', () => dispatchRsvp('not_going'));
+    }
+
+    if (hasProofs) {
+        content.querySelector('.view-proofs-btn')?.addEventListener('click', () => {
+            const proofs = proofsByGameId[gameId];
+            if (proofs && proofs.length) {
+                showProofViewer(proofs);
+            } else {
+                displayMessage('Não foi possível carregar os comprovantes.', 'error');
+            }
+            close(); // Fecha o modal de ação
+        });
+    }
+}
+
+
+/**
  * Configura os event listeners e a lógica para a página de agendamento.
  */
 export function setupSchedulingPage() {
@@ -419,6 +511,23 @@ export function setupSchedulingPage() {
 
     const scheduleButton = Elements.scheduleGameButton();
     const pageContainer = Elements.schedulingPage();
+
+    // Adicionar listener para evento de RSVP
+    window.addEventListener('schedule-rsvp', async (event) => {
+        const { action, scheduleId } = event.detail;
+        const user = getCurrentUser();
+        if (!user || !scheduleId) return;
+        const schedule = scheduledGames.find(g => g.id === scheduleId);
+        if (!schedule) return;
+        if (!schedule.rsvps) schedule.rsvps = {};
+        schedule.rsvps[user.uid] = action;
+        try {
+            await SchedulesData.updateSchedule(schedule);
+            displayMessage('Resposta registrada com sucesso!', 'success');
+        } catch (err) {
+            displayMessage('Erro ao registrar resposta.', 'error');
+        }
+    });
 
     // Garante que o event listener do botão só é adicionado uma vez
     if (scheduleButton && !scheduleButtonListenerAdded) {
@@ -513,19 +622,30 @@ export function setupSchedulingPage() {
         });
     }
     
-    if(pageContainer) {
+    // CORRIGIDO: Adiciona o listener apenas uma vez para evitar múltiplos modais
+    if (pageContainer && !pageContainer.dataset.listenerAdded) {
+        pageContainer.dataset.listenerAdded = 'true'; // Marca que o listener foi adicionado
         pageContainer.addEventListener('click', async (event) => {
-            const button = event.target.closest('.card-cancel-x, .card-proof-btn');
+            const button = event.target.closest('.card-cancel-x, .card-action-btn, .card-responses-btn, .card-proof-btn');
             if (!button) return;
+
             const card = button.closest('.scheduled-game-card');
             if (!card) return;
             const gameId = card.dataset.gameId;
 
-            if (button.classList.contains('card-cancel-x')) {
+            if (button.classList.contains('card-responses-btn')) {
+                const game = scheduledGames.find(g => g.id === gameId);
+                if (game) {
+                    showResponsesModal(game);
+                } else {
+                    displayMessage('Agendamento não encontrado.', 'error');
+                }
+            } else if (button.classList.contains('card-action-btn')) {
+                showActionModal(gameId);
+            } else if (button.classList.contains('card-cancel-x')) {
                 showCancelReasonModal(gameId);
             } else if (button.classList.contains('card-proof-btn')) {
-                // Usar os comprovantes armazenados no elemento ou no objeto
-                const proofs = button.__proofs || proofsByGameId[gameId];
+                const proofs = proofsByGameId[gameId];
                 if (proofs && proofs.length) {
                     showProofViewer(proofs);
                 } else {
@@ -1449,4 +1569,144 @@ function showCancelReasonModal(gameId) {
 // Exporta função para atualizar visibilidade (para ser chamada quando login/logout)
 export function updateSchedulingPermissions() {
     updateFloatingButtonVisibility();
+}
+
+function showRsvpModal(gameId) {
+    try {
+        lockBodyScroll();
+        enableTouchMoveBlocker();
+        const overlay = document.createElement('div');
+        overlay.className = 'confirmation-modal-overlay';
+        overlay.style.display = 'flex';
+        overlay.style.visibility = 'visible';
+        overlay.style.opacity = '1';
+
+        const content = document.createElement('div');
+        content.className = 'confirmation-modal-content';
+        content.innerHTML = `
+            <h3 style="margin: 0 0 1rem; color: var(--text-primary);">Responder Presença</h3>
+            <p class="confirmation-message">Como você confirma sua presença?</p>
+            <div class="confirmation-buttons" style="flex-wrap: wrap; gap: 0.5rem;">
+                <button class="button confirmation-button--confirm rsvp-going"><span class="material-icons" style="vertical-align: middle; margin-right: 0.25rem;">check_circle</span> Vou</button>
+                <button class="button confirmation-button--confirm rsvp-maybe" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color);"><span class="material-icons" style="vertical-align: middle; margin-right: 0.25rem;">help</span> Talvez</button>
+                <button class="button confirmation-button--cancel rsvp-not-going"><span class="material-icons" style="vertical-align: middle; margin-right: 0.25rem;">cancel</span> Não vou</button>
+            </div>
+        `;
+
+        overlay.appendChild(content);
+        document.body.appendChild(overlay);
+
+        function close() {
+            try {
+                overlay.remove();
+            } catch (e) { /* ignore */ }
+            unlockBodyScroll();
+            disableTouchMoveBlocker();
+        }
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                close();
+            }
+        });
+
+        const goingBtn = content.querySelector('.rsvp-going');
+        const maybeBtn = content.querySelector('.rsvp-maybe');
+        const notGoingBtn = content.querySelector('.rsvp-not-going');
+
+        const dispatchRsvp = (action) => {
+            const rsvpEvent = new CustomEvent('schedule-rsvp', { detail: { action, scheduleId: gameId } });
+            window.dispatchEvent(rsvpEvent);
+            close();
+        };
+
+        goingBtn?.addEventListener('click', () => dispatchRsvp('going'));
+        maybeBtn?.addEventListener('click', () => dispatchRsvp('maybe'));
+        notGoingBtn?.addEventListener('click', () => dispatchRsvp('not_going'));
+    } catch (err) {
+        displayMessage('Não foi possível abrir o modal de presença.', 'error');
+    }
+}
+
+function showResponsesModal(game) {
+    try {
+        lockBodyScroll();
+        enableTouchMoveBlocker();
+
+        const overlay = document.createElement('div');
+        overlay.className = 'confirmation-modal-overlay';
+        overlay.style.display = 'flex';
+        overlay.style.visibility = 'visible';
+        overlay.style.opacity = '1';
+
+        const content = document.createElement('div');
+        content.className = 'confirmation-modal-content';
+
+        const makeItem = (label, icon, colorVar) => `
+            <li style="display:flex; align-items:center; gap:0.5rem; padding:0.35rem 0;">
+                <span class="material-icons" style="font-size:18px; color: var(${colorVar});">${icon}</span>
+                <span style="color: var(--text-primary);">${label}</span>
+            </li>`;
+
+        const rsvps = game.rsvps || {};
+        const players = getPlayers();
+        const currentUser = getCurrentUser();
+
+        const items = Object.entries(rsvps).map(([userId, response]) => {
+            const player = players.find(p => p.uid === userId);
+            const playerName = player ? player.name : `Usuário ${userId}`;
+
+            if (response === 'going') return makeItem(`${playerName}: Vou`, 'check_circle', '--success');
+            if (response === 'maybe') return makeItem(`${playerName}: Talvez`, 'help', '--warning');
+            return makeItem(`${playerName}: Não vou`, 'cancel', '--danger');
+        });
+
+        const rsvpButtons = `
+            <div class="confirmation-buttons" style="flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem;">
+                <button class="button confirmation-button--confirm rsvp-going"><span class="material-icons" style="vertical-align: middle; margin-right: 0.25rem;">check_circle</span> Vou</button>
+                <button class="button confirmation-button--confirm rsvp-maybe" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color);"><span class="material-icons" style="vertical-align: middle; margin-right: 0.25rem;">help</span> Talvez</button>
+                <button class="button confirmation-button--cancel rsvp-not-going"><span class="material-icons" style="vertical-align: middle; margin-right: 0.25rem;">cancel</span> Não vou</button>
+            </div>
+        `;
+
+        content.innerHTML = `
+            <h3 style="margin: 0 0 1rem; color: var(--text-primary); display:flex; align-items:center; gap:.5rem">
+                <span class="material-icons">group</span>
+                Respostas de Presença
+            </h3>
+            ${items.length ? `<ul style="margin:0; padding-left:0; list-style:none; max-height:40vh; overflow:auto;">${items.join('')}</ul>` : `<p class="confirmation-message">Nenhuma resposta registrada ainda.</p>`}
+            ${currentUser ? rsvpButtons : ''}
+            <div class="confirmation-buttons" style="justify-content:flex-end; margin-top:1rem;">
+                <button class="button confirmation-button--cancel close-responses">Fechar</button>
+            </div>
+        `;
+
+        overlay.appendChild(content);
+        document.body.appendChild(overlay);
+
+        const close = () => {
+            try { overlay.remove(); } catch (_) {}
+            unlockBodyScroll();
+            disableTouchMoveBlocker();
+        };
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) close();
+        });
+        content.querySelector('.close-responses')?.addEventListener('click', close);
+
+        if(currentUser) {
+            const dispatchRsvp = (action) => {
+                const rsvpEvent = new CustomEvent('schedule-rsvp', { detail: { action, scheduleId: game.id } });
+                window.dispatchEvent(rsvpEvent);
+                close();
+            };
+
+            content.querySelector('.rsvp-going')?.addEventListener('click', () => dispatchRsvp('going'));
+            content.querySelector('.rsvp-maybe')?.addEventListener('click', () => dispatchRsvp('maybe'));
+            content.querySelector('.rsvp-not-going')?.addEventListener('click', () => dispatchRsvp('not_going'));
+        }
+    } catch (_) {
+        displayMessage('Não foi possível as respostas.', 'error');
+    }
 }

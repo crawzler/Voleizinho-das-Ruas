@@ -3,7 +3,7 @@
 
 import * as Elements from './elements.js';
 import { displayMessage } from './messages.js';
-import { showConfirmationModal } from './pages.js'; // Importa o modal de confirmação
+import { showConfirmationModal } from './pages.js';
 
 const MATCH_HISTORY_STORAGE_KEY = 'voleiScoreMatchHistory';
 

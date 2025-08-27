@@ -149,3 +149,14 @@ body.debug-safe-areas::after {
     z-index: 9999;
     border-left: 2px solid yellow;
 }
+
+/* Transparência das safe areas: pinta o fundo apenas na área de conteúdo
+   para que o padding (onde aplicamos os insets) fique transparente. */
+body {
+  background-clip: content-box !important;
+}
+
+/* Fallback: preto atrás das áreas transparentes quando a transparência não for possível */
+html {
+  background-color: #000 !important;
+}
