@@ -17,7 +17,7 @@ body:not(.is-scrolling)::-webkit-scrollbar,
 #scheduling-page:not(.is-scrolling)::-webkit-scrollbar,
 .scheduling-container:not(.is-scrolling)::-webkit-scrollbar,
 .tab-content:not(.is-scrolling)::-webkit-scrollbar,
-.schedule-modal-content:not(.is-scrolling)::-webkit-scrollbar {
+.schedule-modal-content:not(.is-scrolling)::-webkit-scrollbar, .substitute-modal-content:not(.is-scrolling)::-webkit-scrollbar, .substitute-players-list:not(.is-scrolling)::-webkit-scrollbar {
   width: 0 !important;
   height: 0 !important;
 }
@@ -39,7 +39,7 @@ body.is-scrolling::-webkit-scrollbar,
 #scheduling-page.is-scrolling::-webkit-scrollbar,
 .scheduling-container.is-scrolling::-webkit-scrollbar,
 .tab-content.is-scrolling::-webkit-scrollbar,
-.schedule-modal-content.is-scrolling::-webkit-scrollbar {
+.schedule-modal-content.is-scrolling::-webkit-scrollbar, .substitute-modal-content.is-scrolling::-webkit-scrollbar, .substitute-players-list.is-scrolling::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
@@ -64,7 +64,7 @@ body:not(.is-scrolling),
 #scheduling-page:not(.is-scrolling),
 .scheduling-container:not(.is-scrolling),
 .tab-content:not(.is-scrolling),
-.schedule-modal-content:not(.is-scrolling) {
+.schedule-modal-content:not(.is-scrolling), .substitute-modal-content:not(.is-scrolling), .substitute-players-list:not(.is-scrolling) {
   scrollbar-width: none;
 }
 
@@ -85,6 +85,6 @@ body.is-scrolling,
 #scheduling-page.is-scrolling,
 .scheduling-container.is-scrolling,
 .tab-content.is-scrolling,
-.schedule-modal-content.is-scrolling {
+.schedule-modal-content.is-scrolling, .substitute-modal-content.is-scrolling, .substitute-players-list.is-scrolling {
   scrollbar-width: thin;
 }

@@ -334,7 +334,8 @@ button:hover {
 
 /* Estilos para botões primários (manter para os que já usam, mas o foco é nos de reset) */
 .button--primary {
-    background: var(--gradient-button);
+    color: var(--text-inverse);
+    background: var(--new-accent-primary);
     border-color: transparent;
 }
 
@@ -2645,8 +2646,8 @@ select.form-input {
 
 /* Players list */
 .substitute-players-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 0.5rem;
   max-height: 50vh;
   overflow-y: auto;
@@ -2654,6 +2655,11 @@ select.form-input {
   overscroll-behavior: contain;
   padding: 0.25rem 0;
   scrollbar-width: thin;
+}
+@media (min-width: 480px) {
+  .substitute-players-list {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .substitute-players-list::-webkit-scrollbar { width: 6px; }
@@ -2666,19 +2672,20 @@ select.form-input {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 12px;
-  padding: 0.65rem 0.75rem;
+  padding: 0.75rem 0.85rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.05s ease;
 }
 
 .substitute-player-item:hover {
   transform: translateY(-1px);
-  box-shadow: var(--shadow-medium);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   background: var(--bg-card);
 }
+
 
 .substitute-player-name {
   color: var(--text-primary);
@@ -2695,6 +2702,75 @@ select.form-input {
   border: 1px solid var(--border-color);
 }
 
+
+/* Opponent select modal */
+.opponent-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  max-height: 50vh;
+  overflow: auto;
+  padding-right: 4px;
+}
+@media (min-width: 480px) {
+  .opponent-list {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.opponent-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  background: var(--bg-card, #ffffff);
+  color: var(--text-primary, #111827);
+  cursor: pointer;
+  text-align: left;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.05s ease;
+}
+.opponent-card:hover {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+.opponent-card:focus {
+  outline: none;
+}
+
+.opponent-card-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.opponent-color-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--team-color, #6c757d);
+  box-shadow: 0 0 0 2px var(--bg-card, #ffffff), inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+.opponent-name {
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+.opponent-check .material-icons {
+  font-size: 20px;
+  color: var(--team-color, #6c757d);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.opponent-card.selected .opponent-check .material-icons {
+  opacity: 1;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
 
 /* =============================================
    ZONA DE EXCLUSÃO (DELETE ZONE) - VISUAL SOMBRA
@@ -3640,88 +3716,8 @@ input:checked + .switch-slider:before {
     }
 }
 
-/* Zona de exclusão geral (para jogadores) */
-.delete-zone {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 80px;
-    background-color: #DC2626;
-    color: white;
-    padding: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    font-weight: bold;
-    z-index: 10000;
-    transform: translateY(100%);
-    transition: all 0.3s ease;
-}
 
-.delete-zone.active {
-    transform: translateY(0);
-}
 
-.delete-zone.drag-over {
-    background-color: #EF4444;
-    transform: translateY(0) scale(1.05);
-    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.6);
-}
-
-/* Zona de exclusão específica para agendamentos - NOVA IMPLEMENTAÇÃO */
-#scheduling-delete-zone {
-    /* Força posicionamento fixo relativo à viewport, não ao container pai */
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100vw;
-    height: 80px;
-    
-    /* Aparência */
-    background-color: #DC2626;
-    color: white;
-    padding: 1rem;
-    font-weight: bold;
-    
-    /* Layout interno */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    
-    /* Z-index alto para ficar acima de tudo */
-    z-index: 99999;
-    
-    /* Estado inicial: escondido */
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(100%);
-    
-    /* Transições suaves */
-    transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease, background-color 0.3s ease;
-    
-    /* Garante que não seja afetado por transforms dos containers pais */
-    will-change: transform;
-    contain: layout style paint;
-}
-
-/* Estado ativo: visível */
-#scheduling-delete-zone.active {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-    pointer-events: all;
-}
-
-/* Estado de drag over: destaque */
-#scheduling-delete-zone.drag-over {
-    background-color: #EF4444;
-    transform: translateY(0) scale(1.02);
-    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.6);
-}
 
 /* Estilos para cards de agendamento com drag and drop */
 .scheduled-game-card {
@@ -5307,12 +5303,6 @@ body.modal-open {
     transform: scale(1.1);
     box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
 }
-    padding: 0.875rem 1rem;
-    color: white;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-}
 
 .scheduling-form-grid .form-input:focus {
     outline: none;
@@ -6660,8 +6650,6 @@ input[type="password"] {
     justify-content: center;
     z-index: 2000;
 }
-border-bottom: 1px solid #444;
-}
 
 .substitute-modal-title {
     color: var(--text-primary);
@@ -6707,22 +6695,6 @@ border-bottom: 1px solid #444;
     overscroll-behavior: contain;
 }
 
-.substitute-player-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem;
-    margin-bottom: 0.5rem;
-    background-color: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.substitute-player-item:hover {
-    background-color: #555;
-}
 
 .substitute-player-name {
     color: var(--text-secondary);
@@ -6740,7 +6712,6 @@ border-bottom: 1px solid #444;
 .status-available {
     background-color: rgba(156, 163, 175, 0.2);
     color: #9CA3AF;
-    border-color: #9CA3AF;
 }
 
 .status-in-team {
@@ -6758,8 +6729,7 @@ border-bottom: 1px solid #444;
     height: 18px;
     border-radius: 50%;
     flex-shrink: 0;
-    background-color: var(--team-color, #666);
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    background-color: var(--team-color);
 }
 
 .no-players-message {
@@ -7465,49 +7435,7 @@ input:checked + .slider:before {
         margin-top: 2rem;
     }
 }
-/* ======================================== SOLU��O DEFINITIVA PARA ZONA DE EXCLUS�O DE AGENDAMENTOS ======================================== */
 
-/* FOR�A que a zona de exclus�o ignore QUALQUER contexto de posicionamento */
-html body #scheduling-delete-zone {
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    width: 100vw !important;
-    height: 80px !important;
-    z-index: 2147483647 !important;
-    
-    /* Quebra TODOS os contextos de posicionamento */
-    transform: translateZ(0) !important;
-    backface-visibility: hidden !important;
-    perspective: 1000px !important;
-    
-    /* Estado inicial */
-    display: none !important;
-    background-color: #DC2626 !important;
-    color: white !important;
-    padding: 1rem !important;
-    font-weight: bold !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 0.5rem !important;
-    
-    /* Transi��es */
-    transition: all 0.3s ease !important;
-}
-
-/* Estado ativo */
-html body #scheduling-delete-zone.active {
-    display: flex !important;
-  
-
-/* ======================================== ESTILOS INTEGRADOS DO SCHEDULING-REDESIGN ======================================== */
-
-/* Estilos específicos que estavam apenas no scheduling-redesign.css */
-.scheduling-nav {
-    display: flex;
-    flex-direction: column;
-}
 
 .card-cancel-x {
     position: absolute !important;

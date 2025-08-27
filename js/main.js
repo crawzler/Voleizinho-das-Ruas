@@ -456,7 +456,7 @@ scoreboardMenuOverlay.addEventListener("click", () => {
         const selectors = [
             'body', '.app-main-content', '.sidebar-menu',
             '#players-page', '#teams-page', '#history-page', '#config-page', '#scheduling-page',
-            '.players-list-container', '.teams-page-layout-sub', '.scheduling-container', '.tab-content', '.schedule-modal-content', '.accordion-content', '.select-team-modal-content-wrapper', '.team-players-column'
+            '.players-list-container', '.teams-page-layout-sub', '.scheduling-container', '.tab-content', '.schedule-modal-content', '.substitute-modal-content', '.substitute-players-list', '.accordion-content', '.select-team-modal-content-wrapper', '.team-players-column'
         ];
         const elems = selectors.flatMap(sel => Array.from(document.querySelectorAll(sel)));
         elems.forEach(el => {
@@ -531,6 +531,18 @@ scoreboardMenuOverlay.addEventListener("click", () => {
     loadAppVersion();
     registerServiceWorker();
 
+    // Optional: initialize Mi Band test notifications module if enabled (isolated and removable)
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const miBandTestEnabled = urlParams.get('testNotif') === '1' || localStorage.getItem('miBandTestNotifEnabled') === 'true';
+        if (miBandTestEnabled) {
+            const mod = await import('./test/mi-band-test-notifications.js');
+            if (mod && typeof mod.initMiBandTestNotifications === 'function') {
+                await mod.initMiBandTestNotifications();
+            }
+        }
+    } catch (_) { /* noop */ }
+
     // Developer helper: visit the app with ?clearCache=1 to ask the service worker to clear caches and reload
     try {
         const urlParams = new URLSearchParams(window.location.search);
@@ -590,6 +602,68 @@ scoreboardMenuOverlay.addEventListener("click", () => {
         }
     }, 100);
 });
+
+
+// Enforce no autocomplete on all forms and inputs, and prevent password save prompts
+(function setupNoAutocomplete() {
+    function applyNoAutoForInput(el) {
+        if (!el) return;
+        try {
+            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                // Generic fields: disable autocomplete and suggestions
+                el.setAttribute('autocomplete', 'off');
+                el.setAttribute('autocapitalize', 'off');
+                el.setAttribute('autocorrect', 'off');
+                el.spellcheck = false;
+
+                // Password fields: use new-password to avoid save/update prompts
+                if (el.getAttribute('type') === 'password') {
+                    el.setAttribute('autocomplete', 'new-password');
+                    // Set a neutral name to avoid credential manager heuristics
+                    if (!el.hasAttribute('name')) {
+                        el.setAttribute('name', 'new-password');
+                    }
+                }
+            }
+        } catch (_) { /* noop */ }
+    }
+
+    function enforce(root) {
+        const scope = root && root.querySelectorAll ? root : document;
+        // Forms
+        scope.querySelectorAll('form').forEach(f => {
+            try { f.setAttribute('autocomplete', 'off'); } catch (_) { /* noop */ }
+        });
+        // Inputs & textareas
+        scope.querySelectorAll('input, textarea').forEach(applyNoAutoForInput);
+    }
+
+    // Initial pass
+    enforce(document);
+
+    // Observe dynamically added nodes
+    const observer = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+            m.addedNodes && m.addedNodes.forEach((node) => {
+                if (!(node instanceof Element)) return;
+                // Apply directly on the node if relevant
+                if (node.matches('form')) {
+                    try { node.setAttribute('autocomplete', 'off'); } catch (_) { /* noop */ }
+                }
+                if (node.matches('input, textarea')) {
+                    applyNoAutoForInput(node);
+                }
+                // And any descendants
+                enforce(node);
+            });
+        }
+    });
+    try {
+        observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
+    } catch (_) { /* noop */ }
+    // Expose for potential cleanup/debug
+    window.__noAutocompleteObserver = observer;
+})();
 
 // Função para atualizar o texto do botão de iniciar
 async function updateStartButtonText() {

@@ -820,6 +820,8 @@ function openOpponentSelect(currentTeamIndex) {
 
         const modal = document.createElement('div');
         modal.className = 'opponent-select-modal substitute-modal';
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-modal', 'true');
 
         const content = document.createElement('div');
         content.className = 'substitute-modal-content';
@@ -828,32 +830,39 @@ function openOpponentSelect(currentTeamIndex) {
         header.className = 'substitute-modal-header';
         const title = document.createElement('h3');
         title.className = 'substitute-modal-title';
+        title.id = 'opponent-modal-title';
         title.textContent = 'Selecionar adversário';
         const closeBtn = document.createElement('button');
         closeBtn.className = 'substitute-modal-close';
+        closeBtn.setAttribute('aria-label', 'Fechar');
         closeBtn.innerHTML = '<span class="material-icons">close</span>';
         closeBtn.onclick = () => modal.remove();
         header.appendChild(title);
         header.appendChild(closeBtn);
 
         const helperText = document.createElement('p');
-        helperText.style.margin = '0 0 8px 0';
-        helperText.style.fontSize = '0.9rem';
-        helperText.style.opacity = '0.8';
-        helperText.textContent = 'Selecione os o time adiversário, para que possa preencher o time com jogadores aleatórios disponíveis.';
+        helperText.style.margin = '0 0 12px 0';
+        helperText.style.fontSize = '0.95rem';
+        helperText.style.opacity = '0.85';
+        helperText.textContent = 'Escolha um time adversário para preencher as vagas com jogadores disponíveis.';
 
         const list = document.createElement('div');
-        list.className = 'substitute-players-list';
+        list.className = 'opponent-list';
+        list.setAttribute('role', 'list');
 
         const footer = document.createElement('div');
-        footer.style.display = 'flex';
-        footer.style.justifyContent = 'flex-end';
-        footer.style.gap = '8px';
-        footer.style.marginTop = '8px';
+        footer.className = 'modal-actions';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'button';
+        cancelBtn.type = 'button';
+        cancelBtn.textContent = 'Cancelar';
+        cancelBtn.addEventListener('click', () => modal.remove());
 
         const confirmBtn = document.createElement('button');
         confirmBtn.className = 'button button--primary';
-        confirmBtn.textContent = 'Confirmar preenchimento';
+        confirmBtn.type = 'button';
+        confirmBtn.textContent = 'Confirmar';
         confirmBtn.disabled = true;
 
         let selectedIdx = null;
@@ -863,31 +872,50 @@ function openOpponentSelect(currentTeamIndex) {
 
         teams.forEach((t, idx) => {
             if (idx === currentTeamIndex) return;
-            const item = document.createElement('div');
-            item.className = 'substitute-player-item';
 
-            const name = document.createElement('span');
-            name.className = 'substitute-player-name';
             const teamNameKey = `customTeam${idx + 1}Name`;
             const teamColorKey = `customTeam${idx + 1}Color`;
             const nameText = config[teamNameKey] || `Time ${idx + 1}`;
             const color = config[teamColorKey] || defaultColors[idx] || '#6c757d';
+
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'opponent-card';
+            item.setAttribute('role', 'listitem');
+            item.style.setProperty('--team-color', color);
+            item.dataset.index = String(idx);
+            item.setAttribute('aria-pressed', 'false');
+
+            const left = document.createElement('div');
+            left.className = 'opponent-card-left';
+
+            const dot = document.createElement('span');
+            dot.className = 'opponent-color-dot';
+
+            const name = document.createElement('span');
+            name.className = 'opponent-name';
             name.textContent = nameText;
 
-            const status = document.createElement('span');
-            status.className = 'substitute-player-status status-in-team';
-            status.textContent = 'Adversário';
-            status.style.setProperty('--team-color', color);
+            left.appendChild(dot);
+            left.appendChild(name);
 
-            item.appendChild(name);
-            item.appendChild(status);
-            item.onclick = () => {
+            const check = document.createElement('span');
+            check.className = 'opponent-check';
+            check.innerHTML = '<span class="material-icons">check_circle</span>';
+
+            item.appendChild(left);
+            item.appendChild(check);
+
+            item.addEventListener('click', () => {
                 selectedIdx = idx;
                 confirmBtn.disabled = false;
-                // marca visualmente selecionado
-                list.querySelectorAll('.substitute-player-item.selected')?.forEach(el => el.classList.remove('selected'));
+                list.querySelectorAll('.opponent-card.selected').forEach(el => {
+                    el.classList.remove('selected');
+                    el.setAttribute('aria-pressed', 'false');
+                });
                 item.classList.add('selected');
-            };
+                item.setAttribute('aria-pressed', 'true');
+            });
 
             list.appendChild(item);
         });
@@ -898,6 +926,7 @@ function openOpponentSelect(currentTeamIndex) {
             modal.remove();
         };
 
+        footer.appendChild(cancelBtn);
         footer.appendChild(confirmBtn);
 
         content.appendChild(header);
@@ -908,6 +937,10 @@ function openOpponentSelect(currentTeamIndex) {
         document.body.appendChild(modal);
 
         modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+
+        // Foco inicial no primeiro card para melhor usabilidade
+        const firstCard = list.querySelector('.opponent-card');
+        if (firstCard) firstCard.focus();
     });
 }
 
