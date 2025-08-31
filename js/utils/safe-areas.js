@@ -107,8 +107,13 @@ class SafeAreasManager {
             root.style.setProperty('--pwa-top-offset', PWA_TOP_OFFSET);
             root.style.setProperty('--pwa-bottom-offset', PWA_BOTTOM_OFFSET);
             
-            // Força padding bottom para PWA
-            document.body.style.paddingBottom = `max(var(--safe-area-inset-bottom), ${PWA_BOTTOM_OFFSET})`;
+            // Força padding bottom para PWA nas páginas gerais; a tela de pontuação gerencia seu próprio padding.
+            if (!document.body.classList.contains('scoring-page-active')) {
+                document.body.style.paddingBottom = `max(var(--safe-area-inset-bottom), ${PWA_BOTTOM_OFFSET})`;
+            } else {
+                // Evita interferir no layout do placar
+                document.body.style.paddingBottom = '';
+            }
         }
     }
 

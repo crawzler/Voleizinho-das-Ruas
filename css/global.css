@@ -386,10 +386,13 @@ body:not(.scoring-page-active) {
 @media (display-mode: standalone), (display-mode: fullscreen) {
   /* Já aplicamos env() globalmente; não adicionar extras aqui */
   .fixed-top-safe { top: var(--safe-area-inset-top); }
-  .app-main-content {
-    /* Evita reduzir a altura globalmente; cada tela ajusta seu próprio layout */
+  body.scoring-page-active .app-main-content {
+    height: 100dvh !important;
+    min-height: 100dvh;
+  }
+  body:not(.scoring-page-active) .app-main-content {
     height: auto !important;
-    min-height: 100vh;
+    min-height: 100svh;
   }
 }
 

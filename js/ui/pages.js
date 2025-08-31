@@ -118,7 +118,7 @@ export async function showPage(pageIdToShow) {
     } else {
         console.log(`[DEBUG: pages.js] ${new Date().toISOString()} - Page not found: ${pageIdToShow}`);
     }
-
+    
     
 
     // Update scheduling UI permissions/visibility on page change
@@ -131,6 +131,17 @@ export async function showPage(pageIdToShow) {
         renderScoringPagePlayers([], [], false);
     } else {
         document.body.classList.remove('start-page-active');
+    }
+
+    // NOVO: marca quando a tela de pontuação está ativa para que CSS condicional de safe areas funcione
+    if (pageIdToShow === 'scoring-page') {
+        document.body.classList.add('scoring-page-active');
+        // NOVO: força modo imersivo ao entrar na tela de pontuação
+        try { await enterFullscreen(); } catch (_) { /* ignore */ }
+    } else {
+        document.body.classList.remove('scoring-page-active');
+        // NOVO: sai do modo imersivo ao deixar a tela de pontuação
+        try { await exitFullscreen(); } catch (_) { /* ignore */ }
     }
 
     closeSidebar();

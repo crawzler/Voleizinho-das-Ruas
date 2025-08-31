@@ -28,6 +28,7 @@ import offlineStorage from './utils/offline-storage.js';
 import pwaManager from './utils/pwa-manager.js';
 import { getActiveTeam1Name } from '../js/game/logic.js';
 import { getActiveTeam2Name } from '../js/game/logic.js';
+import safeAreasManager from './utils/safe-areas.js';
 
 import { signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 

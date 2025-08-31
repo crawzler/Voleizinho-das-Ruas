@@ -50,7 +50,7 @@
 .sidebar-overlay.active { opacity: 1; visibility: visible; }
 
 /* Layout relations */
-.app-main-content { position: relative; width: 100%; height: 100vh; overflow: hidden; }
+.app-main-content { position: relative; width: 100%; height: 100vh; height: 100svh; height: 100dvh; overflow: hidden; }
 
 /* Responsive */
 @media (min-width: 768px) {
@@ -90,6 +90,11 @@ body.sidebar-open .app-main-content { pointer-events: none; }
 #login-page.app-page--active ~ .header-button-container { display: none; }
 .login-page-layout ~ .header-button-container { display: none; }
 body:has(#login-page.app-page--active) .header-button-container { display: none; }
+
+/* Modo imersivo na tela de pontuação */
+body.scoring-page-active .header-button-container { display: none !important; }
+body.scoring-page-active .sidebar-overlay { display: none !important; }
+body.scoring-page-active .sidebar-menu { display: none !important; }
 
 /* Sidebar drawer behavior overrides (integrated from sidebar-fix.css) */
 
