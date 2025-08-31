@@ -1,0 +1,443 @@
+/* Global CSS: variables, themes, resets, base elements, accessibility helpers */
+
+/* CSS Variables for themes */
+:root {
+  /* Light Theme (default) */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #e9ecef;
+  --bg-card: #ffffff;
+  --bg-input: #ffffff;
+  --bg-button: #007bff;
+  --bg-button-secondary: #6c757d;
+  --bg-sidebar: #ffffff;
+  --bg-modal: #ffffff;
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+  --bg-scoring: #f0f2f5;
+  --bg-dropdown: rgba(37, 99, 235, 0.1);
+
+  --text-primary: #212529;
+  --text-secondary: #6c757d;
+  --text-muted: #868e96;
+  --text-inverse: #ffffff;
+
+  --border-color: #dee2e6;
+  --border-light: #e9ecef;
+  --border-dark: #adb5bd;
+
+  --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.15);
+  --shadow-heavy: 0 8px 16px rgba(0, 0, 0, 0.2);
+
+  --accent-primary: #007bff;
+  --accent-success: #2563EB;
+  --accent-warning: #ffc107;
+  --accent-danger: #dc3545;
+  --accent-info: #17a2b8;
+
+  --gradient-primary: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  --gradient-card: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  --gradient-button: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  --gradient-login: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+  --scrollbar-thumb: #c1c7cd;
+  --scrollbar-track: transparent;
+  --focus-ring: rgba(0, 123, 255, 0.15);
+  --overlay-weak: rgba(0, 0, 0, 0.08);
+
+  /* Sidebar Redesign */
+  --sidebar-width: 280px;
+  --sidebar-bg: #ffffff;
+  --sidebar-border: #e5e7eb;
+  --sidebar-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --sidebar-item-hover: #f8fafc;
+  --sidebar-item-active: #667eea;
+  --sidebar-text: #374151;
+  --sidebar-text-muted: #6b7280;
+  --sidebar-text-active: #ffffff;
+
+  /* New Design (Teams/Config/Scheduling) */
+  --new-bg-primary: #fafafa;
+  --new-bg-secondary: #f9fafb;
+  --new-bg-card: #ffffff;
+  --new-bg-tertiary: #f3f4f6;
+  --new-bg-input: #ffffff;
+  --new-text-primary: #1a1a1a;
+  --new-text-secondary: #6b7280;
+  --new-text-muted: #9ca3af;
+  --new-text-dark: #111827;
+  --new-text-medium: #374151;
+  --new-text-inverse: #ffffff;
+  --new-border-light: #f3f4f6;
+  --new-border-color: #e5e7eb;
+  --new-border-medium: #d1d5db;
+  --new-accent-primary: #667eea;
+  --new-accent-primary-hover: #5a67d8;
+  --new-accent-secondary: #50ce44ff;
+  --new-accent-secondary-hover: #338f2bff;
+  --new-shadow-light: 0 1px 3px rgba(0,0,0,0.1);
+  --new-shadow-medium: 0 4px 12px rgba(0,0,0,0.1);
+  --new-shadow-hover: 0 2px 8px rgba(0,0,0,0.1);
+  --new-focus-ring: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  --new-transition-fast: all 0.2s ease;
+  --new-transition-medium: all 0.3s ease;
+}
+
+/* Dark Theme */
+body.dark-mode {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #222222;
+  --bg-tertiary: #2d2d2d;
+  --bg-card: #222222;
+  --bg-input: #333333;
+  --bg-button: #2563EB;
+  --bg-button-secondary: #6b7280;
+  --bg-sidebar: #1f1f1f;
+  --bg-modal: #2d2d2d;
+  --bg-overlay: rgba(0, 0, 0, 0.7);
+  --bg-scoring: #181c24;
+
+  --text-primary: #ffffff;
+  --text-secondary: #d1d5db;
+  --text-muted: #9ca3af;
+  --text-inverse: #1a1a1a;
+
+  --border-color: #444444;
+  --border-light: #555555;
+  --border-dark: #333333;
+
+  --shadow-light: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-medium: 0 4px 8px rgba(0, 0, 0, 0.4);
+  --shadow-heavy: 0 8px 16px rgba(0, 0, 0, 0.5);
+
+  --accent-primary: #2563EB;
+  --accent-success: #2563EB;
+  --accent-warning: #f59e0b;
+  --accent-danger: #ef4444;
+  --accent-info: #06b6d4;
+
+  --gradient-primary: linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%);
+  --gradient-card: linear-gradient(135deg, #222222 0%, #2d2d2d 100%);
+  --gradient-button: linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%);
+  --gradient-login: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+  --scrollbar-thumb: #444;
+  --scrollbar-track: transparent;
+  --focus-ring: rgba(37, 99, 235, 0.25);
+  --overlay-weak: rgba(255, 255, 255, 0.10);
+
+  /* Sidebar - Dark */
+  --sidebar-bg: #1f2937;
+  --sidebar-border: #374151;
+  --sidebar-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --sidebar-item-hover: #374151;
+  --sidebar-text: #f9fafb;
+  --sidebar-text-muted: #9ca3af;
+
+  /* New Design - Dark */
+  --new-bg-primary: #1a1a1a;
+  --new-bg-secondary: #222222;
+  --new-bg-card: #2d2d2d;
+  --new-bg-tertiary: #333333;
+  --new-bg-input: #333333;
+  --new-text-primary: #ffffff;
+  --new-text-secondary: #d1d5db;
+  --new-text-muted: #9ca3af;
+  --new-text-dark: #ffffff;
+  --new-text-medium: #e5e7eb;
+  --new-text-inverse: #1a1a1a;
+  --new-border-light: #444444;
+  --new-border-color: #555555;
+  --new-border-medium: #666666;
+  --new-accent-primary: #667eea;
+  --new-accent-primary-hover: #5a67d8;
+  --new-shadow-light: 0 1px 3px rgba(0,0,0,0.3);
+  --new-shadow-medium: 0 4px 12px rgba(0,0,0,0.3);
+  --new-shadow-hover: 0 2px 8px rgba(0,0,0,0.3);
+  --new-focus-ring: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+html {
+  box-sizing: border-box;
+  height: 100%;
+  width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overscroll-behavior-x: none;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Scrollbars */
+/* Scrollbar visibility behavior: hidden by default, visible while scrolling */
+
+/* WebKit (Chrome, Edge, Safari) - hidden by default */
+body:not(.is-scrolling)::-webkit-scrollbar,
+.app-main-content:not(.is-scrolling)::-webkit-scrollbar,
+.sidebar-menu:not(.is-scrolling)::-webkit-scrollbar,
+.players-list-container:not(.is-scrolling)::-webkit-scrollbar,
+.accordion-content:not(.is-scrolling)::-webkit-scrollbar,
+.select-team-modal-content-wrapper:not(.is-scrolling)::-webkit-scrollbar,
+.team-players-column:not(.is-scrolling)::-webkit-scrollbar,
+.teams-page-layout:not(.is-scrolling)::-webkit-scrollbar,
+.teams-page-layout-sub:not(.is-scrolling)::-webkit-scrollbar,
+#players-page:not(.is-scrolling)::-webkit-scrollbar,
+#teams-page:not(.is-scrolling)::-webkit-scrollbar,
+#history-page:not(.is-scrolling)::-webkit-scrollbar,
+#config-page:not(.is-scrolling)::-webkit-scrollbar,
+#scheduling-page:not(.is-scrolling)::-webkit-scrollbar,
+.scheduling-container:not(.is-scrolling)::-webkit-scrollbar,
+.tab-content:not(.is-scrolling)::-webkit-scrollbar,
+.schedule-modal-content:not(.is-scrolling)::-webkit-scrollbar,
+.substitute-modal-content:not(.is-scrolling)::-webkit-scrollbar,
+.substitute-players-list:not(.is-scrolling)::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* WebKit - while scrolling, show a thin scrollbar */
+body.is-scrolling::-webkit-scrollbar,
+.app-main-content.is-scrolling::-webkit-scrollbar,
+.sidebar-menu.is-scrolling::-webkit-scrollbar,
+.players-list-container.is-scrolling::-webkit-scrollbar,
+.accordion-content.is-scrolling::-webkit-scrollbar,
+.select-team-modal-content-wrapper.is-scrolling::-webkit-scrollbar,
+.team-players-column.is-scrolling::-webkit-scrollbar,
+.teams-page-layout.is-scrolling::-webkit-scrollbar,
+.teams-page-layout-sub.is-scrolling::-webkit-scrollbar,
+#players-page.is-scrolling::-webkit-scrollbar,
+#teams-page.is-scrolling::-webkit-scrollbar,
+#history-page.is-scrolling::-webkit-scrollbar,
+#config-page.is-scrolling::-webkit-scrollbar,
+#scheduling-page.is-scrolling::-webkit-scrollbar,
+.scheduling-container.is-scrolling::-webkit-scrollbar,
+.tab-content.is-scrolling::-webkit-scrollbar,
+.schedule-modal-content.is-scrolling::-webkit-scrollbar,
+.substitute-modal-content.is-scrolling::-webkit-scrollbar,
+.substitute-players-list.is-scrolling::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+/* Firefox - hidden by default */
+body:not(.is-scrolling),
+.app-main-content:not(.is-scrolling),
+.sidebar-menu:not(.is-scrolling),
+.players-list-container:not(.is-scrolling),
+.accordion-content:not(.is-scrolling),
+.select-team-modal-content-wrapper:not(.is-scrolling),
+.team-players-column:not(.is-scrolling),
+.teams-page-layout:not(.is-scrolling),
+.teams-page-layout-sub:not(.is-scrolling),
+#players-page:not(.is-scrolling),
+#teams-page:not(.is-scrolling),
+#history-page:not(.is-scrolling),
+#config-page:not(.is-scrolling),
+#scheduling-page:not(.is-scrolling),
+.scheduling-container:not(.is-scrolling),
+.tab-content:not(.is-scrolling),
+.schedule-modal-content:not(.is-scrolling),
+.substitute-modal-content:not(.is-scrolling),
+.substitute-players-list:not(.is-scrolling) {
+  scrollbar-width: none;
+}
+
+/* Firefox - while scrolling */
+body.is-scrolling,
+.app-main-content.is-scrolling,
+.sidebar-menu.is-scrolling,
+.players-list-container.is-scrolling,
+.accordion-content.is-scrolling,
+.select-team-modal-content-wrapper.is-scrolling,
+.team-players-column.is-scrolling,
+.teams-page-layout.is-scrolling,
+.teams-page-layout-sub.is-scrolling,
+#players-page.is-scrolling,
+#teams-page.is-scrolling,
+#history-page.is-scrolling,
+#config-page.is-scrolling,
+#scheduling-page.is-scrolling,
+.scheduling-container.is-scrolling,
+.tab-content.is-scrolling,
+.schedule-modal-content.is-scrolling,
+.substitute-modal-content.is-scrolling,
+.substitute-players-list.is-scrolling {
+  scrollbar-width: thin;
+}
+
+body::-webkit-scrollbar-track,
+.app-main-content::-webkit-scrollbar-track,
+.sidebar-menu::-webkit-scrollbar-track,
+.players-list-container::-webkit-scrollbar-track,
+.accordion-content::-webkit-scrollbar-track,
+.select-team-modal-content-wrapper::-webkit-scrollbar-track,
+.team-players-column::-webkit-scrollbar-track,
+.teams-page-layout::-webkit-scrollbar-track,
+.teams-page-layout-sub::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+body::-webkit-scrollbar-thumb,
+.app-main-content::-webkit-scrollbar-thumb,
+.sidebar-menu::-webkit-scrollbar-thumb,
+.players-list-container::-webkit-scrollbar-thumb,
+.accordion-content::-webkit-scrollbar-thumb,
+.select-team-modal-content-wrapper::-webkit-scrollbar-thumb,
+.team-players-column::-webkit-scrollbar-thumb,
+.teams-page-layout::-webkit-scrollbar-thumb,
+.teams-page-layout-sub::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 2px;
+}
+
+body::-webkit-scrollbar-thumb:hover,
+.app-main-content::-webkit-scrollbar-thumb:hover,
+.sidebar-menu::-webkit-scrollbar-thumb:hover,
+.players-list-container::-webkit-scrollbar-thumb:hover,
+.accordion-content::-webkit-scrollbar-thumb:hover,
+.select-team-modal-content-wrapper::-webkit-scrollbar-thumb:hover,
+.team-players-column::-webkit-scrollbar-thumb:hover,
+.teams-page-layout::-webkit-scrollbar-thumb:hover,
+.teams-page-layout-sub::-webkit-scrollbar-thumb:hover {
+  opacity: 0.8;
+}
+
+/* Basic input */
+input {
+  width: 100%;
+  flex-grow: 1;
+  padding: 0.75rem;
+}
+
+/* Accessibility helpers */
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Safe Areas - suportando dispositivos com recortes (notch) e PWA */
+:root {
+  --safe-area-inset-top: env(safe-area-inset-top, 0px);
+  --safe-area-inset-right: env(safe-area-inset-right, 0px);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-inset-left: env(safe-area-inset-left, 0px);
+}
+
+/* Aplica padding dos insets nas páginas que NÃO são a tela de pontuação */
+body:not(.scoring-page-active) {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+}
+
+/* Container utilitário que respeita as safe areas */
+.safe-area-container {
+  padding-top: var(--safe-area-inset-top);
+  padding-right: var(--safe-area-inset-right);
+  padding-bottom: var(--safe-area-inset-bottom);
+  padding-left: var(--safe-area-inset-left);
+}
+
+/* Utilitários individuais */
+.safe-top { padding-top: var(--safe-area-inset-top); }
+.safe-right { padding-right: var(--safe-area-inset-right); }
+.safe-bottom { padding-bottom: var(--safe-area-inset-bottom); }
+.safe-left { padding-left: var(--safe-area-inset-left); }
+
+/* Posicionamento fixo respeitando insets */
+.fixed-top-safe { position: fixed; top: var(--safe-area-inset-top); }
+.fixed-bottom-safe { position: fixed; bottom: var(--safe-area-inset-bottom); }
+.fixed-left-safe { position: fixed; left: var(--safe-area-inset-left); }
+.fixed-right-safe { position: fixed; right: var(--safe-area-inset-right); }
+
+/* Ajustes específicos para PWA */
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  /* Já aplicamos env() globalmente; não adicionar extras aqui */
+  .fixed-top-safe { top: var(--safe-area-inset-top); }
+  .app-main-content {
+    /* Evita reduzir a altura globalmente; cada tela ajusta seu próprio layout */
+    height: auto !important;
+    min-height: 100vh;
+  }
+}
+
+/* Debug (inativo por padrão; use body.debug-safe-areas para ativar overlays) */
+.debug-safe-areas { position: relative; }
+.debug-safe-areas::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--safe-area-inset-top);
+  background: rgba(255, 0, 0, 0.3);
+  pointer-events: none;
+  z-index: 9999;
+  border-bottom: 2px solid red;
+}
+.debug-safe-areas::after {
+  content: '';
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: var(--safe-area-inset-bottom);
+  background: rgba(0, 255, 0, 0.3);
+  pointer-events: none;
+  z-index: 9999;
+  border-top: 2px solid green;
+}
+body.debug-safe-areas { position: relative; }
+body.debug-safe-areas::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: var(--safe-area-inset-left);
+  background: rgba(0, 0, 255, 0.3);
+  pointer-events: none;
+  z-index: 9999;
+  border-right: 2px solid blue;
+}
+body.debug-safe-areas::after {
+  content: '';
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  width: var(--safe-area-inset-right);
+  background: rgba(255, 255, 0, 0.3);
+  pointer-events: none;
+  z-index: 9999;
+  border-left: 2px solid yellow;
+}
+
+/* Transparência das safe areas: o fundo da página aparece apenas na área de conteúdo */
+body { background-clip: content-box !important; }
+/* Fallback: preto atrás das áreas transparentes quando a transparência não for possível */
+html { background-color: #000 !important; }

@@ -1,0 +1,62 @@
+/* Fallback para ícones Material Icons quando offline */
+.material-icons {
+  font-family: 'Material Icons', 'Material Icons Fallback', sans-serif;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Fallbacks textuais para ícones mais usados */
+.material-icons.offline-fallback {
+  font-family: sans-serif;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+/* Fallback apenas quando Google Fonts não carrega */
+@supports not (font-family: 'Material Icons') {
+  .material-icons:empty:after {
+    font-family: sans-serif;
+    font-weight: bold;
+  }
+  
+  .material-icons:empty:after {
+    content: attr(data-fallback);
+  }
+}
+
+/* Fallbacks específicos quando necessário */
+.material-icons.offline-fallback:after {
+  font-family: sans-serif;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.material-icons.offline-fallback[data-icon="menu"]:after { content: "☰"; }
+.material-icons.offline-fallback[data-icon="close"]:after { content: "✕"; }
+.material-icons.offline-fallback[data-icon="sports_volleyball"]:after { content: "🏐"; }
+.material-icons.offline-fallback[data-icon="groups"]:after { content: "👥"; }
+.material-icons.offline-fallback[data-icon="person"]:after { content: "👤"; }
+.material-icons.offline-fallback[data-icon="history"]:after { content: "🕐"; }
+.material-icons.offline-fallback[data-icon="calendar_month"]:after { content: "📅"; }
+.material-icons.offline-fallback[data-icon="insights"]:after { content: "📊"; }
+.material-icons.offline-fallback[data-icon="settings"]:after { content: "⚙️"; }
+.material-icons.offline-fallback[data-icon="play_arrow"]:after { content: "▶"; }
+.material-icons.offline-fallback[data-icon="pause"]:after { content: "⏸"; }
+.material-icons.offline-fallback[data-icon="timer"]:after { content: "⏱"; }
+.material-icons.offline-fallback[data-icon="swap_horiz"]:after { content: "⇄"; }
+.material-icons.offline-fallback[data-icon="expand_more"]:after { content: "▼"; }
+.material-icons.offline-fallback[data-icon="expand_less"]:after { content: "▲"; }
+.material-icons.offline-fallback[data-icon="delete"]:after { content: "🗑"; }
+.material-icons.offline-fallback[data-icon="edit"]:after { content: "✏"; }
+.material-icons.offline-fallback[data-icon="add"]:after { content: "+"; }
+.material-icons.offline-fallback[data-icon="remove"]:after { content: "-"; }

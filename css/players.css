@@ -1,0 +1,417 @@
+/* Players Page - Layout & Components */
+
+/* Container principal da página de jogadores */
+#players-page.players-page-layout {
+    background: var(--new-bg-primary, var(--bg-primary));
+    color: var(--new-text-primary, var(--text-primary));
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Controle de scroll para a página de jogadores */
+#players-page.app-page--active {
+    position: absolute !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    overscroll-behavior: contain;
+}
+
+/* Switch moderno para página de jogadores */
+#players-page .switch {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 28px;
+    margin: 0 0.5rem;
+}
+
+#players-page .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--new-border-medium, var(--border-color));
+    transition: 0.3s;
+    border-radius: 28px;
+    min-width: 0;
+}
+
+#players-page .slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background: var(--new-bg-card, var(--bg-card));
+    transition: 0.3s;
+    border-radius: 50%;
+    box-shadow: var(--new-shadow-light, var(--shadow-light));
+}
+
+#players-page input:checked + .slider {
+    background: var(--new-accent-primary, var(--accent-primary));
+}
+
+#players-page input:checked + .slider:before {
+    transform: translateX(20px);
+}
+
+/* Layout de adição de jogadores */
+#players-page .players-page-layout-add {
+    display: flex;
+    align-items: stretch;
+    gap: 0.75rem;
+}
+
+#players-page .clear-input-button {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #9CA3AF;
+    box-shadow: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 50%;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+#players-page .clear-input-button:hover {
+    background-color: rgba(156, 163, 175, 0.2);
+    color: #E5E7EB;
+}
+
+/* Categorias de jogadores */
+#players-page .player-category-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+    background: var(--new-bg-card, var(--bg-card));
+    border: 1px solid var(--new-border-color, var(--border-color));
+    border-radius: 12px;
+    padding: 0.35rem;
+    box-shadow: var(--new-shadow-light, var(--shadow-light));
+    transition: all 0.3s ease;
+}
+
+#players-page .category-tab {
+    background: transparent;
+    color: var(--new-text-secondary, var(--text-secondary));
+    border: none;
+    border-radius: 10px;
+    padding: 0.6rem 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--new-transition-fast, all 0.2s ease);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1.1;
+    gap: 2px;
+    box-shadow: none;
+}
+
+#players-page .category-tab.active {
+    background: var(--new-accent-primary, var(--accent-primary));
+    color: var(--new-text-inverse, var(--text-inverse));
+    box-shadow: none;
+}
+
+#players-page .category-tab.drag-over {
+    color: var(--new-text-inverse);
+    background-color: var(--new-accent-secondary);
+    transform: scale(1.05);
+    box-shadow: red;
+    border: 2px solid var(--accent-secondary);
+    transition: all 0.2s ease;
+}
+
+/* Botão de adicionar jogador */
+#players-page .players-page-layout-add #add-player-button {
+    background: var(--new-accent-primary, var(--accent-primary));
+    color: #fff !important;
+    border: none;
+    border-radius: 10px;
+    padding: 0.8rem 1.1rem;
+    font-weight: 700;
+    box-shadow: 0 6px 15px rgba(102, 126, 234, 0.25);
+    transition: transform 0.1s ease, filter 0.2s ease, box-shadow 0.2s ease;
+    min-width: 130px;
+    flex-shrink: 0;
+}
+
+#players-page .players-page-layout-add #add-player-button:hover {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 22px rgba(102, 126, 234, 0.35);
+}
+
+/* Sub-layout da página de jogadores */
+#players-page .players-page-layout-sub {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    flex-grow: 1;
+    width: 100%;
+    min-height: 0;
+    overflow: visible !important;
+    height: auto !important;
+    padding-bottom: 2rem;
+}
+
+/* Controles da lista de jogadores */
+#players-page .player-list-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;    
+    flex-direction: row-reverse;
+    padding: 0.5rem 0.75rem;
+    border-radius: 10px;
+}
+
+#players-page .player-list-controls .player-count-display,
+#players-page .player-list-controls span {
+    color: var(--new-text-secondary, var(--text-secondary));
+}
+
+#players-page .player-count-display {
+    margin-left: auto;
+}
+
+/* Container da lista de jogadores */
+#players-page .players-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex-grow: 1;
+    background: transparent;
+    padding-bottom: 1rem;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0;
+}
+
+/* Itens individuais da lista de jogadores */
+#players-page .player-list-item {
+    background: var(--new-bg-secondary, var(--bg-secondary));
+    border: 1px solid var(--new-border-color, var(--border-color));
+    box-shadow: var(--new-shadow-light, var(--shadow-light));
+    border-radius: 12px;
+    padding: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;    
+    flex-direction: row-reverse;
+    cursor: pointer;
+    transition: var(--new-transition-fast, all 0.2s ease);
+    user-select: none;
+    touch-action: pan-y;
+    position: relative;
+    
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    
+    -webkit-touch-callout: none;
+    -webkit-context-menu: none;
+}
+
+#players-page .player-list-item:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--new-shadow-hover, 0 8px 24px rgba(0,0,0,0.15));
+    background: var(--new-bg-card, var(--bg-card));
+    border-color: var(--new-border-medium, var(--border-dark));
+}
+
+#players-page .player-list-item:active {
+    transform: translateY(0);
+}
+
+/* Estados especiais dos itens de jogadores */
+#players-page .player-list-item.dragging {
+    opacity: 0.3;
+    transform: rotate(3deg) scale(1.05);
+    z-index: 1000;
+    cursor: grabbing;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    transition: none;
+    pointer-events: none;
+}
+
+#players-page .drag-ghost {
+    opacity: 0.9 !important;
+    transform: rotate(5deg) scale(1.1) !important;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4) !important;
+    border: 2px solid var(--accent-primary) !important;
+    background-color: var(--bg-tertiary) !important;
+    pointer-events: none !important;
+    z-index: 9999 !important;
+    transition: none !important;
+}
+
+/* Informações do jogador */
+#players-page .player-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex: 1;
+    gap: 1rem;
+}
+
+#players-page .player-avatar-name {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+#players-page .player-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: var(--new-bg-primary, var(--bg-primary));
+    flex-shrink: 0;    
+    border: 1px solid var(--new-border-color, var(--border-color));
+}
+
+/* Estilo específico para o ícone SVG padrão */
+#players-page .player-avatar[src*="default-user-icon.svg"] {
+    padding: 8px;
+    background-color: var(--bg-primary);
+}
+
+#players-page .player-info span {
+    color: var(--new-text-primary, var(--text-primary));
+    font-size: 1rem;
+    transition: color 0.3s ease;
+}
+
+/* Indicador para jogadores locais */
+#players-page .player-avatar-name span[data-local="true"] {
+    position: relative;
+    padding-right: 24px;
+}
+
+#players-page .player-avatar-name span[data-local="true"]:after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 9v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9"/><path d="M9 22V12h6v10M2 10.6L12 2l10 8.6"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.5;
+}
+
+/* Botão de remoção */
+#players-page .remove-button {
+    background-color: transparent;
+    box-shadow: none;
+    color: #DC2626;
+    padding: 0.25rem;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+    display: none; /* Esconde por padrão */
+    transition: all 0.2s ease;
+    border-radius: 4px;
+    border: 1px solid transparent;
+}
+
+#players-page .remove-button.visible {
+    display: flex; /* Mostra o botão quando visível */
+    align-items: center;
+    justify-content: center;
+}
+
+#players-page .remove-button.highlight {
+    background-color: #DC2626;
+    color: white;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+    border-color: #EF4444;
+}
+
+/* Zona de exclusão */
+#players-page .delete-zone {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 120px; /* Altura da área da sombra */
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.4), transparent); /* Sombra gradual */
+    color: var(--text-primary);
+    
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    
+    transform: translateY(100%);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Oculta o texto, mantendo apenas o ícone */
+#players-page .delete-zone span:not(.material-icons) {
+    display: none;
+}
+
+#players-page .delete-zone .material-icons {
+    font-size: 2rem; /* Ícone maior */
+    padding: 1rem;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-radius: 50%;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+/* Estado ativo: visível e posicionado */
+#players-page .delete-zone.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: all;
+    transform: translateY(0);
+}
+
+/* Estado de "drag over": destaque visual no ícone */
+#players-page .delete-zone.drag-over .material-icons {
+    transform: scale(1.2) rotate(15deg);
+    background: var(--bg-tertiary);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Modal de Substituição: estilos migrados para teams.css (globais) para evitar duplicação. */

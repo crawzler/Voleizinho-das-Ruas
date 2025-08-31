@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no, viewport-fit=cover">
+    <meta name="theme-color" content="#ffffff"/>
+    
+    <!-- PWA - Ocultar barra de navegação -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Vôlei Score App</title>
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+    <link rel="stylesheet" href="css/login.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/teams.css">
+    <link rel="stylesheet" href="css/players.css">
+    <link rel="stylesheet" href="css/config.css">
+    <link rel="stylesheet" href="css/scheduling.css">
+    <link rel="stylesheet" href="css/history.css">
+    <link rel="stylesheet" href="css/offline-fallback.css">
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" crossorigin="anonymous">
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Preload Firebase modules -->
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js">
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js">
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js">
+</head>
+<body>
+
+    <!-- NOVO: Indicador de Conexão -->
+    <div id="connection-indicator" class="connection-indicator">
+        <span class="status-dot"></span>
+        <span class="status-text"></span>
+    </div>
+
+    <!-- NOVO: Tela de Carregamento (Loading Overlay) -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Carregando...</p>
+    </div>
+
+    <div class="header-button-container">
+        <button id="menu-button" class="header-button">
+            <span class="material-icons">menu</span>
+        </button>
+    </div>
+
+    <div id="sidebar-overlay" class="sidebar-overlay hidden" aria-hidden="true"></div>
+
+    <div id="sidebar" class="sidebar-menu">
+        <div class="sidebar-header">
+            <!-- NOVO: Container para foto e nome do usuário, agora clicável -->
+            <div id="user-profile-header" class="user-profile-header">
+                <img id="user-profile-picture" class="user-profile-picture" src="https://placehold.co/40x40/222/FFF?text=?" alt="User Profile">
+                <span id="user-display-name" class="user-display-name">Carregando...</span>
+                <span class="material-icons profile-menu-arrow">arrow_drop_down</span>
+                <!-- Menu dropdown -->
+                <div id="profile-menu" class="profile-menu">
+                    <!-- O conteúdo será inserido dinamicamente pelo JavaScript -->
+                </div>
+            </div>
+            <!-- REMOVIDO: Botão de fechar o sidebar (o X) -->
+            <!-- <button id="close-sidebar-button" class="header-button">
+                <span class="material-icons">close</span>
+            </button> -->
+        </div>
+        <nav class="sidebar-nav">
+            <button id="nav-scoring" class="sidebar-nav-item">
+                <span class="material-icons sidebar-nav-icon">sports_volleyball</span> Pontuação
+            </button>
+            <button id="nav-teams" class="sidebar-nav-item">
+                <span class="material-icons sidebar-nav-icon">groups</span> Times
+            </button>
+            <button id="nav-players" class="sidebar-nav-item">
+                <span class="material-icons sidebar-nav-icon">person</span> Jogadores
+            </button>
+            <button id="nav-scheduling" class="sidebar-nav-item">
+                <span class="material-icons sidebar-nav-icon">calendar_month</span> Agendamentos
+            </button>
+            <button id="nav-history" class="sidebar-nav-item">
+                <span class="material-icons sidebar-nav-icon">history</span> Histórico
+            </button>
+            <button id="nav-stats" class="sidebar-nav-item">
+                <span class="material-icons sidebar-nav-icon">insights</span> Estatísticas
+            </button>
+            <!-- REMOVIDO: Botão de Sair -->
+            <!-- Botão de Configurações MOVIDO para o sidebar principal -->
+            <button id="nav-config" class="sidebar-nav-item" >
+                <span class="material-icons sidebar-nav-icon">settings</span> Configurações
+            </button>
+        </nav>
+    </div>
+
+    <main class="app-main-content">
+        <!-- Página de Login -->
+        <section id="login-page" class="app-page login-page-layout app-page--active">
+            <div class="login-background">
+                <div class="login-container">
+                    <div class="login-header">
+                        <div class="app-logo">
+                            <span class="material-icons logo-icon">sports_volleyball</span>
+                        </div>
+                        <h1 class="app-title">Voleizinho das Ruas</h1>
+                        <p class="app-subtitle">Gerencie seus jogos de vôlei com facilidade</p>
+                    </div>
+                    
+                    <div class="login-form">
+                        <div class="login-options">
+                            <button id="google-login-button" class="login-btn login-btn--google">
+                                <div class="btn-icon">
+                                    <svg width="20" height="20" viewBox="0 0 24 24">
+                                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                                    </svg>
+                                </div>
+                                <span class="btn-text">Continuar com Google</span>
+                            </button>
+                            
+                            <div class="divider">
+                                <span class="divider-text">ou</span>
+                            </div>
+                            
+                            <button id="anonymous-login-button" class="login-btn login-btn--guest">
+                                <div class="btn-icon">
+                                    <span class="material-icons">person_outline</span>
+                                </div>
+                                <span class="btn-text">Entrar como Visitante</span>
+                            </button>
+                            
+                            <button id="install-pwa-login-button" class="login-btn login-btn--install" style="display: none;">
+                                <div class="btn-icon">
+                                    <span class="material-icons">get_app</span>
+                                </div>
+                                <span class="btn-text">Instalar Aplicativo</span>
+                            </button>
+                        </div>
+                        
+                        <div class="login-footer">
+                            <p class="footer-text">Ao continuar, você concorda com nossos termos de uso</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Página Inicial (Start Page) -->
+        <section id="start-page" class="app-page start-page-layout">
+            <button id="start-game-button" class="start-game-button">Começar Jogo</button>
+        </section>
+
+        <!-- Página de Pontuação -->
+        <section id="scoring-page" class="app-page scoring-page-layout">
+            <!-- NOVO: Contêineres para as estrelas de sets vencidos -->
+            <div id="team1-stars" class="stars-container"></div>
+            <div id="team2-stars" class="stars-container"></div>
+            
+            <div class="score-display-container">
+
+                <!-- MODAL DE SELEÇÃO DE TIME -->
+                <div id="team-selection-modal" class="select-team-modal-container">
+                    <!-- NOVO: Wrapper para o conteúdo do modal (o botão de fechar foi movido para cá) -->
+                    <div class="select-team-modal-content-wrapper">
+                        <!-- NOVO: Botão de fechar no canto superior direito (AGORA DENTRO DO WRAPPER) -->
+                        <button id="close-modal-button-top-right" class="close-modal-button-top-right">
+                            <span class="material-icons">close</span>
+                        </button>
+                        <!-- REMOVIDO: Título <h4>Selecione um time:</h4> -->
+                         <h3>Selecione um time:</h3>
+                        <div id="modal-team-list" class="select-team-container">
+                            <!-- Times gerados dinamicamente pelo JavaScript serão inseridos aqui -->
+                        </div>
+                    </div>
+                </div>
+                <!-- FIM DO MODAL DE SELEÇÃO DE TIME -->
+
+                <div id="team1-panel" class="score-panel team1-panel">
+                    <h3 id="team1-name" class="team-name">Time 1</h3>
+                    <div id="team1-score" class="score-number">0</div>
+                    <div id="team1-players-column" class="team-players-column" style="display: none;"></div>
+                </div>
+
+                <div id="scoreboard-menu-button" class="button">
+                    <span class="material-icons">more_vert</span>
+                    <div id="scoreboard-menu-dropdown">
+                        <button class="scoreboard-dropdown-button">Inverter Times
+                            <span class="material-icons">swap_horiz</span>
+                        </button>
+                        <button class="scoreboard-dropdown-button">Substituir Time A
+                            <span class="material-icons">shuffle</span>
+                        </button>
+                        <button class="scoreboard-dropdown-button">Substituir Time B
+                            <span class="material-icons">shuffle</span>
+                        </button>
+                        <button class="scoreboard-dropdown-button">Configurar Partida
+                            <span class="material-icons">settings</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="scoreboard-menu-overlay" class="scoreboard-overlay"></div>
+
+
+
+                <div id="team2-panel" class="score-panel team2-panel">
+                    <h3 id="team2-name" class="team-name">Time 2</h3>
+                    <div id="team2-score" class="score-number">0</div>
+                    <div id="team2-players-column" class="team-players-column" style="display: none;"></div>
+                </div>
+            </div>
+            <!-- ADICIONADO O ID PARA O WRAPPER DO TIMER -->
+            <div id="timer-and-set-timer-wrapper" class="timer-and-set-timer-wrapper">
+                <div class="timer-wrapper">
+                    <span id="timer-text">00:00</span>
+                    <span class="material-icons timer-toggle-button">play_arrow</span>
+                </div>
+                <div class="set-timer-wrapper">
+                    <span class="material-icons">timer</span>
+                    <span id="set-timer-text">00:00</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Página de Times -->
+        <section id="teams-page" class="app-page teams-page-layout">
+            <div class="teams-header">
+                <div class="teams-header-content">
+                    <h1 class="teams-title">Times</h1>
+                    <p class="teams-subtitle">Configure e visualize seus times personalizados</p>
+                </div>
+            </div>
+            
+            <div class="teams-control-panel">
+                <div class="teams-config-row">
+
+                    <div class="config-item">
+                        <label for="players-per-team-input" class="config-label">Jogadores por time:
+                        <span id="selected-players-count" class="stat-value">0/0</span></label>
+                        <div class="gerar-times-div">
+                            <input type="number" id="players-per-team-input" class="config-input" min="1" max="10" value="4">
+                            <button id="generate-teams-button" class="button button--primary generate-teams-btn">Gerar Times</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            
+            <div class="teams-page-layout-sub">
+                <div id="teams-grid-layout" class="teams-grid">
+                    <!-- Times gerados serão renderizados aqui -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Página de Jogadores -->
+        <section id="players-page" class="app-page players-page-layout">
+            <div class="teams-header">
+                <div class="teams-header-content">
+                    <h1 class="teams-title">Jogadores</h1>
+                    <p class="teams-subtitle">Gerencie seus jogadores por categoria e selecione quem participa</p>
+                </div>
+            </div>
+            <div class="players-page-layout-sub">
+                <div class="player-category-tabs">
+                    <button id="tab-todos" class="category-tab active" data-category="todos">Todos</button>
+                    <button id="tab-principais" class="category-tab" data-category="principais">Principais</button>
+                    <button id="tab-esporadicos" class="category-tab" data-category="esporadicos">Esporádicos</button>
+                    <button id="tab-random" class="category-tab" data-category="random">Random</button>
+                </div>
+                <div id="players-page-layout-add" class="players-page-layout-add">
+                    <div class="input-with-clear">
+                        <input type="text" id="player-input" placeholder="Digite o nome do jogador..." class="form-input">
+                        <button id="clear-input-button" class="clear-input-button" style="display: none;">×</button>
+                    </div>
+                    <button id="add-player-button" class="button button--primary">Adicionar</button>
+                </div>
+                <div class="player-list-controls">
+                    <label class="switch">
+                        <input type="checkbox" id="select-all-players-toggle">
+                        <span class="slider round"></span>
+                    </label>
+                    <span  class="player-count-display">Todos</span>
+                    <span>Jogadores: <span id="player-count">0/0</span></span> 
+                </div>
+                <div id="players-list-container" class="players-list-container">
+                    <!-- Jogadores serão renderizados aqui -->
+                </div>
+                <div id="delete-zone" class="delete-zone" style="display: none;">
+                    <span class="material-icons">delete</span>
+                    <span>Solte aqui para excluir</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Página de Configurações -->
+        <section id="config-page" class="app-page config-page-layout">
+            <div class="config-header">
+                <div class="config-header-content">
+                    <h1 class="config-title">Configurações</h1>
+                    <p class="config-description">Personalize sua experiência no aplicativo</p>
+                </div>
+            </div>
+            
+            <div class="config-main">
+                <div class="config-sidebar">
+                    <nav class="config-nav">
+                        <a href="#general" class="config-nav-item active" data-section="general">
+                            <span class="material-icons">tune</span>
+                            <span>Geral</span>
+                        </a>
+                        <a href="#teams" class="config-nav-item" data-section="teams">
+                            <span class="material-icons">palette</span>
+                            <span>Times</span>
+                        </a>
+                        <a href="#admin" class="config-nav-item" data-section="admin">
+                            <span class="material-icons">admin_panel_settings</span>
+                            <span>Admin</span>
+                        </a>
+                    </nav>
+                </div>
+                
+                <div class="config-content">
+                    <!-- Seção Geral -->
+                    <div class="config-section active" id="general">
+                        <div class="section-header">
+                            <h2>Preferências Gerais</h2>
+                            <p>Configure a aparência e comportamento do app</p>
+                        </div>
+                        
+                        <div class="settings-group">
+                            <div class="setting-row">
+                                <div class="setting-content">
+                                    <div class="setting-icon">
+                                        <span class="material-icons">dark_mode</span>
+                                    </div>
+                                    <div class="setting-details">
+                                        <h3>Modo Escuro</h3>
+                                        <p>Ative o tema escuro para reduzir o cansaço visual</p>
+                                    </div>
+                                </div>
+                                <label class="modern-switch">
+                                    <input type="checkbox" id="dark-mode-toggle">
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </div>
+                            
+                            <div class="setting-row">
+                                <div class="setting-content">
+                                    <div class="setting-icon">
+                                        <span class="material-icons">vibration</span>
+                                    </div>
+                                    <div class="setting-details">
+                                        <h3>Vibração</h3>
+                                        <p>Feedback háptico ao marcar pontos</p>
+                                    </div>
+                                </div>
+                                <label class="modern-switch">
+                                    <input type="checkbox" id="vibration-toggle" checked>
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </div>
+                            
+                            <div class="setting-row">
+                                <div class="setting-content">
+                                    <div class="setting-icon">
+                                        <span class="material-icons">visibility</span>
+                                    </div>
+                                    <div class="setting-details">
+                                        <h3>Exibir Jogadores</h3>
+                                        <p>Mostrar nomes dos jogadores durante a partida</p>
+                                    </div>
+                                </div>
+                                <label class="modern-switch">
+                                    <input type="checkbox" id="display-players-toggle" checked>
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </div>
+
+                            <!-- NOVO: Exibir Timer -->
+                            <div class="setting-row">
+                                <div class="setting-content">
+                                    <div class="setting-icon">
+                                        <span class="material-icons">schedule</span>
+                                    </div>
+                                    <div class="setting-details">
+                                        <h3>Exibir Timer</h3>
+                                        <p>Mostrar o cronômetro da partida</p>
+                                    </div>
+                                </div>
+                                <label class="modern-switch">
+                                    <input type="checkbox" id="display-timer-toggle" checked>
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </div>
+                            
+                            <div class="setting-row">
+                                <div class="setting-content">
+                                    <div class="setting-icon">
+                                        <span class="material-icons">wifi</span>
+                                    </div>
+                                    <div class="setting-details">
+                                        <h3>Status de Conexão</h3>
+                                        <p>Indicador visual do status da internet</p>
+                                    </div>
+                                </div>
+                                <label class="modern-switch">
+                                    <input type="checkbox" id="show-connection-status-toggle" checked>
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </div>
+                            
+                            <div class="setting-row">
+                                <div class="setting-content">
+                                    <div class="setting-icon">
+                                        <span class="material-icons">notifications</span>
+                                    </div>
+                                    <div class="setting-details">
+                                        <h3>Notificações</h3>
+                                        <p>Receber alertas sobre novos jogos agendados</p>
+                                    </div>
+                                </div>
+                                <label class="modern-switch">
+                                    <input type="checkbox" id="notifications-toggle">
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Seção Times -->
+                    <div class="config-section" id="teams">
+                        <div class="section-header">
+                            <h2>Times Personalizados</h2>
+                            <p>Configure nomes e cores dos seus times</p>
+                        </div>
+                        
+                        <div class="teams-list">
+                            <div class="team-row">
+                                <input type="color" id="custom-team-1-color" value="#325fda">
+                                <input type="text" id="custom-team-1-name" placeholder="Nome do time" value="Time Personalizado 1">
+                            </div>
+                            
+                            <div class="team-row">
+                                <input type="color" id="custom-team-2-color" value="#f03737">
+                                <input type="text" id="custom-team-2-name" placeholder="Nome do time" value="Time Personalizado 2">
+                            </div>
+                            
+                            <div class="team-row">
+                                <input type="color" id="custom-team-3-color" value="#4CAF50">
+                                <input type="text" id="custom-team-3-name" placeholder="Nome do time" value="Time Personalizado 3">
+                            </div>
+                            
+                            <div class="team-row">
+                                <input type="color" id="custom-team-4-color" value="#FFC107">
+                                <input type="text" id="custom-team-4-name" placeholder="Nome do time" value="Time Personalizado 4">
+                            </div>
+                            
+                            <div class="team-row">
+                                <input type="color" id="custom-team-5-color" value="#9C27B0">
+                                <input type="text" id="custom-team-5-name" placeholder="Nome do time" value="Time Personalizado 5">
+                            </div>
+                            
+                            <div class="team-row">
+                                <input type="color" id="custom-team-6-color" value="#00BCD4">
+                                <input type="text" id="custom-team-6-name" placeholder="Nome do time" value="Time Personalizado 6">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Seção Admin -->
+                    <div class="config-section" id="admin">
+                        <div class="section-header">
+                            <h2>Administração</h2>
+                            <p>Configurações avançadas e manutenção do app</p>
+                        </div>
+                        
+                        <div class="admin-panel">
+                            <div class="admin-auth">
+                                <h3>
+                                    <span class="material-icons">key</span>
+                                    Autenticação
+                                </h3>
+                                <div class="admin-auth-form">
+                                    <div class="admin-key-group">
+                                        <input type="password" id="admin-key-input" class="admin-key-input" placeholder="Digite a chave de administrador" autocomplete="off">
+                                        <button type="button" id="toggle-admin-key" class="toggle-password-btn">
+                                            <span class="material-icons">visibility</span>
+                                        </button>
+                                    </div>
+                                    <button id="admin-auth-btn" class="admin-auth-btn">
+                                        <span class="material-icons">lock_open</span>
+                                        Autenticar
+                                    </button>
+                                </div>
+                                <div id="admin-auth-status" class="admin-auth-status">
+                                    <span class="material-icons">check_circle</span>
+                                    <span class="status-text">Autenticado com sucesso</span>
+                                </div>
+                            </div>
+                            
+                            <div class="admin-actions">
+                                <div class="admin-action">
+                                    <div class="admin-action-info">
+                                        <div class="admin-action-icon">
+                                            <span class="material-icons">settings_backup_restore</span>
+                                        </div>
+                                        <div class="admin-action-details">
+                                            <h4>Redefinir Configurações</h4>
+                                            <p>Restaurar todas as configurações para os valores padrão</p>
+                                        </div>
+                                    </div>
+                                    <button id="reset-config-button" class="admin-action-btn">Redefinir</button>
+                                </div>
+                                
+                                <div class="admin-action">
+                                    <div class="admin-action-info">
+                                        <div class="admin-action-icon">
+                                            <span class="material-icons">cleaning_services</span>
+                                        </div>
+                                        <div class="admin-action-details">
+                                            <h4>Limpar Cache</h4>
+                                            <p>Remover dados temporários e reiniciar o aplicativo</p>
+                                        </div>
+                                    </div>
+                                    <button id="reset-app-button" class="admin-action-btn danger">Limpar</button>
+                                </div>
+                                
+                                <div class="admin-action" id="install-pwa-action" style="display: none;">
+                                    <div class="admin-action-info">
+                                        <div class="admin-action-icon">
+                                            <span class="material-icons">get_app</span>
+                                        </div>
+                                        <div class="admin-action-details">
+                                            <h4>Instalar Aplicativo</h4>
+                                            <p>Adicionar à tela inicial do dispositivo</p>
+                                        </div>
+                                    </div>
+                                    <button id="install-pwa-button" class="admin-action-btn primary">Instalar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="config-footer">
+                <div class="app-info">
+                    <div class="info-group">
+                        <span class="material-icons">fingerprint</span>
+                        <span id="user-id-display">ID: Carregando...</span>
+                    </div>
+                    <div class="info-group">
+                        <span class="material-icons">info</span>
+                        <span id="app-version-display">Versão: Carregando...</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Página de Histórico -->
+        <section id="history-page" class="app-page history-page-layout">
+            <div class="history-header">
+                <div class="history-header-content">
+                    <div class="history-title-row">
+                        <h1 class="history-heading">Histórico</h1>
+                    </div>
+                    <p class="history-subtitle">Revise suas partidas salvas e filtre por autor ou busque por times, jogadores e locais</p>
+                </div>
+                <div class="history-controls">
+                    <div class="input-with-clear">
+                        <input type="text" id="history-search" class="form-input" placeholder="Buscar por time, jogador ou local" autocomplete="off" oninput="document.getElementById('history-clear-search').style.display = this.value ? 'block' : 'none'" />
+                        <button id="history-clear-search" class="clear-input-button" style="display: none;" title="Limpar" onclick="(function(){var i=document.getElementById('history-search'); if(i){ i.value=''; document.getElementById('history-clear-search').style.display='none'; i.dispatchEvent(new Event('input',{bubbles:true}));}})()">×</button>
+                    </div>
+                    <div class="filter-chips scheduling-nav">
+                        <button class="chip scheduling-nav-item active" data-filter="all">
+                            <span class="material-icons">list</span>
+                            <span>Todos</span>
+                        </button>
+                        <button class="chip scheduling-nav-item" data-filter="mine">
+                            <span class="material-icons">person</span>
+                            <span>Meus</span>
+                        </button>
+                    </div>
+                    <div class="view-switch" style="display:none"></div>
+                </div>
+            </div>
+            <div class="history-summary" style=" width: 100%; padding: 0px;">
+                <div class="history-stats">
+                    <span class="stat-badge" id="history-total">0 partidas</span>
+                    <span class="stat-badge win" id="history-wins">0 vitórias</span>
+                    <span class="stat-badge loss" id="history-losses">0 derrotas</span>
+                </div>
+            </div>
+            <div id="history-list-container" class="history-list-container"></div>
+        </section>
+
+        <!-- Página de Agendamentos -->
+        <section id="scheduling-page" class="app-page scheduling-page-layout">
+            <div class="scheduling-header">
+                <div class="scheduling-header-content">
+                    <h1 class="scheduling-title">Agendamentos</h1>
+                    <p class="scheduling-subtitle">Acompanhe os agendamentos dos jogos</p>
+                </div>
+            </div>
+            
+            <div class="scheduling-main">
+                <div class="scheduling-sidebar">
+                    <nav class="scheduling-nav">
+                        <button class="scheduling-nav-item active" data-section="upcoming">
+                            <span class="material-icons">upcoming</span>
+                            <span>Próximos</span>
+                        </button>
+                        <button class="scheduling-nav-item" data-section="past">
+                            <span class="material-icons">history</span>
+                            <span>Passados</span>
+                        </button>
+                    </nav>
+                </div>
+                
+                <div class="scheduling-content">
+                    <!-- Seção Próximos -->
+                    <div class="scheduling-section active" id="upcoming">
+                        <div class="section-header">
+                            <h2>Próximos Jogos</h2>
+                            <p>Jogos agendados para os próximos dias</p>
+                        </div>
+                        
+                        <div class="games-group">
+                            <div id="upcoming-games-list" class="games-list">
+                                <!-- Próximos jogos serão exibidos aqui -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Seção Passados -->
+                    <div class="scheduling-section" id="past">
+                        <div class="section-header">
+                            <h2>Jogos Passados</h2>
+                            <p>Histórico de jogos já realizados</p>
+                        </div>
+                        
+                        <div class="games-group">
+                            <div id="past-games-list" class="games-list">
+                                <!-- Jogos passados serão exibidos aqui -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Botão Flutuante para Agendar (apenas para admins) -->
+            <button id="floating-add-btn" class="floating-add-btn">
+                <span class="material-icons">add</span>
+            </button>
+            
+
+            
+            <!-- Modal do Formulário de Agendamento -->
+            <div id="schedule-modal" class="schedule-modal">
+                <div class="schedule-modal-content">
+                    <div class="modal-header">
+                        <h3>Novo Agendamento</h3>
+                    </div>
+                    
+                    <div class="form-fields">
+                        <div class="field-row">
+                            <div class="field-group">
+                                <label for="surface-select">Tipo</label>
+                                <select id="surface-select" class="modern-select">
+                                    <option value="">Selecione...</option>
+                                    <option value="Quadra">Quadra</option>
+                                    <option value="Areia">Areia</option>
+                                </select>
+                            </div>
+                            <div class="field-group">
+                                <label for="date-input">Data</label>
+                                <input type="date" id="date-input" class="modern-input">
+                            </div>
+                        </div>
+                        
+                        <div class="field-row">
+                            <div class="field-group">
+                                <label for="start-time-input">Início</label>
+                                <input type="time" id="start-time-input" class="modern-input">
+                            </div>
+                            <div class="field-group">
+                                <label for="end-time-input">Fim</label>
+                                <input type="time" id="end-time-input" class="modern-input">
+                            </div>
+                        </div>
+                        
+                        <div class="field-group full-width">
+                            <label for="location-input">Local</label>
+                            <input type="text" id="location-input" placeholder="Ex: Praia do Futuro, Ginásio Central" class="modern-input">
+                        </div>
+                        
+                        <div class="field-group full-width">
+                            <label for="notes-input">Observações</label>
+                            <input type="text" id="notes-input" placeholder="Informações adicionais (opcional)" class="modern-input">
+                        </div>
+                        
+                        <div class="field-group full-width">
+                            <label for="payment-proof-input">Comprovantes de reserva</label>
+                            <input type="file" id="payment-proof-input" accept="image/*" class="modern-file-input" multiple style="display:none">
+                            <div class="file-input-wrapper">
+                                <label for="payment-proof-input" class="file-input-button">Anexar comprovantes</label>
+                                <span id="file-input-help" class="file-input-help">PNG, JPG • Máx. 5</span>
+                            </div>
+                                <div class="file-preview" id="file-preview" style="display: none;">
+                                <div id="file-previews" class="file-previews-list"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button id="schedule-game-button" class="schedule-btn">
+                        <span class="material-icons">add_circle</span>
+                        Agendar Jogo
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Zona de exclusão para drag and drop -->
+            <div id="scheduling-delete-zone" class="delete-zone" style="display: none;">
+                <span class="material-icons">delete</span>
+                <span>Solte aqui para excluir</span>
+            </div>
+        </section>
+
+        <section id="stats-page" class="app-page stats-page-layout">
+            <h2 class="page-heading">Estatísticas dos Jogadores</h2>
+            <!--<h4>Em desenvolvimento...</h4>-->
+        </section>
+    </main>
+
+    <!-- Confirmation Modal Structure (NOVO) -->
+    <div id="confirmation-modal" class="confirmation-modal-overlay">
+        <div class="confirmation-modal-content">
+            <p id="confirmation-message" class="confirmation-message"></p>
+            <div class="confirmation-buttons" style="justify-content:flex-end; gap: 0.5rem; margin-top: 1rem;">
+                <button id="confirm-yes-button" class="button confirmation-button--confirm">Sim</button>
+                <button id="confirm-no-button" class="button confirmation-button--cancel">Não</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOVO: Overlay para fechar o menu ao clicar fora -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <!-- Container para mensagens de notificação -->
+    <div id="message-container" class="message-container"></div>
+    
+    <!-- Modal para visualizar comprovantes -->
+    <div id="proof-viewer-modal" class="proof-viewer-modal">
+        <div class="proof-viewer-content">            
+            <div class="proof-viewer-header">
+                <h3>Comprovantes</h3>
+                <button id="close-proof-viewer" class="close-modal-btn">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+
+            <div class="proof-viewer-body">                
+                <div class="proof-image-container">
+                    <img id="proof-image" src="" alt="Comprovante">
+                </div>
+                <div class="proof-carousel-nav">
+                    <div class="proof-dots" id="proof-dots">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Boas-vindas para Notificações -->
+    <div id="welcome-notifications-modal" class="welcome-modal-overlay">
+        <div class="welcome-modal-content">
+            <div class="welcome-modal-header">
+                <span class="material-icons welcome-icon">🔔</span>
+                <h3>Quer receber notificações?</h3>
+            </div>
+            <p class="welcome-modal-text">
+                Receba alertas quando novos jogos forem agendados!
+            </p>
+            <div class="welcome-modal-actions">
+                <button id="welcome-allow-notifications" class="button button--primary">
+                    <span class="material-icons">notifications_active</span>
+                    Permitir
+                </button>
+                <button id="welcome-deny-notifications" class="button button--secondary">
+                    Agora não
+                </button>
+            </div>
+            <div class="welcome-modal-footer">
+                <button id="welcome-never-ask" type="button" class="link-button">Não perguntar novamente</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Configurações Rápidas -->
+    <div id="quick-settings-modal" class="quick-settings-modal">
+        <div class="quick-settings-content">
+            <div class="quick-settings-header">
+                <h3 class="quick-settings-title">Config. da Partida</h3>
+                <button id="quick-settings-close" class="quick-settings-close">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="quick-setting-item">
+                <label class="quick-setting-label">Pontos por Set:</label>
+                <input type="number" id="quick-points-per-set" class="quick-setting-input" min="5" max="30" value="15">
+            </div>
+            <div class="quick-setting-item">
+                <label class="quick-setting-label">Número de Sets:</label>
+                <input type="number" id="quick-number-of-sets" class="quick-setting-input" min="1" max="5" value="1">
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de seleção de categoria -->
+    <div id="category-selection-modal" class="confirmation-modal-overlay">
+        <div class="confirmation-modal-content">
+            <p id="category-selection-message" class="confirmation-message">Em qual categoria deseja adicionar o jogador?</p>
+            <div class="category-selection-buttons">
+                <button id="category-principais-btn" class="button confirmation-button--confirm">Principais</button>
+                <button id="category-esporadicos-btn" class="button confirmation-button--confirm">Esporádicos</button>
+                <button id="category-random-btn" class="button confirmation-button--confirm">Random</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de cancelamento com motivo -->
+    <div id="cancel-reason-modal" class="confirmation-modal-overlay">
+        <div class="confirmation-modal-content">
+            <h3 style="margin: 0 0 1rem; color: var(--text-primary);">Cancelar Agendamento</h3>
+            <p class="confirmation-message">Informe o motivo do cancelamento:</p>
+            <textarea id="cancel-reason-input" placeholder="Ex: Chuva, falta de jogadores, problema no local..." style="width: 100%; min-height: 80px; padding: 0.75rem; border: 2px solid var(--border-color); border-radius: 8px; background: var(--bg-input); color: var(--text-primary); resize: vertical; margin: 1rem 0;"></textarea>
+            <div class="confirmation-buttons">
+                <button id="confirm-cancel-btn" class="button confirmation-button--confirm">Cancelar Jogo</button>
+                <button id="cancel-cancel-btn" class="button confirmation-button--cancel">Voltar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+    <script src="js/config-navigation.js"></script>
+    
+    <script>
+    // Força fullscreen no PWA
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      document.documentElement.requestFullscreen?.();
+    }
+    
+    // Registro do Service Worker com tratamento de erro
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+          .then(registration => {
+            // Força verificação PWA após SW registrado
+            setTimeout(() => {
+              if (window.pwaManager) {
+                window.pwaManager.showLoginInstallButton();
+              }
+            }, 2000);
+            
+            // Força atualização se houver nova versão
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // Nova versão disponível
+                  window.location.reload();
+                }
+              });
+            });
+          })
+          .catch(error => {
+            // Silencioso
+          });
+      });
+      
+      // Função para limpar cache (pode ser chamada das configurações)
+      window.clearAppCache = () => {
+        return new Promise((resolve) => {
+          if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            const channel = new MessageChannel();
+            channel.port1.onmessage = (event) => {
+              resolve(event.data.success);
+            };
+            navigator.serviceWorker.controller.postMessage(
+              { type: 'CLEAR_CACHE' }, 
+              [channel.port2]
+            );
+          } else {
+            resolve(false);
+          }
+        });
+      };
+    }
+    </script>
+
+
+    <!-- Filtro SVG para efeito gooey/liquido -->
+<svg width="0" height="0">
+  <filter id="gooey">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
+    <feColorMatrix in="blur" mode="matrix" values="
+      1 0 0 0 0
+      0 1 0 0 0
+      0 0 1 0 0
+      0 0 0 18 -7
+    " result="goo" />
+    <feBlend in="SourceGraphic" in2="goo" />
+  </filter>
+</svg>
+</body>
+</html>

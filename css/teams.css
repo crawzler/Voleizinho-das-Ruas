@@ -1,0 +1,145 @@
+/* Times - Layout principal */
+#teams-page.teams-page-layout { background: var(--new-bg-primary, var(--bg-primary)); color: var(--new-text-primary, var(--text-primary)); display: flex; flex-direction: column; min-height: 100vh; }
+
+/* Cabeçalho */
+.teams-header { padding: 2rem 1rem 1.5rem; color: var(--new-text-primary, var(--text-primary)); text-align: center; }
+.teams-header-content { max-width: 1200px; margin: 0 auto; }
+.teams-title { font-size: 2.5rem; font-weight: 700; margin: 0 0 0.5rem; letter-spacing: -0.02em; color: var(--new-text-primary, var(--text-primary)); }
+.teams-subtitle { font-size: 1.1rem; opacity: 0.9; margin: 0; font-weight: 400; color: var(--new-text-secondary, var(--text-secondary)); }
+
+/* Subárea com rolagem e sombras indicativas */
+.teams-page-layout-sub { display: flex; flex-direction: column; gap: 1rem; flex-grow: 1; width: 100%; min-height: 0; overflow: visible !important; height: auto !important; padding-bottom: 2rem; }
+.teams-page-layout-sub::-webkit-scrollbar { width: 6px; }
+.teams-page-layout-sub::-webkit-scrollbar-track { background: transparent; }
+.teams-page-layout-sub::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+.teams-page-layout-sub { scrollbar-width: thin; }
+.teams-page-layout-sub.has-scroll-top::before, .teams-page-layout-sub.has-scroll-bottom::after { content: ''; position: sticky; left: 0; right: 0; height: 20px; pointer-events: none; z-index: 10; }
+.teams-page-layout-sub.has-scroll-top::before { top: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0)); }
+.teams-page-layout-sub.has-scroll-bottom::after { bottom: 0; background: linear-gradient(to top, rgba(0,0,0,0.5), rgba(0,0,0,0)); }
+
+/* Grid de times */
+#teams-page .teams-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 0; padding-bottom: 1rem; }
+@media (max-width: 768px) { #teams-page .teams-grid { grid-template-columns: 1fr; } }
+
+/* Ações e configuração */
+.teams-action { padding: 20px 0; width: 100%; flex: 1; display: flex; flex-direction: column; gap: 1rem; }
+.teams-config { display: flex; flex-direction: column; gap: 0.5rem; background-color: var(--new-bg-card, var(--bg-card)); border: 1px solid var(--new-border-color, var(--border-color)); padding: 1rem; border-radius: 12px; box-shadow: var(--new-shadow-light, var(--shadow-light)); }
+.teams-config .form-input { max-width: 100px; }
+.selected-players-info { color: var(--new-text-secondary, var(--text-secondary)); font-size: 0.875rem; margin-top: 0.5rem; }
+.generate-teams-button { background: var(--new-accent-primary, var(--accent-primary)); color: var(--new-text-inverse, var(--text-inverse)); border: none; border-radius: 8px; padding: 0.75rem 1.25rem; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: var(--new-transition-fast, all 0.2s ease); box-shadow: var(--new-shadow-light, var(--shadow-light)); outline: none; -webkit-tap-highlight-color: transparent; white-space: nowrap; min-width: 120px; }
+.generate-teams-button:hover { background: var(--new-accent-primary-hover, #5a67d8); transform: translateY(-1px); box-shadow: var(--new-shadow-hover, 0 2px 8px rgba(0,0,0,0.1)); }
+
+/* Cards dos times */
+.team-card { flex: 1; background: var(--new-bg-card, var(--bg-card)); border: 1px solid var(--new-border-color, var(--border-color)); padding: 1rem; border-radius: 12px; box-shadow: var(--new-shadow-light, var(--shadow-light)); outline: none; -webkit-tap-highlight-color: transparent; display: flex; flex-direction: column; height: 100%; width: 100%; transition: var(--new-transition-fast, all 0.2s ease); }
+.team-card-title { font-size: 1.125rem; font-weight: 600; color: var(--new-text-primary, var(--text-primary)); padding-bottom: 10px; margin: 0; border-bottom: 1px solid var(--new-border-color, var(--border-color)); transition: color 0.3s ease; }
+.team-card-list { color: var(--new-text-secondary, var(--text-secondary)); list-style: inside; padding: 0; margin: 0; margin-top: 10px; transition: color 0.3s ease; }
+.team-card-list li { padding-top: 0.25rem; padding-bottom: 0.25rem; border-bottom: 1px dashed var(--new-border-color, var(--border-color)); transition: border-color 0.3s ease; }
+
+/* Painel de controle e estatísticas */
+.teams-control-panel { width: 100%; background: var(--new-bg-card, var(--bg-card)); border: 1px solid var(--new-border-color, var(--border-color)); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem; flex-shrink: 0; box-shadow: var(--new-shadow-light, var(--shadow-light)); transition: all 0.3s ease; }
+.teams-stats { margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #444; }
+.stat-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; }
+.stat-label { color: #D1D5DB; font-size: 0.875rem; font-weight: 500; }
+.stat-value { font-size: 1.125rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 12px; color: var(--new-text-secondary, var(--text-secondary)); transition: all 0.3s ease; }
+
+/* Linha de configuração */
+.teams-config-row { display: flex; align-items: end; gap: 1rem; flex-wrap: wrap; }
+.config-item { display: flex; flex-direction: column; gap: 0.5rem; flex: 1; min-width: 150px; }
+.config-label { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; color: var(--new-text-dark, var(--text-primary)); font-weight: 600; margin: 0; font-size: 0.875rem; }
+.config-input { padding: 0.7rem 0.75rem; border: 1px solid var(--new-border-color, var(--border-color)); border-radius: 8px; background: var(--new-bg-input, var(--bg-input)); color: var(--new-text-primary, var(--text-primary)); font-size: 1rem; outline: none; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+.config-input:focus { border-color: var(--new-accent-primary, var(--accent-primary)); box-shadow: var(--new-focus-ring, 0 0 0 3px rgba(102, 126, 234, 0.1)); transform: translateY(-1px); }
+.gerar-times-div { display: flex; gap: 0.75rem; align-items: end; }
+
+/* Lista de times (edição simples) */
+.teams-list { padding: 1rem 2rem 2rem; }
+.team-row { display: flex; align-items: center; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--new-border-light); }
+.team-row:last-child { border-bottom: none; }
+.team-row input[type="color"] { max-width: 40px; height: 40px; border: none; border-radius: 8px; cursor: pointer; flex-shrink: 0; padding: 0; overflow: hidden; }
+.team-row input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; border: none; border-radius: 8px; }
+.team-row input[type="color"]::-webkit-color-swatch { border: none; border-radius: 8px; }
+.team-row input[type="text"] { flex: 1; padding: 0.75rem; border: 1px solid var(--new-border-color); border-radius: 8px; font-size: 0.875rem; background: var(--new-bg-input); color: var(--new-text-primary); transition: var(--new-transition-fast); }
+.team-row input[type="text"]:focus { outline: none; border-color: var(--new-accent-primary); box-shadow: var(--new-focus-ring); }
+
+/* Substituição de jogadores (UI) */
+.player-item { display: flex; align-items: center; justify-content: space-between; padding: 0.25rem 0; }
+.substitute-btn { background: none; border: none; box-shadow: none; color: #9CA3AF; cursor: pointer; padding: 0.25rem; border-radius: 4px; transition: all 0.2s ease; font-size: 0.875rem; }
+.substitute-btn:hover { color: var(--new-accent-primary); }
+.substitute-dropdown { display: none; position: absolute; transform: translateX(-100%); background-color: var(--sidebar-bg); border-radius: 6px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); z-index: 1000; overflow-y: auto; }
+.substitute-dropdown.show { display: block; }
+.substitute-option { padding: 0.5rem 0.75rem; cursor: pointer; color: var(--text-secondary); transition: background-color 0.2s ease; white-space: nowrap; }
+.substitute-option:last-child { border-bottom: none; height: 100%; text-align: center; }
+
+/* Modal de substituição */
+.substitute-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-overlay, rgba(0, 0, 0, 0.7)); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 1rem; }
+.substitute-modal-title { color: var(--text-primary); font-size: 1.125rem; font-weight: bold; margin: 0; }
+.substitute-modal-close { background: none; border: none; color: #9CA3AF; cursor: pointer; font-size: 1.5rem; padding: 0.25rem; box-shadow: none; }
+.substitute-modal-close:hover { color: #E5E7EB; }
+.substitute-search { width: 100%; padding: 0.75rem; margin-bottom: 1rem; background-color: var(--bg-input); border: 1px solid var(--border-light); border-radius: 6px; color: #E5E7EB; font-size: 1rem; }
+.substitute-search:focus { outline: none; border-color: #2563EB; }
+.substitute-players-list { max-height: 50vh; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.substitute-players-list::-webkit-scrollbar { width: 6px; }
+.substitute-players-list::-webkit-scrollbar-track { background: transparent; }
+.substitute-players-list::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 2px; }
+.substitute-player-name { color: var(--text-secondary); font-weight: 500; }
+.substitute-player-status { font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 12px; font-weight: bold; border: 1px solid transparent; }
+.status-available { background-color: rgba(156, 163, 175, 0.2); color: #9CA3AF; }
+.status-in-team { background-color: transparent !important; color: var(--text-secondary) !important; border: none !important; display: flex !important; align-items: center !important; gap: 0.5rem !important; }
+.status-in-team::before { content: ''; width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; background-color: var(--team-color); }
+.no-players-message { text-align: center; color: #9CA3AF; padding: 2rem; font-style: italic; }
+
+/* Espaços vazios nos times */
+.empty-slot { color: #9CA3AF !important; font-style: italic; opacity: 0.7; }
+.empty-slot-item { border-radius: 4px; padding: 0.5rem 0rem !important; margin: 0.25rem 0; }
+.empty-slot-item .substitute-btn { background: var(--new-accent-primary, var(--accent-primary)); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+.empty-slot-item .substitute-btn:hover { background: var(--new-accent-primary, var(--accent-primary)); transform: scale(1.1); }
+
+/* Responsividade */
+@media (max-width: 600px) {
+  .teams-config-row { flex-direction: column; align-items: stretch; }
+  .generate-teams-btn { background: var(--new-accent-primary, var(--accent-primary)); color: #fff; border: none; border-radius: 10px; padding: 0.8rem 1.25rem; font-weight: 700; transition: transform 0.1s ease, filter 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 6px 15px rgba(37, 99, 235, 0.25); width: 100%; }
+}
+
+
+/* Conteúdo do modal de substituição (Times) */
+.substitute-modal-content {
+  padding: 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  width: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  box-shadow: var(--shadow-heavy);
+  animation: substitutePop 0.24s ease;
+}
+
+@keyframes substitutePop {
+  0% { transform: translateY(8px) scale(0.98); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Cabeçalho do modal */
+.substitute-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+  position: relative;
+}
+
+/* Lista de jogadores (grid responsivo) */
+.substitute-players-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  scrollbar-width: thin;
+}
+@media (min-width: 480px) {
+  .substitute-players-list { grid-template-columns: 1fr 1fr; }
+}
+.substitute-player-item { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; background: var(--bg-card); border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 12px; padding: 0.75rem 0.85rem; cursor: pointer; transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.05s ease; }
+.substitute-player-item:hover { transform: translateY(-1px); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08); background: var(--bg-card); }
