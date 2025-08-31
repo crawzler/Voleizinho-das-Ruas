@@ -97,6 +97,8 @@ export const customTeamInputs = [
 
 export const resetAppButton = () => document.getElementById('reset-app-button'); // Botão de reiniciar app
 export const resetConfigButton = () => document.getElementById('reset-config-button'); // Botão de redefinir configurações
+// NOVO: Botão de verificar atualizações
+export const checkUpdatesButton = () => document.getElementById('check-updates-button');
 
 // Elementos de Informação do App
 export const appVersionDisplay = () => document.getElementById('app-version-display');
