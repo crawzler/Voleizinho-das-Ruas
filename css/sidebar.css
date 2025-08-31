@@ -92,7 +92,7 @@ body.sidebar-open .app-main-content { pointer-events: none; }
 body:has(#login-page.app-page--active) .header-button-container { display: none; }
 
 /* Modo imersivo na tela de pontuação */
-body.scoring-page-active .header-button-container { display: none !important; }
+body.scoring-page-active .header-button-container { display: block !important; }
 body.scoring-page-active .sidebar-overlay { display: none !important; }
 body.scoring-page-active .sidebar-menu { display: none !important; }
 
