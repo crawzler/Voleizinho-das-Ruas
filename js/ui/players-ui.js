@@ -809,7 +809,7 @@ function setupDragAndDrop(playerElement) {
             if (cs.borderRadius) dragGhost.style.setProperty('border-radius', cs.borderRadius, 'important');
             if (cs.boxShadow) dragGhost.style.setProperty('box-shadow', cs.boxShadow, 'important');
             // Sem borda no fantasma
-            dragGhost.style.setProperty('border', 'none', 'important');
+            
         } catch (err) { /* ignore */ }
         dragGhost.classList.add('drag-ghost');
         document.body.appendChild(dragGhost);

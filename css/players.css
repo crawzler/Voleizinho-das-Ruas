@@ -415,3 +415,61 @@
 }
 
 /* Modal de Substituição: estilos migrados para teams.css (globais) para evitar duplicação. */
+
+/* Ghost global para jogadores (fora do escopo de #players-page) */
+.drag-ghost.player-list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-direction: row-reverse;
+    padding: 0.75rem;
+    border-radius: 12px;
+    background: var(--new-bg-secondary, var(--bg-secondary));
+    border: 1px solid var(--new-border-color, var(--border-color));
+    box-shadow: var(--new-shadow-light, var(--shadow-light));
+    pointer-events: none;
+}
+
+.drag-ghost .player-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex: 1;
+    gap: 1rem;
+}
+
+.drag-ghost .player-avatar-name {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.drag-ghost .player-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: var(--new-bg-primary, var(--bg-primary));
+    flex-shrink: 0;
+    border: 1px solid var(--new-border-color, var(--border-color));
+}
+
+/* Estilo específico quando o avatar é o SVG padrão dentro do ghost */
+.drag-ghost .player-avatar[src*="default-user-icon.svg"] {
+    padding: 8px;
+    background-color: var(--bg-primary);
+}
+
+/* Oculta botão de remoção dentro do ghost para não quebrar o layout */
+.drag-ghost .remove-button {
+    display: none !important;
+}
+
+.drag-ghost .player-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex: 1;
+    gap: 1rem;
+}

@@ -54,10 +54,10 @@
 
 /* Responsive */
 @media (min-width: 768px) {
-  .sidebar-menu { position: relative; right: 0; width: 260px; height: auto; min-height: 100vh; box-shadow: none; border-left: 1px solid var(--sidebar-border); transform: translateX(0); -webkit-transform: translateX(0); }
-  .header-button-container { display: none; }
-  .sidebar-overlay { display: none; }
-  .app-main-content { margin-right: 260px; }
+  .sidebar-menu { position: fixed; top: 0; right: 0; width: 260px; height: 100vh; box-shadow: none; border-left: 1px solid var(--sidebar-border); transform: translateX(100%); -webkit-transform: translateX(100%); }
+  .header-button-container { display: block; }
+  .sidebar-overlay { display: block; }
+  .app-main-content { margin-right: 0; }
 }
 @media (max-width: 767px) {
   .sidebar-menu { width: 100%; max-width: 320px; }
@@ -93,8 +93,10 @@ body:has(#login-page.app-page--active) .header-button-container { display: none;
 
 /* Modo imersivo na tela de pontuação */
 body.scoring-page-active .header-button-container { display: block !important; }
-body.scoring-page-active .sidebar-overlay { display: none !important; }
-body.scoring-page-active .sidebar-menu { display: none !important; }
+/* Mantém oculto por padrão, mas permite exibir quando ativo */
+body.scoring-page-active .sidebar-overlay:not(.active) { display: none !important; }
+/* Mantém oculto por padrão, mas permite exibir quando aberto */
+body.scoring-page-active .sidebar-menu:not(.open) { display: none !important; }
 
 /* Sidebar drawer behavior overrides (integrated from sidebar-fix.css) */
 
