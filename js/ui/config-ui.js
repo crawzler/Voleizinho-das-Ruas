@@ -470,7 +470,7 @@ export function setupConfigUI() {
         setInterval(updateInstallButtonVisibility, 3000);
     }
 
-    // NOVO: Listener para o botão de Verificar Atualizações
+    // NOVO: Listener para o botão de Verificar Atualizações (robusto)
     const checkUpdatesBtn = document.getElementById('check-updates-button');
     if (checkUpdatesBtn) {
         const setLoading = (loading) => {
@@ -486,25 +486,76 @@ export function setupConfigUI() {
             }
         };
 
+        // Aguarda um estado específico do service worker (waiting/installing -> installed)
+        const waitForWorkerState = (registration, timeout = 8000) => {
+            return new Promise((resolve) => {
+                let resolved = false;
+                const checkAndResolve = () => {
+                    if (registration.waiting) return resolve({ status: 'waiting', registration });
+                    if (registration.installing && registration.installing.state === 'installed') return resolve({ status: 'installed', registration });
+                };
+
+                checkAndResolve();
+
+                const onUpdateFound = () => {
+                    const newWorker = registration.installing;
+                    if (!newWorker) return;
+                    const onState = () => {
+                        if (newWorker.state === 'installed') {
+                            if (!resolved) {
+                                resolved = true;
+                                registration.removeEventListener('updatefound', onUpdateFound);
+                                resolve({ status: 'installed', registration });
+                            }
+                        }
+                    };
+                    newWorker.addEventListener('statechange', onState);
+                };
+
+                registration.addEventListener('updatefound', onUpdateFound);
+
+                // Timeout fallback
+                setTimeout(() => {
+                    if (!resolved) {
+                        resolved = true;
+                        registration.removeEventListener('updatefound', onUpdateFound);
+                        resolve({ status: 'timeout', registration });
+                    }
+                }, timeout);
+            });
+        };
+
+        // Estratégia principal ao clicar
         checkUpdatesBtn.addEventListener('click', async () => {
             if (!('serviceWorker' in navigator)) {
                 displayMessage('Seu navegador não suporta atualizações automáticas (Service Worker).', 'warning');
                 return;
             }
 
+            setLoading(true);
             try {
-                setLoading(true);
-                const registration = await navigator.serviceWorker.getRegistration();
+                // Tenta obter a primeira registration ativa
+                let registration = await navigator.serviceWorker.getRegistration();
+
+                // Se não há registro, registra uma instância nova
                 if (!registration) {
-                    setLoading(false);
-                    displayMessage('Service Worker não está registrado.', 'warning');
-                    return;
+                    displayMessage('Registrando Service Worker para verificar a versão...', 'info');
+                    try {
+                        const stamp = Date.now();
+                        registration = await navigator.serviceWorker.register(`./service-worker.js?v=${stamp}`);
+                    } catch (e) {
+                        setLoading(false);
+                        displayMessage('Falha ao registrar Service Worker.', 'error');
+                        return;
+                    }
                 }
 
-                // Se já houver uma atualização esperando, aplica imediatamente
+                // Se já houver uma atualização esperando, solicita que assuma imediatamente
                 if (registration.waiting) {
                     displayMessage('Atualização pronta. Aplicando...', 'info');
-                    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                    try {
+                        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                    } catch (e) { /* ignore */ }
                     navigator.serviceWorker.addEventListener('controllerchange', () => {
                         setTimeout(() => window.location.reload(), 500);
                     });
@@ -512,53 +563,62 @@ export function setupConfigUI() {
                     return;
                 }
 
-                let updateFound = false;
-                const onUpdateFound = () => {
-                    updateFound = true;
-                    const newWorker = registration.installing;
-                    if (newWorker) {
-                        newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed') {
-                                if (navigator.serviceWorker.controller) {
-                                    // Nova versão encontrada
-                                    displayMessage('Nova versão encontrada. Atualizando...', 'info');
-                                    if (registration.waiting) {
-                                        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-                                    } else {
-                                        // Fallback: envia para o controlador atual
-                                        if (navigator.serviceWorker.controller) {
-                                            navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
-                                        }
-                                    }
-                                    navigator.serviceWorker.addEventListener('controllerchange', () => {
-                                        setTimeout(() => window.location.reload(), 500);
-                                    });
-                                } else {
-                                    // Primeira instalação
-                                    displayMessage('App instalado para uso offline!', 'success');
-                                }
-                            }
-                        });
-                    }
-                };
-
-                registration.addEventListener('updatefound', onUpdateFound);
-
-                // Dispara a verificação de atualização
+                // Tenta forçar update() e aguardar por novo worker
                 try {
                     await registration.update();
                 } catch (e) {
-                    // Silencioso
+                    // ignore
                 }
 
-                // Aguarda um curto período para detectar updates
-                setTimeout(() => {
-                    if (!updateFound && !registration.waiting) {
-                        displayMessage('Nenhuma atualização disponível.', 'success');
+                const result = await waitForWorkerState(registration, 8000);
+
+                if (result.status === 'installed' || result.status === 'waiting') {
+                    // Se houver waiting, pede skip waiting; se instalado mas não controlado, pede skip
+                    displayMessage('Nova versão encontrada. Aplicando...', 'info');
+                    const reg = result.registration;
+                    if (reg.waiting) {
+                        try { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch (e) { /* ignore */ }
+                    } else if (reg.installing) {
+                        // tentar enviar para o controlador atual como fallback
+                        try { navigator.serviceWorker.controller && navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' }); } catch (e) { /* ignore */ }
                     }
-                    registration.removeEventListener('updatefound', onUpdateFound);
+
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        setTimeout(() => window.location.reload(), 500);
+                    });
+
                     setLoading(false);
-                }, 1500);
+                    return;
+                }
+
+                // Se timeout e não encontrou nada, tenta estratégia agressiva: desregistrar e registrar com cache-bust
+                displayMessage('Nenhuma atualização automática encontrada — tentando registro forçado...', 'info');
+                const regs = await navigator.serviceWorker.getRegistrations();
+                await Promise.all(regs.map(r => r.unregister()));
+
+                // Registra novamente com cache-bust para garantir download do arquivo atualizado
+                try {
+                    const stamp = Date.now();
+                    const newReg = await navigator.serviceWorker.register(`./service-worker.js?v=${stamp}`);
+                    // aguarda instalação
+                    const forced = await waitForWorkerState(newReg, 10000);
+                    if (forced.status === 'installed' || forced.status === 'waiting') {
+                        displayMessage('Atualização baixada. Aplicando...', 'info');
+                        if (newReg.waiting) {
+                            try { newReg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch (e) { /* ignore */ }
+                        }
+                        navigator.serviceWorker.addEventListener('controllerchange', () => {
+                            setTimeout(() => window.location.reload(), 500);
+                        });
+                        setLoading(false);
+                        return;
+                    }
+                } catch (e) {
+                    // ignore
+                }
+
+                displayMessage('Nenhuma atualização disponível.', 'success');
+                setLoading(false);
             } catch (error) {
                 setLoading(false);
                 displayMessage('Falha ao verificar atualizações.', 'error');

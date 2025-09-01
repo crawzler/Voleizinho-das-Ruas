@@ -23,6 +23,8 @@ let fileHandlerInitialized = false;
 let currentBase64List = [];
 // Map to keep proofs out of the DOM to avoid huge attributes (base64 blobs)
 const proofsByGameId = {};
+// ID do agendamento que está sendo editado no modal (se houver)
+let editingScheduleId = null;
 
 // Body scroll lock helpers at module scope so any code in this module can lock/unlock
 let _savedScrollY = 0;
@@ -339,18 +341,20 @@ function createGameCard(game) {
                 ${game.status === 'cancelled' && game.cancelReason ? `<div class="cancel-reason" style="flex-direction: row; align-items: center; gap: 0.5rem;"><span class="material-icons">report_problem</span>Motivo: ${game.cancelReason}</div>` : ''}
             </div>
         </div>
-        ${canDelete && game.status === 'upcoming' && game.status !== 'cancelled' ? `<button class="card-cancel-x" title="Cancelar"><span class="material-icons">close</span></button>` : ''}
-        ${game.paymentProofs && game.paymentProofs.length ? `<button class="card-proof-btn" data-game-id='${game.id}' data-proofs-count='${game.paymentProofs.length}' title="Ver comprovantes"><span class="material-icons">receipt_long</span>Comprovantes</button>` : ''}
-        ${game.status === 'upcoming' ? `<button class="card-responses-btn" data-game-id='${game.id}' title="Ver respostas de presença"><span class="material-icons">group</span>Presenças</button>` : ''}
+        <div class="card-actions">
+            <button class="card-more-btn" aria-haspopup="true" aria-expanded="false" title="Ações"><span class="material-icons">more_vert</span></button>
+            <div class="card-more-menu" data-open="false" role="menu" aria-hidden="true">
+                ${game.status === 'upcoming' ? `<button class="menu-responses" data-game-id='${game.id}' role="menuitem"><span class="material-icons">group</span> Presença</button>` : ''}
+                ${game.paymentProofs && game.paymentProofs.length ? `<button class="menu-proof" data-game-id='${game.id}' data-proofs-count='${game.paymentProofs.length}' role="menuitem"><span class="material-icons">receipt_long</span> Comprovantes</button>` : ''}
+                ${canDelete && game.status === 'upcoming' ? `<button class="menu-edit" data-game-id='${game.id}' role="menuitem"><span class="material-icons">edit</span> Editar</button>` : ''}
+                ${canDelete && game.status === 'upcoming' ? `<button class="menu-redispatch" data-game-id='${game.id}' role="menuitem"><span class="material-icons">notification_add</span> Redisparar</button>` : ''}
+                ${canDelete && game.status === 'upcoming' ? `<button class="menu-cancel" data-game-id='${game.id}' role="menuitem"><span class="material-icons">close</span> Cancelar</button>` : ''}
+            </div>
+        </div>
     `;
     // Attach proofs off-DOM to avoid embedding large base64 strings in attributes
     if (game.paymentProofs && game.paymentProofs.length) {
-        const proofBtn = card.querySelector('.card-proof-btn');
-        if (proofBtn) {
-            // store the array reference directly on the element and in the object by game id
-            proofBtn.__proofs = game.paymentProofs;
-            proofsByGameId[game.id] = game.paymentProofs;
-        }
+        proofsByGameId[game.id] = game.paymentProofs;
     }
     return card;
 }
@@ -364,6 +368,79 @@ function canUserSchedule() {
         return config.adminKey === 'admin998939';
     } catch (error) {
         return false;
+    }
+}
+
+/**
+ * Verifica se o usuário atual é Google (não anônimo) e possui a chave admin.
+ */
+function isGoogleAdmin() {
+    try {
+        const user = getCurrentUser();
+        if (!user || user.isAnonymous) return false;
+        const config = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
+        return config.adminKey === 'admin998939';
+    } catch (e) {
+        return false;
+    }
+}
+
+/**
+ * Abre o modal de edição para um agendamento existente.
+ * Exported so other modules (e.g., notifications handler) can call it.
+ */
+export async function openEditSchedule(scheduleId) {
+    if (!isGoogleAdmin()) {
+        displayMessage('Somente administradores autenticados pelo Google podem editar agendamentos.', 'error');
+        return;
+    }
+    const schedule = scheduledGames.find(g => g.id === scheduleId);
+    if (!schedule) {
+        displayMessage('Agendamento não encontrado para edição.', 'error');
+        return;
+    }
+    // Preenche o modal com os valores do agendamento
+    const modal = document.getElementById('schedule-modal');
+    if (!modal) return;
+    editingScheduleId = scheduleId;
+    const dateInput = Elements.dateInput();
+    if (dateInput) dateInput.value = schedule.date || '';
+    if (Elements.startTimeInput) Elements.startTimeInput().value = schedule.startTime || '';
+    if (Elements.endTimeInput) Elements.endTimeInput().value = schedule.endTime || '';
+    if (Elements.locationInput) Elements.locationInput().value = schedule.location || '';
+    if (Elements.surfaceSelect) Elements.surfaceSelect.value = schedule.surface || '';
+    if (Elements.notesInput) Elements.notesInput().value = schedule.notes || '';
+    // Show modal
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
+    modal.style.visibility = 'visible';
+    lockBodyScroll();
+    enableTouchMoveBlocker();
+}
+
+/**
+ * Re-dispara a notificação de um agendamento (apenas admin Google).
+ */
+export async function redispatchNotification(scheduleId) {
+    if (!isGoogleAdmin()) {
+        displayMessage('Somente administradores autenticados pelo Google podem redisparar notificações.', 'error');
+        return;
+    }
+    const schedule = scheduledGames.find(g => g.id === scheduleId);
+    if (!schedule) {
+        displayMessage('Agendamento não encontrado para redisparo.', 'error');
+        return;
+    }
+    try {
+        if (areNotificationsEnabled()) {
+            await notifyNewSchedule(schedule);
+            displayMessage('Notificação redisparada com sucesso.', 'success');
+        } else {
+            displayMessage('Notificações estão desativadas nas preferências.', 'info');
+        }
+    } catch (e) {
+        console.error('Erro ao redisparar notificação:', e);
+        displayMessage('Erro ao redisparar notificação. Veja console.', 'error');
     }
 }
 
@@ -566,7 +643,7 @@ export function setupSchedulingPage() {
     // Garante que o event listener do botão só é adicionado uma vez
     if (scheduleButton && !scheduleButtonListenerAdded) {
         scheduleButtonListenerAdded = true;
-        scheduleButton.addEventListener('click', async () => {
+    scheduleButton.addEventListener('click', async () => {
             const dateInputEl = Elements.dateInput();
             const date = dateInputEl ? dateInputEl.value.trim() : '';
             const startTime = Elements.startTimeInput().value;
@@ -596,29 +673,53 @@ export function setupSchedulingPage() {
             // Use currentBase64List (already converted and respecting individual removals)
             const paymentProofs = Array.isArray(currentBase64List) ? currentBase64List.slice(0, 5) : [];
 
-            const newSchedule = {
-                id: `game_${new Date().getTime()}`.toString(),
+            // Monta objeto de dados
+            const payload = {
                 date,
                 startTime,
                 endTime,
                 location,
                 surface,
                 notes,
-                paymentProofs,
-                status: 'upcoming',
-                createdAt: new Date().toISOString()
+                paymentProofs
             };
 
+            const isEdit = !!editingScheduleId;
             try {
-                await SchedulesData.saveSchedule(newSchedule);
-                
-                // Envia notificação para todos os usuários
-                if (areNotificationsEnabled()) {
-                    await notifyNewSchedule(newSchedule);
+                if (isEdit) {
+                    // Edição: somente admin Google pode editar
+                    if (!isGoogleAdmin()) {
+                        displayMessage('Somente administradores autenticados pelo Google podem editar agendamentos.', 'error');
+                        return;
+                    }
+                    const game = scheduledGames.find(g => g.id === editingScheduleId);
+                    if (!game) {
+                        displayMessage('Agendamento para edição não encontrado.', 'error');
+                        editingScheduleId = null;
+                        return;
+                    }
+                    // Atualiza campos locais
+                    Object.assign(game, payload);
+                    game.updatedAt = new Date().toISOString();
+                    await SchedulesData.updateSchedule(game);
+                    displayMessage('Agendamento atualizado com sucesso!', 'success');
+                    editingScheduleId = null;
+                } else {
+                    // Criação normal
+                    const newSchedule = Object.assign({
+                        id: `game_${new Date().getTime()}`.toString(),
+                        status: 'upcoming',
+                        createdAt: new Date().toISOString()
+                    }, payload);
+
+                    await SchedulesData.saveSchedule(newSchedule);
+                    // Envia notificação para todos os usuários
+                    if (areNotificationsEnabled()) {
+                        await notifyNewSchedule(newSchedule);
+                    }
+                    displayMessage('Jogo agendado com sucesso!', 'success');
                 }
-                
-                displayMessage('Jogo agendado com sucesso!', 'success');
-                
+
                 // Fecha o modal
                 const modal = document.getElementById('schedule-modal');
                 if (modal) {
@@ -628,12 +729,29 @@ export function setupSchedulingPage() {
                     unlockBodyScroll();
                     disableTouchMoveBlocker();
                 }
-                
+                // Limpa campos somente no caso de criação
+                if (!isEdit) {
+                    Elements.dateInput().value = '';
+                    Elements.startTimeInput().value = '';
+                    Elements.endTimeInput().value = '';
+                    Elements.locationInput().value = '';
+                    if (Elements.surfaceSelect) Elements.surfaceSelect.value = '';
+                    Elements.notesInput().value = '';
+                    const paymentProofInput = document.getElementById('payment-proof-input');
+                    if (paymentProofInput) {
+                        paymentProofInput.value = '';
+                        const preview = document.getElementById('file-preview');
+                        const previewsList = document.getElementById('file-previews');
+                        if (previewsList) previewsList.innerHTML = '';
+                        currentBase64List = [];
+                        if (preview) preview.style.display = 'none';
+                    }
+                }
             } catch (err) {
                 if (err && err.code === "permission-denied") {
-                    displayMessage('Você não tem permissão para agendar jogos. Apenas administradores podem agendar.', 'error');
+                    displayMessage('Você não tem permissão para agendar/j  editar jogos. Apenas administradores podem.', 'error');
                 } else {
-                    displayMessage('Erro ao agendar jogo. Tente novamente.', 'error');
+                    displayMessage('Erro ao salvar agendamento. Tente novamente.', 'error');
                 }
                 return; // Não limpa o formulário se houve erro
             }
@@ -659,32 +777,60 @@ export function setupSchedulingPage() {
     // CORRIGIDO: Adiciona o listener apenas uma vez para evitar múltiplos modais
     if (pageContainer && !pageContainer.dataset.listenerAdded) {
         pageContainer.dataset.listenerAdded = 'true'; // Marca que o listener foi adicionado
+        // Global click handler for card actions and the compact menu
         pageContainer.addEventListener('click', async (event) => {
-            const button = event.target.closest('.card-cancel-x, .card-action-btn, .card-responses-btn, .card-proof-btn');
-            if (!button) return;
-
-            const card = button.closest('.scheduled-game-card');
-            if (!card) return;
-            const gameId = card.dataset.gameId;
-
-            if (button.classList.contains('card-responses-btn')) {
-                const game = scheduledGames.find(g => g.id === gameId);
-                if (game) {
-                    showResponsesModal(game);
-                } else {
-                    displayMessage('Agendamento não encontrado.', 'error');
+            // Toggle 'more' menu
+            const moreBtn = event.target.closest('.card-more-btn');
+            if (moreBtn) {
+                const card = moreBtn.closest('.scheduled-game-card');
+                const menu = card.querySelector('.card-more-menu');
+                const isOpen = menu && menu.getAttribute('data-open') === 'true';
+                if (menu) {
+                    menu.setAttribute('data-open', String(!isOpen));
+                    menu.style.display = !isOpen ? 'block' : 'none';
+                    moreBtn.setAttribute('aria-expanded', String(!isOpen));
                 }
-            } else if (button.classList.contains('card-action-btn')) {
-                showActionModal(gameId);
-            } else if (button.classList.contains('card-cancel-x')) {
-                showCancelReasonModal(gameId);
-            } else if (button.classList.contains('card-proof-btn')) {
-                const proofs = proofsByGameId[gameId];
-                if (proofs && proofs.length) {
-                    showProofViewer(proofs);
-                } else {
-                    displayMessage('Não foi possível carregar os comprovantes.', 'error');
+                return;
+            }
+
+            // Clicks on menu items
+            const menuItem = event.target.closest('.card-more-menu button');
+            if (menuItem) {
+                const gameId = menuItem.dataset.gameId;
+                if (menuItem.classList.contains('menu-responses')) {
+                    const game = scheduledGames.find(g => g.id === gameId);
+                    if (game) showResponsesModal(game);
+                    else displayMessage('Agendamento não encontrado.', 'error');
+                } else if (menuItem.classList.contains('menu-proof')) {
+                    const proofs = proofsByGameId[gameId];
+                    if (proofs && proofs.length) showProofViewer(proofs);
+                    else displayMessage('Não foi possível carregar os comprovantes.', 'error');
+                } else if (menuItem.classList.contains('menu-edit')) {
+                    openEditSchedule(gameId);
+                } else if (menuItem.classList.contains('menu-redispatch')) {
+                    redispatchNotification(gameId);
+                } else if (menuItem.classList.contains('menu-cancel')) {
+                    showCancelReasonModal(gameId);
                 }
+                // close any open menu after action
+                const parentMenu = menuItem.closest('.card-more-menu');
+                if (parentMenu) {
+                    parentMenu.setAttribute('data-open', 'false');
+                    parentMenu.style.display = 'none';
+                    const btn = parentMenu.parentElement.querySelector('.card-more-btn');
+                    if (btn) btn.setAttribute('aria-expanded', 'false');
+                }
+                return;
+            }
+
+            // Fallback: if clicked outside menu, close all open menus
+            if (!event.target.closest('.card-more-menu') && !event.target.closest('.card-more-btn')) {
+                document.querySelectorAll('.card-more-menu[data-open="true"]').forEach(m => {
+                    m.setAttribute('data-open', 'false');
+                    m.style.display = 'none';
+                    const btn = m.parentElement.querySelector('.card-more-btn');
+                    if (btn) btn.setAttribute('aria-expanded', 'false');
+                });
             }
         });
     }

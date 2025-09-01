@@ -4156,14 +4156,6 @@ body.start-page-active .timer-and-set-timer-wrapper {
     color: var(--new-text-muted, var(--text-muted));
 }
 
-.games-list .card-actions {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    display: flex;
-    gap: 0.5rem;
-}
-
 .card-content  {
     width: 100%;
     padding: 1rem 1rem 1rem 2rem;
@@ -4942,16 +4934,6 @@ body.modal-open {
     border-color: var(--border-dark);
 }
 
-/* NOVO: Ajuste do card-actions para ser um contêiner absoluto e organizar os botões */
-.card-actions {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    align-items: center;
-}
 
 .scheduled-game-card h3 {
     margin-top: 0;

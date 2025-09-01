@@ -75,6 +75,87 @@
 .card-content { display: flex; align-items: center; gap: 0.75rem; flex: 1; }
 .game-icon { width: 36px; height: 36px; background: var(--new-bg-tertiary, var(--bg-tertiary)); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
 
+/* Actions container for game cards - keeps buttons organized and prevents overlap */
+
+.card-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  z-index: 20;
+  box-shadow: none;
+}
+
+.card-actions button {
+  height: 36px;
+  width: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--new-text-primary, var(--text-primary));
+  cursor: pointer;
+}
+
+.card-actions button .material-icons { font-size: 20px; }
+
+/* Stronger selector to override global styles when cards are inside games list */
+.games-list .scheduled-game-card .card-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.games-list .scheduled-game-card .card-actions button { height: 36px; width: 36px; box-shadow: none; }
+
+/* Compact menu for card actions */
+.card-more-btn { width: 44px; height: 44px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+.card-more-menu {
+  display: none; /* toggled via JS */
+  position: absolute;
+  top: 40px;
+  right: 0;
+  width: max-content;
+  min-width: 160px;
+  flex-direction: column;
+  gap: 0.25rem;
+  background: var(--new-bg-card, var(--bg-card));
+  border: 1px solid var(--new-border-color, var(--border-color));
+  border-radius: 8px;
+  padding: 0.35rem;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  z-index: 50;
+}
+.card-more-menu button {
+  text-align: left;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;s
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--new-text-primary, var(--text-primary));
+}
+
+.card-more-menu button:hover { background: var(--new-bg-tertiary, var(--bg-tertiary)); }
+
+/* Small adjustments for specific action buttons */
+.card-cancel-x { background: transparent; border: none; color: var(--new-text-muted, var(--text-muted)); width: 32px; height: 32px; padding: 4px; }
+.card-proof-btn, .card-responses-btn { padding: 6px 8px; font-size: 0.8rem; }
+
+
+
 /* Schedule Modal */
 .schedule-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.7); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 1rem; }
 .schedule-modal-content { background: var(--new-bg-card, var(--bg-card)); border: 1px solid var(--new-border-color, var(--border-color)); border-radius: 12px; padding: 2rem; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; box-shadow: var(--new-shadow-heavy, var(--shadow-heavy)); }
