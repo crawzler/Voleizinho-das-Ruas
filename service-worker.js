@@ -355,42 +355,27 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     (async () => {
       console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Handling notification click...`);
-      // Build a deep link that forces the app to open the scheduling page and carries
-      // minimal information as query params so the app can act even if postMessage
-      // from the service worker doesn't arrive (race with app load).
-      const actionParam = action && action.length ? action : 'view';
-      const safePayload = payload || {};
-      const qp = new URLSearchParams();
-      qp.set('notifAction', actionParam);
-      if (safePayload.id) qp.set('scheduleId', safePayload.id);
-      if (safePayload.userId) qp.set('userId', safePayload.userId);
-      if (safePayload.playerName) qp.set('playerName', safePayload.playerName);
-      if (safePayload.date) qp.set('date', safePayload.date);
-      if (safePayload.startTime) qp.set('startTime', safePayload.startTime);
-      if (safePayload.location) qp.set('location', safePayload.location);
-
-      // Use index.html with hash to ensure single-page routing reaches scheduling page
-      const urlToOpen = `${self.location.origin}/index.html?${qp.toString()}#scheduling`;
-
+      // Ensure we open the app within the Service Worker scope and go straight to the scheduling page
+      const scope = (self.registration && self.registration.scope) ? self.registration.scope : (self.location.origin + '/');
+      const urlToOpen = scope.endsWith('/') ? `${scope}#scheduling-page` : `${scope}/#scheduling-page`;
       const clientList = await clients.matchAll({ type: 'window', includeUncontrolled: true });
-      console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Found ${clientList.length} clients.`);
+      let clientToFocus = null;
 
-      // If there's an existing client from our origin, focus it and send the message.
+      console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Found ${clientList.length} clients.`);
       for (const client of clientList) {
-        try {
-          if (new URL(client.url).origin === self.location.origin) {
-            console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Focusing existing client and sending message.`);
-            client.postMessage({ type: 'NOTIFICATION_ACTION', action: actionParam, data: safePayload });
-            return client.focus();
-          }
-        } catch (e) {
-          // ignore malformed client URLs
+        if (client.url.includes(scope)) {
+          console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Found a client to focus.`);
+          clientToFocus = client;
+          break;
         }
       }
 
-      // No client found - open a new window/tab with deep link that includes params as fallback
-      if (clients.openWindow) {
-        console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - No client found, opening new window at: ${urlToOpen}`);
+      if (clientToFocus) {
+        console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Focusing client and sending message.`);
+        clientToFocus.postMessage({ type: 'NOTIFICATION_ACTION', action, data: payload });
+        return clientToFocus.focus();
+      } else if (clients.openWindow) {
+        console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - No client found, opening a new window: ${urlToOpen}`);
         const newWindow = await clients.openWindow(urlToOpen);
         if (newWindow) {
           console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - New window opened. Waiting 700ms to send message.`);
@@ -399,9 +384,7 @@ self.addEventListener('notificationclick', (event) => {
           const allClients = await clients.matchAll({ type: 'window', includeUncontrolled: true });
           console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Sending message to ${allClients.length} clients.`);
           allClients.forEach(client => {
-            try {
-              client.postMessage({ type: 'NOTIFICATION_ACTION', action: actionParam, data: safePayload });
-            } catch (e) { /* ignore */ }
+            client.postMessage({ type: 'NOTIFICATION_ACTION', action, data: payload });
           });
         }
         return newWindow;

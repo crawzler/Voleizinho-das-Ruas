@@ -261,6 +261,23 @@ export async function showPage(pageIdToShow) {
                 console.error('[DEBUG scheduling-page] Erro ao processar RSVP:', e);
             }
         }
+        // NOVO: Se clicou no corpo da notificação, abrir automaticamente o modal de presença
+        const pendingScheduleId = sessionStorage.getItem('pendingOpenRsvpScheduleId');
+        if (pendingScheduleId) {
+            sessionStorage.removeItem('pendingOpenRsvpScheduleId');
+            try {
+                if (typeof SchedulingUI.openEditSchedule === 'function') {
+                    // Não é o modal correto; garantimos usar o modal de RSVP
+                }
+                if (typeof SchedulingUI["showRsvpModal"] === 'function') {
+                    SchedulingUI["showRsvpModal"](pendingScheduleId);
+                } else {
+                    // Fallback: disparar evento para fluxo existente salvar e processar RSVP
+                    const evt = new CustomEvent('schedule-rsvp', { detail: { action: 'view', scheduleId: pendingScheduleId } });
+                    window.dispatchEvent(evt);
+                }
+            } catch (_) { /* noop */ }
+        }
     }
 }
 

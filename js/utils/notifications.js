@@ -49,7 +49,6 @@ export async function notifyNewSchedule(schedule) {
 
     const currentUser = getCurrentUser();
     const userId = currentUser ? currentUser.uid : null; // Obter o UID do usuário logado
-    const playerName = currentUser && (currentUser.displayName || currentUser.email) ? (currentUser.displayName || currentUser.email) : null;
 
     const notificationOptions = {
         body: `📅 ${formattedDate} às ${formattedTime}\n📍 ${schedule.location}`,
@@ -62,15 +61,7 @@ export async function notifyNewSchedule(schedule) {
             { action: 'not_going', title: '🚫 Não vou' },
             { action: 'maybe', title: 'Talvez' }
         ],
-        data: {
-            type: 'schedule',
-            id: schedule.id,
-            userId: userId,
-            playerName: playerName,
-            date: schedule.date,
-            startTime: schedule.startTime,
-            location: schedule.location
-        }
+        data: { type: 'schedule', id: schedule.id, userId: userId } // ADICIONADO userId AQUI
     };
 
     console.log('[DEBUG: notifications.js] Payload da notificação:', notificationOptions);
@@ -254,9 +245,16 @@ function handleNotificationAction(action, data) {
             case 'not_going':
             case 'maybe':
                 if (data && data.id) {
+                    // Inclui o nome correto do jogador logado
+                    let playerName = null;
+                    try {
+                        const user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+                        playerName = user && (user.displayName || user.email) ? (user.displayName || user.email) : null;
+                    } catch (_) { /* noop */ }
+
                     // Debug antes de gravar
-                    console.log('[DEBUG: notifications.js] Salvando lastRSVPData no sessionStorage:', { action: normalizedAction, scheduleId: data.id, data });
-                    const lastRSVPData = { action: normalizedAction, scheduleId: data.id, data: data };
+                    console.log('[DEBUG: notifications.js] Salvando lastRSVPData no sessionStorage:', { action: normalizedAction, scheduleId: data.id, data, playerName });
+                    const lastRSVPData = { action: normalizedAction, scheduleId: data.id, data: data, playerName };
                     sessionStorage.setItem('lastRSVPData', JSON.stringify(lastRSVPData));
                     // Debug depois de gravar
                     console.log('[DEBUG: notifications.js] lastRSVPData gravado (sessionStorage):', sessionStorage.getItem('lastRSVPData'));
@@ -267,18 +265,10 @@ function handleNotificationAction(action, data) {
                 showPage('scheduling-page');
                 break;
             case 'view':
-                // For plain notification click (no explicit action), still store metadata so the
-                // scheduling page can open the modal with context. Use action 'view' to indicate
-                // no RSVP choice was made.
+                // Salva intenção de abrir o modal de presença ao entrar na página de agendamentos
                 if (data && data.id) {
-                    const lastRSVPData = { action: 'view', scheduleId: data.id, data: data, playerName: data.playerName || null };
-                    sessionStorage.setItem('lastRSVPData', JSON.stringify(lastRSVPData));
-                    console.log('[DEBUG: notifications.js] lastRSVPData gravado (view):', sessionStorage.getItem('lastRSVPData'));
+                    sessionStorage.setItem('pendingOpenRsvpScheduleId', data.id);
                 }
-                showPage('scheduling-page');
-                break;
-            case 'view':
-                // kept for backward compat
                 showPage('scheduling-page');
                 break;
             case 'close':
