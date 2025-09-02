@@ -125,16 +125,12 @@ function waitForCorrectPage(targetPageId, maxAttempts = 20, interval = 100) {
     const check = () => {
         const activePage = document.querySelector('.app-page--active');
         const activeId = activePage ? activePage.id : null;
-        console.log(`[DEBUG: main.js] waitForCorrectPage: attempt ${attempts}, active=${activeId}, target=${targetPageId}`);
         if (activeId === targetPageId) {
-            console.log(`[DEBUG: main.js] Página correta ativa: ${activeId}`);
             return;
         }
         attempts++;
         if (attempts < maxAttempts) {
             setTimeout(check, interval);
-        } else {
-            console.warn(`[DEBUG: main.js] Não conseguiu ativar a página correta (${targetPageId}) após ${maxAttempts} tentativas.`);
         }
     };
     check();
@@ -143,27 +139,7 @@ function waitForCorrectPage(targetPageId, maxAttempts = 20, interval = 100) {
 document.addEventListener('DOMContentLoaded', async () => {
     window.isAppReady = true;
     
-    // Listener para mensagens do service worker (notificações)
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.addEventListener('message', (event) => {
-            console.log(`[DEBUG: main.js] ${new Date().toISOString()} - Message received from service worker:`, event.data);
-            
-            if (event.data && event.data.type === 'NOTIFICATION_ACTION') {
-                console.log(`[DEBUG: main.js] ${new Date().toISOString()} - Handling notification action in main.js`);
-                
-                // Importa e chama a função de tratamento de notificações
-                import('./utils/notifications.js').then(module => {
-                    if (module.handleNotificationAction) {
-                        module.handleNotificationAction(event.data.action, event.data.data);
-                    }
-                }).catch(error => {
-                    console.error(`[DEBUG: main.js] ${new Date().toISOString()} - Error importing notifications module:`, error);
-                    // Fallback: navega para a página de agendamentos
-                    window.location.hash = '#scheduling-page';
-                });
-            }
-        });
-    }
+
     
     // Navegação automática baseada no hash ao abrir o app
     if (window.location.hash && window.location.hash.startsWith('#') && window.location.hash.length > 1) {
@@ -283,14 +259,12 @@ scoreboardMenuOverlay.addEventListener("click", () => {
     if (loadingOverlay) {
         loadingOverlay.classList.remove('hidden'); // Garante que a tela de carregamento esteja visível
     }
-    console.log(`[DEBUG: main.js] ${new Date().toISOString()} - Loading overlay shown.`);
+
 
     // Inicia o timer para forçar a liberação da UI caso a autenticação demore
     loadingTimeout = setTimeout(() => {
-        console.log(`[DEBUG: main.js] ${new Date().toISOString()} - Loading timeout reached.`);
         const overlay = Elements.loadingOverlay ? Elements.loadingOverlay() : null;
         if (!authListenerInitialized || (overlay && !overlay.classList.contains('hidden'))) {
-            console.log(`[DEBUG: main.js] ${new Date().toISOString()} - Auth not initialized, showing offline UI.`);
             displayMessage("Carregando demorou, iniciando sem login.", "info");
             if (window.location.hash === '#scheduling') {
                 showPage('scheduling-page');
@@ -302,7 +276,7 @@ scoreboardMenuOverlay.addEventListener("click", () => {
         }
     }, 5000);
 
-    console.log(`[DEBUG: main.js] ${new Date().toISOString()} - Initializing Firebase.`);
+
     const { app, db, auth } = await initFirebaseApp();
     const appId = getAppId();
 
@@ -310,17 +284,17 @@ scoreboardMenuOverlay.addEventListener("click", () => {
         try {
             await signInWithCustomToken(auth, __initial_auth_token);
         } catch (error) {
-            console.error("Error signing in with custom token:", error);
+
         }
     }
 
-    console.log(`[DEBUG: main.js] ${new Date().toISOString()} - Registering notification service worker.`);
+
     await registerNotificationServiceWorker();
 
-    console.log(`[DEBUG: main.js] ${new Date().toISOString()} - Setting up auth listener.`);
+
     setupAuthListener(auth, db, appId);
 
-    console.log(`[DEBUG: main.js] ${new Date().toISOString()} - Setting up UI components.`);
+
     setupSidebar();
     setupModernSidebar();
     setupPageNavigation(startGame, getPlayers, appId);
@@ -427,14 +401,13 @@ scoreboardMenuOverlay.addEventListener("click", () => {
         }
     }, 2000);
 
-    console.log(`[DEBUG: main.js] ${new Date().toISOString()} - Initializing offline storage.`);
     try {
         await offlineStorage.init();
     } catch (error) {
-        console.error("Error initializing offline storage:", error);
+        // Error initializing offline storage
     }
     
-    console.log(`[DEBUG: main.js] ${new Date().toISOString()} - Setting up connectivity manager.`);
+
     connectivityManager.onStatusChange(async (status) => {
         if (status === 'online') {
             displayMessage("Online novamente! Sincronizando dados...", "info");
@@ -455,7 +428,7 @@ scoreboardMenuOverlay.addEventListener("click", () => {
                 displayMessage("Dados sincronizados com sucesso!", "success");
                 updateConnectionIndicator('online');
             } catch (error) {
-                console.error("Error synchronizing data:", error);
+
                 displayMessage("Erro ao sincronizar dados", "error");
                 updateConnectionIndicator('offline');
             }
@@ -587,7 +560,7 @@ scoreboardMenuOverlay.addEventListener("click", () => {
             }
         }
     } catch (err) {
-        console.error("Error handling clearCache param:", err);
+
     }
     
     initDailyReminders();
@@ -615,10 +588,10 @@ scoreboardMenuOverlay.addEventListener("click", () => {
                 }
             }
         } catch (e) {
-            console.error("Error restoring saved game:", e);
+
         }
     }, 100);
-    console.log(`[DEBUG: main.js] ${new Date().toISOString()} - DOMContentLoaded listener finished.`);
+
     window.isAppReady = true;
 
     // Verifica se há ações pendentes de notificação
@@ -630,7 +603,7 @@ scoreboardMenuOverlay.addEventListener("click", () => {
             const timeDiff = Date.now() - parseInt(notificationTimestamp);
             // Se a notificação foi recente (menos de 10 segundos)
             if (timeDiff < 10000) {
-                console.log(`[DEBUG: main.js] ${new Date().toISOString()} - Processing pending notification action`);
+
                 
                 // Verifica se há dados de RSVP pendentes
                 const lastRSVPData = sessionStorage.getItem('lastRSVPData');
@@ -652,17 +625,7 @@ scoreboardMenuOverlay.addEventListener("click", () => {
         }
     }, 1000);
 
-    // Adiciona dinamicamente o módulo de teste de notificações se ativado
-    if (localStorage.getItem('debugNotificationsEnabled') === 'true') {
-        import('./test/debug-notifications.js')
-            .then(module => {
-                if (module.initDebugNotifications) {
-                    module.initDebugNotifications();
-                    console.log('[DEBUG: main.js] Módulo de teste de notificações carregado.');
-                }
-            })
-            .catch(err => console.error('Erro ao carregar o módulo de teste de notificações:', err));
-    }
+
 
 
 
@@ -761,7 +724,7 @@ async function loadOfflineData() {
         }
         
     } catch (error) {
-        console.error("Error loading offline data:", error);
+
     }
 }
 
@@ -783,7 +746,7 @@ function setupAutoSave() {
             }
             
         } catch (error) {
-            console.error("Error during auto-save:", error);
+
         }
     }, 30000); // Salva a cada 30 segundos
     
@@ -797,7 +760,7 @@ function setupAutoSave() {
             if (currentConfig) await offlineStorage.saveConfig(currentConfig);
             
         } catch (error) {
-            console.error("Error saving data on beforeunload:", error);
+
         }
     });
 }
@@ -819,7 +782,7 @@ window.clearOfflineCache = async () => {
         
         return true;
     } catch (error) {
-        console.error("Error clearing offline cache:", error);
+
         displayMessage('Erro ao limpar cache offline', 'error');
         return false;
     }
@@ -831,7 +794,7 @@ window.getStorageStats = async () => {
         const stats = await offlineStorage.getStorageStats();
         return stats;
     } catch (error) {
-        console.error("Error getting storage stats:", error);
+
         return null;
     }
 };

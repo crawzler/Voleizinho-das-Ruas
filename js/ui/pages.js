@@ -111,12 +111,12 @@ export async function showPage(pageIdToShow) {
     });
     const targetPage = document.getElementById(pageIdToShow);
     if (targetPage) {
-        console.log(`[DEBUG: pages.js] ${new Date().toISOString()} - Showing page: ${pageIdToShow}`);
+
         targetPage.style.display = 'flex';
         targetPage.classList.add('app-page--active');
         currentPageId = pageIdToShow;
     } else {
-        console.log(`[DEBUG: pages.js] ${new Date().toISOString()} - Page not found: ${pageIdToShow}`);
+
     }
     
     
@@ -238,29 +238,7 @@ export async function showPage(pageIdToShow) {
         }
         // Garante que o listener esteja ativo ao entrar na tela
         setupSchedulingPage();
-        // NOVO: Escreve dados no modal de confirmação se vier de notificação
-        if (sessionStorage.getItem('fromNotification') === 'true' && sessionStorage.getItem('lastRSVPData')) {
-            try {
-                const rsvpData = JSON.parse(sessionStorage.getItem('lastRSVPData'));
-                let message = `Confirme sua presença para o jogo:`;
-                if (rsvpData.data && rsvpData.data.location && rsvpData.data.startTime && rsvpData.data.date) {
-                    message += `\n📅 ${rsvpData.data.date} às ${rsvpData.data.startTime}\n📍 ${rsvpData.data.location}`;
-                }
-                let resposta = rsvpData.action === 'going' ? 'Vou' : rsvpData.action === 'not_going' ? 'Não vou' : 'Talvez';
-                if (rsvpData.playerName) {
-                    message += `\n\nJogador: ${rsvpData.playerName}`;
-                }
-                message += `\nResposta: ${resposta}`;
-                console.log('[DEBUG scheduling-page] Escrevendo no modal de confirmação:', {message, rsvpData});
-                showConfirmationModal(message, () => {
-                    displayMessage(`Confirmação registrada: ${resposta} para agendamento ${rsvpData.scheduleId}`, 'success');
-                }, () => {
-                    displayMessage('Confirmação cancelada.', 'info');
-                });
-            } catch(e) {
-                console.error('[DEBUG scheduling-page] Erro ao processar RSVP:', e);
-            }
-        }
+
         // NOVO: Se clicou no corpo da notificação, abrir automaticamente o modal de presença
         const pendingScheduleId = sessionStorage.getItem('pendingOpenRsvpScheduleId');
         if (pendingScheduleId) {
@@ -644,7 +622,6 @@ export function selectTeamFromModal(teamIndex, panelId) {
     const defaultColors = ['#325fda', '#f03737', '#28a745', '#ffc107', '#6f42c1', '#17a2b8'];
 
     if (!selectedTeam) {
-        // Log removido
         displayMessage("Erro ao selecionar o time.", "error");
         return;
     }
@@ -849,7 +826,6 @@ function handleConfirmClick() {
         try {
             onConfirmCallback();
         } catch (error) {
-            // Log removido
             displayMessage('Erro ao executar a ação confirmada.', 'error');
         }
     }
@@ -944,7 +920,6 @@ async function addPlayerWithCategory(playerName, category, appId) {
         await addPlayer(db, appId, playerName, null, true, category);
         displayMessage(`Jogador "${playerName}" adicionado em ${getCategoryDisplayName(category)}!`, "success");
     } catch (error) {
-        // Log removido
         displayMessage("Erro ao adicionar jogador. Tente novamente.", "error");
     }
 }
@@ -980,54 +955,13 @@ export function forceUpdateIcons() {
         }
     }
     
-    // Log removido
+
 }
 
 // NOVO: Proteção contra toasts duplicados de RSVP
 let lastRSVPToastAt = 0;
 
-// Listener para eventos de RSVP vindos das notificações push
-window.addEventListener('schedule-rsvp', async (event) => {
-    const now = Date.now();
-    if (now - lastRSVPToastAt < 800) {
-        return; // Evita duplicar toast se outro listener já mostrou recentemente
-    }
-
-    const { action, scheduleId, data, playerName } = event.detail;
-
-    // Construir resposta textual
-    const resposta = action === 'going' ? 'Vou' : action === 'not_going' ? 'Não vou' : 'Talvez';
-
-    // Construir mensagem amigável
-    let detalhes = '';
-    if (data && (data.location || data.startTime || data.date)) {
-        const partes = [];
-        if (data.date) partes.push(`📅 ${data.date}`);
-        if (data.startTime) partes.push(`às ${data.startTime}`);
-        if (data.location) partes.push(`📍 ${data.location}`);
-        detalhes = partes.length ? ` — ${partes.join(' ')}` : '';
-    }
-    const jogador = playerName ? ` • Jogador: ${playerName}` : '';
-
-    displayMessage(`Resposta registrada: ${resposta}${detalhes}${jogador}`, 'success');
-    lastRSVPToastAt = now;
-
-    // Persistir últimos dados de RSVP para possíveis reusos
-    try {
-        const user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
-        const storedPlayer = user && user.displayName ? user.displayName : (user && user.email ? user.email : null);
-        const rsvpData = {
-            action,
-            scheduleId,
-            data,
-            playerName: playerName || storedPlayer
-        };
-        sessionStorage.setItem('lastRSVPData', JSON.stringify(rsvpData));
-        //console.log('[DEBUG RSVP] RSVP salvo em sessionStorage:', rsvpData);
-    } catch(e) {
-        //console.error('[DEBUG RSVP] Erro ao salvar RSVP:', e);
-    }
-});
+// Listener removido - o modal de confirmação estava sendo chamado daqui
 
 
 window.addEventListener('hashchange', () => {

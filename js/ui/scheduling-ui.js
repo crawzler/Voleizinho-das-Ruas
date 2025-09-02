@@ -7,7 +7,7 @@ import * as SchedulesData from '../data/schedules.js';
 import { getCurrentUser } from '../firebase/auth.js';
 import { notifyNewSchedule, notifyCancelledSchedule, areNotificationsEnabled } from '../utils/notifications.js';
 import { initSchedulingAnimations, enhanceHoverEffects, setupLoadingAnimations } from './scheduling-animations.js';
-import { showConfirmationModal } from './pages.js';
+// import { showConfirmationModal } from './pages.js'; // Removido para evitar modal de confirmação
 import { getPlayers } from '../data/players.js';
 
 const SCHEDULES_STORAGE_KEY = 'voleiScoreSchedules';
@@ -107,6 +107,10 @@ function syncWithFirestoreAndLocalStorage() {
     if (listenerInitialized) return;
     listenerInitialized = true;
     if (unsubscribeSchedules) unsubscribeSchedules();
+    
+    // Carrega do localStorage primeiro
+    loadSchedulesFromLocalStorage();
+    renderScheduledGames(); // Renderiza imediatamente
     
     let isFirstLoad = true;
     const previousSchedules = new Map(scheduledGames.map(game => [game.id, game.status]));
@@ -479,94 +483,7 @@ function portalScheduleModalToBody() {
     }
 }
 
-/**
- * NOVO: Mostra um modal de ações unificado para RSVP e comprovantes.
- * @param {string} gameId - O ID do jogo.
- */
-function showActionModal(gameId) {
-    const game = scheduledGames.find(g => g.id === gameId);
-    if (!game) return;
 
-    const user = getCurrentUser();
-    if (!user) {
-        displayMessage('Faça login para interagir com o agendamento.', 'error');
-        return;
-    }
-
-    lockBodyScroll();
-    enableTouchMoveBlocker();
-    const overlay = document.createElement('div');
-    overlay.className = 'confirmation-modal-overlay';
-    overlay.style.display = 'flex';
-    overlay.style.visibility = 'visible';
-    overlay.style.opacity = '1';
-
-    const hasProofs = game.paymentProofs && game.paymentProofs.length > 0;
-    const isUpcoming = game.status === 'upcoming' && game.status !== 'cancelled';
-
-    const content = document.createElement('div');
-    content.className = 'confirmation-modal-content';
-    content.innerHTML = `
-        <h3 style="margin: 0 0 1rem; color: var(--text-primary);">Opções do Jogo</h3>
-        <div class="confirmation-buttons" style="flex-direction: column; align-items: stretch; gap: 0.75rem;">
-            ${isUpcoming ? `
-                <button class="button confirmation-button--confirm rsvp-going"><span class="material-icons" style="vertical-align: middle; margin-right: 0.25rem;">check_circle</span> Vou</button>
-                <button class="button confirmation-button--confirm rsvp-maybe" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color);"><span class="material-icons" style="vertical-align: middle; margin-right: 0.25rem;">help</span> Talvez</button>
-                <button class="button confirmation-button--cancel rsvp-not-going"><span class="material-icons" style="vertical-align: middle; margin-right: 0.25rem;">cancel</span> Não vou</button>
-            ` : ''}
-            ${hasProofs ? `
-                <button class="button view-proofs-btn" style="background: var(--info); margin-top: ${isUpcoming ? '0.5rem' : '0'};">
-                    <span class="material-icons" style="vertical-align: middle; margin-right: 0.25rem;">receipt</span> Ver Comprovantes
-                </button>` : ''}
-        </div>
-        <div class="confirmation-buttons" style="justify-content:flex-end; margin-top:1.5rem;">
-            <button class="button confirmation-button--cancel close-action-modal">Fechar</button>
-        </div>
-    `;
-
-    overlay.appendChild(content);
-    document.body.appendChild(overlay);
-
-    function close() {
-        try {
-            overlay.remove();
-        } catch (e) { /* ignore */ }
-        unlockBodyScroll();
-        disableTouchMoveBlocker();
-    }
-
-    overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
-            close();
-        }
-    });
-
-    content.querySelector('.close-action-modal')?.addEventListener('click', close);
-
-    const dispatchRsvp = (action) => {
-        const rsvpEvent = new CustomEvent('schedule-rsvp', { detail: { action, scheduleId: gameId } });
-        window.dispatchEvent(rsvpEvent);
-        close();
-    };
-
-    if (isUpcoming) {
-        content.querySelector('.rsvp-going')?.addEventListener('click', () => dispatchRsvp('going'));
-        content.querySelector('.rsvp-maybe')?.addEventListener('click', () => dispatchRsvp('maybe'));
-        content.querySelector('.rsvp-not-going')?.addEventListener('click', () => dispatchRsvp('not_going'));
-    }
-
-    if (hasProofs) {
-        content.querySelector('.view-proofs-btn')?.addEventListener('click', () => {
-            const proofs = proofsByGameId[gameId];
-            if (proofs && proofs.length) {
-                showProofViewer(proofs);
-            } else {
-                displayMessage('Não foi possível carregar os comprovantes.', 'error');
-            }
-            close(); // Fecha o modal de ação
-        });
-    }
-}
 
 
 /**
@@ -589,56 +506,7 @@ export function setupSchedulingPage() {
     const scheduleButton = Elements.scheduleGameButton();
     const pageContainer = Elements.schedulingPage();
 
-    // Adicionar listener para evento de RSVP
-    window.addEventListener('schedule-rsvp', async (event) => {
-        const { action, scheduleId } = event.detail;
-        
-        if (!scheduleId) {
-            displayMessage('Erro: ID de agendamento ausente na notificação.', 'error');
-            return;
-        }
-
-        let user = getCurrentUser(); // Tenta obter o usuário imediatamente
-        let schedule = scheduledGames.find(g => g.id === scheduleId);
-
-        // Loop de retentativas para garantir que o usuário e o agendamento estejam prontos
-        let attempts = 0;
-        const maxAttempts = 10; // Tentar por até 20 segundos (10 * 2s)
-        const delay = 2000; // 2 segundos
-
-        while ((!user || !schedule) && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, delay));
-            user = getCurrentUser(); // Tenta novamente
-            schedule = scheduledGames.find(g => g.id === scheduleId); // Tenta novamente
-            attempts++;
-        }
-
-        if (!user) {
-            displayMessage('Erro: Não foi possível autenticar o usuário a tempo.', 'error');
-            return;
-        }
-        if (!schedule) {
-            displayMessage('Erro: Agendamento não encontrado após várias tentativas.', 'error');
-            return;
-        }
-
-        // Se chegou aqui, user e schedule estão disponíveis
-        if (!schedule.rsvps) schedule.rsvps = {};
-        schedule.rsvps[user.uid] = action; // Usar user.uid do getCurrentUser() para consistência
-
-        try {
-            // Salva no localStorage
-            saveSchedulesToLocalStorage();
-            // Envia para o Firebase
-            await SchedulesData.updateSchedule(schedule);
-            displayMessage('Resposta registrada com sucesso!', 'success');
-        } catch (error) {
-            console.error('Erro ao salvar RSVP no Firebase:', error);
-            displayMessage('Erro ao registrar sua resposta. Tente novamente.', 'error');
-        } finally {
-            renderScheduledGames(); // Re-renderiza a UI para refletir a mudança, mesmo em caso de erro
-        }
-    });
+    // Listener removido - RSVP agora é registrado diretamente no modal
 
     // Garante que o event listener do botão só é adicionado uma vez
     if (scheduleButton && !scheduleButtonListenerAdded) {
@@ -749,7 +617,7 @@ export function setupSchedulingPage() {
                 }
             } catch (err) {
                 if (err && err.code === "permission-denied") {
-                    displayMessage('Você não tem permissão para agendar/j  editar jogos. Apenas administradores podem.', 'error');
+                    displayMessage('Você não tem permissão para agendar/editar jogos. Apenas administradores podem.', 'error');
                 } else {
                     displayMessage('Erro ao salvar agendamento. Tente novamente.', 'error');
                 }
@@ -843,7 +711,10 @@ export function setupSchedulingPage() {
         const pendingScheduleId = sessionStorage.getItem('pendingOpenRsvpScheduleId');
         if (pendingScheduleId) {
             sessionStorage.removeItem('pendingOpenRsvpScheduleId');
-            showRsvpModal(pendingScheduleId);
+            const game = scheduledGames.find(g => g.id === pendingScheduleId);
+            if (game) {
+                showResponsesModal(game);
+            }
         }
     }, 1000);
     
@@ -897,7 +768,7 @@ function setupTabs() {
             const dy = touch.clientY - touchStartY;
             if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > threshold) {
                 // horizontal swipe detected
-                const buttons = Array.from(tabButtons);
+                const buttons = Array.from(navButtons);
                 const activeIndex = buttons.findIndex(b => b.classList.contains('active'));
                 if (activeIndex === -1) return;
                 let newIndex = activeIndex;
@@ -1413,23 +1284,20 @@ function setupScheduleDragAndDrop() {
             
             const gameId = e.dataTransfer.getData('text/plain');
             if (gameId && gameId.trim()) {
-                showConfirmationModal(
-                    'Tem certeza que deseja excluir este agendamento?',
-                    async () => {
-                        scheduledGames = scheduledGames.filter(g => g.id !== gameId);
-                        saveSchedulesToLocalStorage();
-                        try {
-                            await SchedulesData.deleteSchedule(gameId);
-                            displayMessage('Agendamento excluído com sucesso!', 'success');
-                        } catch (err) {
-                            if (err && err.code === "permission-denied") {
-                                displayMessage('Você não tem permissão para excluir jogos. Apenas administradores podem excluir.', 'error');
-                            } else {
-                                displayMessage('Erro ao excluir agendamento. Tente novamente.', 'error');
-                            }
+                if (confirm('Tem certeza que deseja excluir este agendamento?')) {
+                    scheduledGames = scheduledGames.filter(g => g.id !== gameId);
+                    saveSchedulesToLocalStorage();
+                    try {
+                        await SchedulesData.deleteSchedule(gameId);
+                        displayMessage('Agendamento excluído com sucesso!', 'success');
+                    } catch (err) {
+                        if (err && err.code === "permission-denied") {
+                            displayMessage('Você não tem permissão para excluir jogos. Apenas administradores podem excluir.', 'error');
+                        } else {
+                            displayMessage('Erro ao excluir agendamento. Tente novamente.', 'error');
                         }
                     }
-                );
+                }
             }
             
             hideDeleteZone();
@@ -1562,7 +1430,7 @@ function setupScheduleDragAndDrop() {
             }
         });
         
-        card.addEventListener('touchend', (e) => {
+    card.addEventListener('touchend', async (e) => {
             clearTimeout(longPressTimer);
             if (isDragging) {
                 const touch = e.changedTouches[0];
@@ -1573,23 +1441,20 @@ function setupScheduleDragAndDrop() {
                 
                 if (elementBelow && elementBelow.closest('#scheduling-delete-zone')) {
                     const gameId = card.dataset.gameId;
-                    showConfirmationModal(
-                        'Tem certeza que deseja excluir este agendamento?',
-                        async () => {
-                            scheduledGames = scheduledGames.filter(g => g.id !== gameId);
-                            saveSchedulesToLocalStorage();
-                            try {
-                                await SchedulesData.deleteSchedule(gameId);
-                                displayMessage('Agendamento excluído com sucesso!', 'success');
-                            } catch (err) {
-                                if (err && err.code === "permission-denied") {
-                                    displayMessage('Você não tem permissão para excluir jogos. Apenas administradores podem excluir.', 'error');
-                                } else {
-                                    displayMessage('Erro ao excluir agendamento. Tente novamente.', 'error');
-                                }
+                    if (confirm('Tem certeza que deseja excluir este agendamento?')) {
+                        scheduledGames = scheduledGames.filter(g => g.id !== gameId);
+                        saveSchedulesToLocalStorage();
+                        try {
+                            await SchedulesData.deleteSchedule(gameId);
+                            displayMessage('Agendamento excluído com sucesso!', 'success');
+                        } catch (err) {
+                            if (err && err.code === "permission-denied") {
+                                displayMessage('Você não tem permissão para excluir jogos. Apenas administradores podem excluir.', 'error');
+                            } else {
+                                displayMessage('Erro ao excluir agendamento. Tente novamente.', 'error');
                             }
                         }
-                    );
+                    }
                 }
                 
                 isDragging = false;
@@ -1760,72 +1625,19 @@ export function updateSchedulingPermissions() {
     updateFloatingButtonVisibility();
 }
 
-export function showRsvpModal(gameId) {
-    try {
-        lockBodyScroll();
-        enableTouchMoveBlocker();
-        const overlay = document.createElement('div');
-        overlay.className = 'confirmation-modal-overlay';
-        overlay.classList.add('active');
 
-        const content = document.createElement('div');
-        content.className = 'confirmation-modal-content';
-        content.innerHTML = `
-            <h3 style="margin: 0 0 1rem; color: var(--text-primary);">Responder Presença</h3>
-            <p class="confirmation-message">Como você confirma sua presença?</p>
-            <div class="confirmation-buttons" style="flex-wrap: wrap; gap: 0.5rem;">
-                <button class="button confirmation-button--confirm rsvp-going"><span class="material-icons" style="vertical-align: middle; margin-right: 0.25rem;">check_circle</span> Vou</button>
-                <button class="button confirmation-button--confirm rsvp-maybe" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color);"><span class="material-icons" style="vertical-align: middle; margin-right: 0.25rem;">help</span> Talvez</button>
-                <button class="button confirmation-button--cancel rsvp-not-going"><span class="material-icons" style="vertical-align: middle; margin-right: 0.25rem;">cancel</span> Não vou</button>
-            </div>
-        `;
 
-        overlay.appendChild(content);
-        document.body.appendChild(overlay);
-
-        function close() {
-            try {
-                overlay.remove();
-            } catch (e) { /* ignore */ }
-            unlockBodyScroll();
-            disableTouchMoveBlocker();
-        }
-
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) {
-                close();
-            }
-        });
-
-        const goingBtn = content.querySelector('.rsvp-going');
-        const maybeBtn = content.querySelector('.rsvp-maybe');
-        const notGoingBtn = content.querySelector('.rsvp-not-going');
-
-        const dispatchRsvp = (action) => {
-            const rsvpEvent = new CustomEvent('schedule-rsvp', { detail: { action, scheduleId: gameId } });
-            window.dispatchEvent(rsvpEvent);
-            close();
-        };
-
-        goingBtn?.addEventListener('click', () => dispatchRsvp('going'));
-        maybeBtn?.addEventListener('click', () => dispatchRsvp('maybe'));
-        notGoingBtn?.addEventListener('click', () => dispatchRsvp('not_going'));
-    } catch (err) {
-        displayMessage('Não foi possível abrir o modal de presença.', 'error');
-    }
-}
-
-function showResponsesModal(game) {
+export function showResponsesModal(game) {
     try {
         lockBodyScroll();
         enableTouchMoveBlocker();
 
         const overlay = document.createElement('div');
-        overlay.className = 'confirmation-modal-overlay attendance-modal-overlay';
+        overlay.className = 'attendance-modal-overlay';
         overlay.classList.add('active');
 
         const content = document.createElement('div');
-        content.className = 'confirmation-modal-content attendance-modal';
+        content.className = 'attendance-modal';
 
         const rsvps = game.rsvps || {};
         const players = getPlayers();
@@ -1950,7 +1762,9 @@ function showResponsesModal(game) {
 
         // Atualiza UI do modal com base no estado atual (grupos e destaque do picker)
         function refreshUI() {
+            console.log(`[DEBUG: scheduling-ui.js] refreshUI called`);
             const { going, maybe, notGoing, myResponse } = computeLists();
+            console.log(`[DEBUG: scheduling-ui.js] myResponse:`, myResponse);
             if (groupsContainer) {
                 groupsContainer.innerHTML = `
                 ${renderGroup('Quem vai', 'check_circle', '--success', going)}
@@ -1965,16 +1779,30 @@ function showResponsesModal(game) {
             }
         }
 
-        // Ao clicar em uma opção, atualiza imediatamente o estado local e re-renderiza, depois dispara o evento global
-        const onRsvp = (action) => {
-            if (!currentUser) { onAnonClick(); return; }
+        // Registra resposta diretamente sem modal de confirmação
+        const onRsvp = async (action) => {
+            console.log(`[DEBUG: scheduling-ui.js] onRsvp called with action: ${action}`);
+            if (!currentUser) { 
+                console.log(`[DEBUG: scheduling-ui.js] No current user, calling onAnonClick`);
+                onAnonClick(); 
+                return; 
+            }
+            
+            console.log(`[DEBUG: scheduling-ui.js] Setting RSVP for user ${currentUser.uid} to ${action}`);
             if (!game.rsvps) game.rsvps = {};
-            game.rsvps[currentUser.uid] = action; // Atualiza estado local
-            refreshUI(); // Reflete imediatamente na UI
-
-            const rsvpEvent = new CustomEvent('schedule-rsvp', { detail: { action, scheduleId: game.id } });
-            window.dispatchEvent(rsvpEvent);
-            // Não fechar modal após RSVP
+            game.rsvps[currentUser.uid] = action;
+            console.log(`[DEBUG: scheduling-ui.js] Updated game.rsvps:`, game.rsvps);
+            refreshUI();
+            
+            // Salva diretamente sem evento customizado
+            try {
+                saveSchedulesToLocalStorage();
+                await SchedulesData.updateSchedule(game);
+                displayMessage('Resposta registrada com sucesso!', 'success');
+            } catch (error) {
+                console.error('Erro ao salvar RSVP:', error);
+                displayMessage('Erro ao registrar sua resposta. Tente novamente.', 'error');
+            }
         };
 
         if (currentUser) {

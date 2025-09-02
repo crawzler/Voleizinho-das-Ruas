@@ -32,14 +32,12 @@ export async function requestNotificationPermission() {
  * Envia notificação para novo agendamento
  */
 export async function notifyNewSchedule(schedule) {
-    console.log(`[DEBUG: notifications.js] Chamando notifyNewSchedule com:`, schedule);
 
     // Sempre mostra notificação visual na interface
     showInAppNotification(schedule);
     
     // Envia notificação push se permitida
     if (Notification.permission !== 'granted') {
-        console.log(`[DEBUG: notifications.js] Permissão de notificação não concedida. Estado atual: ${Notification.permission}`);
         return;
     }
 
@@ -51,7 +49,7 @@ export async function notifyNewSchedule(schedule) {
     const userId = currentUser ? currentUser.uid : null; // Obter o UID do usuário logado
 
     const notificationOptions = {
-        body: `📅 ${formattedDate} às ${formattedTime}\n📍 ${schedule.location}`,
+        body: `📅 ${formattedDate} às ${formattedTime}\n📍 ${schedule.location}\n\n✅ Vou  🚫 Não vou  ❓ Talvez`,
         icon: './images/icon-192x192.png',
         badge: './images/icon-96x96.png',
         tag: 'new-schedule',
@@ -59,20 +57,24 @@ export async function notifyNewSchedule(schedule) {
         actions: [
             { action: 'going', title: '✅ Vou' },
             { action: 'not_going', title: '🚫 Não vou' },
-            { action: 'maybe', title: 'Talvez' }
+            { action: 'maybe', title: '❓ Talvez' }
         ],
-        data: { type: 'schedule', id: schedule.id, userId: userId } // ADICIONADO userId AQUI
+        data: { type: 'schedule', id: schedule.id, userId: userId, hasActions: true }
     };
 
-    console.log('[DEBUG: notifications.js] Payload da notificação:', notificationOptions);
+
 
     try {
         // Tenta usar Service Worker para notificação persistente
         const registration = await navigator.serviceWorker.ready;
-        await registration.showNotification('🏐 Novo Jogo Agendado!', notificationOptions);
-        console.log('[DEBUG: notifications.js] Notificação de novo agendamento enviada via Service Worker.');
+        if (registration.active) {
+            await registration.showNotification('🏐 Novo Jogo Agendado!', notificationOptions);
+
+        } else {
+            throw new Error('Service Worker não está ativo');
+        }
     } catch (error) {
-        console.error('[DEBUG: notifications.js] Erro ao enviar notificação via Service Worker:', error);
+
         // Fallback para notificação simples
         try {
             const notification = new Notification('🏐 Novo Jogo Agendado!', {
@@ -87,9 +89,9 @@ export async function notifyNewSchedule(schedule) {
             };
 
             setTimeout(() => notification.close(), 10000);
-            console.log('[DEBUG: notifications.js] Notificação de novo agendamento enviada via fallback.');
+
         } catch (fallbackError) {
-            console.error('[DEBUG: notifications.js] Erro ao enviar notificação de fallback:', fallbackError);
+
         }
     }
 }
@@ -208,21 +210,21 @@ function showInAppNotification(schedule, type = 'new') {
 export async function registerNotificationServiceWorker() {
     if ('serviceWorker' in navigator) {
         try {
-            console.log('[DEBUG: notifications.js] 2023-10-27T10:00:00.000Z - Registering service worker listener.');
+
             const registration = await navigator.serviceWorker.ready;
             
             // Adiciona listener para ações de notificação
             navigator.serviceWorker.addEventListener('message', (event) => {
-                console.log('[DEBUG: notifications.js] 2023-10-27T10:00:00.000Z - Message received from service worker.');
+
                 if (event.data && event.data.type === 'NOTIFICATION_ACTION') {
-                    console.log('[DEBUG: notifications.js] 2023-10-27T10:00:00.000Z - Handling NOTIFICATION_ACTION.');
+
                     handleNotificationAction(event.data.action, event.data.data || null);
                 }
             });
 
             return registration;
         } catch (error) {
-            console.error("Error registering notification service worker:", error);
+    
         }
     }
     return null;
@@ -232,7 +234,6 @@ export async function registerNotificationServiceWorker() {
  * Trata ações das notificações
  */
 export function handleNotificationAction(action, data) {
-    console.log(`[DEBUG: notifications.js] ${new Date().toISOString()} - handleNotificationAction called. Action: ${action}`);
     
     // Marca que veio de notificação
     sessionStorage.setItem('fromNotification', 'true');
@@ -242,29 +243,116 @@ export function handleNotificationAction(action, data) {
     const normalizedAction = action && action.length > 0 ? action : 'view';
 
     const executeAction = () => {
-        console.log(`[DEBUG: notifications.js] ${new Date().toISOString()} - App is ready, executing action: ${normalizedAction}`);
         
         try {
             switch (normalizedAction) {
                 case 'going':
                 case 'not_going':
                 case 'maybe':
-                    if (data && data.id) {
-                        // Inclui o nome correto do jogador logado
-                        let playerName = null;
-                        try {
-                            const user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
-                            playerName = user && (user.displayName || user.email) ? (user.displayName || user.email) : null;
-                        } catch (_) { /* noop */ }
 
-                        // Debug antes de gravar
-                        console.log('[DEBUG: notifications.js] Salvando lastRSVPData no sessionStorage:', { action: normalizedAction, scheduleId: data.id, data, playerName });
-                        const lastRSVPData = { action: normalizedAction, scheduleId: data.id, data: data, playerName };
-                        sessionStorage.setItem('lastRSVPData', JSON.stringify(lastRSVPData));
-                        
-                        // Dispara evento customizado
-                        const rsvpEvent = new CustomEvent('schedule-rsvp', { detail: lastRSVPData });
-                        window.dispatchEvent(rsvpEvent);
+                    if (data && data.id) {
+                        // Registra a resposta diretamente
+                        setTimeout(() => {
+                            // Fecha modais existentes primeiro
+                            const existingModals = document.querySelectorAll('.attendance-modal-overlay');
+                            existingModals.forEach(modal => modal.remove());
+                            
+                            import('../ui/scheduling-ui.js').then(module => {
+                                if (typeof module.showResponsesModal === 'function') {
+                                    const scheduledGames = JSON.parse(localStorage.getItem('voleiScoreSchedules') || '[]');
+                                    const game = scheduledGames.find(g => g.id === data.id);
+                                    if (game) {
+
+                                        
+                                        // Registra a resposta no objeto do jogo antes de abrir o modal
+                                        const user = getCurrentUser();
+                                        if (user) {
+                                            if (!game.rsvps) game.rsvps = {};
+                                            game.rsvps[user.uid] = normalizedAction;
+                                        }
+                                        
+                                        module.showResponsesModal(game);
+                                        
+                                        // Salva diretamente no Firebase sem modal de confirmação
+                                        setTimeout(async () => {
+                                            if (user) {
+                                                try {
+                                                    const { saveSchedulesToLocalStorage } = await import('../ui/scheduling-ui.js');
+                                                    const { updateSchedule } = await import('../data/schedules.js');
+                                                    
+                                                    // Salva no localStorage
+                                                    const scheduledGames = JSON.parse(localStorage.getItem('voleiScoreSchedules') || '[]');
+                                                    const gameIndex = scheduledGames.findIndex(g => g.id === data.id);
+                                                    if (gameIndex !== -1) {
+                                                        scheduledGames[gameIndex] = game;
+                                                        localStorage.setItem('voleiScoreSchedules', JSON.stringify(scheduledGames));
+                                                    }
+                                                    
+                                                    // Salva no Firebase
+                                                    await updateSchedule(game);
+
+                                                } catch (error) {
+
+                                                }
+                                            }
+                                        }, 100);
+                                    }
+                                }
+                            });
+                        }, 500);
+                    }
+                    
+                    // Garante que a página seja mostrada
+                    if (typeof showPage === 'function') {
+                        showPage('scheduling-page');
+                    } else {
+                        // Fallback: navega diretamente
+                        window.location.hash = '#scheduling-page';
+                    }
+                    break;
+                    
+                case 'select_action':
+                    // Abre modal de attendance para seleção direta
+                    if (data && data.id) {
+                        setTimeout(() => {
+                            // Fecha modais existentes primeiro
+                            const existingModals = document.querySelectorAll('.attendance-modal-overlay');
+                            existingModals.forEach(modal => modal.remove());
+                            
+                            import('../ui/scheduling-ui.js').then(module => {
+                                if (typeof module.showResponsesModal === 'function') {
+                                    const scheduledGames = JSON.parse(localStorage.getItem('voleiScoreSchedules') || '[]');
+                                    const game = scheduledGames.find(g => g.id === data.id);
+                                    if (game) {
+                                        module.showResponsesModal(game);
+                                        setTimeout(() => {
+                                            const modal = document.querySelector('.attendance-modal');
+                                            if (modal) {
+                                                const header = modal.querySelector('.att-modal__title');
+                                                if (header) {
+                                                    header.innerHTML = '🔔 Responder Convite';
+                                                }
+                                                
+                                                // Adiciona pulsação nas opções para chamar atenção
+                                                const choices = modal.querySelectorAll('.att-choice');
+                                                choices.forEach(choice => {
+                                                    choice.style.animation = 'pulse 1.5s ease-in-out 3';
+                                                    choice.style.boxShadow = '0 0 15px rgba(37, 99, 235, 0.5)';
+                                                });
+                                                
+                                                // Remove animação após 5 segundos
+                                                setTimeout(() => {
+                                                    choices.forEach(choice => {
+                                                        choice.style.animation = '';
+                                                        choice.style.boxShadow = '';
+                                                    });
+                                                }, 5000);
+                                            }
+                                        }, 100);
+                                    }
+                                }
+                            });
+                        }, 500);
                     }
                     
                     // Garante que a página seja mostrada
@@ -277,13 +365,18 @@ export function handleNotificationAction(action, data) {
                     break;
                     
                 case 'view':
-                    // Abre diretamente o modal de resposta de presença
+                    // Abre diretamente o modal attendance-modal
                     if (data && data.id) {
                         // Aguarda a página carregar e depois abre o modal
                         setTimeout(() => {
                             import('../ui/scheduling-ui.js').then(module => {
-                                if (typeof module.showRsvpModal === 'function') {
-                                    module.showRsvpModal(data.id);
+                                if (typeof module.showResponsesModal === 'function') {
+                                    // Busca o jogo e abre o modal de respostas
+                                    const scheduledGames = JSON.parse(localStorage.getItem('voleiScoreSchedules') || '[]');
+                                    const game = scheduledGames.find(g => g.id === data.id);
+                                    if (game) {
+                                        module.showResponsesModal(game);
+                                    }
                                 }
                             }).catch(() => {
                                 // Fallback: salva para abrir depois
@@ -306,7 +399,7 @@ export function handleNotificationAction(action, data) {
                     break;
                     
                 default:
-                    console.log(`[DEBUG: notifications.js] ${new Date().toISOString()} - Unknown action: ${normalizedAction}, defaulting to view`);
+
                     if (typeof showPage === 'function') {
                         showPage('scheduling-page');
                     } else {
@@ -315,14 +408,13 @@ export function handleNotificationAction(action, data) {
                     break;
             }
         } catch (error) {
-            console.error(`[DEBUG: notifications.js] ${new Date().toISOString()} - Error executing action:`, error);
+
             // Fallback em caso de erro
             window.location.hash = '#scheduling-page';
         }
     };
 
     const waitForAppReady = () => {
-        console.log(`[DEBUG: notifications.js] ${new Date().toISOString()} - Waiting for app to be ready...`);
         
         // Verifica múltiplas condições para garantir que o app está pronto
         const isReady = window.isAppReady || 
@@ -341,7 +433,7 @@ export function handleNotificationAction(action, data) {
             if (attempts < 20) { // Max 20 tentativas
                 setTimeout(waitForAppReady, timeout);
             } else {
-                console.warn(`[DEBUG: notifications.js] ${new Date().toISOString()} - App not ready after 20 attempts, executing anyway`);
+
                 executeAction();
             }
         }

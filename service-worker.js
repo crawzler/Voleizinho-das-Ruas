@@ -290,7 +290,7 @@ self.addEventListener('sync', (event) => {
 
 // Listener para push notifications (caso seja implementado no futuro)
 self.addEventListener('push', (event) => {
-  console.log('[SW] Push message received');
+  // Push message received
 });
 
 async function cleanupOldCacheEntries() {
@@ -352,11 +352,22 @@ self.addEventListener('message', (event) => {
 });
 
 self.addEventListener('notificationclick', (event) => {
-  console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Notification clicked. Action: ${event.action}`);
+  console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Notification clicked. Action: '${event.action}', hasAction: ${!!event.action}`);
   event.notification.close();
 
-  const action = event.action || 'view';
   const payload = event.notification && event.notification.data ? event.notification.data : null;
+  
+  // Se action buttons não funcionam mas a notificação tem ações, mostra modal de seleção
+  let action;
+  if (event.action && event.action.trim().length > 0) {
+    action = event.action;
+  } else if (payload && payload.hasActions) {
+    action = 'select_action'; // Ação especial para mostrar modal de seleção
+  } else {
+    action = 'view';
+  }
+  
+  console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Processed action: '${action}', payload:`, payload);
 
   if (action === 'close') {
     console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Close action, doing nothing.`);

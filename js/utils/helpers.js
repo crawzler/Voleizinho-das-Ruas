@@ -30,7 +30,7 @@ export function salvarEstado(partida) {
     try {
         localStorage.setItem("estadoPartida", JSON.stringify(partida));
     } catch (e) {
-        // Log removido
+        // Silent error
     }
 }
 
@@ -39,7 +39,6 @@ export function carregarEstado() {
         const salvo = localStorage.getItem("estadoPartida");
         return salvo ? JSON.parse(salvo) : null;
     } catch (e) {
-        // Log removido
         return null;
     }
 }
@@ -48,7 +47,7 @@ export function limparEstado() {
     try {
         localStorage.removeItem("estadoPartida");
     } catch (e) {
-        // Log removido
+        // Silent error
     }
 }
 
@@ -57,7 +56,7 @@ export function limparTudo() {
         localStorage.removeItem("estadoPartida");
         localStorage.removeItem("timesGerados");
     } catch (e) {
-        // Log removido
+        // Silent error
     }
 }
 
@@ -66,7 +65,7 @@ export function salvarTimesGerados(times) {
     try {
         localStorage.setItem("timesGerados", JSON.stringify(times));
     } catch (e) {
-        // Log removido
+        // Silent error
     }
 }
 
@@ -75,7 +74,6 @@ export function carregarTimesGerados() {
         const salvos = localStorage.getItem("timesGerados");
         return salvos ? JSON.parse(salvos) : [];
     } catch (e) {
-        // Log removido
         return [];
     }
 }

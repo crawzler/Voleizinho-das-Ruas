@@ -116,7 +116,7 @@ window.logout = logout;
  * @param {string} appId - The application ID for use in Firestore synchronization.
  */
 export function setupAuthListener(authInstance, dbInstance, appId) {
-    console.log(`[DEBUG: auth.js] ${new Date().toISOString()} - Setting up auth listener.`);
+
     currentAuthInstance = authInstance;
     currentDbInstance = dbInstance;
     
@@ -126,7 +126,7 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
     }
 
     onAuthStateChanged(currentAuthInstance, async (user) => {
-        console.log(`[DEBUG: auth.js] ${new Date().toISOString()} - onAuthStateChanged event fired. User: ${user ? user.uid : 'null'}`);
+
         try { markAuthInitialized(); } catch (_) {}
         setCurrentUser(user); // Update the currentUser
         updateProfileMenuLoginState();
@@ -162,7 +162,6 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
             
             if (sessionStorage.getItem('fromNotification') === 'true' || sessionStorage.getItem('justNavigatedToScheduling') === 'true') {
                 if (sessionStorage.getItem('fromNotification') === 'true') {
-                    console.log(`[DEBUG: auth.js] ${new Date().toISOString()} - Opened from notification, forçando navegação para scheduling-page.`);
                     showPage('scheduling-page');
                     sessionStorage.setItem('justNavigatedToScheduling', 'true');
                     let attempts = 0;
@@ -175,14 +174,11 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
                             sessionStorage.removeItem('fromNotification');
                             setTimeout(() => sessionStorage.removeItem('justNavigatedToScheduling'), 500);
                             sessionStorage.setItem('schedulingPageLock', 'true');
-                            console.log('[DEBUG: auth.js] Flag fromNotification removida após navegação bem-sucedida. Lock ativado.');
                             return;
                         }
                         attempts++;
                         if (attempts < maxAttempts) {
                             setTimeout(checkAndRemoveFlag, interval);
-                        } else {
-                            console.warn('[DEBUG: auth.js] Não conseguiu ativar scheduling-page para remover flag after ' + maxAttempts + ' tentativas.');
                         }
                     };
                     checkAndRemoveFlag();
@@ -196,7 +192,7 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
                 setTimeout(() => sessionStorage.removeItem('schedulingPageLock'), 1000);
                 return;
             } else {
-                console.log(`[DEBUG: auth.js] ${new Date().toISOString()} - Not opened from notification, navegação manual após login.`);
+
                 // Se houver hash na URL e corresponder a uma página válida, navega para ela
                 if (window.location.hash && window.location.hash.startsWith('#') && window.location.hash.length > 1) {
                     const pageId = window.location.hash.substring(1);
