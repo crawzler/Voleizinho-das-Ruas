@@ -401,56 +401,79 @@ self.addEventListener('notificationclick', (event) => {
         console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Focusing existing client and sending message.`);
         try {
           await existingClient.focus();
-          // Aguarda um pouco antes de enviar a mensagem
-          await new Promise(resolve => setTimeout(resolve, 500));
-          existingClient.postMessage({ 
-            type: 'NOTIFICATION_ACTION', 
-            action, 
-            data: payload 
-          });
+          
+          // Envia mensagem para navegar para agendamentos
+          
+          // Envia múltiplas tentativas de mensagem
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+            
+            try {
+              existingClient.postMessage({ 
+                type: 'NOTIFICATION_ACTION', 
+                action, 
+                data: payload 
+              });
+              console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Message sent to existing client (attempt ${attempt}).`);
+              break;
+            } catch (msgError) {
+              console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Message attempt ${attempt} failed:`, msgError);
+            }
+          }
+          
           return existingClient;
         } catch (error) {
           console.error(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Error focusing client:`, error);
         }
       }
       
-      // Abre uma nova janela
-      console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Opening new window: ${baseUrl}`);
+      // Abre uma nova janela com hash para página de agendamentos
+      const urlWithHash = baseUrl + '#scheduling-page';
+      console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Opening new window: ${urlWithHash}`);
       
       if (clients.openWindow) {
         try {
-          const newClient = await clients.openWindow(baseUrl);
+          const newClient = await clients.openWindow(urlWithHash);
           
           if (newClient) {
             console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - New window opened successfully.`);
             
-            // Aguarda mais tempo para o app carregar completamente
-            await new Promise(resolve => setTimeout(resolve, 2500));
-            
-            // Tenta encontrar o cliente recém-aberto
-            const updatedClientList = await clients.matchAll({ 
-              type: 'window', 
-              includeUncontrolled: true 
-            });
-            
-            let targetClient = newClient;
-            for (const client of updatedClientList) {
-              if (client.url.includes('Voleizinho-das-Ruas') || 
-                  client.url.includes(self.location.origin)) {
-                targetClient = client;
-                break;
+            // Aguarda o app carregar e envia múltiplas tentativas de mensagem
+            for (let attempt = 1; attempt <= 5; attempt++) {
+              await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+              
+              try {
+                // Tenta encontrar o cliente ativo
+                const updatedClientList = await clients.matchAll({ 
+                  type: 'window', 
+                  includeUncontrolled: true 
+                });
+                
+                let targetClient = newClient;
+                for (const client of updatedClientList) {
+                  if (client.url.includes('Voleizinho-das-Ruas') || 
+                      client.url.includes(self.location.origin)) {
+                    targetClient = client;
+                    break;
+                  }
+                }
+                
+                // Envia a mensagem
+                targetClient.postMessage({ 
+                  type: 'NOTIFICATION_ACTION', 
+                  action, 
+                  data: payload 
+                });
+                
+                console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Message sent (attempt ${attempt}).`);
+                
+                if (attempt >= 3) break; // Para após 3 tentativas bem-sucedidas
+              } catch (msgError) {
+                console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Message attempt ${attempt} failed:`, msgError);
               }
             }
             
-            // Envia a mensagem
-            targetClient.postMessage({ 
-              type: 'NOTIFICATION_ACTION', 
-              action, 
-              data: payload 
-            });
-            
-            console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Message sent to client.`);
-            return targetClient;
+            return newClient;
           } else {
             console.error(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Failed to open new window.`);
           }

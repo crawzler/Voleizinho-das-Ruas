@@ -142,30 +142,32 @@
                     await navigator.serviceWorker.register('./service-worker.js');
                     const registration = await navigator.serviceWorker.ready;
                     
-                    // Envia notificação com delay para simular app fechado
-                    setTimeout(async () => {
-                        await registration.showNotification('🏐 TESTE - App Fechado', {
-                            body: '📅 Teste para app fechado\\n📍 Clique nos botões para testar',
-                            icon: './images/icon-192x192.png',
-                            badge: './images/icon-96x96.png',
-                            tag: 'test-closed-app',
-                            requireInteraction: true,
-                            actions: [
-                                { action: 'going', title: '✅ Vou' },
-                                { action: 'not_going', title: '🚫 Não vou' },
-                                { action: 'maybe', title: 'Talvez' }
-                            ],
-                            data: { 
-                                type: 'schedule', 
-                                id: 'test-closed-' + Date.now(),
-                                testMode: true
-                            }
-                        });
-                        
-                        console.log('Notificação enviada para teste de app fechado');
-                    }, 2000);
+                    console.log('Service Worker registrado e pronto');
+                    console.log('URL atual:', window.location.href);
+                    console.log('Origin:', window.location.origin);
                     
-                    updateStatus('✅ Notificação enviada! Agora feche o app completamente e aguarde.', 'success');
+                    // Envia notificação imediatamente para teste
+                    await registration.showNotification('🏐 TESTE - Botões de Ação', {
+                        body: '📅 Teste dos botões Vou/Não vou\\n📍 Deve abrir na página de agendamentos',
+                        icon: './images/icon-192x192.png',
+                        badge: './images/icon-96x96.png',
+                        tag: 'test-action-buttons',
+                        requireInteraction: true,
+                        actions: [
+                            { action: 'going', title: '✅ Vou' },
+                            { action: 'not_going', title: '🚫 Não vou' },
+                            { action: 'maybe', title: '🤔 Talvez' }
+                        ],
+                        data: { 
+                            type: 'schedule', 
+                            id: 'test-buttons-' + Date.now(),
+                            testMode: true
+                        }
+                    });
+                    
+                    console.log('Notificação enviada com botões de ação');
+                    
+                    updateStatus('✅ Notificação enviada! Feche o app e teste os botões.', 'success');
                 } else {
                     updateStatus('Service Worker não suportado', 'error');
                 }
