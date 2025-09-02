@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste App Fechado - Voleizinho das Ruas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #2563EB;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:hover {
+            background: #1D4ED8;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        .success { background: #D1FAE5; color: #065F46; }
+        .error { background: #FEE2E2; color: #991B1B; }
+        .info { background: #DBEAFE; color: #1E40AF; }
+        .warning { background: #FEF3C7; color: #92400E; }
+        .instructions {
+            background: #F3F4F6;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-left: 4px solid #2563EB;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🏐 Teste App Fechado</h1>
+        <p>Este teste verifica se as notificações funcionam quando o app está completamente fechado no Android.</p>
+        
+        <div id="status" class="status info">
+            Pronto para testar...
+        </div>
+        
+        <button onclick="sendTestNotification()">📱 Enviar Notificação de Teste</button>
+        
+        <div class="instructions">
+            <h3>📋 Instruções para Teste:</h3>
+            
+            <div class="step">
+                <strong>1.</strong> Clique em "Enviar Notificação de Teste"
+            </div>
+            
+            <div class="step">
+                <strong>2.</strong> Feche COMPLETAMENTE o navegador/app
+                <br><small>• No Android: Use o botão "Fechar todas as abas" ou force-stop</small>
+            </div>
+            
+            <div class="step">
+                <strong>3.</strong> Aguarde a notificação aparecer (pode demorar até 30 segundos)
+            </div>
+            
+            <div class="step">
+                <strong>4.</strong> Clique nos botões da notificação:
+                <br>• "✅ Vou" - deve abrir o app na página de agendamentos
+                <br>• "🚫 Não vou" - deve abrir o app na página de agendamentos
+                <br>• "Talvez" - deve abrir o app na página de agendamentos
+            </div>
+            
+            <div class="step">
+                <strong>5.</strong> Verifique se o app abre na URL correta:
+                <br><code>crawzler.github.io/Voleizinho-das-Ruas</code>
+            </div>
+        </div>
+        
+        <div id="debug-info" style="margin-top: 20px; font-size: 12px; color: #666;">
+            <strong>Debug Info:</strong><br>
+            <span id="current-url"></span><br>
+            <span id="sw-status"></span>
+        </div>
+    </div>
+
+    <script>
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+
+        function updateDebugInfo() {
+            document.getElementById('current-url').textContent = `URL: ${window.location.href}`;
+            
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistration().then(reg => {
+                    const swStatus = reg ? 'Service Worker: Ativo ✅' : 'Service Worker: Inativo ❌';
+                    document.getElementById('sw-status').textContent = swStatus;
+                });
+            } else {
+                document.getElementById('sw-status').textContent = 'Service Worker: Não suportado ❌';
+            }
+        }
+
+        async function sendTestNotification() {
+            try {
+                updateStatus('Enviando notificação...', 'info');
+                
+                // Verifica permissão
+                if (Notification.permission !== 'granted') {
+                    const permission = await Notification.requestPermission();
+                    if (permission !== 'granted') {
+                        updateStatus('Permissão de notificação negada', 'error');
+                        return;
+                    }
+                }
+
+                // Registra service worker se necessário
+                if ('serviceWorker' in navigator) {
+                    await navigator.serviceWorker.register('./service-worker.js');
+                    const registration = await navigator.serviceWorker.ready;
+                    
+                    // Envia notificação com delay para simular app fechado
+                    setTimeout(async () => {
+                        await registration.showNotification('🏐 TESTE - App Fechado', {
+                            body: '📅 Teste para app fechado\\n📍 Clique nos botões para testar',
+                            icon: './images/icon-192x192.png',
+                            badge: './images/icon-96x96.png',
+                            tag: 'test-closed-app',
+                            requireInteraction: true,
+                            actions: [
+                                { action: 'going', title: '✅ Vou' },
+                                { action: 'not_going', title: '🚫 Não vou' },
+                                { action: 'maybe', title: 'Talvez' }
+                            ],
+                            data: { 
+                                type: 'schedule', 
+                                id: 'test-closed-' + Date.now(),
+                                testMode: true
+                            }
+                        });
+                        
+                        console.log('Notificação enviada para teste de app fechado');
+                    }, 2000);
+                    
+                    updateStatus('✅ Notificação enviada! Agora feche o app completamente e aguarde.', 'success');
+                } else {
+                    updateStatus('Service Worker não suportado', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Erro ao enviar notificação:', error);
+                updateStatus('Erro: ' + error.message, 'error');
+            }
+        }
+
+        // Inicialização
+        updateDebugInfo();
+        
+        // Registra service worker automaticamente
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./service-worker.js')
+                .then(() => updateStatus('Service Worker registrado ✅', 'success'))
+                .catch(error => updateStatus('Erro no Service Worker: ' + error.message, 'error'));
+        }
+        
+        // Atualiza debug info periodicamente
+        setInterval(updateDebugInfo, 5000);
+    </script>
+</body>
+</html>

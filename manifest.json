@@ -4,6 +4,7 @@
   "description": "Um aplicativo de pontuação e gerenciamento de times para vôlei.",
   "start_url": "./index.html",
   "scope": "./",
+  "id": "/Voleizinho-das-Ruas/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui", "fullscreen"],
   "orientation": "any",
@@ -14,6 +15,7 @@
   "launch_handler": {
     "client_mode": "focus-existing"
   },
+  "categories": ["sports", "games"],
   "version": "1.0.0",
   "icons": [
     {

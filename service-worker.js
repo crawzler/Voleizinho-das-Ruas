@@ -100,6 +100,7 @@ self.addEventListener('install', (event) => {
     ])
   );
   
+  // Força a ativação imediata para garantir que as notificações funcionem
   self.skipWaiting();
 });
 
@@ -282,6 +283,16 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// Mantém o service worker ativo para notificações
+self.addEventListener('sync', (event) => {
+  // Mantém o SW ativo
+});
+
+// Listener para push notifications (caso seja implementado no futuro)
+self.addEventListener('push', (event) => {
+  console.log('[SW] Push message received');
+});
+
 async function cleanupOldCacheEntries() {
   try {
     const cache = await caches.open(RUNTIME_CACHE);
@@ -356,6 +367,18 @@ self.addEventListener('notificationclick', (event) => {
     (async () => {
       console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Handling notification click...`);
       
+      // Define a URL correta baseada na localização atual
+      let baseUrl;
+      if (self.location.hostname === 'crawzler.github.io') {
+        baseUrl = 'https://crawzler.github.io/Voleizinho-das-Ruas/';
+      } else if (self.location.hostname.includes('github.io')) {
+        baseUrl = self.location.origin + '/Voleizinho-das-Ruas/';
+      } else {
+        baseUrl = self.location.origin + '/';
+      }
+      
+      console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Base URL: ${baseUrl}`);
+      
       // Primeiro, tenta encontrar uma janela existente
       const clientList = await clients.matchAll({ 
         type: 'window', 
@@ -367,9 +390,8 @@ self.addEventListener('notificationclick', (event) => {
       // Procura por uma janela do app que já esteja aberta
       let existingClient = null;
       for (const client of clientList) {
-        const clientUrl = new URL(client.url);
-        const currentUrl = new URL(self.location.origin);
-        if (clientUrl.origin === currentUrl.origin) {
+        if (client.url.includes('Voleizinho-das-Ruas') || 
+            client.url.includes(self.location.origin)) {
           existingClient = client;
           break;
         }
@@ -377,45 +399,66 @@ self.addEventListener('notificationclick', (event) => {
 
       if (existingClient) {
         console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Focusing existing client and sending message.`);
-        // Foca na janela existente e envia a ação
-        await existingClient.focus();
-        existingClient.postMessage({ 
-          type: 'NOTIFICATION_ACTION', 
-          action, 
-          data: payload 
-        });
-        return existingClient;
-      } else {
-        // Abre uma nova janela
-        console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - No existing client found, opening new window.`);
-        
-        const urlToOpen = self.location.origin + '/';
-        console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Opening URL: ${urlToOpen}`);
-        
-        if (clients.openWindow) {
-          const newClient = await clients.openWindow(urlToOpen);
+        try {
+          await existingClient.focus();
+          // Aguarda um pouco antes de enviar a mensagem
+          await new Promise(resolve => setTimeout(resolve, 500));
+          existingClient.postMessage({ 
+            type: 'NOTIFICATION_ACTION', 
+            action, 
+            data: payload 
+          });
+          return existingClient;
+        } catch (error) {
+          console.error(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Error focusing client:`, error);
+        }
+      }
+      
+      // Abre uma nova janela
+      console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Opening new window: ${baseUrl}`);
+      
+      if (clients.openWindow) {
+        try {
+          const newClient = await clients.openWindow(baseUrl);
           
           if (newClient) {
             console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - New window opened successfully.`);
             
-            // Aguarda um tempo para o app carregar completamente
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // Aguarda mais tempo para o app carregar completamente
+            await new Promise(resolve => setTimeout(resolve, 2500));
             
-            // Envia a mensagem para o novo cliente
-            newClient.postMessage({ 
+            // Tenta encontrar o cliente recém-aberto
+            const updatedClientList = await clients.matchAll({ 
+              type: 'window', 
+              includeUncontrolled: true 
+            });
+            
+            let targetClient = newClient;
+            for (const client of updatedClientList) {
+              if (client.url.includes('Voleizinho-das-Ruas') || 
+                  client.url.includes(self.location.origin)) {
+                targetClient = client;
+                break;
+              }
+            }
+            
+            // Envia a mensagem
+            targetClient.postMessage({ 
               type: 'NOTIFICATION_ACTION', 
               action, 
               data: payload 
             });
             
-            console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Message sent to new client.`);
-            return newClient;
+            console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Message sent to client.`);
+            return targetClient;
           } else {
             console.error(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Failed to open new window.`);
           }
-        } else {
-          console.error(`[DEBUG: service-worker.js] ${new Date().toISOString()} - clients.openWindow not available.`);
+        } catch (error) {
+          console.error(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Error opening window:`, error);
         }
+      } else {
+        console.error(`[DEBUG: service-worker.js] ${new Date().toISOString()} - clients.openWindow not available.`);
       }
     })()
   );
