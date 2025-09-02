@@ -3,6 +3,7 @@
   "short_name": "Vôlei das Ruas",
   "description": "Um aplicativo de pontuação e gerenciamento de times para vôlei.",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui", "fullscreen"],
   "orientation": "any",
@@ -10,6 +11,9 @@
   "theme_color": "#222",
   "permissions": ["notifications"],
   "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
   "version": "1.0.0",
   "icons": [
     {

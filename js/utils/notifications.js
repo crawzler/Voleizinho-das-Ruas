@@ -231,61 +231,114 @@ export async function registerNotificationServiceWorker() {
 /**
  * Trata ações das notificações
  */
-function handleNotificationAction(action, data) {
-    console.log(`[DEBUG: notifications.js] 2023-10-27T10:00:00.000Z - handleNotificationAction called. Action: ${action}`);
+export function handleNotificationAction(action, data) {
+    console.log(`[DEBUG: notifications.js] ${new Date().toISOString()} - handleNotificationAction called. Action: ${action}`);
+    
+    // Marca que veio de notificação
     sessionStorage.setItem('fromNotification', 'true');
+    sessionStorage.setItem('notificationTimestamp', Date.now().toString());
 
     // Garante que action nunca seja vazio
     const normalizedAction = action && action.length > 0 ? action : 'view';
 
     const executeAction = () => {
-        console.log(`[DEBUG: notifications.js] 2023-10-27T10:00:00.000Z - App is ready, executing action.`);
-        switch (normalizedAction) {
-            case 'going':
-            case 'not_going':
-            case 'maybe':
-                if (data && data.id) {
-                    // Inclui o nome correto do jogador logado
-                    let playerName = null;
-                    try {
-                        const user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
-                        playerName = user && (user.displayName || user.email) ? (user.displayName || user.email) : null;
-                    } catch (_) { /* noop */ }
+        console.log(`[DEBUG: notifications.js] ${new Date().toISOString()} - App is ready, executing action: ${normalizedAction}`);
+        
+        try {
+            switch (normalizedAction) {
+                case 'going':
+                case 'not_going':
+                case 'maybe':
+                    if (data && data.id) {
+                        // Inclui o nome correto do jogador logado
+                        let playerName = null;
+                        try {
+                            const user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
+                            playerName = user && (user.displayName || user.email) ? (user.displayName || user.email) : null;
+                        } catch (_) { /* noop */ }
 
-                    // Debug antes de gravar
-                    console.log('[DEBUG: notifications.js] Salvando lastRSVPData no sessionStorage:', { action: normalizedAction, scheduleId: data.id, data, playerName });
-                    const lastRSVPData = { action: normalizedAction, scheduleId: data.id, data: data, playerName };
-                    sessionStorage.setItem('lastRSVPData', JSON.stringify(lastRSVPData));
-                    // Debug depois de gravar
-                    console.log('[DEBUG: notifications.js] lastRSVPData gravado (sessionStorage):', sessionStorage.getItem('lastRSVPData'));
-                    // Dispara evento customizado
-                    const rsvpEvent = new CustomEvent('schedule-rsvp', { detail: lastRSVPData });
-                    window.dispatchEvent(rsvpEvent);
-                }
-                showPage('scheduling-page');
-                break;
-            case 'view':
-                // Salva intenção de abrir o modal de presença ao entrar na página de agendamentos
-                if (data && data.id) {
-                    sessionStorage.setItem('pendingOpenRsvpScheduleId', data.id);
-                }
-                showPage('scheduling-page');
-                break;
-            case 'close':
-                // Do nothing
-                break;
+                        // Debug antes de gravar
+                        console.log('[DEBUG: notifications.js] Salvando lastRSVPData no sessionStorage:', { action: normalizedAction, scheduleId: data.id, data, playerName });
+                        const lastRSVPData = { action: normalizedAction, scheduleId: data.id, data: data, playerName };
+                        sessionStorage.setItem('lastRSVPData', JSON.stringify(lastRSVPData));
+                        
+                        // Dispara evento customizado
+                        const rsvpEvent = new CustomEvent('schedule-rsvp', { detail: lastRSVPData });
+                        window.dispatchEvent(rsvpEvent);
+                    }
+                    
+                    // Garante que a página seja mostrada
+                    if (typeof showPage === 'function') {
+                        showPage('scheduling-page');
+                    } else {
+                        // Fallback: navega diretamente
+                        window.location.hash = '#scheduling-page';
+                    }
+                    break;
+                    
+                case 'view':
+                    // Salva intenção de abrir o modal de presença ao entrar na página de agendamentos
+                    if (data && data.id) {
+                        sessionStorage.setItem('pendingOpenRsvpScheduleId', data.id);
+                    }
+                    
+                    // Garante que a página seja mostrada
+                    if (typeof showPage === 'function') {
+                        showPage('scheduling-page');
+                    } else {
+                        // Fallback: navega diretamente
+                        window.location.hash = '#scheduling-page';
+                    }
+                    break;
+                    
+                case 'close':
+                    // Do nothing
+                    break;
+                    
+                default:
+                    console.log(`[DEBUG: notifications.js] ${new Date().toISOString()} - Unknown action: ${normalizedAction}, defaulting to view`);
+                    if (typeof showPage === 'function') {
+                        showPage('scheduling-page');
+                    } else {
+                        window.location.hash = '#scheduling-page';
+                    }
+                    break;
+            }
+        } catch (error) {
+            console.error(`[DEBUG: notifications.js] ${new Date().toISOString()} - Error executing action:`, error);
+            // Fallback em caso de erro
+            window.location.hash = '#scheduling-page';
         }
     };
 
     const waitForAppReady = () => {
-        console.log(`[DEBUG: notifications.js] 2023-10-27T10:00:00.000Z - Waiting for app to be ready...`);
-        if (window.isAppReady) {
+        console.log(`[DEBUG: notifications.js] ${new Date().toISOString()} - Waiting for app to be ready...`);
+        
+        // Verifica múltiplas condições para garantir que o app está pronto
+        const isReady = window.isAppReady || 
+                        (document.readyState === 'complete' && typeof showPage === 'function') ||
+                        (window.location.hash && document.querySelector('.page'));
+        
+        if (isReady) {
             executeAction();
         } else {
-            setTimeout(waitForAppReady, 100);
+            // Aumenta o timeout gradualmente para dar mais tempo ao app
+            const attempts = parseInt(sessionStorage.getItem('notificationAttempts') || '0') + 1;
+            sessionStorage.setItem('notificationAttempts', attempts.toString());
+            
+            const timeout = Math.min(100 * attempts, 1000); // Max 1 segundo
+            
+            if (attempts < 20) { // Max 20 tentativas
+                setTimeout(waitForAppReady, timeout);
+            } else {
+                console.warn(`[DEBUG: notifications.js] ${new Date().toISOString()} - App not ready after 20 attempts, executing anyway`);
+                executeAction();
+            }
         }
     };
 
+    // Limpa contador de tentativas
+    sessionStorage.removeItem('notificationAttempts');
     waitForAppReady();
 }
 

@@ -142,6 +142,29 @@ function waitForCorrectPage(targetPageId, maxAttempts = 20, interval = 100) {
 
 document.addEventListener('DOMContentLoaded', async () => {
     window.isAppReady = true;
+    
+    // Listener para mensagens do service worker (notificações)
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            console.log(`[DEBUG: main.js] ${new Date().toISOString()} - Message received from service worker:`, event.data);
+            
+            if (event.data && event.data.type === 'NOTIFICATION_ACTION') {
+                console.log(`[DEBUG: main.js] ${new Date().toISOString()} - Handling notification action in main.js`);
+                
+                // Importa e chama a função de tratamento de notificações
+                import('./utils/notifications.js').then(module => {
+                    if (module.handleNotificationAction) {
+                        module.handleNotificationAction(event.data.action, event.data.data);
+                    }
+                }).catch(error => {
+                    console.error(`[DEBUG: main.js] ${new Date().toISOString()} - Error importing notifications module:`, error);
+                    // Fallback: navega para a página de agendamentos
+                    window.location.hash = '#scheduling-page';
+                });
+            }
+        });
+    }
+    
     // Navegação automática baseada no hash ao abrir o app
     if (window.location.hash && window.location.hash.startsWith('#') && window.location.hash.length > 1) {
         const pageId = window.location.hash.substring(1);
@@ -597,6 +620,37 @@ scoreboardMenuOverlay.addEventListener("click", () => {
     }, 100);
     console.log(`[DEBUG: main.js] ${new Date().toISOString()} - DOMContentLoaded listener finished.`);
     window.isAppReady = true;
+
+    // Verifica se há ações pendentes de notificação
+    setTimeout(() => {
+        const fromNotification = sessionStorage.getItem('fromNotification');
+        const notificationTimestamp = sessionStorage.getItem('notificationTimestamp');
+        
+        if (fromNotification === 'true' && notificationTimestamp) {
+            const timeDiff = Date.now() - parseInt(notificationTimestamp);
+            // Se a notificação foi recente (menos de 10 segundos)
+            if (timeDiff < 10000) {
+                console.log(`[DEBUG: main.js] ${new Date().toISOString()} - Processing pending notification action`);
+                
+                // Verifica se há dados de RSVP pendentes
+                const lastRSVPData = sessionStorage.getItem('lastRSVPData');
+                const pendingScheduleId = sessionStorage.getItem('pendingOpenRsvpScheduleId');
+                
+                if (lastRSVPData || pendingScheduleId) {
+                    // Garante que estamos na página de agendamentos
+                    if (typeof showPage === 'function') {
+                        showPage('scheduling-page');
+                    } else {
+                        window.location.hash = '#scheduling-page';
+                    }
+                }
+            }
+            
+            // Limpa os flags após processar
+            sessionStorage.removeItem('fromNotification');
+            sessionStorage.removeItem('notificationTimestamp');
+        }
+    }, 1000);
 
     // Adiciona dinamicamente o módulo de teste de notificações se ativado
     if (localStorage.getItem('debugNotificationsEnabled') === 'true') {

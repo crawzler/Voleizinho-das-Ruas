@@ -344,7 +344,7 @@ self.addEventListener('notificationclick', (event) => {
   console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Notification clicked. Action: ${event.action}`);
   event.notification.close();
 
-  const action = event.action;
+  const action = event.action || 'view';
   const payload = event.notification && event.notification.data ? event.notification.data : null;
 
   if (action === 'close') {
@@ -355,39 +355,67 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     (async () => {
       console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Handling notification click...`);
-      // Ensure we open the app within the Service Worker scope and go straight to the scheduling page
-      const scope = (self.registration && self.registration.scope) ? self.registration.scope : (self.location.origin + '/');
-      const urlToOpen = scope.endsWith('/') ? `${scope}#scheduling-page` : `${scope}/#scheduling-page`;
-      const clientList = await clients.matchAll({ type: 'window', includeUncontrolled: true });
-      let clientToFocus = null;
-
+      
+      // Primeiro, tenta encontrar uma janela existente
+      const clientList = await clients.matchAll({ 
+        type: 'window', 
+        includeUncontrolled: true 
+      });
+      
       console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Found ${clientList.length} clients.`);
+      
+      // Procura por uma janela do app que já esteja aberta
+      let existingClient = null;
       for (const client of clientList) {
-        if (client.url.includes(scope)) {
-          console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Found a client to focus.`);
-          clientToFocus = client;
+        const clientUrl = new URL(client.url);
+        const currentUrl = new URL(self.location.origin);
+        if (clientUrl.origin === currentUrl.origin) {
+          existingClient = client;
           break;
         }
       }
 
-      if (clientToFocus) {
-        console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Focusing client and sending message.`);
-        clientToFocus.postMessage({ type: 'NOTIFICATION_ACTION', action, data: payload });
-        return clientToFocus.focus();
-      } else if (clients.openWindow) {
-        console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - No client found, opening a new window: ${urlToOpen}`);
-        const newWindow = await clients.openWindow(urlToOpen);
-        if (newWindow) {
-          console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - New window opened. Waiting 700ms to send message.`);
-          await new Promise(resolve => setTimeout(resolve, 700));
-
-          const allClients = await clients.matchAll({ type: 'window', includeUncontrolled: true });
-          console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Sending message to ${allClients.length} clients.`);
-          allClients.forEach(client => {
-            client.postMessage({ type: 'NOTIFICATION_ACTION', action, data: payload });
-          });
+      if (existingClient) {
+        console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Focusing existing client and sending message.`);
+        // Foca na janela existente e envia a ação
+        await existingClient.focus();
+        existingClient.postMessage({ 
+          type: 'NOTIFICATION_ACTION', 
+          action, 
+          data: payload 
+        });
+        return existingClient;
+      } else {
+        // Abre uma nova janela
+        console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - No existing client found, opening new window.`);
+        
+        const urlToOpen = self.location.origin + '/';
+        console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Opening URL: ${urlToOpen}`);
+        
+        if (clients.openWindow) {
+          const newClient = await clients.openWindow(urlToOpen);
+          
+          if (newClient) {
+            console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - New window opened successfully.`);
+            
+            // Aguarda um tempo para o app carregar completamente
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // Envia a mensagem para o novo cliente
+            newClient.postMessage({ 
+              type: 'NOTIFICATION_ACTION', 
+              action, 
+              data: payload 
+            });
+            
+            console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Message sent to new client.`);
+            return newClient;
+          } else {
+            console.error(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Failed to open new window.`);
+          }
+        } else {
+          console.error(`[DEBUG: service-worker.js] ${new Date().toISOString()} - clients.openWindow not available.`);
         }
-        return newWindow;
       }
     })()
   );
