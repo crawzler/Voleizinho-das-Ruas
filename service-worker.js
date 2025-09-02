@@ -355,34 +355,53 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     (async () => {
       console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Handling notification click...`);
-      const urlToOpen = self.location.origin;
-      const clientList = await clients.matchAll({ type: 'window', includeUncontrolled: true });
-      let clientToFocus = null;
+      // Build a deep link that forces the app to open the scheduling page and carries
+      // minimal information as query params so the app can act even if postMessage
+      // from the service worker doesn't arrive (race with app load).
+      const actionParam = action && action.length ? action : 'view';
+      const safePayload = payload || {};
+      const qp = new URLSearchParams();
+      qp.set('notifAction', actionParam);
+      if (safePayload.id) qp.set('scheduleId', safePayload.id);
+      if (safePayload.userId) qp.set('userId', safePayload.userId);
+      if (safePayload.playerName) qp.set('playerName', safePayload.playerName);
+      if (safePayload.date) qp.set('date', safePayload.date);
+      if (safePayload.startTime) qp.set('startTime', safePayload.startTime);
+      if (safePayload.location) qp.set('location', safePayload.location);
 
+      // Use index.html with hash to ensure single-page routing reaches scheduling page
+      const urlToOpen = `${self.location.origin}/index.html?${qp.toString()}#scheduling`;
+
+      const clientList = await clients.matchAll({ type: 'window', includeUncontrolled: true });
       console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Found ${clientList.length} clients.`);
+
+      // If there's an existing client from our origin, focus it and send the message.
       for (const client of clientList) {
-        if (client.url.includes(self.location.origin)) {
-          console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Found a client to focus.`);
-          clientToFocus = client;
-          break;
+        try {
+          if (new URL(client.url).origin === self.location.origin) {
+            console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Focusing existing client and sending message.`);
+            client.postMessage({ type: 'NOTIFICATION_ACTION', action: actionParam, data: safePayload });
+            return client.focus();
+          }
+        } catch (e) {
+          // ignore malformed client URLs
         }
       }
 
-      if (clientToFocus) {
-        console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Focusing client and sending message.`);
-        clientToFocus.postMessage({ type: 'NOTIFICATION_ACTION', action, data: payload });
-        return clientToFocus.focus();
-      } else if (clients.openWindow) {
-        console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - No client found, opening a new window.`);
+      // No client found - open a new window/tab with deep link that includes params as fallback
+      if (clients.openWindow) {
+        console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - No client found, opening new window at: ${urlToOpen}`);
         const newWindow = await clients.openWindow(urlToOpen);
         if (newWindow) {
-          console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - New window opened. Waiting 500ms to send message.`);
-          await new Promise(resolve => setTimeout(resolve, 500));
+          console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - New window opened. Waiting 700ms to send message.`);
+          await new Promise(resolve => setTimeout(resolve, 700));
 
           const allClients = await clients.matchAll({ type: 'window', includeUncontrolled: true });
           console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Sending message to ${allClients.length} clients.`);
           allClients.forEach(client => {
-            client.postMessage({ type: 'NOTIFICATION_ACTION', action, data: payload });
+            try {
+              client.postMessage({ type: 'NOTIFICATION_ACTION', action: actionParam, data: safePayload });
+            } catch (e) { /* ignore */ }
           });
         }
         return newWindow;

@@ -155,6 +155,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
     handleHashNavigation();
+    // Check for notification deep link query params (fallback for when app was closed)
+    try {
+        const qp = new URLSearchParams(window.location.search);
+        const notifAction = qp.get('notifAction');
+        const scheduleId = qp.get('scheduleId');
+        const playerName = qp.get('playerName');
+        const date = qp.get('date');
+        const startTime = qp.get('startTime');
+        const locationParam = qp.get('location');
+
+        if (notifAction && scheduleId) {
+            // Normalize action
+            const actionMap = { 'going': 'going', 'not_going': 'not_going', 'maybe': 'maybe', 'view': 'view' };
+            const normalized = actionMap[notifAction] || 'view';
+
+            const lastRSVPData = {
+                action: normalized,
+                scheduleId: scheduleId,
+                data: {
+                    id: scheduleId,
+                    date: date || undefined,
+                    startTime: startTime || undefined,
+                    location: locationParam || undefined
+                },
+                playerName: playerName || null
+            };
+
+            sessionStorage.setItem('fromNotification', 'true');
+            sessionStorage.setItem('lastRSVPData', JSON.stringify(lastRSVPData));
+            // Ensure we navigate to scheduling page so pages.js will open the modal
+            if (!window.location.hash || !window.location.hash.includes('scheduling')) {
+                window.location.hash = 'scheduling';
+            }
+        }
+    } catch (e) {
+        console.error('[DEBUG main.js] Error parsing notification params:', e);
+    }
 });
     // --- SCOREBOARD MENU DROPDOWN ---
     const scoreboardMenuButton = document.getElementById("scoreboard-menu-button");

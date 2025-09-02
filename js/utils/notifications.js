@@ -49,6 +49,7 @@ export async function notifyNewSchedule(schedule) {
 
     const currentUser = getCurrentUser();
     const userId = currentUser ? currentUser.uid : null; // Obter o UID do usuário logado
+    const playerName = currentUser && (currentUser.displayName || currentUser.email) ? (currentUser.displayName || currentUser.email) : null;
 
     const notificationOptions = {
         body: `📅 ${formattedDate} às ${formattedTime}\n📍 ${schedule.location}`,
@@ -61,7 +62,15 @@ export async function notifyNewSchedule(schedule) {
             { action: 'not_going', title: '🚫 Não vou' },
             { action: 'maybe', title: 'Talvez' }
         ],
-        data: { type: 'schedule', id: schedule.id, userId: userId } // ADICIONADO userId AQUI
+        data: {
+            type: 'schedule',
+            id: schedule.id,
+            userId: userId,
+            playerName: playerName,
+            date: schedule.date,
+            startTime: schedule.startTime,
+            location: schedule.location
+        }
     };
 
     console.log('[DEBUG: notifications.js] Payload da notificação:', notificationOptions);
@@ -258,6 +267,18 @@ function handleNotificationAction(action, data) {
                 showPage('scheduling-page');
                 break;
             case 'view':
+                // For plain notification click (no explicit action), still store metadata so the
+                // scheduling page can open the modal with context. Use action 'view' to indicate
+                // no RSVP choice was made.
+                if (data && data.id) {
+                    const lastRSVPData = { action: 'view', scheduleId: data.id, data: data, playerName: data.playerName || null };
+                    sessionStorage.setItem('lastRSVPData', JSON.stringify(lastRSVPData));
+                    console.log('[DEBUG: notifications.js] lastRSVPData gravado (view):', sessionStorage.getItem('lastRSVPData'));
+                }
+                showPage('scheduling-page');
+                break;
+            case 'view':
+                // kept for backward compat
                 showPage('scheduling-page');
                 break;
             case 'close':
