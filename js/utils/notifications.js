@@ -277,9 +277,19 @@ export function handleNotificationAction(action, data) {
                     break;
                     
                 case 'view':
-                    // Salva intenção de abrir o modal de presença ao entrar na página de agendamentos
+                    // Abre diretamente o modal de resposta de presença
                     if (data && data.id) {
-                        sessionStorage.setItem('pendingOpenRsvpScheduleId', data.id);
+                        // Aguarda a página carregar e depois abre o modal
+                        setTimeout(() => {
+                            import('../ui/scheduling-ui.js').then(module => {
+                                if (typeof module.showRsvpModal === 'function') {
+                                    module.showRsvpModal(data.id);
+                                }
+                            }).catch(() => {
+                                // Fallback: salva para abrir depois
+                                sessionStorage.setItem('pendingOpenRsvpScheduleId', data.id);
+                            });
+                        }, 1500);
                     }
                     
                     // Garante que a página seja mostrada

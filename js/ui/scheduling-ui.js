@@ -838,6 +838,15 @@ export function setupSchedulingPage() {
     // Sistema de drag and drop para excluir agendamentos
     setupScheduleDragAndDrop();
     
+    // Processa ações pendentes de notificação
+    setTimeout(() => {
+        const pendingScheduleId = sessionStorage.getItem('pendingOpenRsvpScheduleId');
+        if (pendingScheduleId) {
+            sessionStorage.removeItem('pendingOpenRsvpScheduleId');
+            showRsvpModal(pendingScheduleId);
+        }
+    }, 1000);
+    
     // Não chama renderScheduledGames aqui, pois o listener do Firestore já atualiza a UI
 }
 
@@ -1751,7 +1760,7 @@ export function updateSchedulingPermissions() {
     updateFloatingButtonVisibility();
 }
 
-function showRsvpModal(gameId) {
+export function showRsvpModal(gameId) {
     try {
         lockBodyScroll();
         enableTouchMoveBlocker();
