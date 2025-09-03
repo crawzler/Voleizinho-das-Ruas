@@ -513,6 +513,23 @@ scoreboardMenuOverlay.addEventListener("click", () => {
     // Processa ações pendentes imediatamente quando o app carrega (importante para Android PWA)
     setTimeout(() => {
         try { processPendingActionsFromSwDb(); } catch (e) {}
+        
+        // Verifica se deve abrir modal após navegação do popup
+        const openModalId = sessionStorage.getItem('openModalOnLoad');
+        if (openModalId) {
+            sessionStorage.removeItem('openModalOnLoad');
+            setTimeout(() => {
+                import('./ui/scheduling-ui.js').then(mod => {
+                    if (mod && typeof mod.showResponsesModal === 'function') {
+                        const schedules = JSON.parse(localStorage.getItem('voleiScoreSchedules') || '[]');
+                        const schedule = schedules.find(s => s.id === openModalId);
+                        if (schedule) {
+                            mod.showResponsesModal(schedule);
+                        }
+                    }
+                }).catch(() => {});
+            }, 1500);
+        }
     }, 1000);
     
     // Processa ações pendentes periodicamente para garantir que não sejam perdidas
