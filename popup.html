@@ -324,7 +324,7 @@
                     <p style="color: #6b7280; margin-bottom: 20px;">${messages[response] || 'Resposta registrada!'}</p>
                     <div style="display: flex; gap: 10px; justify-content: center;">
                         <button onclick="goToScheduling()" style="padding: 10px 20px; background: var(--new-accent-primary, #667eea); color: white; border: none; border-radius: 6px; cursor: pointer;">Ver Agendamentos</button>
-                        <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer;">Fechar</button>
+                        <button onclick="history.back()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer;">Voltar</button>
                     </div>
                 </div>
             `;
@@ -339,7 +339,7 @@
                     <p style="color: #6b7280; margin-bottom: 20px;">Erro ao salvar resposta: ${error.message || error}</p>
                     <div style="display: flex; gap: 10px; justify-content: center;">
                         <button onclick="location.reload()" style="padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer;">Tentar Novamente</button>
-                        <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer;">Fechar</button>
+                        <button onclick="history.back()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer;">Voltar</button>
                     </div>
                 </div>
             `;
