@@ -365,20 +365,9 @@
                 window.opener.focus();
                 window.close();
             } else {
-                // Salva o ID do agendamento para abrir o modal
-                if (scheduleId) {
-                    sessionStorage.setItem('openModalOnLoad', scheduleId);
-                }
-                
-                // Fecha o popup atual
-                window.close();
-                
-                // Tenta abrir o PWA
-                setTimeout(() => {
-                    const baseUrl = window.location.origin + window.location.pathname.replace('/popup.html', '/');
-                    const schedulingUrl = baseUrl + '#scheduling-page';
-                    window.open(schedulingUrl, '_self');
-                }, 100);
+                const baseUrl = window.location.origin + window.location.pathname.replace('/popup.html', '/');
+                const schedulingUrl = baseUrl + `#scheduling-page${scheduleId ? '?openModal=' + scheduleId : ''}?fromPopup=true`;
+                window.location.href = schedulingUrl;
             }
         }
         

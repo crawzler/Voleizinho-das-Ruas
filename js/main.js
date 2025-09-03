@@ -185,6 +185,14 @@ function processPendingNotificationFromSession() {
 document.addEventListener('DOMContentLoaded', async () => {
     window.isAppReady = true;
     
+    // Detecta se veio do popup e aplica CSS para ocultar barra
+    if (window.location.hash.includes('fromPopup=true')) {
+        document.body.classList.add('from-popup');
+        // Remove o parâmetro da URL
+        const newHash = window.location.hash.replace(/[?&]fromPopup=true/, '');
+        history.replaceState(null, null, newHash);
+    }
+    
     // Controle do botão voltar
     const handleBackButton = () => {
         const currentPage = document.querySelector('.app-page--active')?.id;

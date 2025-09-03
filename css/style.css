@@ -5895,6 +5895,21 @@ input[type="password"] {
     html {
         height: -webkit-fill-available;
     }
+    
+    /* Força modo fullscreen quando vem do popup */
+    body.from-popup {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+    }
+    
+    body.from-popup .app-main-content {
+        height: 100vh;
+        overflow-y: auto;
+    }
 }
 
 /* Estilos para notificação de atualização */
