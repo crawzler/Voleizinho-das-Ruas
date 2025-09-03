@@ -132,14 +132,17 @@ function syncWithFirestoreAndLocalStorage() {
         // Mescla dados do Firebase com localStorage preservando RSVPs locais
         const mergedSchedules = firebaseSchedules.map(firebaseGame => {
             const localGame = scheduledGames.find(g => g.id === firebaseGame.id);
-            if (localGame && localGame.rsvps && Object.keys(localGame.rsvps).length > 0) {
-                // Preserva RSVPs locais se existirem
-                return {
-                    ...firebaseGame,
-                    rsvps: { ...firebaseGame.rsvps, ...localGame.rsvps }
-                };
-            }
-            return firebaseGame;
+            
+            // Sempre preserva RSVPs locais, mesmo que o Firebase tenha dados
+            const mergedRsvps = {
+                ...(firebaseGame.rsvps || {}),
+                ...(localGame?.rsvps || {})
+            };
+            
+            return {
+                ...firebaseGame,
+                rsvps: mergedRsvps
+            };
         });
         
         // Atualiza o mapa para a próxima comparação
@@ -326,12 +329,12 @@ function createGameCard(game) {
                     ${game.startTime}${game.endTime ? ` - ${game.endTime}` : ''}
                 </p>
                 <p>
-                    <span class="material-icons">place</span>
-                    ${game.location}
-                </p>
-                <p>
                     <span class="material-icons">sports_volleyball</span>
                     ${game.surface || 'Quadra'}
+                </p>
+                <p>
+                    <span class="material-icons">place</span>
+                    ${game.location}
                 </p>
                 ${game.notes ? `<p><span class="material-icons">notes</span>${game.notes}</p>` : ''}
                 ${game.status === 'cancelled' && game.cancelReason ? `<div class="cancel-reason" style="flex-direction: row; align-items: center; gap: 0.5rem;"><span class="material-icons">report_problem</span>Motivo: ${game.cancelReason}</div>` : ''}
@@ -645,6 +648,17 @@ export function setupSchedulingPage() {
                 const card = moreBtn.closest('.scheduled-game-card');
                 const menu = card.querySelector('.card-more-menu');
                 const isOpen = menu && menu.getAttribute('data-open') === 'true';
+                
+                // Fecha todos os outros menus primeiro
+                document.querySelectorAll('.card-more-menu[data-open="true"]').forEach(otherMenu => {
+                    if (otherMenu !== menu) {
+                        otherMenu.setAttribute('data-open', 'false');
+                        otherMenu.style.display = 'none';
+                        const otherBtn = otherMenu.parentElement.querySelector('.card-more-btn');
+                        if (otherBtn) otherBtn.setAttribute('aria-expanded', 'false');
+                    }
+                });
+                
                 if (menu) {
                     menu.setAttribute('data-open', String(!isOpen));
                     menu.style.display = !isOpen ? 'block' : 'none';
@@ -1332,23 +1346,36 @@ function setupScheduleDragAndDrop() {
         const createDragGhost = (x, y) => {
             dragGhost = card.cloneNode(true);
             const rect = card.getBoundingClientRect();
+            const computedStyle = window.getComputedStyle(card);
+            
             // Calculate offsets first to position ghost centered under cursor
             ghostOffsetX = rect.width / 2;
             ghostOffsetY = rect.height / 2;
-            // Base styles
+            
+            // Copy all computed styles to maintain exact visual appearance
+            dragGhost.style.cssText = '';
             dragGhost.style.position = 'fixed';
-            dragGhost.style.width = rect.width + 'px';
-            dragGhost.style.height = rect.height + 'px';
             dragGhost.style.left = (x - ghostOffsetX) + 'px';
             dragGhost.style.top = (y - ghostOffsetY) + 'px';
+            dragGhost.style.width = rect.width + 'px';
+            dragGhost.style.height = rect.height + 'px';
             dragGhost.style.zIndex = '9999';
             dragGhost.style.pointerEvents = 'none';
-            dragGhost.style.opacity = '0.8';
-            // Force-disable any rotation/animation that might come from CSS
-            try {
-                dragGhost.style.setProperty('transform', 'none', 'important');
-                dragGhost.style.setProperty('animation', 'none', 'important');
-            } catch (e) { /* ignore */ }
+            dragGhost.style.opacity = '0.9';
+            
+            // Preserve original styling
+            dragGhost.style.background = computedStyle.background;
+            dragGhost.style.border = computedStyle.border;
+            dragGhost.style.borderRadius = computedStyle.borderRadius;
+            dragGhost.style.boxShadow = computedStyle.boxShadow;
+            dragGhost.style.padding = computedStyle.padding;
+            dragGhost.style.margin = '0';
+            
+            // Disable transforms and animations
+            dragGhost.style.transform = 'none';
+            dragGhost.style.animation = 'none';
+            dragGhost.style.transition = 'none';
+            
             dragGhost.classList.add('drag-ghost');
             document.body.appendChild(dragGhost);
         };
@@ -1658,39 +1685,29 @@ export function showResponsesModal(game) {
 
         const myResponse = currentUser ? (rsvps[currentUser.uid] || null) : null;
 
-        const renderPerson = ({name, photo}) => `
-            <li class="att-list-item">
-                <img class="att-list-avatar" src="${photo}" alt="${name}" onerror="this.src='assets/default-user-icon.svg'">
-                <span class="att-list-name">${name}</span>
-            </li>`;
+        const renderPerson = ({uid, name, photo}, isCurrentUser = false) => `
+            <div class="att-card ${isCurrentUser ? 'att-card--current' : ''}">
+                <img class="att-card-avatar" src="${photo}" alt="${name}" onerror="this.src='assets/default-user-icon.svg'">
+                <span class="att-card-name">${name}</span>
+                ${isCurrentUser ? '<span class="att-card-badge">Você</span>' : ''}
+            </div>`;
 
-        const renderGroup = (label, icon, colorVar, list) => `
-            <section class="att-group">
-                <header class="att-group__header">
-                    <span class="material-icons att-group__icon">${icon}</span>
-                    <h4 class="att-group__title">${label}</h4>
-                    <span class="att-group__count">${list.length}</span>
-                </header>
-                ${list.length ? `<ul class="att-list">${list.map(renderPerson).join('')}</ul>` : `<p class="att-group__empty">Ninguém aqui ainda.</p>`}
-            </section>`;
-
-        const actions = `
-            <div class="att-picker ${currentUser ? '' : 'att-picker--disabled'}">
-                <div class="att-choice att-going ${myResponse==='going' ? 'is-active' : ''}">
-                    <span class="material-icons">check_circle</span>
-                    <span class="att-choice__label">Vou</span>
-                </div>
-                <div class="att-choice att-maybe ${myResponse==='maybe' ? 'is-active' : ''}">
-                    <span class="material-icons">help</span>
-                    <span class="att-choice__label">Talvez</span>
-                </div>
-                <div class="att-choice att-not-going ${myResponse==='not_going' ? 'is-active' : ''}">
-                    <span class="material-icons">cancel</span>
-                    <span class="att-choice__label">Não vou</span>
-                </div>
-            </div>
-            <p class="att-helper-text">${currentUser ? 'Toque em uma opção para registrar sua presença' : 'Faça login para registrar sua presença'}</p>
-        `;
+        const renderGroup = (label, icon, colorVar, list, responseType) => {
+            const currentUserInList = currentUser ? list.find(p => p.uid === currentUser.uid) : null;
+            const otherUsers = currentUser ? list.filter(p => p.uid !== currentUser.uid) : list;
+            const sortedOthers = otherUsers.sort((a,b) => a.name.localeCompare(b.name));
+            const finalList = currentUserInList ? [currentUserInList, ...sortedOthers] : sortedOthers;
+            
+            return `
+                <section class="att-group att-group--${responseType} ${myResponse === responseType ? 'att-group--highlighted' : ''}">
+                    <header class="att-group__header">
+                        <span class="material-icons att-group__icon">${icon}</span>
+                        <h4 class="att-group__title">${label}</h4>
+                        <span class="att-group__count">${list.length}</span>
+                    </header>
+                    ${list.length ? `<div class="att-grid">${finalList.map(person => renderPerson(person, currentUser && person.uid === currentUser.uid)).join('')}</div>` : `<p class="att-group__empty">Ninguém aqui ainda.</p>`}
+                </section>`;
+        };
 
         content.innerHTML = `
             <header class="att-modal__header">
@@ -1703,11 +1720,10 @@ export function showResponsesModal(game) {
                     <span class="material-icons">close</span>
                 </button>
             </header>
-            ${actions}
             <div class="att-groups">
-                ${renderGroup('Quem vai', 'check_circle', '--success', going)}
-                ${renderGroup('Talvez', 'help', '--warning', maybe)}
-                ${renderGroup('Não vai', 'cancel', '--danger', notGoing)}
+                ${renderGroup('Quem vai', 'check_circle', '--success', going, 'going')}
+                ${renderGroup('Talvez', 'help', '--warning', maybe, 'maybe')}
+                ${renderGroup('Não vai', 'cancel', '--danger', notGoing, 'not_going')}
             </div>
         `;
 
@@ -1725,14 +1741,8 @@ export function showResponsesModal(game) {
         });
         content.querySelector('.close-modal-btn')?.addEventListener('click', close);
 
-        // Handlers para RSVP
-        const onAnonClick = () => displayMessage('Faça login para definir sua presença.', 'error');
-        
-        // Referências aos elementos do picker e do container de grupos
+        // Referência ao container de grupos
         const groupsContainer = content.querySelector('.att-groups');
-        const goingChoice = content.querySelector('.att-going');
-        const maybeChoice = content.querySelector('.att-maybe');
-        const notGoingChoice = content.querySelector('.att-not-going');
 
         // Recalcula listas e estado do usuário a partir do game.rsvps atual
         function computeLists() {
@@ -1752,26 +1762,101 @@ export function showResponsesModal(game) {
             return { going, maybe, notGoing, myResponse };
         }
 
-        // Atualiza UI do modal com base no estado atual (grupos e destaque do picker)
+        // Atualiza UI do modal com base no estado atual (grupos e destaque)
         function refreshUI() {
-            console.log(`[DEBUG: scheduling-ui.js] refreshUI called`);
             const { going, maybe, notGoing, myResponse } = computeLists();
-            console.log(`[DEBUG: scheduling-ui.js] myResponse:`, myResponse);
             if (groupsContainer) {
+                const renderGroupWithResponse = (label, icon, colorVar, list, responseType) => {
+                    const currentUserInList = currentUser ? list.find(p => p.uid === currentUser.uid) : null;
+                    const otherUsers = currentUser ? list.filter(p => p.uid !== currentUser.uid) : list;
+                    const sortedOthers = otherUsers.sort((a,b) => a.name.localeCompare(b.name));
+                    const finalList = currentUserInList ? [currentUserInList, ...sortedOthers] : sortedOthers;
+                    
+                    return `
+                        <section class="att-group att-group--${responseType} ${myResponse === responseType ? 'att-group--highlighted' : ''}">
+                            <header class="att-group__header">
+                                <span class="material-icons att-group__icon">${icon}</span>
+                                <h4 class="att-group__title">${label}</h4>
+                                <span class="att-group__count">${list.length}</span>
+                            </header>
+                            ${list.length ? `<div class="att-grid">${finalList.map(person => renderPerson(person, currentUser && person.uid === currentUser.uid)).join('')}</div>` : `<p class="att-group__empty">Ninguém aqui ainda.</p>`}
+                        </section>`;
+                };
+                
                 groupsContainer.innerHTML = `
-                ${renderGroup('Quem vai', 'check_circle', '--success', going)}
-                ${renderGroup('Talvez', 'help', '--warning', maybe)}
-                ${renderGroup('Não vai', 'cancel', '--danger', notGoing)}
+                ${renderGroupWithResponse('Quem vai', 'check_circle', '--success', going, 'going')}
+                ${renderGroupWithResponse('Talvez', 'help', '--warning', maybe, 'maybe')}
+                ${renderGroupWithResponse('Não vai', 'cancel', '--danger', notGoing, 'not_going')}
             `;
-            }
-            if (goingChoice && maybeChoice && notGoingChoice) {
-                goingChoice.classList.toggle('is-active', myResponse === 'going');
-                maybeChoice.classList.toggle('is-active', myResponse === 'maybe');
-                notGoingChoice.classList.toggle('is-active', myResponse === 'not_going');
             }
         }
 
-        // Registra resposta diretamente sem modal de confirmação
+        // Adiciona handlers de clique nos grupos para permitir seleção
+        const addGroupClickHandlers = () => {
+            const groups = content.querySelectorAll('.att-group');
+            groups.forEach((group, index) => {
+                const responseTypes = ['going', 'maybe', 'not_going'];
+                const responseType = responseTypes[index];
+                
+                if (currentUser) {
+                    group.style.cursor = 'pointer';
+                    group.addEventListener('click', () => {
+                        registerResponse(responseType);
+                    });
+                }
+            });
+        };
+        
+        const registerResponse = async (response) => {
+            if (!currentUser) {
+                displayMessage('Faça login para definir sua presença.', 'error');
+                return;
+            }
+            
+            try {
+                // Atualiza o objeto game local
+                if (!game.rsvps) game.rsvps = {};
+                game.rsvps[currentUser.uid] = response;
+                
+                // Atualiza localStorage E o array scheduledGames
+                const schedules = JSON.parse(localStorage.getItem('voleiScoreSchedules') || '[]');
+                const scheduleIndex = schedules.findIndex(s => s.id === game.id);
+                if (scheduleIndex !== -1) {
+                    schedules[scheduleIndex] = { ...schedules[scheduleIndex], rsvps: game.rsvps };
+                    localStorage.setItem('voleiScoreSchedules', JSON.stringify(schedules));
+                    
+                    // Atualiza também o array scheduledGames
+                    const globalScheduleIndex = scheduledGames.findIndex(s => s.id === game.id);
+                    if (globalScheduleIndex !== -1) {
+                        scheduledGames[globalScheduleIndex] = { ...scheduledGames[globalScheduleIndex], rsvps: game.rsvps };
+                    }
+                }
+                
+                // Atualiza UI primeiro
+                refreshUI();
+                addGroupClickHandlers();
+                
+                const messages = {
+                    'going': 'Presença confirmada!',
+                    'maybe': 'Resposta "Talvez" registrada!',
+                    'not_going': 'Resposta "Não vou" registrada!'
+                };
+                displayMessage(messages[response] || 'Resposta registrada!', 'success');
+                
+                // Tenta salvar no Firebase em background (não bloqueia a UI)
+                try {
+                    const { updateSchedule } = await import('../data/schedules.js');
+                    await updateSchedule(game);
+                } catch (firebaseError) {
+                    // Ignora erros do Firebase - dados já estão salvos localmente
+                }
+            } catch (error) {
+                displayMessage('Erro ao salvar resposta. Tente novamente.', 'error');
+            }
+        };
+        
+        addGroupClickHandlers();
+        
         const onRsvp = async (action) => {
             console.log(`[DEBUG: scheduling-ui.js] onRsvp called with action: ${action}`);
             if (!currentUser) { 

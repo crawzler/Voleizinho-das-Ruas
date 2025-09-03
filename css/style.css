@@ -6092,6 +6092,14 @@ input[type="password"] {
     z-index: 1003;
     max-width: none;
     animation: slideInRight 0.4s ease-out;
+    cursor: grab;
+    user-select: none;
+    touch-action: pan-x;
+    transition: transform 0.3s ease;
+}
+
+.schedule-notification:active {
+    cursor: grabbing;
 }
 
 .schedule-notification.cancelled {
@@ -6102,6 +6110,12 @@ input[type="password"] {
 .schedule-notification.today {
     background: linear-gradient(135deg, #F59E0B, #D97706) !important;
     box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+}
+
+.schedule-notification-body .material-icons {
+    font-size: 1rem;
+    vertical-align: middle;
+    margin-right: 0.25rem;
 }
 
 @keyframes slideInRight {

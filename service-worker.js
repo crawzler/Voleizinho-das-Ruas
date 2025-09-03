@@ -435,8 +435,21 @@ self.addEventListener('notificationclick', (event) => {
       try {
         const scheduleData = encodeURIComponent(JSON.stringify(payload || {}));
         const popupUrl = baseUrl + 'popup.html?data=' + scheduleData;
-        await clients.openWindow(popupUrl);
-      } catch (e) {}
+        
+        // Tenta abrir popup
+        try {
+          await clients.openWindow(popupUrl);
+        } catch {
+          // Se falhar, foca no app existente e envia dados
+          const clientList = await clients.matchAll({ type: 'window' });
+          if (clientList.length > 0) {
+            clientList[0].focus();
+            clientList[0].postMessage({ type: 'NOTIFICATION_CLICKED', data: payload });
+          }
+        }
+      } catch (e) {
+        console.error('Erro ao processar notificação:', e);
+      }
     })()
   );
 });

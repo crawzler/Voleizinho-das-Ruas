@@ -380,6 +380,18 @@ scoreboardMenuOverlay.addEventListener("click", () => {
                 } catch (e) {}
             }
             
+            // Novo: escuta mensagens de clique em notificação
+            if (event.data && event.data.type === 'NOTIFICATION_CLICKED') {
+                try {
+                    const baseUrl = window.location.origin + (window.location.hostname.includes('github.io') ? '/Voleizinho-das-Ruas/' : '/');
+                    const scheduleData = encodeURIComponent(JSON.stringify(event.data.data || {}));
+                    const popupUrl = baseUrl + 'popup.html?data=' + scheduleData;
+                    window.open(popupUrl, '_blank', 'width=400,height=600');
+                } catch (e) {
+                    console.error('Erro ao abrir popup:', e);
+                }
+            }
+            
             // Novo: escuta mensagens de ações pendentes disponíveis
             if (event.data && event.data.type === 'PENDING_ACTION_AVAILABLE') {
                 try {

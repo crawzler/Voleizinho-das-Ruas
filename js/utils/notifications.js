@@ -27,8 +27,17 @@ export async function notifyNewSchedule(schedule) {
     const formattedDate = gameDate.toLocaleDateString('pt-BR');
     const currentUser = getCurrentUser();
 
+    let bodyText = `Clique para responder sua presença\n\n📅 ${formattedDate}\n⏰ ${schedule.startTime}`;
+    if (schedule.endTime) {
+        bodyText += ` - ${schedule.endTime}`;
+    }
+    bodyText += `\n📍 ${schedule.location}`;
+    if (schedule.notes) {
+        bodyText += `\n📝 ${schedule.notes}`;
+    }
+
     const notificationOptions = {
-        body: `📅 ${formattedDate} às ${schedule.startTime}\n📍 ${schedule.location}`,
+        body: bodyText,
         icon: './images/icon-192x192.png',
         badge: './images/icon-96x96.png',
         tag: 'new-schedule',
@@ -39,13 +48,13 @@ export async function notifyNewSchedule(schedule) {
     try {
         const registration = await navigator.serviceWorker.ready;
         if (registration.active) {
-            await registration.showNotification('🏐 Novo Jogo Agendado!', notificationOptions);
+            await registration.showNotification('Novo Jogo', notificationOptions);
         } else {
             throw new Error('Service Worker não está ativo');
         }
     } catch (error) {
         try {
-            const notification = new Notification('🏐 Novo Jogo Agendado!', {
+            const notification = new Notification('Novo Jogo', {
                 body: notificationOptions.body,
                 icon: notificationOptions.icon,
                 tag: notificationOptions.tag
@@ -104,15 +113,15 @@ function showInAppNotification(schedule, type = 'new') {
     notification.className = `schedule-notification ${type === 'cancelled' ? 'cancelled' : ''}`;
     
     const content = type === 'cancelled' ? {
-        icon: '❌',
+        icon: 'cancel',
         title: 'Jogo Cancelado!',
         gradient: 'linear-gradient(135deg, #DC2626, #B91C1C)'
     } : type === 'today' ? {
-        icon: '🏐',
+        icon: 'sports_volleyball',
         title: 'Jogo Hoje!',
         gradient: 'linear-gradient(135deg, #F59E0B, #D97706)'
     } : {
-        icon: '🏐',
+        icon: 'sports_volleyball',
         title: 'Novo Jogo Agendado!',
         gradient: 'linear-gradient(135deg, #2563EB, #1D4ED8)'
     };
@@ -124,14 +133,58 @@ function showInAppNotification(schedule, type = 'new') {
             ${content.title}
         </div>
         <div class="schedule-notification-body">
-            📅 ${formattedDate} às ${formattedTime}<br>
-            📍 ${schedule.location}
-            ${schedule.notes ? `<br>📝 ${schedule.notes}` : ''}
-            ${type === 'cancelled' && schedule.cancelReason ? `<br><strong>⚠️ Motivo:</strong> ${schedule.cancelReason}` : ''}
+            <span class="material-icons">event</span> ${formattedDate} às ${formattedTime}<br>
+            <span class="material-icons">place</span> ${schedule.location}
+            ${schedule.notes ? `<br><span class="material-icons">note</span> ${schedule.notes}` : ''}
+            ${type === 'cancelled' && schedule.cancelReason ? `<br><strong><span class="material-icons">warning</span> Motivo:</strong> ${schedule.cancelReason}` : ''}
         </div>
     `;
 
     document.body.appendChild(notification);
+
+    // Adicionar funcionalidade de swipe para fechar
+    let startX = 0;
+    let isDragging = false;
+
+    const handleStart = (e) => {
+        startX = e.type === 'mousedown' ? e.clientX : e.touches[0].clientX;
+        isDragging = true;
+        notification.style.transition = 'none';
+    };
+
+    const handleMove = (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        const currentX = e.type === 'mousemove' ? e.clientX : e.touches[0].clientX;
+        const deltaX = currentX - startX;
+        notification.style.transform = `translateX(${deltaX}px)`;
+    };
+
+    const handleEnd = (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        const currentX = e.type === 'mouseup' ? e.clientX : (e.changedTouches ? e.changedTouches[0].clientX : startX);
+        const deltaX = currentX - startX;
+        notification.style.transition = 'transform 0.3s ease';
+        
+        if (Math.abs(deltaX) > 80) {
+            notification.style.transform = `translateX(${deltaX > 0 ? '100%' : '-100%'})`;
+            setTimeout(() => notification.remove(), 300);
+        } else {
+            notification.style.transform = 'translateX(0)';
+        }
+    };
+
+    // Touch events
+    notification.addEventListener('touchstart', handleStart, { passive: true });
+    notification.addEventListener('touchmove', handleMove, { passive: false });
+    notification.addEventListener('touchend', handleEnd, { passive: true });
+    
+    // Mouse events para desktop
+    notification.addEventListener('mousedown', handleStart);
+    notification.addEventListener('mousemove', handleMove);
+    notification.addEventListener('mouseup', handleEnd);
+    notification.addEventListener('mouseleave', handleEnd);
 
     requestAnimationFrame(() => {
         notification.classList.add('show');
