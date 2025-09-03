@@ -2,8 +2,11 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="transparent">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="mobile-web-app-capable" content="yes">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <title>Responder Convite</title>
     <style>
@@ -362,12 +365,11 @@
                 window.opener.focus();
                 window.close();
             } else {
-                // Tenta focar na aba existente do PWA
                 const baseUrl = window.location.origin + window.location.pathname.replace('/popup.html', '/');
                 const schedulingUrl = baseUrl + (scheduleId ? `#scheduling-page?openModal=${scheduleId}` : '#scheduling-page');
                 
-                // Substitui a URL atual ao invés de abrir nova aba
-                window.location.href = schedulingUrl;
+                // Força navegação sem histórico
+                window.location.replace(schedulingUrl);
             }
         }
         
