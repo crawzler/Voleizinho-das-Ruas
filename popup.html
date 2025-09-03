@@ -363,7 +363,6 @@
                     window.opener.postMessage({ type: 'OPEN_RESPONSE_MODAL', scheduleId }, '*');
                 }
                 window.opener.focus();
-                window.close();
             } else {
                 const baseUrl = window.location.origin + window.location.pathname.replace('/popup.html', '/');
                 const schedulingUrl = baseUrl + `#scheduling-page${scheduleId ? '?openModal=' + scheduleId : ''}?fromPopup=true`;
