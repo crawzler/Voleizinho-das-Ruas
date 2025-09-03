@@ -3,7 +3,7 @@
 
 const SW_CONFIG = {
     // Versão do cache - incremente para forçar atualização
-    CACHE_VERSION: 'VdR-0.6.9l_ANDROID_FIX',
+    CACHE_VERSION: 'VdR-0.6.9m',
     
     // Estratégias de cache
     STRATEGIES: {

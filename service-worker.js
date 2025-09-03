@@ -547,46 +547,6 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     (async () => {
       console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Handling notification click...`);
-      // Broadcast immediately that a notificationclick was received (so clients see it fast)
-      try {
-        const bcPayload = { ts: Date.now(), action, data: payload };
-        const clientListForBroadcast = await clients.matchAll({ type: 'window', includeUncontrolled: true });
-        clientListForBroadcast.forEach(c => { try { c.postMessage({ type: 'NOTIFICATION_CLICK_RECEIVED', payload: bcPayload }); } catch (_) {} });
-        logSwEvent({ type: 'notificationClickBroadcast', action });
-      } catch (_) {}
-
-      // Persistir ação pendente para o cliente consumir ao abrir — aumenta chance de entrega no Android
-      try {
-        const pendingActionData = { 
-          action, 
-          data: payload,
-          timestamp: Date.now(),
-          url: baseUrl,
-          processed: false
-        };
-        await addPendingAction(pendingActionData);
-        logSwEvent({ type: 'pendingActionSaved', action, timestamp: pendingActionData.timestamp });
-        
-        // Tenta notificar clientes existentes imediatamente sobre a ação pendente
-        try {
-          const immediateClients = await clients.matchAll({ type: 'window', includeUncontrolled: true });
-          immediateClients.forEach(client => {
-            try {
-              client.postMessage({ 
-                type: 'PENDING_ACTION_AVAILABLE', 
-                action,
-                data: payload,
-                timestamp: pendingActionData.timestamp
-              });
-            } catch (e) {}
-          });
-          logSwEvent({ type: 'pendingActionBroadcast', clientCount: immediateClients.length });
-        } catch (e) {
-          logSwEvent({ type: 'pendingActionBroadcastFailed', error: (e && e.message) || String(e) });
-        }
-      } catch (e) {
-        logSwEvent({ type: 'pendingActionSaveFailed', error: (e && e.message) || String(e) });
-      }
       
       // Define a URL correta baseada na localização atual
       let baseUrl;
@@ -597,201 +557,67 @@ self.addEventListener('notificationclick', (event) => {
       } else {
         baseUrl = self.location.origin + '/';
       }
+
+      // PRIMEIRO: Sempre tenta abrir/focar o app (como clique no corpo da notificação)
+      let appClient = null;
+      try {
+        // Procura cliente existente
+        const clientList = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+        for (const client of clientList) {
+          if (client.url.includes('Voleizinho-das-Ruas') || client.url.includes(self.location.origin)) {
+            appClient = client;
+            await client.focus();
+            logSwEvent({ type: 'existingClientFocused' });
+            break;
+          }
+        }
+        
+        // Se não encontrou, abre novo
+        if (!appClient && clients.openWindow) {
+          appClient = await clients.openWindow(baseUrl);
+          if (appClient) {
+            await appClient.focus();
+            logSwEvent({ type: 'newClientOpened' });
+          }
+        }
+      } catch (e) {
+        logSwEvent({ type: 'appOpenFailed', error: (e && e.message) || String(e) });
+      }
+
+      // SEGUNDO: Salva a ação específica do botão para processar depois
+      if (action && action !== 'view') {
+        try {
+          const pendingActionData = { 
+            action, 
+            data: payload,
+            timestamp: Date.now(),
+            url: baseUrl,
+            processed: false
+          };
+          await addPendingAction(pendingActionData);
+          logSwEvent({ type: 'pendingActionSaved', action, timestamp: pendingActionData.timestamp });
+        } catch (e) {
+          logSwEvent({ type: 'pendingActionSaveFailed', error: (e && e.message) || String(e) });
+        }
+      }
       
       console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Base URL: ${baseUrl}`);
       
-  // Primeiro, tenta encontrar uma janela existente
-      const clientList = await clients.matchAll({ 
-        type: 'window', 
-        includeUncontrolled: true 
-      });
-      
-      console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Found ${clientList.length} clients.`);
-      
-      // Construir URL com possíveis parâmetros de ação/ID (ex: #scheduling-page?action=going&id=...)
-      const urlParams = [];
-      try { if (payload && payload.id) urlParams.push(`id=${encodeURIComponent(String(payload.id))}`); } catch (e) {}
-      try { if (action) urlParams.push(`action=${encodeURIComponent(String(action))}`); } catch (e) {}
-      const paramStr = urlParams.length ? `?${urlParams.join('&')}` : '';
-      const urlWithHash = baseUrl + '#scheduling-page' + paramStr;
-
-      // Procura por uma janela do app que já esteja aberta
-      let existingClient = null;
-      for (const client of clientList) {
-        if (client.url.includes('Voleizinho-das-Ruas') || 
-            client.url.includes(self.location.origin)) {
-          existingClient = client;
-          break;
-        }
-      }
-
-      if (existingClient) {
-        console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Found existing client. Attempting to navigate/focus and send message.`);
-        logSwEvent({ type: 'existingClientFound', clientUrl: existingClient.url });
-        try {
-          // Tenta navegar o cliente existente diretamente para a URL com params (alguns navegadores suportam)
-          if (typeof existingClient.navigate === 'function') {
-            try {
-              await existingClient.navigate(urlWithHash);
-              console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Navigated existing client to ${urlWithHash}`);
-              logSwEvent({ type: 'existingClientNavigate', url: urlWithHash });
-            } catch (navErr) {
-              console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - existingClient.navigate() failed:`, navErr);
-              logSwEvent({ type: 'existingClientNavigateFailed', error: (navErr && navErr.message) || String(navErr) });
-            }
-          }
-
-          // Tenta focar
-          try { await existingClient.focus(); logSwEvent({ type: 'existingClientFocus' }); } catch (focusErr) { console.log('existingClient.focus failed', focusErr); logSwEvent({ type: 'existingClientFocusFailed', error: (focusErr && focusErr.message) || String(focusErr) }); }
-
-          // Envia mensagem como redundância
-          for (let attempt = 1; attempt <= 3; attempt++) {
-            await new Promise(resolve => setTimeout(resolve, 500 * attempt));
-            try {
-              existingClient.postMessage({ type: 'NOTIFICATION_ACTION', action, data: payload });
-              console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Message sent to existing client (attempt ${attempt}).`);
-              logSwEvent({ type: 'postMessageSent', target: 'existingClient', attempt, action });
-              break;
-            } catch (msgError) {
-              console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Message attempt ${attempt} failed:`, msgError);
-              logSwEvent({ type: 'postMessageFailed', target: 'existingClient', attempt, error: (msgError && msgError.message) || String(msgError) });
-            }
-          }
-
-          return existingClient;
-        } catch (error) {
-          console.error(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Error handling existing client:`, error);
-        }
-      }
-      
-    // Abre uma nova janela com hash para página de agendamentos (usa urlWithHash já construída)
-    console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Opening new window: ${urlWithHash}`);
-      
-      // Estratégia melhorada para Android PWA
-      if (clients.openWindow) {
-        try {
-          console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Attempting to open window with URL: ${urlWithHash}`);
-          
-          // Para Android PWA, tenta múltiplas estratégias
-          let newClient = null;
-          
-          // Primeira tentativa: openWindow normal
+      // TERCEIRO: Envia mensagem para processar a ação específica (se houver cliente)
+      if (appClient && action && action !== 'view') {
+        setTimeout(async () => {
           try {
-            newClient = await clients.openWindow(urlWithHash);
-            console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - openWindow result:`, !!newClient);
-            logSwEvent({ type: 'openWindowAttempt', success: !!newClient, url: urlWithHash });
-          } catch (openErr) {
-            console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - openWindow failed:`, openErr);
-            logSwEvent({ type: 'openWindowFailed', error: (openErr && openErr.message) || String(openErr) });
+            appClient.postMessage({ 
+              type: 'NOTIFICATION_ACTION', 
+              action, 
+              data: payload,
+              timestamp: Date.now()
+            });
+            logSwEvent({ type: 'actionMessageSent', action });
+          } catch (e) {
+            logSwEvent({ type: 'actionMessageFailed', error: (e && e.message) || String(e) });
           }
-          
-          // Se falhou, tenta com URL base
-          if (!newClient) {
-            try {
-              console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Trying base URL: ${baseUrl}`);
-              newClient = await clients.openWindow(baseUrl);
-              console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Base URL openWindow result:`, !!newClient);
-              logSwEvent({ type: 'openWindowBaseUrl', success: !!newClient });
-            } catch (baseErr) {
-              console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Base URL openWindow failed:`, baseErr);
-              logSwEvent({ type: 'openWindowBaseUrlFailed', error: (baseErr && baseErr.message) || String(baseErr) });
-            }
-          }
-          
-          if (newClient) {
-            console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Window opened successfully`);
-            logSwEvent({ type: 'windowOpenedSuccess' });
-            
-            // Força múltiplos focos para garantir que o app apareça no Android
-            const focusAttempts = async () => {
-              for (let i = 0; i < 3; i++) {
-                try {
-                  if (typeof newClient.focus === 'function') {
-                    await newClient.focus();
-                    console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Focus attempt ${i + 1} successful`);
-                    logSwEvent({ type: 'focusAttempt', attempt: i + 1, success: true });
-                  }
-                  await new Promise(resolve => setTimeout(resolve, 200));
-                } catch (focusErr) {
-                  console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Focus attempt ${i + 1} failed:`, focusErr);
-                  logSwEvent({ type: 'focusAttempt', attempt: i + 1, success: false, error: (focusErr && focusErr.message) || String(focusErr) });
-                }
-              }
-            };
-            
-            // Executa focos imediatamente e após delay
-            focusAttempts();
-            setTimeout(focusAttempts, 500);
-            setTimeout(focusAttempts, 1500);
-            
-            // Envia mensagens com retry melhorado
-            const sendMessages = async () => {
-              for (let attempt = 1; attempt <= 6; attempt++) {
-                await new Promise(resolve => setTimeout(resolve, attempt * 800));
-                
-                try {
-                  // Busca cliente mais recente
-                  const updatedClientList = await clients.matchAll({ 
-                    type: 'window', 
-                    includeUncontrolled: true 
-                  });
-                  
-                  let targetClient = newClient;
-                  for (const client of updatedClientList) {
-                    if (client.url.includes('Voleizinho-das-Ruas') || 
-                        client.url.includes(self.location.origin)) {
-                      targetClient = client;
-                      break;
-                    }
-                  }
-                  
-                  // Força foco antes de enviar mensagem
-                  try {
-                    if (targetClient && typeof targetClient.focus === 'function') {
-                      await targetClient.focus();
-                      logSwEvent({ type: 'preMsgFocus', attempt, success: true });
-                    }
-                  } catch (focusErr) {
-                    logSwEvent({ type: 'preMsgFocus', attempt, success: false, error: (focusErr && focusErr.message) || String(focusErr) });
-                  }
-                  
-                  // Envia mensagem
-                  targetClient.postMessage({ 
-                    type: 'NOTIFICATION_ACTION', 
-                    action, 
-                    data: payload,
-                    timestamp: Date.now(),
-                    attempt
-                  });
-                  
-                  console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Message sent (attempt ${attempt})`);
-                  logSwEvent({ type: 'messageSent', attempt, action, success: true });
-                  
-                  // Para após 4 tentativas bem-sucedidas
-                  if (attempt >= 4) break;
-                  
-                } catch (msgError) {
-                  console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Message attempt ${attempt} failed:`, msgError);
-                  logSwEvent({ type: 'messageSent', attempt, action, success: false, error: (msgError && msgError.message) || String(msgError) });
-                }
-              }
-            };
-            
-            // Inicia envio de mensagens
-            sendMessages();
-            
-            return newClient;
-          } else {
-            console.error(`[DEBUG: service-worker.js] ${new Date().toISOString()} - All window opening attempts failed`);
-            logSwEvent({ type: 'allWindowOpenFailed' });
-          }
-        } catch (error) {
-          console.error(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Critical error in window opening:`, error);
-          logSwEvent({ type: 'criticalWindowError', error: (error && error.message) || String(error) });
-        }
-      } else {
-        console.error(`[DEBUG: service-worker.js] ${new Date().toISOString()} - clients.openWindow not available`);
-        logSwEvent({ type: 'openWindowNotAvailable' });
+        }, 2000); // Aguarda 2s para o app carregar
       }
     })()
   );
