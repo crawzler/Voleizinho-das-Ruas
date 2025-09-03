@@ -532,7 +532,23 @@ self.addEventListener('notificationclick', (event) => {
     (async () => {
       const baseUrl = self.location.origin + (self.location.hostname.includes('github.io') ? '/Voleizinho-das-Ruas/' : '/');
       
-      // Salva ação pendente SEMPRE
+      // Se clicou no corpo da notificação (não em botão), abre pop-up
+      if (!event.action) {
+        try {
+          const popupUrl = baseUrl + 'popup.html';
+          const popup = await clients.openWindow(popupUrl);
+          if (popup) {
+            logSwEvent({ type: 'popupOpened' });
+          } else {
+            logSwEvent({ type: 'popupOpenFailed' });
+          }
+        } catch (e) {
+          logSwEvent({ type: 'popupError', error: String(e) });
+        }
+        return;
+      }
+      
+      // Se clicou em botão, salva ação e abre app
       try {
         await addPendingAction({ action, data: payload, timestamp: Date.now() });
         logSwEvent({ type: 'pendingActionSaved', action });
@@ -540,12 +556,10 @@ self.addEventListener('notificationclick', (event) => {
         logSwEvent({ type: 'pendingActionSaveFailed', error: String(e) });
       }
       
-      // Força abertura do app
       try {
         const clients_list = await clients.matchAll({ type: 'window', includeUncontrolled: true });
         let targetClient = null;
         
-        // Procura cliente existente
         for (const client of clients_list) {
           if (client.url.includes(self.location.origin)) {
             targetClient = client;
@@ -554,11 +568,9 @@ self.addEventListener('notificationclick', (event) => {
         }
         
         if (targetClient) {
-          // Foca cliente existente
           await targetClient.focus();
           logSwEvent({ type: 'clientFocused' });
         } else {
-          // Abre novo cliente
           targetClient = await clients.openWindow(baseUrl);
           if (targetClient) {
             logSwEvent({ type: 'clientOpened' });
