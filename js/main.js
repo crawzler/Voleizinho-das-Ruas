@@ -214,13 +214,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Navegação automática baseada no hash ao abrir o app
     if (window.location.hash && window.location.hash.startsWith('#') && window.location.hash.length > 1) {
-        const pageId = window.location.hash.substring(1);
+        const hashPart = window.location.hash.substring(1);
+        const [pageId, queryString] = hashPart.split('?');
+        
         // Só ativa se o elemento existe e termina com '-page'
         if (document.getElementById(pageId) && pageId.endsWith('-page')) {
             const mod = await import('./ui/pages.js');
             if (mod && typeof mod.showPage === 'function') {
                 mod.showPage(pageId);
                 waitForCorrectPage(pageId);
+                
+                // Verifica se deve abrir modal
+                if (queryString && pageId === 'scheduling-page') {
+                    const params = new URLSearchParams(queryString);
+                    const openModal = params.get('openModal');
+                    if (openModal) {
+                        setTimeout(() => {
+                            import('./ui/scheduling-ui.js').then(schedulingMod => {
+                                if (schedulingMod && typeof schedulingMod.showResponsesModal === 'function') {
+                                    const schedules = JSON.parse(localStorage.getItem('voleiScoreSchedules') || '[]');
+                                    const schedule = schedules.find(s => s.id === openModal);
+                                    if (schedule) {
+                                        schedulingMod.showResponsesModal(schedule);
+                                    }
+                                }
+                            }).catch(() => {});
+                        }, 1000);
+                    }
+                }
             }
         }
     }
@@ -467,6 +488,24 @@ scoreboardMenuOverlay.addEventListener("click", () => {
                 }).catch(() => {});
             } catch (e) {
                 console.error('Erro ao atualizar interface:', e);
+            }
+        }
+        
+        if (event.data && event.data.type === 'OPEN_RESPONSE_MODAL') {
+            try {
+                setTimeout(() => {
+                    import('./ui/scheduling-ui.js').then(mod => {
+                        if (mod && typeof mod.showResponsesModal === 'function') {
+                            const schedules = JSON.parse(localStorage.getItem('voleiScoreSchedules') || '[]');
+                            const schedule = schedules.find(s => s.id === event.data.scheduleId);
+                            if (schedule) {
+                                mod.showResponsesModal(schedule);
+                            }
+                        }
+                    }).catch(() => {});
+                }, 500);
+            } catch (e) {
+                console.error('Erro ao abrir modal:', e);
             }
         }
     });

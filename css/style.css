@@ -5873,6 +5873,28 @@ input[type="password"] {
         padding-top: var(--safe-area-inset-top);
         padding-bottom: max(var(--safe-area-inset-bottom), 30px);
     }
+    
+    /* Remove barra preta superior */
+    body {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
+    
+    .scheduling-header {
+        padding-top: max(var(--safe-area-inset-top), 1rem);
+    }
+}
+
+/* Remove barra de endereço em browsers mobile */
+@media screen and (max-width: 768px) {
+    body {
+        min-height: 100vh;
+        min-height: -webkit-fill-available;
+    }
+    
+    html {
+        height: -webkit-fill-available;
+    }
 }
 
 /* Estilos para notificação de atualização */

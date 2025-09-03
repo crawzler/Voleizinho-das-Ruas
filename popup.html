@@ -343,13 +343,27 @@
         }
         
         function goToScheduling() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const dataParam = urlParams.get('data');
+            let scheduleId = null;
+            
+            if (dataParam) {
+                try {
+                    const scheduleData = JSON.parse(decodeURIComponent(dataParam));
+                    scheduleId = scheduleData.id;
+                } catch (e) {}
+            }
+            
             if (window.opener) {
                 window.opener.location.hash = '#scheduling-page';
+                if (scheduleId) {
+                    window.opener.postMessage({ type: 'OPEN_RESPONSE_MODAL', scheduleId }, '*');
+                }
                 window.opener.focus();
                 window.close();
             } else {
                 const baseUrl = window.location.origin + window.location.pathname.replace('/popup.html', '/');
-                const schedulingUrl = baseUrl + '#scheduling-page';
+                const schedulingUrl = baseUrl + (scheduleId ? `#scheduling-page?openModal=${scheduleId}` : '#scheduling-page');
                 window.open(schedulingUrl, '_blank');
                 window.close();
             }
