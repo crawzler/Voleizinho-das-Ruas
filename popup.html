@@ -362,10 +362,12 @@
                 window.opener.focus();
                 window.close();
             } else {
+                // Tenta focar na aba existente do PWA
                 const baseUrl = window.location.origin + window.location.pathname.replace('/popup.html', '/');
                 const schedulingUrl = baseUrl + (scheduleId ? `#scheduling-page?openModal=${scheduleId}` : '#scheduling-page');
-                window.open(schedulingUrl, '_blank');
-                window.close();
+                
+                // Substitui a URL atual ao invés de abrir nova aba
+                window.location.href = schedulingUrl;
             }
         }
         
