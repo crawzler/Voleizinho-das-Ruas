@@ -9,8 +9,12 @@ function openSwLogDb() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(SW_LOG_DB, 1);
     req.onupgradeneeded = (e) => {
-      try { const db = e.target.result; if (!db.objectStoreNames.contains(SW_LOG_STORE)) db.createObjectStore(SW_LOG_STORE, { keyPath: 'id', autoIncrement: true }); } catch (_) {}
-    };
+        try {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(SW_LOG_STORE)) db.createObjectStore(SW_LOG_STORE, { keyPath: 'id', autoIncrement: true });
+          if (!db.objectStoreNames.contains('pending_actions')) db.createObjectStore('pending_actions', { keyPath: 'id', autoIncrement: true });
+        } catch (_) {}
+      };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
@@ -50,6 +54,20 @@ async function getRecentSwLogs(limit = 100) {
     }).finally(() => db.close());
   } catch (e) {
     return [];
+  }
+}
+
+// Guarda uma ação pendente para ser processada pelo cliente quando abrir
+async function addPendingAction(entry) {
+  try {
+    const db = await openSwLogDb();
+    const tx = db.transaction('pending_actions', 'readwrite');
+    const store = tx.objectStore('pending_actions');
+    const payload = Object.assign({ ts: Date.now() }, entry);
+    store.add(payload);
+    tx.oncomplete = () => db.close();
+  } catch (e) {
+    // silencioso
   }
 }
 
@@ -451,6 +469,13 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     (async () => {
       console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Handling notification click...`);
+      // Persistir ação pendente para o cliente consumir ao abrir — aumenta chance de entrega no Android
+      try {
+        await addPendingAction({ action, data: payload });
+        logSwEvent({ type: 'pendingActionSaved', action });
+      } catch (e) {
+        logSwEvent({ type: 'pendingActionSaveFailed', error: (e && e.message) || String(e) });
+      }
       
       // Define a URL correta baseada na localização atual
       let baseUrl;

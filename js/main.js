@@ -366,8 +366,60 @@ scoreboardMenuOverlay.addEventListener("click", () => {
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
             try { processPendingNotificationFromSession(); } catch (e) {}
+            try { processPendingActionsFromSwDb(); } catch (e) {}
         }
     });
+
+// --- IndexedDB reader for pending actions written by the SW ---
+function openSwDbFromClient() {
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open('sw-debug-logs', 1);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+async function readPendingActions(limit = 10) {
+    try {
+        const db = await openSwDbFromClient();
+        const tx = db.transaction('pending_actions', 'readwrite');
+        const store = tx.objectStore('pending_actions');
+        return await new Promise((resolve, reject) => {
+            const items = [];
+            const req = store.openCursor();
+            req.onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor && items.length < limit) {
+                    items.push(cursor.value);
+                    cursor.delete(); // limpa após ler
+                    cursor.continue();
+                } else {
+                    resolve(items);
+                }
+            };
+            req.onerror = () => reject(req.error);
+        }).finally(() => db.close());
+    } catch (e) {
+        return [];
+    }
+}
+
+async function processPendingActionsFromSwDb() {
+    try {
+        const pending = await readPendingActions(20);
+        if (!pending || pending.length === 0) return;
+        // Processa em ordem: do mais antigo para o mais novo
+        pending.reverse().forEach(item => {
+            try {
+                import('./utils/notifications.js').then(mod => {
+                    if (mod && typeof mod.handleNotificationAction === 'function') {
+                        mod.handleNotificationAction(item.action, item.data || null);
+                    }
+                });
+            } catch (e) {}
+        });
+    } catch (e) {}
+}
 
 
     setupAuthListener(auth, db, appId);
