@@ -1,6 +1,58 @@
 // Importa configurações
 importScripts('./sw-config.js');
 
+// --- IndexedDB lightweight logger for SW debugging ---
+const SW_LOG_DB = 'sw-debug-logs';
+const SW_LOG_STORE = 'logs';
+
+function openSwLogDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(SW_LOG_DB, 1);
+    req.onupgradeneeded = (e) => {
+      try { const db = e.target.result; if (!db.objectStoreNames.contains(SW_LOG_STORE)) db.createObjectStore(SW_LOG_STORE, { keyPath: 'id', autoIncrement: true }); } catch (_) {}
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function logSwEvent(entry) {
+  try {
+    const db = await openSwLogDb();
+    const tx = db.transaction(SW_LOG_STORE, 'readwrite');
+    const store = tx.objectStore(SW_LOG_STORE);
+    const payload = Object.assign({ ts: Date.now() }, entry);
+    store.add(payload);
+    tx.oncomplete = () => db.close();
+  } catch (e) {
+    // silencioso
+  }
+}
+
+async function getRecentSwLogs(limit = 100) {
+  try {
+    const db = await openSwLogDb();
+    const tx = db.transaction(SW_LOG_STORE, 'readonly');
+    const store = tx.objectStore(SW_LOG_STORE);
+    return new Promise((resolve, reject) => {
+      const results = [];
+      const req = store.openCursor(null, 'prev');
+      req.onsuccess = (e) => {
+        const cursor = e.target.result;
+        if (cursor && results.length < limit) {
+          results.push(cursor.value);
+          cursor.continue();
+        } else {
+          resolve(results);
+        }
+      };
+      req.onerror = () => reject(req.error);
+    }).finally(() => db.close());
+  } catch (e) {
+    return [];
+  }
+}
+
 const { CACHE_VERSION, STRATEGIES, TIMEOUTS, CRITICAL_RESOURCES, EXTERNAL_RESOURCES, IGNORE_PATTERNS, CLEANUP } = self.SW_CONFIG;
 
 const STATIC_CACHE = `static-v${CACHE_VERSION}`;
@@ -348,11 +400,33 @@ self.addEventListener('message', (event) => {
     case 'SKIP_WAITING':
       self.skipWaiting();
       break;
+    case 'GET_SW_DEBUG_LOGS':
+      {
+        const limit = data.limit || 100;
+        getRecentSwLogs(limit).then(logs => {
+          try {
+            if (event.ports && event.ports[0]) {
+              event.ports[0].postMessage({ success: true, logs });
+            } else {
+              // Fallback: post to all clients
+              clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientsList => {
+                clientsList.forEach(c => c.postMessage({ type: 'SW_DEBUG_LOGS', logs }));
+              });
+            }
+          } catch (e) {
+            // silencioso
+          }
+        }).catch(err => {
+          try { if (event.ports && event.ports[0]) event.ports[0].postMessage({ success: false, error: err.message }); } catch (e) {}
+        });
+      }
+      break;
   }
 });
 
 self.addEventListener('notificationclick', (event) => {
   console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Notification clicked. Action: '${event.action}', hasAction: ${!!event.action}`);
+  logSwEvent({ type: 'notificationclick', action: event.action || '', hasAction: !!event.action });
   event.notification.close();
 
   const payload = event.notification && event.notification.data ? event.notification.data : null;
@@ -417,19 +491,22 @@ self.addEventListener('notificationclick', (event) => {
 
       if (existingClient) {
         console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Found existing client. Attempting to navigate/focus and send message.`);
+        logSwEvent({ type: 'existingClientFound', clientUrl: existingClient.url });
         try {
           // Tenta navegar o cliente existente diretamente para a URL com params (alguns navegadores suportam)
           if (typeof existingClient.navigate === 'function') {
             try {
               await existingClient.navigate(urlWithHash);
               console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Navigated existing client to ${urlWithHash}`);
+              logSwEvent({ type: 'existingClientNavigate', url: urlWithHash });
             } catch (navErr) {
               console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - existingClient.navigate() failed:`, navErr);
+              logSwEvent({ type: 'existingClientNavigateFailed', error: (navErr && navErr.message) || String(navErr) });
             }
           }
 
           // Tenta focar
-          try { await existingClient.focus(); } catch (focusErr) { console.log('existingClient.focus failed', focusErr); }
+          try { await existingClient.focus(); logSwEvent({ type: 'existingClientFocus' }); } catch (focusErr) { console.log('existingClient.focus failed', focusErr); logSwEvent({ type: 'existingClientFocusFailed', error: (focusErr && focusErr.message) || String(focusErr) }); }
 
           // Envia mensagem como redundância
           for (let attempt = 1; attempt <= 3; attempt++) {
@@ -437,9 +514,11 @@ self.addEventListener('notificationclick', (event) => {
             try {
               existingClient.postMessage({ type: 'NOTIFICATION_ACTION', action, data: payload });
               console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Message sent to existing client (attempt ${attempt}).`);
+              logSwEvent({ type: 'postMessageSent', target: 'existingClient', attempt, action });
               break;
             } catch (msgError) {
               console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Message attempt ${attempt} failed:`, msgError);
+              logSwEvent({ type: 'postMessageFailed', target: 'existingClient', attempt, error: (msgError && msgError.message) || String(msgError) });
             }
           }
 
@@ -464,9 +543,11 @@ self.addEventListener('notificationclick', (event) => {
               if (typeof newClient.focus === 'function') {
                 await newClient.focus();
                 console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - newClient.focus() called.`);
+                logSwEvent({ type: 'newClientFocus' });
               }
             } catch (focusErr) {
               console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - newClient.focus() failed:`, focusErr);
+              logSwEvent({ type: 'newClientFocusFailed', error: (focusErr && focusErr.message) || String(focusErr) });
             }
 
             // Aguarda o app carregar e envia múltiplas tentativas de mensagem
@@ -494,9 +575,11 @@ self.addEventListener('notificationclick', (event) => {
                   if (targetClient && typeof targetClient.focus === 'function') {
                     await targetClient.focus();
                     console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - targetClient.focus() called (attempt ${attempt}).`);
+                    logSwEvent({ type: 'targetClientFocus', attempt });
                   }
                 } catch (focusErr2) {
                   console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - targetClient.focus() failed:`, focusErr2);
+                  logSwEvent({ type: 'targetClientFocusFailed', attempt, error: (focusErr2 && focusErr2.message) || String(focusErr2) });
                 }
 
                 // Envia a mensagem
@@ -507,6 +590,7 @@ self.addEventListener('notificationclick', (event) => {
                 });
                 
                 console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Message sent (attempt ${attempt}).`);
+                logSwEvent({ type: 'postMessageSent', target: 'newClient', attempt, action });
                 
                 if (attempt >= 3) break; // Para após 3 tentativas bem-sucedidas
               } catch (msgError) {
