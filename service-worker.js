@@ -448,7 +448,17 @@ self.addEventListener('notificationclick', (event) => {
           
           if (newClient) {
             console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - New window opened successfully.`);
-            
+
+            // Tenta focar a nova janela imediatamente para trazê-la ao primeiro plano (Android/Chrome)
+            try {
+              if (typeof newClient.focus === 'function') {
+                await newClient.focus();
+                console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - newClient.focus() called.`);
+              }
+            } catch (focusErr) {
+              console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - newClient.focus() failed:`, focusErr);
+            }
+
             // Aguarda o app carregar e envia múltiplas tentativas de mensagem
             for (let attempt = 1; attempt <= 5; attempt++) {
               await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
@@ -468,7 +478,17 @@ self.addEventListener('notificationclick', (event) => {
                     break;
                   }
                 }
-                
+
+                // Tenta focar o cliente alvo antes de enviar a mensagem
+                try {
+                  if (targetClient && typeof targetClient.focus === 'function') {
+                    await targetClient.focus();
+                    console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - targetClient.focus() called (attempt ${attempt}).`);
+                  }
+                } catch (focusErr2) {
+                  console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - targetClient.focus() failed:`, focusErr2);
+                }
+
                 // Envia a mensagem
                 targetClient.postMessage({ 
                   type: 'NOTIFICATION_ACTION', 
@@ -483,7 +503,7 @@ self.addEventListener('notificationclick', (event) => {
                 console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Message attempt ${attempt} failed:`, msgError);
               }
             }
-            
+
             return newClient;
           } else {
             console.error(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Failed to open new window.`);

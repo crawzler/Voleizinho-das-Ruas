@@ -136,6 +136,49 @@ function waitForCorrectPage(targetPageId, maxAttempts = 20, interval = 100) {
     check();
 }
 
+/**
+ * Parseia parâmetros anexados ao hash e dispara a ação de notificação se presente.
+ * Exemplo de hash: #scheduling-page?action=going&id=abc123
+ */
+function processNotificationHashParams() {
+    try {
+        const hash = window.location.hash || '';
+        if (!hash.includes('?')) return;
+        const [, query] = hash.split('?');
+        if (!query) return;
+        const params = new URLSearchParams(query);
+        const action = params.get('action');
+        const id = params.get('id');
+        if (action || id) {
+            const data = id ? { id } : null;
+            import('./utils/notifications.js').then(mod => {
+                if (mod && typeof mod.handleNotificationAction === 'function') {
+                    mod.handleNotificationAction(action || 'view', data);
+                }
+            }).catch(() => {});
+        }
+    } catch (e) {
+        // silencioso
+    }
+}
+
+// Processa notificações pendentes enviadas pelo service worker antes do app estar pronto
+function processPendingNotificationFromSession() {
+    try {
+        const raw = sessionStorage.getItem('pendingNotification');
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        sessionStorage.removeItem('pendingNotification');
+        if (data && data.type === 'NOTIFICATION_ACTION') {
+            import('./utils/notifications.js').then(mod => {
+                if (mod && typeof mod.handleNotificationAction === 'function') {
+                    mod.handleNotificationAction(data.action, data.data || null);
+                }
+            }).catch(() => {});
+        }
+    } catch (e) {}
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     window.isAppReady = true;
     
@@ -154,6 +197,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
     handleHashNavigation();
+    // Process notification action if app opened with hash params (e.g. #scheduling-page?action=going&id=...)
+    try {
+        processNotificationHashParams();
+    } catch (e) {}
 });
     // --- SCOREBOARD MENU DROPDOWN ---
     const scoreboardMenuButton = document.getElementById("scoreboard-menu-button");
@@ -290,6 +337,27 @@ scoreboardMenuOverlay.addEventListener("click", () => {
 
 
     await registerNotificationServiceWorker();
+
+    // Listen for messages from service worker (notification actions)
+    if (navigator.serviceWorker && navigator.serviceWorker.addEventListener) {
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'NOTIFICATION_ACTION') {
+                try {
+                    // If the app isn't ready yet, store for later
+                    if (!window.isAppReady) {
+                        sessionStorage.setItem('pendingNotification', JSON.stringify(event.data));
+                    } else {
+                        // Call handler from notifications util if available
+                        import('./utils/notifications.js').then(mod => {
+                            if (mod && typeof mod.handleNotificationAction === 'function') {
+                                mod.handleNotificationAction(event.data.action, event.data.data || null);
+                            }
+                        }).catch(() => {});
+                    }
+                } catch (e) {}
+            }
+        });
+    }
 
 
     setupAuthListener(auth, db, appId);
