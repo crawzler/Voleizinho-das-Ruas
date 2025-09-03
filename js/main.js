@@ -7,6 +7,9 @@ import { setupFirestorePlayersListener } from './data/players.js';
 import * as SchedulesData from './data/schedules.js'; // Keep this for other uses of SchedulesData
 // Removed imports related to processPendingNotificationAttendance
 import { showPage, updatePlayerModificationAbility, setupSidebar, setupPageNavigation, setupAccordion, setupScoreInteractions, setupTeamSelectionModal, closeSidebar, hideConfirmationModal, showConfirmationModal, forceUpdateIcons } from './ui/pages.js';
+
+// Torna showPage global para o controle de navegação
+window.showPage = showPage;
 import { setupConfigUI, loadConfig } from './ui/config-ui.js'; // Importa loadConfig
 import { startGame, toggleTimer, swapTeams, endGame, restoreSavedGameIfAny } from './game/logic.js';
 import { generateTeams } from './game/teams.js';
@@ -181,6 +184,31 @@ function processPendingNotificationFromSession() {
 
 document.addEventListener('DOMContentLoaded', async () => {
     window.isAppReady = true;
+    
+    // Controle do botão voltar
+    const handleBackButton = () => {
+        const currentPage = document.querySelector('.app-page--active')?.id;
+        
+        // Se está na tela de login ou inicial (scoring), pergunta se quer fechar
+        if (currentPage === 'login-page' || currentPage === 'scoring-page' || !currentPage) {
+            if (confirm('Deseja fechar o aplicativo?')) {
+                if (window.close) window.close();
+            } else {
+                history.pushState(null, null, window.location.href);
+            }
+            return;
+        }
+        
+        // Nas demais páginas, volta para a tela de partida
+        showPage('scoring-page');
+        history.pushState(null, null, window.location.href);
+    };
+    
+    // Listener para o botão voltar
+    window.addEventListener('popstate', handleBackButton);
+    
+    // Adiciona entrada inicial no histórico
+    history.pushState(null, null, window.location.href);
     
 
     

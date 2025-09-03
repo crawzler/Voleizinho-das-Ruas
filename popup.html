@@ -294,7 +294,7 @@
                         // Salva no Firebase
                         try {
                             console.log('🔄 Tentando salvar no Firebase...');
-                            const { updateSchedule } = await import('/js/data/schedules.js');
+                            const { updateSchedule } = await import('./js/data/schedules.js');
                             await updateSchedule(schedule);
                             console.log('✅ Schedule salvo no Firebase com sucesso');
                         } catch (firebaseError) {
@@ -343,10 +343,16 @@
         }
         
         function goToScheduling() {
-            const baseUrl = window.location.origin + (window.location.hostname.includes('github.io') ? '/Voleizinho-das-Ruas/' : '/');
-            const schedulingUrl = baseUrl + '#scheduling-page';
-            window.open(schedulingUrl, '_blank');
-            window.close();
+            if (window.opener) {
+                window.opener.location.hash = '#scheduling-page';
+                window.opener.focus();
+                window.close();
+            } else {
+                const baseUrl = window.location.origin + window.location.pathname.replace('/popup.html', '/');
+                const schedulingUrl = baseUrl + '#scheduling-page';
+                window.open(schedulingUrl, '_blank');
+                window.close();
+            }
         }
         
         function setupRadioButtons() {
