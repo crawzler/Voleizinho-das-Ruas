@@ -521,103 +521,53 @@ self.addEventListener('message', (event) => {
 });
 
 self.addEventListener('notificationclick', (event) => {
-  console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Notification clicked. Action: '${event.action}', hasAction: ${!!event.action}`);
-  logSwEvent({ type: 'notificationclick', action: event.action || '', hasAction: !!event.action });
   event.notification.close();
-
-  const payload = event.notification && event.notification.data ? event.notification.data : null;
   
-  // Se action buttons não funcionam mas a notificação tem ações, mostra modal de seleção
-  let action;
-  if (event.action && event.action.trim().length > 0) {
-    action = event.action;
-  } else if (payload && payload.hasActions) {
-    action = 'select_action'; // Ação especial para mostrar modal de seleção
-  } else {
-    action = 'view';
-  }
+  const action = event.action || 'view';
+  const payload = event.notification?.data || null;
   
-  console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Processed action: '${action}', payload:`, payload);
-
-  if (action === 'close') {
-    console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Close action, doing nothing.`);
-    return;
-  }
+  logSwEvent({ type: 'notificationclick', action, hasAction: !!event.action });
 
   event.waitUntil(
     (async () => {
-      console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Handling notification click...`);
+      const baseUrl = self.location.origin + (self.location.hostname.includes('github.io') ? '/Voleizinho-das-Ruas/' : '/');
       
-      // Define a URL correta baseada na localização atual
-      let baseUrl;
-      if (self.location.hostname === 'crawzler.github.io') {
-        baseUrl = 'https://crawzler.github.io/Voleizinho-das-Ruas/';
-      } else if (self.location.hostname.includes('github.io')) {
-        baseUrl = self.location.origin + '/Voleizinho-das-Ruas/';
-      } else {
-        baseUrl = self.location.origin + '/';
-      }
-
-      // PRIMEIRO: Sempre tenta abrir/focar o app (como clique no corpo da notificação)
-      let appClient = null;
+      // Salva ação pendente SEMPRE
       try {
+        await addPendingAction({ action, data: payload, timestamp: Date.now() });
+        logSwEvent({ type: 'pendingActionSaved', action });
+      } catch (e) {
+        logSwEvent({ type: 'pendingActionSaveFailed', error: String(e) });
+      }
+      
+      // Força abertura do app
+      try {
+        const clients_list = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+        let targetClient = null;
+        
         // Procura cliente existente
-        const clientList = await clients.matchAll({ type: 'window', includeUncontrolled: true });
-        for (const client of clientList) {
-          if (client.url.includes('Voleizinho-das-Ruas') || client.url.includes(self.location.origin)) {
-            appClient = client;
-            await client.focus();
-            logSwEvent({ type: 'existingClientFocused' });
+        for (const client of clients_list) {
+          if (client.url.includes(self.location.origin)) {
+            targetClient = client;
             break;
           }
         }
         
-        // Se não encontrou, abre novo
-        if (!appClient && clients.openWindow) {
-          appClient = await clients.openWindow(baseUrl);
-          if (appClient) {
-            await appClient.focus();
-            logSwEvent({ type: 'newClientOpened' });
+        if (targetClient) {
+          // Foca cliente existente
+          await targetClient.focus();
+          logSwEvent({ type: 'clientFocused' });
+        } else {
+          // Abre novo cliente
+          targetClient = await clients.openWindow(baseUrl);
+          if (targetClient) {
+            logSwEvent({ type: 'clientOpened' });
+          } else {
+            logSwEvent({ type: 'clientOpenFailed' });
           }
         }
       } catch (e) {
-        logSwEvent({ type: 'appOpenFailed', error: (e && e.message) || String(e) });
-      }
-
-      // SEGUNDO: Salva a ação específica do botão para processar depois
-      if (action && action !== 'view') {
-        try {
-          const pendingActionData = { 
-            action, 
-            data: payload,
-            timestamp: Date.now(),
-            url: baseUrl,
-            processed: false
-          };
-          await addPendingAction(pendingActionData);
-          logSwEvent({ type: 'pendingActionSaved', action, timestamp: pendingActionData.timestamp });
-        } catch (e) {
-          logSwEvent({ type: 'pendingActionSaveFailed', error: (e && e.message) || String(e) });
-        }
-      }
-      
-      console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Base URL: ${baseUrl}`);
-      
-      // TERCEIRO: Envia mensagem para processar a ação específica (se houver cliente)
-      if (appClient && action && action !== 'view') {
-        setTimeout(async () => {
-          try {
-            appClient.postMessage({ 
-              type: 'NOTIFICATION_ACTION', 
-              action, 
-              data: payload,
-              timestamp: Date.now()
-            });
-            logSwEvent({ type: 'actionMessageSent', action });
-          } catch (e) {
-            logSwEvent({ type: 'actionMessageFailed', error: (e && e.message) || String(e) });
-          }
-        }, 2000); // Aguarda 2s para o app carregar
+        logSwEvent({ type: 'criticalError', error: String(e) });
       }
     })()
   );

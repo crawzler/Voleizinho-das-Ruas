@@ -3,7 +3,7 @@
 
 const SW_CONFIG = {
     // Versão do cache - incremente para forçar atualização
-    CACHE_VERSION: 'VdR-0.6.9m',
+    CACHE_VERSION: 'VdR-0.6.9o_SIMPLE',
     
     // Estratégias de cache
     STRATEGIES: {
