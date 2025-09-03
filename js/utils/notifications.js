@@ -222,7 +222,27 @@ export function handleNotificationAction(action, data) {
         sessionStorage.setItem(key, String(now));
     } catch (e) {}
 
+    // Verifica se realmente deve processar (deve ter dados válidos)
+    if (!action || !data || !data.id) {
+        console.log('handleNotificationAction: Ação inválida ou sem dados, ignorando');
+        return;
+    }
+
+    // Verifica se o agendamento ainda existe
+    try {
+        const schedules = JSON.parse(localStorage.getItem('voleiScoreSchedules') || '[]');
+        const scheduleExists = schedules.some(s => s.id === data.id);
+        if (!scheduleExists) {
+            console.log('handleNotificationAction: Agendamento não encontrado, ignorando');
+            return;
+        }
+    } catch (e) {
+        console.log('handleNotificationAction: Erro ao verificar agendamento, ignorando');
+        return;
+    }
+
     sessionStorage.setItem('fromNotification', 'true');
+    sessionStorage.setItem('notificationTimestamp', String(Date.now()));
     const normalizedAction = action || 'view';
 
     const navigateToScheduling = () => {

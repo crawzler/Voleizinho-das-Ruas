@@ -185,6 +185,35 @@ function processPendingNotificationFromSession() {
 document.addEventListener('DOMContentLoaded', async () => {
     window.isAppReady = true;
     
+    // Limpeza preventiva de dados de notificação residuais para evitar abertura desnecessária do modal
+    try {
+        const fromNotification = sessionStorage.getItem('fromNotification');
+        const notificationTimestamp = sessionStorage.getItem('notificationTimestamp');
+        
+        // Se os dados são antigos (mais de 30 segundos), limpa tudo
+        if (fromNotification && notificationTimestamp) {
+            const timeDiff = Date.now() - parseInt(notificationTimestamp);
+            if (timeDiff > 30000) {
+                sessionStorage.removeItem('fromNotification');
+                sessionStorage.removeItem('notificationTimestamp');
+                sessionStorage.removeItem('pendingOpenRsvpScheduleId');
+                sessionStorage.removeItem('lastRSVPData');
+            }
+        }
+        
+        // Se não veio de uma notificação, limpa dados residuais
+        if (!window.location.search.includes('fromNotification') && !window.location.hash.includes('fromNotification')) {
+            sessionStorage.removeItem('pendingOpenRsvpScheduleId');
+            sessionStorage.removeItem('lastRSVPData');
+        }
+    } catch (e) {
+        // Em caso de erro, limpa tudo para segurança
+        sessionStorage.removeItem('fromNotification');
+        sessionStorage.removeItem('notificationTimestamp');
+        sessionStorage.removeItem('pendingOpenRsvpScheduleId');
+        sessionStorage.removeItem('lastRSVPData');
+    }
+    
     // Detecta se veio do popup e aplica CSS para ocultar barra
     if (window.location.hash.includes('fromPopup=true')) {
         document.body.classList.add('from-popup');
@@ -529,9 +558,13 @@ scoreboardMenuOverlay.addEventListener("click", () => {
         }
     });
     
-    // Processa ações pendentes imediatamente quando o app carrega (importante para Android PWA)
+    // Processa ações pendentes apenas se realmente necessário
     setTimeout(() => {
-        try { processPendingActionsFromSwDb(); } catch (e) {}
+        // Só processa se veio de uma notificação
+        const fromNotification = sessionStorage.getItem('fromNotification');
+        if (fromNotification === 'true') {
+            try { processPendingActionsFromSwDb(); } catch (e) {}
+        }
         
         // Verifica se deve abrir modal após navegação do popup
         const openModalId = sessionStorage.getItem('openModalOnLoad');
@@ -551,10 +584,7 @@ scoreboardMenuOverlay.addEventListener("click", () => {
         }
     }, 1000);
     
-    // Processa ações pendentes periodicamente para garantir que não sejam perdidas
-    setInterval(() => {
-        try { processPendingActionsFromSwDb(); } catch (e) {}
-    }, 5000);
+    // Processamento periódico removido para evitar abertura desnecessária do modal
     
     // Listener para atualizações de RSVP via localStorage
     window.addEventListener('storage', (e) => {
@@ -609,7 +639,21 @@ async function readPendingActions(limit = 10) {
 
 async function processPendingActionsFromSwDb() {
     try {
-        const pending = await readPendingActions(20);
+        // Verifica se realmente deve processar ações pendentes
+        const fromNotification = sessionStorage.getItem('fromNotification');
+        const notificationTimestamp = sessionStorage.getItem('notificationTimestamp');
+        
+        // Só processa se veio de uma notificação recente (menos de 10 segundos)
+        if (fromNotification !== 'true' || !notificationTimestamp) {
+            return;
+        }
+        
+        const timeDiff = Date.now() - parseInt(notificationTimestamp);
+        if (timeDiff > 10000) {
+            return; // Muito antigo, ignora
+        }
+        
+        const pending = await readPendingActions(5); // Reduz o limite para evitar processamento excessivo
         if (!pending || pending.length === 0) return;
         
         console.log(`[DEBUG: main.js] Processing ${pending.length} pending actions from SW DB`);
@@ -619,6 +663,11 @@ async function processPendingActionsFromSwDb() {
         
         for (const item of sortedPending) {
             try {
+                // Verifica se a ação é recente (menos de 30 segundos)
+                if (item.ts && (Date.now() - item.ts) > 30000) {
+                    continue; // Pula ações muito antigas
+                }
+                
                 console.log(`[DEBUG: main.js] Processing pending action:`, item);
                 
                 // Aguarda o módulo carregar antes de processar
@@ -784,36 +833,29 @@ function createAdminSwLogOverlay() {
     `;
     document.head.appendChild(style);
     
-    // Inicia minimizado
+    // Modal completo
     overlay.innerHTML = `
-        <div id="admin-sw-header" style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid rgba(255,255,255,0.1);">
-            <div style="display:flex;align-items:center;gap:10px">
-                <strong style="font-size:14px;color:#38bdf8;">🔧 Debug</strong>
-                <span style="font-size:11px;color:#94a3b8;background:rgba(56,189,248,0.2);padding:2px 6px;border-radius:4px;">admin</span>
+        <div id="admin-sw-full" style="display:block;">
+            <div id="admin-sw-header" style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid rgba(255,255,255,0.1);">
+                <div style="display:flex;align-items:center;gap:10px">
+                    <strong style="font-size:14px;color:#38bdf8;">🔧 Debug</strong>
+                    <span style="font-size:11px;color:#94a3b8;background:rgba(56,189,248,0.2);padding:2px 6px;border-radius:4px;">admin</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px">
+                    <button id="admin-sw-refresh" title="Atualizar logs" style="padding:6px 8px">🔄</button>
+                    <button id="admin-sw-copylogs" title="Copiar logs" style="padding:6px 8px">📋</button>
+                    <button id="admin-sw-ask" title="Solicitar SW" style="padding:6px 8px">📡</button>
+                    <button id="admin-sw-clear" title="Limpar DB" style="padding:6px 8px">🗑️</button>
+                    <button id="admin-sw-minimize" title="Minimizar" style="padding:6px 8px">➖</button>
+                    <button id="admin-sw-close" title="Fechar" style="padding:6px 8px">✕</button>
+                </div>
             </div>
-            <div style="display:flex;align-items:center;gap:6px">
-                <button id="admin-sw-refresh" title="Atualizar logs" style="padding:6px 8px">🔄</button>
-                <button id="admin-sw-copylogs" title="Copiar logs" style="padding:6px 8px">📋</button>
-                <button id="admin-sw-ask" title="Solicitar SW" style="padding:6px 8px">📡</button>
-                <button id="admin-sw-clear" title="Limpar DB" style="padding:6px 8px">🗑️</button>
-                <button id="admin-sw-minimize" title="Minimizar" style="padding:6px 8px">➖</button>
-                <button id="admin-sw-close" title="Fechar" style="padding:6px 8px">✕</button>
+            <div id="admin-sw-main" style="display:flex;flex-direction:column;padding:12px;">
+                <div id="admin-sw-log-list" style="overflow:auto;flex:1;background:rgba(0,0,0,0.3);padding:12px;border-radius:8px;font-family:'Courier New',monospace;white-space:pre-wrap;color:#e2e8f0;max-height:400px;border:1px solid rgba(255,255,255,0.1);">Clique em Atualizar para carregar dados...</div>
             </div>
         </div>
-        <div id="admin-sw-main" style="display:none;flex-direction:column;padding:12px;">
-
-
-            <div id="admin-sw-log-list" style="overflow:auto;flex:1;background:rgba(0,0,0,0.3);padding:12px;border-radius:8px;font-family:'Courier New',monospace;white-space:pre-wrap;color:#e2e8f0;max-height:400px;border:1px solid rgba(255,255,255,0.1);">Clique em Atualizar para carregar dados...</div>
-        </div>
-        <div id="admin-sw-minbar" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;">
-            <div style="font-size:13px;color:#38bdf8;display:flex;align-items:center;gap:8px;">
-                <span>🔧</span>
-                <span>Debug (minimizado)</span>
-            </div>
-            <div style="display:flex;gap:6px">
-                <button id="admin-sw-restore" style="padding:6px 10px;">Expandir</button>
-                <button id="admin-sw-close-min" style="padding:6px 8px;">✕</button>
-            </div>
+        <div id="admin-sw-mini" style="display:none;padding:8px 12px;cursor:pointer;" title="Expandir Debug">
+            <span style="font-size:13px;color:#38bdf8;">🔧</span>
         </div>
     `;
 
@@ -831,36 +873,20 @@ function createAdminSwLogOverlay() {
             if (statusEl) statusEl.textContent = 'Failed to copy logs';
         }
     });
-    // Minimize / Restore handlers
+    // Minimizar todo o modal
     document.getElementById('admin-sw-minimize').addEventListener('click', () => {
-        try {
-            const main = document.getElementById('admin-sw-main');
-            const minbar = document.getElementById('admin-sw-minbar');
-            const header = document.getElementById('admin-sw-header');
-            if (!main || !minbar || !header) return;
-            
-            main.style.display = 'none';
-            minbar.style.display = 'flex';
-            header.style.display = 'none';
-            overlay.style.width = 'min(280px, calc(100vw - 24px))';
-            overlay.style.height = 'auto';
-        } catch (e) {}
+        document.getElementById('admin-sw-full').style.display = 'none';
+        document.getElementById('admin-sw-mini').style.display = 'block';
+        overlay.style.width = 'auto';
+        overlay.style.height = 'auto';
     });
-    document.getElementById('admin-sw-restore').addEventListener('click', () => {
-        try {
-            const main = document.getElementById('admin-sw-main');
-            const minbar = document.getElementById('admin-sw-minbar');
-            const header = document.getElementById('admin-sw-header');
-            if (!main || !minbar || !header) return;
-            
-            main.style.display = 'flex';
-            minbar.style.display = 'none';
-            header.style.display = 'flex';
-            overlay.style.width = 'min(520px, calc(100vw - 24px))';
-            overlay.style.height = 'auto';
-        } catch (e) {}
+    
+    document.getElementById('admin-sw-mini').addEventListener('click', () => {
+        document.getElementById('admin-sw-full').style.display = 'block';
+        document.getElementById('admin-sw-mini').style.display = 'none';
+        overlay.style.width = 'min(520px, calc(100vw - 24px))';
+        overlay.style.height = 'auto';
     });
-    document.getElementById('admin-sw-close-min').addEventListener('click', () => { const o = document.getElementById('admin-sw-log-overlay'); if (o) o.remove(); });
     document.getElementById('admin-sw-ask').addEventListener('click', () => askSwForLogs());
     document.getElementById('admin-sw-clear').addEventListener('click', async () => {
         const statusEl = document.getElementById('admin-sw-status');
@@ -1476,35 +1502,40 @@ async function copySwLogsToClipboard() {
 
     window.isAppReady = true;
 
-    // Verifica se há ações pendentes de notificação
+    // Verifica se há ações pendentes de notificação (apenas se realmente veio de uma notificação)
     setTimeout(() => {
         const fromNotification = sessionStorage.getItem('fromNotification');
         const notificationTimestamp = sessionStorage.getItem('notificationTimestamp');
+        const pendingScheduleId = sessionStorage.getItem('pendingOpenRsvpScheduleId');
         
-        if (fromNotification === 'true' && notificationTimestamp) {
+        // Só processa se realmente veio de uma notificação E tem dados pendentes específicos
+        if (fromNotification === 'true' && notificationTimestamp && pendingScheduleId) {
             const timeDiff = Date.now() - parseInt(notificationTimestamp);
-            // Se a notificação foi recente (menos de 10 segundos)
-            if (timeDiff < 10000) {
-
-                
-                // Verifica se há dados de RSVP pendentes
-                const lastRSVPData = sessionStorage.getItem('lastRSVPData');
-                const pendingScheduleId = sessionStorage.getItem('pendingOpenRsvpScheduleId');
-                
-                if (lastRSVPData || pendingScheduleId) {
-                    // Garante que estamos na página de agendamentos
-                    if (typeof showPage === 'function') {
-                        showPage('scheduling-page');
-                    } else {
-                        window.location.hash = '#scheduling-page';
+            // Se a notificação foi recente (menos de 5 segundos) e tem ID específico
+            if (timeDiff < 5000) {
+                // Verifica se o agendamento ainda existe
+                try {
+                    const schedules = JSON.parse(localStorage.getItem('voleiScoreSchedules') || '[]');
+                    const scheduleExists = schedules.some(s => s.id === pendingScheduleId);
+                    
+                    if (scheduleExists) {
+                        // Garante que estamos na página de agendamentos
+                        if (typeof showPage === 'function') {
+                            showPage('scheduling-page');
+                        } else {
+                            window.location.hash = '#scheduling-page';
+                        }
                     }
+                } catch (e) {
+                    // Se houver erro ao verificar, não abre o modal
                 }
             }
-            
-            // Limpa os flags após processar
-            sessionStorage.removeItem('fromNotification');
-            sessionStorage.removeItem('notificationTimestamp');
         }
+        
+        // Limpa os flags após processar (sempre limpa para evitar acúmulo)
+        sessionStorage.removeItem('fromNotification');
+        sessionStorage.removeItem('notificationTimestamp');
+        sessionStorage.removeItem('lastRSVPData');
     }, 1000);
 
 

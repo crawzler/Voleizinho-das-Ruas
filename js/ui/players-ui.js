@@ -500,7 +500,17 @@ export function savePlayerSelectionState(e) {
             // NOVO: reordenar imediatamente a lista enquanto busca está ativa
             const playersPage = document.getElementById('players-page');
             if (playersPage && playersPage.classList.contains('app-page--active')) {
-                filterPlayers();
+                // Aguarda um pouco antes de reordenar para garantir que o estado foi salvo
+                setTimeout(() => {
+                    filterPlayers();
+                    // Loop de verificação para garantir que o jogador está marcado
+                    setTimeout(() => {
+                        const checkbox = document.querySelector(`#players-list-container .player-checkbox[data-player-id="${playerId}"]`);
+                        if (checkbox && checkbox.checked !== isChecked) {
+                            checkbox.checked = isChecked;
+                        }
+                    }, 100);
+                }, 50);
             }
             return; // Evita sobrescrever seleções usando os checkboxes visíveis do filtro
         }
@@ -556,12 +566,38 @@ export function savePlayerSelectionState(e) {
         if (playersPage && playersPage.classList.contains('app-page--active')) {
             const playerInputNow = document.getElementById('player-input');
             const isSearchActiveNow = playerInputNow && playerInputNow.value.trim().length > 0;
-            if (isSearchActiveNow) {
-                filterPlayers();
-            } else {
-                const allPlayers = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
-                renderPlayersList(allPlayers);
-            }
+            
+            // Aguarda um pouco antes de reordenar para garantir que o estado foi salvo
+            setTimeout(() => {
+                if (isSearchActiveNow) {
+                    filterPlayers();
+                } else {
+                    const allPlayers = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
+                    renderPlayersList(allPlayers);
+                }
+                
+                // Loop de verificação para garantir que todos os checkboxes estão corretos
+                setTimeout(() => {
+                    document.querySelectorAll('#players-list-container .player-checkbox').forEach(checkbox => {
+                        const playerId = checkbox.dataset.playerId;
+                        const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
+                        const player = players.find(p => p.id === playerId);
+                        if (player) {
+                            const playerCategory = player.category || 'principais';
+                            const savedSelection = localStorage.getItem(`selectedPlayers_${playerCategory}`);
+                            if (savedSelection) {
+                                const selectedIds = JSON.parse(savedSelection);
+                                const shouldBeChecked = selectedIds.includes(playerId);
+                                if (checkbox.checked !== shouldBeChecked) {
+                                    checkbox.checked = shouldBeChecked;
+                                }
+                            }
+                        }
+                    });
+                    updatePlayerCount();
+                    updateSelectAllToggle();
+                }, 100);
+            }, 50);
         }
     } catch (e) {
         // Log removido

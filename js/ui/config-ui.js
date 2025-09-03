@@ -470,158 +470,42 @@ export function setupConfigUI() {
         setInterval(updateInstallButtonVisibility, 3000);
     }
 
-    // NOVO: Listener para o botão de Verificar Atualizações (robusto)
+    // Listener para o botão de Verificar Atualizações (simples e eficiente)
     const checkUpdatesBtn = document.getElementById('check-updates-button');
     if (checkUpdatesBtn) {
-        const setLoading = (loading) => {
-            checkUpdatesBtn.disabled = loading;
-            if (loading) {
-                checkUpdatesBtn.dataset.originalText = checkUpdatesBtn.textContent;
-                checkUpdatesBtn.textContent = 'Verificando...';
-            } else {
-                if (checkUpdatesBtn.dataset.originalText) {
-                    checkUpdatesBtn.textContent = checkUpdatesBtn.dataset.originalText;
-                    delete checkUpdatesBtn.dataset.originalText;
-                }
-            }
-        };
-
-        // Aguarda um estado específico do service worker (waiting/installing -> installed)
-        const waitForWorkerState = (registration, timeout = 8000) => {
-            return new Promise((resolve) => {
-                let resolved = false;
-                const checkAndResolve = () => {
-                    if (registration.waiting) return resolve({ status: 'waiting', registration });
-                    if (registration.installing && registration.installing.state === 'installed') return resolve({ status: 'installed', registration });
-                };
-
-                checkAndResolve();
-
-                const onUpdateFound = () => {
-                    const newWorker = registration.installing;
-                    if (!newWorker) return;
-                    const onState = () => {
-                        if (newWorker.state === 'installed') {
-                            if (!resolved) {
-                                resolved = true;
-                                registration.removeEventListener('updatefound', onUpdateFound);
-                                resolve({ status: 'installed', registration });
-                            }
-                        }
-                    };
-                    newWorker.addEventListener('statechange', onState);
-                };
-
-                registration.addEventListener('updatefound', onUpdateFound);
-
-                // Timeout fallback
-                setTimeout(() => {
-                    if (!resolved) {
-                        resolved = true;
-                        registration.removeEventListener('updatefound', onUpdateFound);
-                        resolve({ status: 'timeout', registration });
-                    }
-                }, timeout);
-            });
-        };
-
-        // Estratégia principal ao clicar
         checkUpdatesBtn.addEventListener('click', async () => {
-            if (!('serviceWorker' in navigator)) {
-                displayMessage('Seu navegador não suporta atualizações automáticas (Service Worker).', 'warning');
+            if (!navigator.onLine) {
+                displayMessage('Você precisa estar online para verificar atualizações.', 'error');
                 return;
             }
 
-            setLoading(true);
+            const originalText = checkUpdatesBtn.textContent;
+            checkUpdatesBtn.disabled = true;
+            checkUpdatesBtn.textContent = 'Verificando...';
+
             try {
-                // Tenta obter a primeira registration ativa
-                let registration = await navigator.serviceWorker.getRegistration();
-
-                // Se não há registro, registra uma instância nova
-                if (!registration) {
-                    displayMessage('Registrando Service Worker para verificar a versão...', 'info');
-                    try {
-                        const stamp = Date.now();
-                        registration = await navigator.serviceWorker.register(`./service-worker.js?v=${stamp}`);
-                    } catch (e) {
-                        setLoading(false);
-                        displayMessage('Falha ao registrar Service Worker.', 'error');
-                        return;
-                    }
+                // Limpa caches para forçar download de arquivos atualizados
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
                 }
 
-                // Se já houver uma atualização esperando, solicita que assuma imediatamente
-                if (registration.waiting) {
-                    displayMessage('Atualização pronta. Aplicando...', 'info');
-                    try {
-                        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-                    } catch (e) { /* ignore */ }
-                    navigator.serviceWorker.addEventListener('controllerchange', () => {
-                        setTimeout(() => window.location.reload(), 500);
-                    });
-                    setLoading(false);
-                    return;
+                // Desregistra service workers para garantir nova versão
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(registrations.map(registration => registration.unregister()));
                 }
 
-                // Tenta forçar update() e aguardar por novo worker
-                try {
-                    await registration.update();
-                } catch (e) {
-                    // ignore
-                }
-
-                const result = await waitForWorkerState(registration, 8000);
-
-                if (result.status === 'installed' || result.status === 'waiting') {
-                    // Se houver waiting, pede skip waiting; se instalado mas não controlado, pede skip
-                    displayMessage('Nova versão encontrada. Aplicando...', 'info');
-                    const reg = result.registration;
-                    if (reg.waiting) {
-                        try { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch (e) { /* ignore */ }
-                    } else if (reg.installing) {
-                        // tentar enviar para o controlador atual como fallback
-                        try { navigator.serviceWorker.controller && navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' }); } catch (e) { /* ignore */ }
-                    }
-
-                    navigator.serviceWorker.addEventListener('controllerchange', () => {
-                        setTimeout(() => window.location.reload(), 500);
-                    });
-
-                    setLoading(false);
-                    return;
-                }
-
-                // Se timeout e não encontrou nada, tenta estratégia agressiva: desregistrar e registrar com cache-bust
-                displayMessage('Nenhuma atualização automática encontrada — tentando registro forçado...', 'info');
-                const regs = await navigator.serviceWorker.getRegistrations();
-                await Promise.all(regs.map(r => r.unregister()));
-
-                // Registra novamente com cache-bust para garantir download do arquivo atualizado
-                try {
-                    const stamp = Date.now();
-                    const newReg = await navigator.serviceWorker.register(`./service-worker.js?v=${stamp}`);
-                    // aguarda instalação
-                    const forced = await waitForWorkerState(newReg, 10000);
-                    if (forced.status === 'installed' || forced.status === 'waiting') {
-                        displayMessage('Atualização baixada. Aplicando...', 'info');
-                        if (newReg.waiting) {
-                            try { newReg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch (e) { /* ignore */ }
-                        }
-                        navigator.serviceWorker.addEventListener('controllerchange', () => {
-                            setTimeout(() => window.location.reload(), 500);
-                        });
-                        setLoading(false);
-                        return;
-                    }
-                } catch (e) {
-                    // ignore
-                }
-
-                displayMessage('Nenhuma atualização disponível.', 'success');
-                setLoading(false);
+                displayMessage('Aplicando atualizações...', 'success');
+                
+                // Recarrega com cache limpo
+                setTimeout(() => {
+                    window.location.reload(true);
+                }, 1000);
             } catch (error) {
-                setLoading(false);
-                displayMessage('Falha ao verificar atualizações.', 'error');
+                checkUpdatesBtn.disabled = false;
+                checkUpdatesBtn.textContent = originalText;
+                displayMessage('Erro ao verificar atualizações.', 'error');
             }
         });
     }

@@ -712,14 +712,24 @@ export function setupSchedulingPage() {
     // Sistema de drag and drop para excluir agendamentos
     setupScheduleDragAndDrop();
     
-    // Processa ações pendentes de notificação
+    // Processa ações pendentes de notificação (apenas se realmente veio de uma notificação)
     setTimeout(() => {
         const pendingScheduleId = sessionStorage.getItem('pendingOpenRsvpScheduleId');
-        if (pendingScheduleId) {
-            sessionStorage.removeItem('pendingOpenRsvpScheduleId');
-            const game = scheduledGames.find(g => g.id === pendingScheduleId);
-            if (game) {
-                showResponsesModal(game);
+        const fromNotification = sessionStorage.getItem('fromNotification');
+        const notificationTimestamp = sessionStorage.getItem('notificationTimestamp');
+        
+        // Só abre o modal se realmente veio de uma notificação recente
+        if (pendingScheduleId && fromNotification === 'true' && notificationTimestamp) {
+            const timeDiff = Date.now() - parseInt(notificationTimestamp);
+            if (timeDiff < 10000) { // Menos de 10 segundos
+                sessionStorage.removeItem('pendingOpenRsvpScheduleId');
+                const game = scheduledGames.find(g => g.id === pendingScheduleId);
+                if (game) {
+                    showResponsesModal(game);
+                }
+            } else {
+                // Remove se for muito antigo
+                sessionStorage.removeItem('pendingOpenRsvpScheduleId');
             }
         }
     }, 1000);
