@@ -270,8 +270,28 @@
                             schedule.rsvps = {};
                         }
                         
-                        // Pega o ID do usuário (usa o userId da notificação)
-                        const userId = scheduleData.userId || 'fVTPCFEN5KSKt4me7FgPyNtXHMx1';
+                        // Pega o ID do usuário da notificação ou tenta obter do Firebase Auth
+                        let userId = scheduleData.userId;
+                        
+                        // Se não tem userId na notificação, tenta pegar do Firebase Auth
+                        if (!userId) {
+                            try {
+                                // Tenta importar e usar o Firebase Auth
+                                const { getCurrentUser } = await import('./js/firebase/auth.js');
+                                const currentUser = getCurrentUser();
+                                userId = currentUser?.uid;
+                            } catch (e) {
+                                console.warn('Não foi possível obter usuário do Firebase:', e);
+                            }
+                        }
+                        
+                        // Fallback para admin se não conseguir obter o userId
+                        if (!userId) {
+                            userId = 'fVTPCFEN5KSKt4me7FgPyNtXHMx1';
+                            console.warn('Usando userId padrão (admin)');
+                        }
+                        
+                        console.log('✅ UserId para RSVP:', userId);
                         
                         // Salva a resposta no rsvps
                         schedule.rsvps[userId] = response;
@@ -291,7 +311,21 @@
                         
                         // Dispara evento customizado para atualizar a interface
                         if (window.opener) {
-                            window.opener.postMessage({ type: 'SCHEDULE_UPDATED', scheduleId: scheduleData.id }, '*');
+                            window.opener.postMessage({ 
+                                type: 'SCHEDULE_UPDATED', 
+                                scheduleId: scheduleData.id,
+                                forceRefresh: true 
+                            }, '*');
+                        } else {
+                            // Se não tem opener, tenta comunicar com todas as janelas
+                            try {
+                                localStorage.setItem('scheduleUpdateTrigger', JSON.stringify({
+                                    scheduleId: scheduleData.id,
+                                    timestamp: Date.now(),
+                                    userId: userId,
+                                    response: response
+                                }));
+                            } catch (e) {}
                         }
                         
                         // Salva no Firebase

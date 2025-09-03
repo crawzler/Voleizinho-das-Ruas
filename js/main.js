@@ -489,9 +489,20 @@ scoreboardMenuOverlay.addEventListener("click", () => {
                 // Força atualização da interface de agendamentos
                 import('./ui/scheduling-ui.js').then(mod => {
                     if (mod && typeof mod.renderScheduledGames === 'function') {
-                        const schedules = JSON.parse(localStorage.getItem('voleiScoreSchedules') || '[]');
                         mod.renderScheduledGames();
                         console.log('Interface de agendamentos atualizada após RSVP');
+                        
+                        // Se tem forceRefresh, atualiza modal aberto também
+                        if (event.data.forceRefresh) {
+                            const openModal = document.querySelector('.attendance-modal-overlay:not(.hidden)');
+                            if (openModal && event.data.scheduleId) {
+                                const schedules = JSON.parse(localStorage.getItem('voleiScoreSchedules') || '[]');
+                                const schedule = schedules.find(s => s.id === event.data.scheduleId);
+                                if (schedule && mod.showResponsesModal) {
+                                    setTimeout(() => mod.showResponsesModal(schedule), 100);
+                                }
+                            }
+                        }
                     }
                 }).catch(() => {});
             } catch (e) {
@@ -544,6 +555,23 @@ scoreboardMenuOverlay.addEventListener("click", () => {
     setInterval(() => {
         try { processPendingActionsFromSwDb(); } catch (e) {}
     }, 5000);
+    
+    // Listener para atualizações de RSVP via localStorage
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'scheduleUpdateTrigger' && e.newValue) {
+            try {
+                const updateData = JSON.parse(e.newValue);
+                import('./ui/scheduling-ui.js').then(mod => {
+                    if (mod && typeof mod.renderScheduledGames === 'function') {
+                        mod.renderScheduledGames();
+                        console.log('Interface atualizada via localStorage');
+                    }
+                }).catch(() => {});
+                // Remove o trigger após processar
+                localStorage.removeItem('scheduleUpdateTrigger');
+            } catch (e) {}
+        }
+    });
 
 // --- IndexedDB reader for pending actions written by the SW ---
 function openSwDbFromClient() {
