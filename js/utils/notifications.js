@@ -234,7 +234,27 @@ export async function registerNotificationServiceWorker() {
  * Trata ações das notificações
  */
 export function handleNotificationAction(action, data) {
-    
+    // Debounce / dedupe: evita processar a mesma ação/id várias vezes quando
+    // o SW envia hash + postMessage (ambos podem chegar). Se a mesma action+id
+    // foi processada nos últimos 5 segundos, ignora.
+    try {
+        const id = data && data.id ? String(data.id) : '';
+        const key = `lastNotif:${action || 'view'}:${id}`;
+        const last = sessionStorage.getItem(key);
+        const now = Date.now();
+        if (last) {
+            const lastTs = parseInt(last, 10) || 0;
+            if (now - lastTs < 5000) {
+                // Ignora duplicata
+                return;
+            }
+        }
+        // Marca a execução atual
+        sessionStorage.setItem(key, String(now));
+    } catch (e) {
+        // silencioso
+    }
+
     // Marca que veio de notificação
     sessionStorage.setItem('fromNotification', 'true');
     sessionStorage.setItem('notificationTimestamp', Date.now().toString());
@@ -417,9 +437,31 @@ export function handleNotificationAction(action, data) {
     const waitForAppReady = () => {
         
         // Verifica múltiplas condições para garantir que o app está pronto
-        const isReady = window.isAppReady || 
+        // Checa readiness adicional: usuário autenticado/carregado e dados de agendamento disponíveis
+        const basicReady = window.isAppReady || 
                         (document.readyState === 'complete' && typeof showPage === 'function') ||
                         (window.location.hash && document.querySelector('.page'));
+
+        let authReady = true;
+        try {
+            const user = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+            // Se houver usuário esperado para gravar resposta, aguarda usuário não-nulo
+            authReady = user !== null;
+        } catch (e) {
+            authReady = true;
+        }
+
+        let scheduleReady = true;
+        try {
+            if (data && data.id) {
+                const scheduledGames = JSON.parse(localStorage.getItem('voleiScoreSchedules') || '[]');
+                scheduleReady = Array.isArray(scheduledGames) && scheduledGames.some(g => g && g.id === data.id);
+            }
+        } catch (e) {
+            scheduleReady = false;
+        }
+
+        const isReady = basicReady && authReady && scheduleReady;
         
         if (isReady) {
             executeAction();
@@ -427,13 +469,15 @@ export function handleNotificationAction(action, data) {
             // Aumenta o timeout gradualmente para dar mais tempo ao app
             const attempts = parseInt(sessionStorage.getItem('notificationAttempts') || '0') + 1;
             sessionStorage.setItem('notificationAttempts', attempts.toString());
-            
-            const timeout = Math.min(100 * attempts, 1000); // Max 1 segundo
-            
-            if (attempts < 20) { // Max 20 tentativas
+
+            // Exponential backoff: 200ms, 400ms, 800ms, ... cap em 1500ms
+            const timeout = Math.min(200 * Math.pow(2, Math.max(0, attempts - 1)), 1500);
+
+            // Max wait ~5s (aprox 4-5 tentativas)
+            if (attempts < 6) {
                 setTimeout(waitForAppReady, timeout);
             } else {
-
+                // Se ainda não pronto, executa como fallback para não travar
                 executeAction();
             }
         }
