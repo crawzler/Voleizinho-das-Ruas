@@ -204,6 +204,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         processPendingNotificationFromSession();
     } catch (e) {}
+    // Se for admin, cria overlay de debug para logs do service worker
+    try {
+        if (typeof isCurrentUserAdmin === 'function' && isCurrentUserAdmin()) {
+            createAdminSwLogOverlay();
+        }
+    } catch (e) {}
 });
     // --- SCOREBOARD MENU DROPDOWN ---
     const scoreboardMenuButton = document.getElementById("scoreboard-menu-button");
@@ -419,6 +425,118 @@ async function processPendingActionsFromSwDb() {
             } catch (e) {}
         });
     } catch (e) {}
+}
+
+// ---------------- Admin SW log overlay ----------------
+function createAdminSwLogOverlay() {
+    if (document.getElementById('admin-sw-log-overlay')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'admin-sw-log-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.right = '12px';
+    overlay.style.bottom = '12px';
+    overlay.style.width = '420px';
+    overlay.style.maxHeight = '60vh';
+    overlay.style.background = 'rgba(0,0,0,0.85)';
+    overlay.style.color = '#fff';
+    overlay.style.fontSize = '13px';
+    overlay.style.padding = '10px';
+    overlay.style.borderRadius = '8px';
+    overlay.style.zIndex = '99999';
+    overlay.style.boxShadow = '0 6px 18px rgba(0,0,0,0.6)';
+    overlay.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <strong>SW Debug</strong>
+            <div>
+                <button id="admin-sw-refresh" style="margin-right:8px">Refresh</button>
+                <button id="admin-sw-close">X</button>
+            </div>
+        </div>
+        <div id="admin-sw-log-list" style="overflow:auto;max-height:48vh;font-family:monospace;white-space:pre-wrap;"></div>
+    `;
+    document.body.appendChild(overlay);
+
+    document.getElementById('admin-sw-close').addEventListener('click', () => overlay.remove());
+    document.getElementById('admin-sw-refresh').addEventListener('click', () => refreshAdminSwLogs());
+
+    // Load immediately
+    setTimeout(() => refreshAdminSwLogs(), 200);
+}
+
+async function refreshAdminSwLogs() {
+    const listEl = document.getElementById('admin-sw-log-list');
+    if (!listEl) return;
+    listEl.textContent = 'Loading...';
+    try {
+        const logs = await readSwLogsFromClient(200);
+        const pending = await readPendingActionsClient(100);
+        let out = '--- Pending Actions ---\n';
+        if (!pending || pending.length === 0) out += '(none)\n';
+        else pending.forEach(p => out += `${new Date(p.ts).toISOString()} ${p.action} ${JSON.stringify(p.data)}\n`);
+        out += '\n--- SW Logs ---\n';
+        if (!logs || logs.length === 0) out += '(none)\n';
+        else logs.forEach(l => out += `${new Date(l.ts).toISOString()} ${l.type} ${JSON.stringify(l)}\n`);
+        listEl.textContent = out;
+    } catch (e) {
+        listEl.textContent = 'Error reading logs: ' + (e && e.message ? e.message : String(e));
+    }
+}
+
+// Readers for the SW DB from the client
+function openSwDbFromClientSimple() {
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open('sw-debug-logs', 1);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+async function readSwLogsFromClient(limit = 100) {
+    try {
+        const db = await openSwDbFromClientSimple();
+        const tx = db.transaction('logs', 'readonly');
+        const store = tx.objectStore('logs');
+        return await new Promise((resolve, reject) => {
+            const items = [];
+            const req = store.openCursor(null, 'prev');
+            req.onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor && items.length < limit) {
+                    items.push(cursor.value);
+                    cursor.continue();
+                } else {
+                    resolve(items);
+                }
+            };
+            req.onerror = () => reject(req.error);
+        }).finally(() => db.close());
+    } catch (e) {
+        return [];
+    }
+}
+
+async function readPendingActionsClient(limit = 100) {
+    try {
+        const db = await openSwDbFromClientSimple();
+        const tx = db.transaction('pending_actions', 'readonly');
+        const store = tx.objectStore('pending_actions');
+        return await new Promise((resolve, reject) => {
+            const items = [];
+            const req = store.openCursor();
+            req.onsuccess = (e) => {
+                const cursor = e.target.result;
+                if (cursor && items.length < limit) {
+                    items.push(cursor.value);
+                    cursor.continue();
+                } else {
+                    resolve(items);
+                }
+            };
+            req.onerror = () => reject(req.error);
+        }).finally(() => db.close());
+    } catch (e) {
+        return [];
+    }
 }
 
 
