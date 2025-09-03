@@ -150,10 +150,10 @@ self.addEventListener('install', (event) => {
               const controller = new AbortController();
               const timeoutId = setTimeout(() => controller.abort(), TIMEOUTS.NETWORK_TIMEOUT);
               
+              // Avoid sending custom request headers for cross-origin resources (triggers CORS preflight failures)
               const response = await fetch(url, { 
                 mode: 'cors',
-                signal: controller.signal,
-                headers: { 'Cache-Control': 'max-age=86400' }
+                signal: controller.signal
               });
               
               clearTimeout(timeoutId);
@@ -439,6 +439,84 @@ self.addEventListener('message', (event) => {
         });
       }
       break;
+    case 'REQUEST_CLAIM':
+      {
+        // Client requests the active SW to claim uncontrolled clients
+        (async () => {
+          try {
+            await clients.claim();
+            // reply to the requester if possible
+            try {
+              if (event.ports && event.ports[0]) {
+                event.ports[0].postMessage({ success: true, type: 'CLIENT_CLAIMED' });
+              } else if (event.source && typeof event.source.postMessage === 'function') {
+                event.source.postMessage({ success: true, type: 'CLIENT_CLAIMED' });
+              } else {
+                // broadcast as fallback
+                const all = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+                all.forEach(c => { try { c.postMessage({ type: 'CLIENT_CLAIMED' }); } catch (_) {} });
+              }
+            } catch (_) {}
+            logSwEvent({ type: 'clientsClaimed' });
+          } catch (err) {
+            try { if (event.ports && event.ports[0]) event.ports[0].postMessage({ success: false, error: String(err) }); } catch (_) {}
+            logSwEvent({ type: 'clientsClaimFailed', error: (err && err.message) || String(err) });
+          }
+        })();
+      }
+      break;
+    case 'CLEAR_SW_DEBUG_DB':
+      {
+        // Request to clear the SW's debug DB (logs and pending_actions)
+        (async () => {
+          try {
+            const clearPromise = new Promise((resolve, reject) => {
+              const req = indexedDB.open('sw-debug-logs', 1);
+              req.onsuccess = () => {
+                try {
+                  const db = req.result;
+                  const hasLogs = db.objectStoreNames.contains('logs');
+                  const hasPending = db.objectStoreNames.contains('pending_actions');
+                  if (hasLogs || hasPending) {
+                    const stores = [];
+                    if (hasLogs) stores.push('logs');
+                    if (hasPending) stores.push('pending_actions');
+                    const tx = db.transaction(stores, 'readwrite');
+                    stores.forEach(s => { try { tx.objectStore(s).clear(); } catch(_){} });
+                    tx.oncomplete = () => { try { db.close(); } catch(_){}; resolve(true); };
+                    tx.onerror = () => { try { db.close(); } catch(_){}; reject(tx.error || new Error('tx_error')); };
+                  } else {
+                    try { db.close(); } catch(_){}; resolve(true);
+                  }
+                } catch (e) {
+                  try { req.result && req.result.close(); } catch(_){}; reject(e);
+                }
+              };
+              req.onerror = () => reject(req.error || new Error('open_failed'));
+            });
+
+            await clearPromise;
+            // Reply to the requester if possible
+            try {
+              if (event.ports && event.ports[0]) {
+                event.ports[0].postMessage({ success: true, type: 'CLEAR_SW_DEBUG_DB_DONE' });
+              } else if (event.source && typeof event.source.postMessage === 'function') {
+                event.source.postMessage({ success: true, type: 'CLEAR_SW_DEBUG_DB_DONE' });
+              } else {
+                // broadcast as fallback
+                const all = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+                all.forEach(c => { try { c.postMessage({ type: 'CLEAR_SW_DEBUG_DB_DONE' }); } catch (_) {} });
+              }
+            } catch (_) {}
+
+            logSwEvent({ type: 'clearSwDebugDbSuccess' });
+          } catch (err) {
+            try { if (event.ports && event.ports[0]) event.ports[0].postMessage({ success: false, error: String(err) }); } catch (_) {}
+            logSwEvent({ type: 'clearSwDebugDbFailed', error: (err && err.message) || String(err) });
+          }
+        })();
+      }
+      break;
   }
 });
 
@@ -469,6 +547,14 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     (async () => {
       console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Handling notification click...`);
+      // Broadcast immediately that a notificationclick was received (so clients see it fast)
+      try {
+        const bcPayload = { ts: Date.now(), action, data: payload };
+        const clientListForBroadcast = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+        clientListForBroadcast.forEach(c => { try { c.postMessage({ type: 'NOTIFICATION_CLICK_RECEIVED', payload: bcPayload }); } catch (_) {} });
+        logSwEvent({ type: 'notificationClickBroadcast', action });
+      } catch (_) {}
+
       // Persistir ação pendente para o cliente consumir ao abrir — aumenta chance de entrega no Android
       try {
         await addPendingAction({ action, data: payload });

@@ -864,10 +864,21 @@
     <script src="js/config-navigation.js"></script>
     
     <script>
-    // Força fullscreen no PWA
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      document.documentElement.requestFullscreen?.();
-    }
+        // Força fullscreen no PWA, mas somente se o navegador permitir sem gesto do usuário.
+        // Muitas plataformas lançam um erro se requestFullscreen for chamado sem um gesto do usuário,
+        // então usamos o retorno de promessa para capturar/rejeitar silenciosamente.
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            try {
+                const el = document.documentElement;
+                if (el.requestFullscreen) {
+                    el.requestFullscreen().catch(() => {});
+                } else if (el.webkitRequestFullscreen) {
+                    try { el.webkitRequestFullscreen(); } catch (_) {}
+                } else if (el.msRequestFullscreen) {
+                    try { el.msRequestFullscreen(); } catch (_) {}
+                }
+            } catch (_) { /* ignore */ }
+        }
     
     // Registro do Service Worker com tratamento de erro
     if ('serviceWorker' in navigator) {

@@ -206,9 +206,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (e) {}
     // Se for admin, cria overlay de debug para logs do service worker
     try {
-        if (typeof isCurrentUserAdmin === 'function' && isCurrentUserAdmin()) {
-            createAdminSwLogOverlay();
-        }
+        // Auth may still be initializing; poll briefly for admin status and create overlay when ready
+        const waitForAdminOverlay = (timeoutMs = 10000, intervalMs = 500) => {
+            let elapsed = 0;
+            const id = setInterval(() => {
+                try {
+                    if (typeof isCurrentUserAdmin === 'function' && isCurrentUserAdmin()) {
+                        createAdminSwLogOverlay();
+                        clearInterval(id);
+                        return;
+                    }
+                } catch (e) {}
+                elapsed += intervalMs;
+                if (elapsed >= timeoutMs) clearInterval(id);
+            }, intervalMs);
+        };
+        waitForAdminOverlay();
     } catch (e) {}
 });
     // --- SCOREBOARD MENU DROPDOWN ---
@@ -428,6 +441,80 @@ async function processPendingActionsFromSwDb() {
 }
 
 // ---------------- Admin SW log overlay ----------------
+// Ask the service worker to broadcast its logs (used by the admin overlay)
+function askSwForLogs() {
+    try {
+        const statusEl = document.getElementById('admin-sw-status');
+        if (statusEl) statusEl.textContent = 'Requesting logs from SW...';
+
+        // Try controller first (MessageChannel or simple postMessage)
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+            try {
+                navigator.serviceWorker.controller.postMessage({ type: 'GET_SW_DEBUG_LOGS', limit: 500 });
+            } catch (e) {}
+        }
+
+        // Fallback: postMessage to all registrations' active workers
+        if (navigator.serviceWorker && typeof navigator.serviceWorker.getRegistrations === 'function') {
+            navigator.serviceWorker.getRegistrations().then(regs => {
+                for (const r of (regs || [])) {
+                    if (r && r.active && typeof r.active.postMessage === 'function') {
+                        try { r.active.postMessage({ type: 'GET_SW_DEBUG_LOGS', limit: 500 }); } catch (e) {}
+                    }
+                }
+            }).catch(() => {});
+        }
+
+        // Give the SW a short moment to respond/write DB, then refresh the overlay
+        setTimeout(() => refreshAdminSwLogs(false), 900);
+    } catch (e) {
+        try { refreshAdminSwLogs(false); } catch (_) {}
+    }
+}
+
+// Try to force the service worker to control this page: re-register and reload
+function takeControl() {
+    try {
+        const statusEl = document.getElementById('admin-sw-status');
+        if (statusEl) statusEl.textContent = 'Attempting to take control (re-registering SW)...';
+
+        // Try to register a new copy (with cache-bust) and then call skipWaiting on waiting worker
+        const stamp = Date.now();
+        navigator.serviceWorker.register(`./service-worker.js?v=${stamp}`).then(async reg => {
+            // If there's a waiting worker, tell it to skipWaiting
+            if (reg.waiting) {
+                try { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); } catch (_) {}
+            }
+
+            // Try to request claim from active worker via MessageChannel
+            try {
+                if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                    const mc = new MessageChannel();
+                    const resp = await new Promise((resolve) => {
+                        let settled = false;
+                        mc.port1.onmessage = (e) => { settled = true; resolve(e.data); };
+                        try { navigator.serviceWorker.controller.postMessage({ type: 'REQUEST_CLAIM' }, [mc.port2]); } catch (e) { settled = true; resolve(null); }
+                        setTimeout(() => { if (!settled) resolve(null); }, 2000);
+                    });
+                    if (resp && (resp.type === 'CLIENT_CLAIMED' || resp.success)) {
+                        // success: reload so controller becomes available
+                        setTimeout(() => window.location.reload(), 300);
+                        return;
+                    }
+                }
+            } catch (e) {}
+
+            // Fallback: if no controller or claim didn't confirm, reload after short wait
+            setTimeout(() => window.location.reload(), 800);
+        }).catch(() => {
+            // fallback: hard reload
+            setTimeout(() => window.location.reload(true), 400);
+        });
+    } catch (e) {
+        try { window.location.reload(); } catch (_) {}
+    }
+}
+
 function createAdminSwLogOverlay() {
     if (document.getElementById('admin-sw-log-overlay')) return;
     const overlay = document.createElement('div');
@@ -435,48 +522,233 @@ function createAdminSwLogOverlay() {
     overlay.style.position = 'fixed';
     overlay.style.right = '12px';
     overlay.style.bottom = '12px';
-    overlay.style.width = '420px';
-    overlay.style.maxHeight = '60vh';
-    overlay.style.background = 'rgba(0,0,0,0.85)';
-    overlay.style.color = '#fff';
+    overlay.style.width = '520px';
+    overlay.style.maxHeight = '70vh';
+    overlay.style.background = '#0b1220';
+    overlay.style.color = '#e6eef8';
     overlay.style.fontSize = '13px';
-    overlay.style.padding = '10px';
-    overlay.style.borderRadius = '8px';
+    overlay.style.padding = '12px';
+    overlay.style.borderRadius = '10px';
     overlay.style.zIndex = '99999';
-    overlay.style.boxShadow = '0 6px 18px rgba(0,0,0,0.6)';
+    overlay.style.boxShadow = '0 10px 30px rgba(0,0,0,0.6)';
+    overlay.style.display = 'flex';
+    overlay.style.flexDirection = 'column';
+
     overlay.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <strong>SW Debug</strong>
-            <div>
-                <button id="admin-sw-refresh" style="margin-right:8px">Refresh</button>
-                <button id="admin-sw-close">X</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <strong style="font-size:14px">SW Debug</strong>
+            <div style="display:flex">
+                <button id="admin-sw-refresh" style="margin-right:8px;padding:6px 8px">Refresh</button>
+                <button id="admin-sw-copylogs" style="margin-right:8px;padding:6px 8px">Copy logs</button>
+                <button id="admin-sw-ask" style="margin-right:8px;padding:6px 8px">Ask SW</button>
+                <button id="admin-sw-clear" style="margin-right:8px;padding:6px 8px">Clear</button>
+                <button id="admin-sw-close" style="padding:6px 8px">Close</button>
             </div>
         </div>
-        <div id="admin-sw-log-list" style="overflow:auto;max-height:48vh;font-family:monospace;white-space:pre-wrap;"></div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+            <button id="admin-sw-tab-pending" style="flex:1;padding:6px;background:#081122;color:#cfe8ff;border:0;border-radius:6px">Pending</button>
+            <button id="admin-sw-tab-logs" style="flex:1;padding:6px;background:transparent;color:#9fb9d9;border:1px solid rgba(255,255,255,0.04);border-radius:6px">Logs</button>
+        </div>
+        <div id="admin-sw-status" style="font-size:12px;opacity:0.9;margin-bottom:8px;color:#c0dff6"></div>
+        <div id="admin-sw-log-list" style="overflow:auto;flex:1;background:#07111a;padding:8px;border-radius:6px;font-family:monospace;white-space:pre-wrap;color:#bfe6ff"></div>
     `;
+
     document.body.appendChild(overlay);
 
     document.getElementById('admin-sw-close').addEventListener('click', () => overlay.remove());
-    document.getElementById('admin-sw-refresh').addEventListener('click', () => refreshAdminSwLogs());
+    document.getElementById('admin-sw-refresh').addEventListener('click', () => refreshAdminSwLogs(true));
+    document.getElementById('admin-sw-copylogs').addEventListener('click', async () => {
+        try {
+            await copySwLogsToClipboard();
+            const statusEl = document.getElementById('admin-sw-status');
+            if (statusEl) statusEl.textContent = 'Logs copied to clipboard';
+        } catch (e) {
+            const statusEl = document.getElementById('admin-sw-status');
+            if (statusEl) statusEl.textContent = 'Failed to copy logs';
+        }
+    });
+    document.getElementById('admin-sw-ask').addEventListener('click', () => askSwForLogs());
+    document.getElementById('admin-sw-clear').addEventListener('click', async () => {
+        const statusEl = document.getElementById('admin-sw-status');
+        try {
+            if (statusEl) statusEl.textContent = 'Clearing DB...';
+            // First, ask the service worker to clear its copy (if active)
+            let swCleared = false;
+            try {
+                if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                    const mc = new MessageChannel();
+                    const resp = await new Promise((resolve) => {
+                        let settled = false;
+                        mc.port1.onmessage = (e) => { settled = true; resolve(e.data); };
+                        try { navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_SW_DEBUG_DB' }, [mc.port2]); } catch (e) { settled = true; resolve(null); }
+                        setTimeout(() => { if (!settled) resolve(null); }, 3000);
+                    });
+                    if (resp && (resp.success || resp.type === 'CLEAR_SW_DEBUG_DB_DONE')) swCleared = true;
+                }
+            } catch (e) {}
+
+            // Fallback: postMessage to active registrations so SW can clear itself
+            if (!swCleared && navigator.serviceWorker && typeof navigator.serviceWorker.getRegistrations === 'function') {
+                try {
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    for (const r of (regs || [])) {
+                        if (r && r.active && typeof r.active.postMessage === 'function') {
+                            try { r.active.postMessage({ type: 'CLEAR_SW_DEBUG_DB' }); } catch (e) {}
+                        }
+                    }
+
+                    // wait briefly for SW to process
+                    await new Promise(res => setTimeout(res, 600));
+                } catch (e) {}
+            }
+
+            // Now clear the client-side view of the DB as well
+            await clearSwDebugDb();
+            // small delay to ensure DB commits
+            await new Promise(r => setTimeout(r, 300));
+            refreshAdminSwLogs(true);
+        } catch (e) {
+            if (statusEl) statusEl.textContent = 'Error clearing DB';
+        }
+    });
+    document.getElementById('admin-sw-tab-pending').addEventListener('click', () => { document.getElementById('admin-sw-tab-pending').style.background='#081122'; document.getElementById('admin-sw-tab-logs').style.background='transparent'; refreshAdminSwLogs(false, 'pending'); });
+    document.getElementById('admin-sw-tab-logs').addEventListener('click', () => { document.getElementById('admin-sw-tab-logs').style.background='#081122'; document.getElementById('admin-sw-tab-pending').style.background='transparent'; refreshAdminSwLogs(false, 'logs'); });
 
     // Load immediately
-    setTimeout(() => refreshAdminSwLogs(), 200);
+    setTimeout(() => refreshAdminSwLogs(true), 200);
 }
 
-async function refreshAdminSwLogs() {
+async function refreshAdminSwLogs(forceAll = false, tab = 'both') {
     const listEl = document.getElementById('admin-sw-log-list');
     if (!listEl) return;
+    const statusEl = document.getElementById('admin-sw-status');
+    if (statusEl) statusEl.textContent = 'Checking SW status...';
     listEl.textContent = 'Loading...';
     try {
-        const logs = await readSwLogsFromClient(200);
-        const pending = await readPendingActionsClient(100);
-        let out = '--- Pending Actions ---\n';
-        if (!pending || pending.length === 0) out += '(none)\n';
-        else pending.forEach(p => out += `${new Date(p.ts).toISOString()} ${p.action} ${JSON.stringify(p.data)}\n`);
-        out += '\n--- SW Logs ---\n';
-        if (!logs || logs.length === 0) out += '(none)\n';
-        else logs.forEach(l => out += `${new Date(l.ts).toISOString()} ${l.type} ${JSON.stringify(l)}\n`);
+        // SW controller/registration status
+        let controllerExists = !!(navigator.serviceWorker && navigator.serviceWorker.controller);
+        let regInfo = null;
+        try {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            if (regs && regs.length) {
+                const r = regs[0];
+                regInfo = { scope: r.scope, active: !!r.active, scriptURL: r.active && r.active.scriptURL };
+            }
+        } catch (e) { regInfo = null; }
+        if (statusEl) statusEl.textContent = `controller:${controllerExists} registration:${regInfo ? JSON.stringify(regInfo) : 'none'}`;
+        let logs = [];
+        let pending = [];
+
+        // First try reading from IndexedDB directly
+        try {
+            if (tab === 'both' || tab === 'logs') logs = await readSwLogsFromClient(200);
+            if (tab === 'both' || tab === 'pending') pending = await readPendingActionsClient(200);
+        } catch (dbErr) {
+            // ignore and try SW message fallback
+            logs = [];
+            pending = [];
+        }
+
+        // If empty and we want more, ask the service worker via MessageChannel or via registration.active.postMessage
+        if ((logs.length === 0 && (tab === 'both' || tab === 'logs')) || (pending.length === 0 && (tab === 'both' || tab === 'pending')) || forceAll) {
+            try {
+                // Helper: wait for a one-shot message from the SW (fallback when DB reads fail)
+                const waitForSwMessage = (timeoutMs = 2500) => new Promise((resolve) => {
+                    let done = false;
+                    const onMsg = (e) => {
+                        try {
+                            if (!e || !e.data) return;
+                            // Accept SW_DEBUG_LOGS, NOTIFICATION_CLICK_RECEIVED, CLIENT_CLAIMED
+                            if (e.data.type === 'SW_DEBUG_LOGS' && (e.data.logs || e.data.pending)) {
+                                done = true;
+                                navigator.serviceWorker.removeEventListener('message', onMsg);
+                                resolve(e.data);
+                                return;
+                            }
+                            if (e.data.type === 'NOTIFICATION_CLICK_RECEIVED' && e.data.payload) {
+                                done = true;
+                                navigator.serviceWorker.removeEventListener('message', onMsg);
+                                resolve({ pending: [e.data.payload] });
+                                return;
+                            }
+                            if (e.data.type === 'CLIENT_CLAIMED') {
+                                done = true;
+                                navigator.serviceWorker.removeEventListener('message', onMsg);
+                                resolve({ claimed: true });
+                                return;
+                            }
+                        } catch (_) {}
+                    };
+                    try { navigator.serviceWorker.addEventListener('message', onMsg); } catch (_) { resolve(null); return; }
+                    setTimeout(() => {
+                        if (!done) {
+                            try { navigator.serviceWorker.removeEventListener('message', onMsg); } catch (_) {}
+                            resolve(null);
+                        }
+                    }, timeoutMs);
+                });
+
+                // Try controller via MessageChannel first (direct port response is ideal)
+                if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                    try {
+                        const mc = new MessageChannel();
+                        const result = await new Promise((resolve) => {
+                            let settled = false;
+                            mc.port1.onmessage = (e) => { settled = true; resolve(e.data); };
+                            try { navigator.serviceWorker.controller.postMessage({ type: 'GET_SW_DEBUG_LOGS', limit: 500 }, [mc.port2]); } catch (e) { settled = true; resolve(null); }
+                            setTimeout(() => { if (!settled) resolve(null); }, 2000);
+                        }).catch(() => null);
+                        if (result && result.logs) logs = result.logs;
+                    } catch (e) {}
+                }
+
+                // If still empty, try registrations fallback and also listen for a broadcasted message from SW
+                if ((logs.length === 0) && navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+                    try {
+                        const regs = await navigator.serviceWorker.getRegistrations();
+                        for (const r of (regs || [])) {
+                            if (r && r.active && typeof r.active.postMessage === 'function') {
+                                try {
+                                    r.active.postMessage({ type: 'GET_SW_DEBUG_LOGS', limit: 500 });
+                                } catch (e) {}
+                            }
+                        }
+
+                        // Wait briefly for the SW to broadcast logs to clients, prefer direct message payload if available
+                        const swMsg = await waitForSwMessage(2200);
+                        if (swMsg && swMsg.logs && swMsg.logs.length) {
+                            logs = swMsg.logs;
+                        }
+
+                        // Give SW a moment to write DB and retry reading DB if still empty
+                        if (logs.length === 0) {
+                            await new Promise(res => setTimeout(res, 800));
+                            if (tab === 'both' || tab === 'logs') logs = await readSwLogsFromClient(200);
+                            if (tab === 'both' || tab === 'pending') pending = await readPendingActionsClient(200);
+                        }
+                    } catch (e) {}
+                }
+            } catch (swMsgErr) {
+                // ignore
+            }
+        }
+
+        let out = '';
+        if (tab === 'both' || tab === 'pending') {
+            out += '--- Pending Actions ---\n';
+            if (!pending || pending.length === 0) out += '(none)\n';
+            else pending.forEach(p => out += `${new Date(p.ts).toISOString()} ${p.action} ${JSON.stringify(p.data)}\n`);
+            out += '\n';
+        }
+
+        if (tab === 'both' || tab === 'logs') {
+            out += '--- SW Logs ---\n';
+            if (!logs || logs.length === 0) out += '(none)\n';
+            else logs.forEach(l => out += `${new Date(l.ts).toISOString()} ${l.type} ${JSON.stringify(l)}\n`);
+        }
+
         listEl.textContent = out;
+        listEl.scrollTop = 0;
     } catch (e) {
         listEl.textContent = 'Error reading logs: ' + (e && e.message ? e.message : String(e));
     }
@@ -484,8 +756,16 @@ async function refreshAdminSwLogs() {
 
 // Readers for the SW DB from the client
 function openSwDbFromClientSimple() {
+    // Open DB and create stores if missing (safe from client side)
     return new Promise((resolve, reject) => {
         const req = indexedDB.open('sw-debug-logs', 1);
+        req.onupgradeneeded = (e) => {
+            try {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains('logs')) db.createObjectStore('logs', { keyPath: 'id', autoIncrement: true });
+                if (!db.objectStoreNames.contains('pending_actions')) db.createObjectStore('pending_actions', { keyPath: 'id', autoIncrement: true });
+            } catch (_) { /* ignore */ }
+        };
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
     });
@@ -493,7 +773,7 @@ function openSwDbFromClientSimple() {
 
 async function readSwLogsFromClient(limit = 100) {
     try {
-        const db = await openSwDbFromClientSimple();
+    const db = await openSwDbFromClientSimple();
         const tx = db.transaction('logs', 'readonly');
         const store = tx.objectStore('logs');
         return await new Promise((resolve, reject) => {
@@ -517,9 +797,9 @@ async function readSwLogsFromClient(limit = 100) {
 
 async function readPendingActionsClient(limit = 100) {
     try {
-        const db = await openSwDbFromClientSimple();
-        const tx = db.transaction('pending_actions', 'readonly');
-        const store = tx.objectStore('pending_actions');
+    const db = await openSwDbFromClientSimple();
+    const tx = db.transaction('pending_actions', 'readonly');
+    const store = tx.objectStore('pending_actions');
         return await new Promise((resolve, reject) => {
             const items = [];
             const req = store.openCursor();
@@ -536,6 +816,68 @@ async function readPendingActionsClient(limit = 100) {
         }).finally(() => db.close());
     } catch (e) {
         return [];
+    }
+}
+
+// Clear the SW debug DB (logs and pending_actions)
+function clearSwDebugDb() {
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open('sw-debug-logs', 1);
+        req.onupgradeneeded = (e) => {
+            // nothing to do, stores will be created if missing
+            try { const db = e.target.result; if (!db.objectStoreNames.contains('logs')) db.createObjectStore('logs', { keyPath: 'id', autoIncrement: true }); if (!db.objectStoreNames.contains('pending_actions')) db.createObjectStore('pending_actions', { keyPath: 'id', autoIncrement: true }); } catch(_){}
+        };
+        req.onsuccess = () => {
+            try {
+                const db = req.result;
+                const tx = db.transaction(['logs','pending_actions'],'readwrite');
+                tx.objectStore('logs').clear();
+                tx.objectStore('pending_actions').clear();
+                tx.oncomplete = () => { try { db.close(); } catch(_){}; resolve(true); };
+                tx.onerror = () => { try { db.close(); } catch(_){}; reject(tx.error || new Error('clear_failed')); };
+            } catch (e) { try { req.result && req.result.close(); } catch(_){}; reject(e); }
+        };
+        req.onerror = () => reject(req.error || new Error('open_failed'));
+    });
+}
+
+// Copy current overlay logs to clipboard (reads from client DB if necessary)
+async function copySwLogsToClipboard() {
+    const listEl = document.getElementById('admin-sw-log-list');
+    if (!listEl) throw new Error('no_list');
+    let text = listEl.textContent || '';
+
+    // If empty, try reading logs directly
+    if (!text || text.trim().length === 0) {
+        const logs = await readSwLogsFromClient(500);
+        const pending = await readPendingActionsClient(500);
+        let out = '';
+        out += '--- Pending Actions ---\n';
+        if (!pending || pending.length === 0) out += '(none)\n'; else pending.forEach(p => out += `${new Date(p.ts).toISOString()} ${p.action} ${JSON.stringify(p.data)}\n`);
+        out += '\n--- SW Logs ---\n';
+        if (!logs || logs.length === 0) out += '(none)\n'; else logs.forEach(l => out += `${new Date(l.ts).toISOString()} ${l.type} ${JSON.stringify(l)}\n`);
+        text = out;
+    }
+
+    // Try navigator.clipboard first
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+    }
+
+    // Fallback: create textarea and execCommand
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (!ok) throw new Error('copy_failed');
+        return true;
+    } catch (e) {
+        try { document.body.removeChild(ta); } catch(_){}
+        throw e;
     }
 }
 

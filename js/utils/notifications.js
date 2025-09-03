@@ -24,8 +24,15 @@ export async function requestNotificationPermission() {
         return false;
     }
 
-    const permission = await Notification.requestPermission();
-    return permission === 'granted';
+    try {
+        const permission = await Notification.requestPermission();
+        return permission === 'granted';
+    } catch (e) {
+        // Some browsers throw a TypeError when the permission request is blocked by policy
+        // or when called outside a user gesture. Treat as denied.
+        console.warn('[DEBUG: notifications.js] requestNotificationPermission failed:', e && e.message ? e.message : e);
+        return false;
+    }
 }
 
 /**
