@@ -390,7 +390,7 @@ self.addEventListener('notificationclick', (event) => {
       
       console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Base URL: ${baseUrl}`);
       
-      // Primeiro, tenta encontrar uma janela existente
+  // Primeiro, tenta encontrar uma janela existente
       const clientList = await clients.matchAll({ 
         type: 'window', 
         includeUncontrolled: true 
@@ -398,6 +398,13 @@ self.addEventListener('notificationclick', (event) => {
       
       console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Found ${clientList.length} clients.`);
       
+      // Construir URL com possíveis parâmetros de ação/ID (ex: #scheduling-page?action=going&id=...)
+      const urlParams = [];
+      try { if (payload && payload.id) urlParams.push(`id=${encodeURIComponent(String(payload.id))}`); } catch (e) {}
+      try { if (action) urlParams.push(`action=${encodeURIComponent(String(action))}`); } catch (e) {}
+      const paramStr = urlParams.length ? `?${urlParams.join('&')}` : '';
+      const urlWithHash = baseUrl + '#scheduling-page' + paramStr;
+
       // Procura por uma janela do app que já esteja aberta
       let existingClient = null;
       for (const client of clientList) {
@@ -409,42 +416,45 @@ self.addEventListener('notificationclick', (event) => {
       }
 
       if (existingClient) {
-        console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Focusing existing client and sending message.`);
+        console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Found existing client. Attempting to navigate/focus and send message.`);
         try {
-          await existingClient.focus();
-          
-          // Envia mensagem para navegar para agendamentos
-          
-          // Envia múltiplas tentativas de mensagem
+          // Tenta navegar o cliente existente diretamente para a URL com params (alguns navegadores suportam)
+          if (typeof existingClient.navigate === 'function') {
+            try {
+              await existingClient.navigate(urlWithHash);
+              console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Navigated existing client to ${urlWithHash}`);
+            } catch (navErr) {
+              console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - existingClient.navigate() failed:`, navErr);
+            }
+          }
+
+          // Tenta focar
+          try { await existingClient.focus(); } catch (focusErr) { console.log('existingClient.focus failed', focusErr); }
+
+          // Envia mensagem como redundância
           for (let attempt = 1; attempt <= 3; attempt++) {
             await new Promise(resolve => setTimeout(resolve, 500 * attempt));
-            
             try {
-              existingClient.postMessage({ 
-                type: 'NOTIFICATION_ACTION', 
-                action, 
-                data: payload 
-              });
+              existingClient.postMessage({ type: 'NOTIFICATION_ACTION', action, data: payload });
               console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Message sent to existing client (attempt ${attempt}).`);
               break;
             } catch (msgError) {
               console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Message attempt ${attempt} failed:`, msgError);
             }
           }
-          
+
           return existingClient;
         } catch (error) {
-          console.error(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Error focusing client:`, error);
+          console.error(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Error handling existing client:`, error);
         }
       }
       
-      // Abre uma nova janela com hash para página de agendamentos
-      const urlWithHash = baseUrl + '#scheduling-page';
-      console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Opening new window: ${urlWithHash}`);
+    // Abre uma nova janela com hash para página de agendamentos (usa urlWithHash já construída)
+    console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - Opening new window: ${urlWithHash}`);
       
       if (clients.openWindow) {
         try {
-          const newClient = await clients.openWindow(urlWithHash);
+      const newClient = await clients.openWindow(urlWithHash);
           
           if (newClient) {
             console.log(`[DEBUG: service-worker.js] ${new Date().toISOString()} - New window opened successfully.`);

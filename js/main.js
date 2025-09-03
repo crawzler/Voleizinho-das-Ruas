@@ -201,6 +201,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         processNotificationHashParams();
     } catch (e) {}
+    try {
+        processPendingNotificationFromSession();
+    } catch (e) {}
 });
     // --- SCOREBOARD MENU DROPDOWN ---
     const scoreboardMenuButton = document.getElementById("scoreboard-menu-button");
@@ -358,6 +361,13 @@ scoreboardMenuOverlay.addEventListener("click", () => {
             }
         });
     }
+
+    // Quando a aba ficar visível novamente, processa notificações pendentes (caso o SW tenha enviado antes)
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            try { processPendingNotificationFromSession(); } catch (e) {}
+        }
+    });
 
 
     setupAuthListener(auth, db, appId);
