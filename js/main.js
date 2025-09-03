@@ -378,6 +378,29 @@ scoreboardMenuOverlay.addEventListener("click", () => {
                     }
                 } catch (e) {}
             }
+            
+            // Novo: escuta mensagens de ações pendentes disponíveis
+            if (event.data && event.data.type === 'PENDING_ACTION_AVAILABLE') {
+                try {
+                    console.log(`[DEBUG: main.js] Received pending action available:`, event.data);
+                    
+                    // Processa imediatamente se o app estiver pronto
+                    if (window.isAppReady) {
+                        import('./utils/notifications.js').then(mod => {
+                            if (mod && typeof mod.handleNotificationAction === 'function') {
+                                mod.handleNotificationAction(event.data.action, event.data.data || null);
+                            }
+                        }).catch(() => {});
+                    } else {
+                        // Se não estiver pronto, agenda para processar em breve
+                        setTimeout(() => {
+                            try { processPendingActionsFromSwDb(); } catch (e) {}
+                        }, 2000);
+                    }
+                } catch (e) {
+                    console.error(`[DEBUG: main.js] Error handling pending action available:`, e);
+                }
+            }
         });
     }
 
@@ -388,6 +411,16 @@ scoreboardMenuOverlay.addEventListener("click", () => {
             try { processPendingActionsFromSwDb(); } catch (e) {}
         }
     });
+    
+    // Processa ações pendentes imediatamente quando o app carrega (importante para Android PWA)
+    setTimeout(() => {
+        try { processPendingActionsFromSwDb(); } catch (e) {}
+    }, 1000);
+    
+    // Processa ações pendentes periodicamente para garantir que não sejam perdidas
+    setInterval(() => {
+        try { processPendingActionsFromSwDb(); } catch (e) {}
+    }, 5000);
 
 // --- IndexedDB reader for pending actions written by the SW ---
 function openSwDbFromClient() {
@@ -427,17 +460,33 @@ async function processPendingActionsFromSwDb() {
     try {
         const pending = await readPendingActions(20);
         if (!pending || pending.length === 0) return;
+        
+        console.log(`[DEBUG: main.js] Processing ${pending.length} pending actions from SW DB`);
+        
         // Processa em ordem: do mais antigo para o mais novo
-        pending.reverse().forEach(item => {
+        const sortedPending = pending.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+        
+        for (const item of sortedPending) {
             try {
-                import('./utils/notifications.js').then(mod => {
-                    if (mod && typeof mod.handleNotificationAction === 'function') {
-                        mod.handleNotificationAction(item.action, item.data || null);
-                    }
-                });
-            } catch (e) {}
-        });
-    } catch (e) {}
+                console.log(`[DEBUG: main.js] Processing pending action:`, item);
+                
+                // Aguarda o módulo carregar antes de processar
+                const mod = await import('./utils/notifications.js');
+                if (mod && typeof mod.handleNotificationAction === 'function') {
+                    // Adiciona um pequeno delay entre ações para evitar conflitos
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    mod.handleNotificationAction(item.action, item.data || null);
+                    console.log(`[DEBUG: main.js] Processed pending action: ${item.action}`);
+                } else {
+                    console.warn(`[DEBUG: main.js] handleNotificationAction not available`);
+                }
+            } catch (e) {
+                console.error(`[DEBUG: main.js] Error processing pending action:`, e);
+            }
+        }
+    } catch (e) {
+        console.error(`[DEBUG: main.js] Error reading pending actions:`, e);
+    }
 }
 
 // ---------------- Admin SW log overlay ----------------
