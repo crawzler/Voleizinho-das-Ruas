@@ -1,75 +1,4 @@
-// Importa configurações
 importScripts('./sw-config.js');
-
-// --- IndexedDB lightweight logger for SW debugging ---
-const SW_LOG_DB = 'sw-debug-logs';
-const SW_LOG_STORE = 'logs';
-
-function openSwLogDb() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(SW_LOG_DB, 1);
-    req.onupgradeneeded = (e) => {
-        try {
-          const db = e.target.result;
-          if (!db.objectStoreNames.contains(SW_LOG_STORE)) db.createObjectStore(SW_LOG_STORE, { keyPath: 'id', autoIncrement: true });
-          if (!db.objectStoreNames.contains('pending_actions')) db.createObjectStore('pending_actions', { keyPath: 'id', autoIncrement: true });
-        } catch (_) {}
-      };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-async function logSwEvent(entry) {
-  try {
-    const db = await openSwLogDb();
-    const tx = db.transaction(SW_LOG_STORE, 'readwrite');
-    const store = tx.objectStore(SW_LOG_STORE);
-    const payload = Object.assign({ ts: Date.now() }, entry);
-    store.add(payload);
-    tx.oncomplete = () => db.close();
-  } catch (e) {
-    // silencioso
-  }
-}
-
-async function getRecentSwLogs(limit = 100) {
-  try {
-    const db = await openSwLogDb();
-    const tx = db.transaction(SW_LOG_STORE, 'readonly');
-    const store = tx.objectStore(SW_LOG_STORE);
-    return new Promise((resolve, reject) => {
-      const results = [];
-      const req = store.openCursor(null, 'prev');
-      req.onsuccess = (e) => {
-        const cursor = e.target.result;
-        if (cursor && results.length < limit) {
-          results.push(cursor.value);
-          cursor.continue();
-        } else {
-          resolve(results);
-        }
-      };
-      req.onerror = () => reject(req.error);
-    }).finally(() => db.close());
-  } catch (e) {
-    return [];
-  }
-}
-
-// Guarda uma ação pendente para ser processada pelo cliente quando abrir
-async function addPendingAction(entry) {
-  try {
-    const db = await openSwLogDb();
-    const tx = db.transaction('pending_actions', 'readwrite');
-    const store = tx.objectStore('pending_actions');
-    const payload = Object.assign({ ts: Date.now() }, entry);
-    store.add(payload);
-    tx.oncomplete = () => db.close();
-  } catch (e) {
-    // silencioso
-  }
-}
 
 const { CACHE_VERSION, STRATEGIES, TIMEOUTS, CRITICAL_RESOURCES, EXTERNAL_RESOURCES, IGNORE_PATTERNS, CLEANUP } = self.SW_CONFIG;
 
@@ -353,30 +282,18 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Mantém o service worker ativo para notificações
-self.addEventListener('sync', (event) => {
-  // Mantém o SW ativo
-});
-
-// Listener para push notifications (caso seja implementado no futuro)
-self.addEventListener('push', (event) => {
-  // Push message received
-});
+self.addEventListener('sync', (event) => {});
+self.addEventListener('push', (event) => {});
 
 async function cleanupOldCacheEntries() {
   try {
     const cache = await caches.open(RUNTIME_CACHE);
     const requests = await cache.keys();
-    
     if (requests.length > CLEANUP.MAX_ENTRIES) {
       const entriesToDelete = requests.slice(0, requests.length - CLEANUP.MAX_ENTRIES);
-      await Promise.all(
-        entriesToDelete.map(request => cache.delete(request))
-      );
+      await Promise.all(entriesToDelete.map(request => cache.delete(request)));
     }
-  } catch (error) {
-    // Silencioso
-  }
+  } catch (error) {}
 }
 
 self.addEventListener('message', (event) => {
@@ -419,25 +336,11 @@ self.addEventListener('message', (event) => {
       self.skipWaiting();
       break;
     case 'GET_SW_DEBUG_LOGS':
-      {
-        const limit = data.limit || 100;
-        getRecentSwLogs(limit).then(logs => {
-          try {
-            if (event.ports && event.ports[0]) {
-              event.ports[0].postMessage({ success: true, logs });
-            } else {
-              // Fallback: post to all clients
-              clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientsList => {
-                clientsList.forEach(c => c.postMessage({ type: 'SW_DEBUG_LOGS', logs }));
-              });
-            }
-          } catch (e) {
-            // silencioso
-          }
-        }).catch(err => {
-          try { if (event.ports && event.ports[0]) event.ports[0].postMessage({ success: false, error: err.message }); } catch (e) {}
-        });
-      }
+      try {
+        if (event.ports && event.ports[0]) {
+          event.ports[0].postMessage({ success: true, logs: [] });
+        }
+      } catch (e) {}
       break;
     case 'REQUEST_CLAIM':
       {
@@ -457,10 +360,10 @@ self.addEventListener('message', (event) => {
                 all.forEach(c => { try { c.postMessage({ type: 'CLIENT_CLAIMED' }); } catch (_) {} });
               }
             } catch (_) {}
-            logSwEvent({ type: 'clientsClaimed' });
+
           } catch (err) {
             try { if (event.ports && event.ports[0]) event.ports[0].postMessage({ success: false, error: String(err) }); } catch (_) {}
-            logSwEvent({ type: 'clientsClaimFailed', error: (err && err.message) || String(err) });
+
           }
         })();
       }
@@ -509,10 +412,10 @@ self.addEventListener('message', (event) => {
               }
             } catch (_) {}
 
-            logSwEvent({ type: 'clearSwDebugDbSuccess' });
+
           } catch (err) {
             try { if (event.ports && event.ports[0]) event.ports[0].postMessage({ success: false, error: String(err) }); } catch (_) {}
-            logSwEvent({ type: 'clearSwDebugDbFailed', error: (err && err.message) || String(err) });
+
           }
         })();
       }
@@ -523,71 +426,22 @@ self.addEventListener('message', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   
-  const action = event.action || 'view';
   const payload = event.notification?.data || null;
-  
-  logSwEvent({ type: 'notificationclick', action, hasAction: !!event.action });
 
   event.waitUntil(
     (async () => {
       const baseUrl = self.location.origin + (self.location.hostname.includes('github.io') ? '/Voleizinho-das-Ruas/' : '/');
       
-      // Se clicou no corpo da notificação (não em botão), abre pop-up
-      if (!event.action) {
-        try {
-          const popupUrl = baseUrl + 'popup.html';
-          const popup = await clients.openWindow(popupUrl);
-          if (popup) {
-            logSwEvent({ type: 'popupOpened' });
-          } else {
-            logSwEvent({ type: 'popupOpenFailed' });
-          }
-        } catch (e) {
-          logSwEvent({ type: 'popupError', error: String(e) });
-        }
-        return;
-      }
-      
-      // Se clicou em botão, salva ação e abre app
       try {
-        await addPendingAction({ action, data: payload, timestamp: Date.now() });
-        logSwEvent({ type: 'pendingActionSaved', action });
-      } catch (e) {
-        logSwEvent({ type: 'pendingActionSaveFailed', error: String(e) });
-      }
-      
-      try {
-        const clients_list = await clients.matchAll({ type: 'window', includeUncontrolled: true });
-        let targetClient = null;
-        
-        for (const client of clients_list) {
-          if (client.url.includes(self.location.origin)) {
-            targetClient = client;
-            break;
-          }
-        }
-        
-        if (targetClient) {
-          await targetClient.focus();
-          logSwEvent({ type: 'clientFocused' });
-        } else {
-          targetClient = await clients.openWindow(baseUrl);
-          if (targetClient) {
-            logSwEvent({ type: 'clientOpened' });
-          } else {
-            logSwEvent({ type: 'clientOpenFailed' });
-          }
-        }
-      } catch (e) {
-        logSwEvent({ type: 'criticalError', error: String(e) });
-      }
+        const scheduleData = encodeURIComponent(JSON.stringify(payload || {}));
+        const popupUrl = baseUrl + 'popup.html?data=' + scheduleData;
+        await clients.openWindow(popupUrl);
+      } catch (e) {}
     })()
   );
 });
 
-self.addEventListener('notificationclose', (event) => {
-  // Silencioso
-});
+self.addEventListener('notificationclose', (event) => {});
 
 async function clearAllCaches() {
   const cacheNames = await caches.keys();
@@ -637,10 +491,5 @@ async function getCacheStats() {
   return stats;
 }
 
-self.addEventListener('error', (event) => {
-  // Silencioso
-});
-
-self.addEventListener('unhandledrejection', (event) => {
-  event.preventDefault();
-});
+self.addEventListener('error', (event) => {});
+self.addEventListener('unhandledrejection', (event) => event.preventDefault());

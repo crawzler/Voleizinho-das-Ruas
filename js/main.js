@@ -204,14 +204,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         processPendingNotificationFromSession();
     } catch (e) {}
-    // Se for admin, cria overlay de debug para logs do service worker
+    // Sistema de debug apenas para admins autenticados
     try {
-        // Auth may still be initializing; poll briefly for admin status and create overlay when ready
         const waitForAdminOverlay = (timeoutMs = 10000, intervalMs = 500) => {
             let elapsed = 0;
             const id = setInterval(() => {
                 try {
-                    if (typeof isCurrentUserAdmin === 'function' && isCurrentUserAdmin()) {
+                    const config = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
+                    const isAdmin = config.adminKey === 'admin998939';
+                    if (isAdmin && typeof isCurrentUserGoogle === 'function' && isCurrentUserGoogle()) {
                         createAdminSwLogOverlay();
                         clearInterval(id);
                         return;
@@ -412,6 +413,24 @@ scoreboardMenuOverlay.addEventListener("click", () => {
         }
     });
     
+    // Listener para atualizações de RSVP do popup
+    window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'SCHEDULE_UPDATED') {
+            try {
+                // Força atualização da interface de agendamentos
+                import('./ui/scheduling-ui.js').then(mod => {
+                    if (mod && typeof mod.renderScheduledGames === 'function') {
+                        const schedules = JSON.parse(localStorage.getItem('voleiScoreSchedules') || '[]');
+                        mod.renderScheduledGames();
+                        console.log('Interface de agendamentos atualizada após RSVP');
+                    }
+                }).catch(() => {});
+            } catch (e) {
+                console.error('Erro ao atualizar interface:', e);
+            }
+        }
+    });
+    
     // Processa ações pendentes imediatamente quando o app carrega (importante para Android PWA)
     setTimeout(() => {
         try { processPendingActionsFromSwDb(); } catch (e) {}
@@ -568,58 +587,108 @@ function createAdminSwLogOverlay() {
     if (document.getElementById('admin-sw-log-overlay')) return;
     const overlay = document.createElement('div');
     overlay.id = 'admin-sw-log-overlay';
-    overlay.style.position = 'fixed';
-    overlay.style.right = '12px';
-    overlay.style.bottom = '12px';
-    overlay.style.width = '520px';
-    overlay.style.maxHeight = '70vh';
-    overlay.style.background = '#0b1220';
-    overlay.style.color = '#e6eef8';
-    overlay.style.fontSize = '13px';
-    overlay.style.padding = '12px';
-    overlay.style.borderRadius = '10px';
-    overlay.style.zIndex = '99999';
-    overlay.style.boxShadow = '0 10px 30px rgba(0,0,0,0.6)';
-    overlay.style.display = 'flex';
-    overlay.style.flexDirection = 'column';
+    
+    // CSS responsivo e moderno
+    const style = document.createElement('style');
+    style.textContent = `
+        #admin-sw-log-overlay {
+            position: fixed;
+            right: 12px;
+            bottom: 12px;
+            width: min(520px, calc(100vw - 24px));
+            max-height: min(70vh, 600px);
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #f1f5f9;
+            font-size: 13px;
+            padding: 0;
+            border-radius: 12px;
+            z-index: 99999;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        #admin-sw-log-overlay button {
+            background: rgba(255,255,255,0.1);
+            color: #e2e8f0;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        #admin-sw-log-overlay button:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.3);
+            transform: translateY(-1px);
+        }
+        
+        @media (max-width: 768px) {
+            #admin-sw-log-overlay {
+                right: 8px;
+                bottom: 8px;
+                width: calc(100vw - 16px);
+                max-height: 60vh;
+            }
+            
+            #admin-sw-header {
+                flex-wrap: wrap;
+                gap: 8px !important;
+            }
+            
+            #admin-sw-header > div:last-child {
+                gap: 4px !important;
+            }
+            
+            #admin-sw-log-overlay button {
+                padding: 4px 6px !important;
+                font-size: 11px;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Inicia minimizado
+    overlay.innerHTML = `
+        <div id="admin-sw-header" style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid rgba(255,255,255,0.1);">
+            <div style="display:flex;align-items:center;gap:10px">
+                <strong style="font-size:14px;color:#38bdf8;">🔧 Debug</strong>
+                <span style="font-size:11px;color:#94a3b8;background:rgba(56,189,248,0.2);padding:2px 6px;border-radius:4px;">admin</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+                <button id="admin-sw-refresh" title="Atualizar logs" style="padding:6px 8px">🔄</button>
+                <button id="admin-sw-copylogs" title="Copiar logs" style="padding:6px 8px">📋</button>
+                <button id="admin-sw-ask" title="Solicitar SW" style="padding:6px 8px">📡</button>
+                <button id="admin-sw-clear" title="Limpar DB" style="padding:6px 8px">🗑️</button>
+                <button id="admin-sw-minimize" title="Minimizar" style="padding:6px 8px">➖</button>
+                <button id="admin-sw-close" title="Fechar" style="padding:6px 8px">✕</button>
+            </div>
+        </div>
+        <div id="admin-sw-main" style="display:none;flex-direction:column;padding:12px;">
 
-        // Improved overlay layout: header with actions, tabs and log area, plus a compact minbar
-        overlay.innerHTML = `
-            <div id="admin-sw-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                <div style="display:flex;align-items:center;gap:10px">
-                    <strong style="font-size:14px">SW Debug</strong>
-                    <span id="admin-sw-badge" style="font-size:12px;color:#9fb9d9;opacity:0.9">(admin)</span>
-                </div>
-                <div style="display:flex;align-items:center;gap:6px">
-                    <button id="admin-sw-refresh" title="Refresh logs" style="padding:6px 8px">Refresh</button>
-                    <button id="admin-sw-copylogs" title="Copy logs" style="padding:6px 8px">Copy</button>
-                    <button id="admin-sw-ask" title="Ask SW" style="padding:6px 8px">Ask</button>
-                    <button id="admin-sw-clear" title="Clear DB" style="padding:6px 8px">Clear</button>
-                    <button id="admin-sw-minimize" title="Minimize" style="padding:6px 8px">—</button>
-                    <button id="admin-sw-close" title="Close" style="padding:6px 8px">✕</button>
-                </div>
+
+            <div id="admin-sw-log-list" style="overflow:auto;flex:1;background:rgba(0,0,0,0.3);padding:12px;border-radius:8px;font-family:'Courier New',monospace;white-space:pre-wrap;color:#e2e8f0;max-height:400px;border:1px solid rgba(255,255,255,0.1);">Clique em Atualizar para carregar dados...</div>
+        </div>
+        <div id="admin-sw-minbar" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;">
+            <div style="font-size:13px;color:#38bdf8;display:flex;align-items:center;gap:8px;">
+                <span>🔧</span>
+                <span>Debug (minimizado)</span>
             </div>
-            <div id="admin-sw-main" style="display:flex;flex-direction:column;">
-                <div style="display:flex;gap:8px;margin-bottom:8px">
-                    <button id="admin-sw-tab-pending" style="flex:1;padding:6px;background:#081122;color:#cfe8ff;border:0;border-radius:6px">Pending</button>
-                    <button id="admin-sw-tab-logs" style="flex:1;padding:6px;background:transparent;color:#9fb9d9;border:1px solid rgba(255,255,255,0.04);border-radius:6px">Logs</button>
-                </div>
-                <div id="admin-sw-status" style="font-size:12px;opacity:0.95;margin-bottom:8px;color:#c0dff6"></div>
-                <div id="admin-sw-log-list" style="overflow:auto;flex:1;background:#07111a;padding:8px;border-radius:6px;font-family:monospace;white-space:pre-wrap;color:#bfe6ff;max-height:52vh"></div>
+            <div style="display:flex;gap:6px">
+                <button id="admin-sw-restore" style="padding:6px 10px;">Expandir</button>
+                <button id="admin-sw-close-min" style="padding:6px 8px;">✕</button>
             </div>
-            <div id="admin-sw-minbar" style="display:none;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;">
-                <div style="font-size:13px;color:#cfe8ff;">SW Debug (minimized)</div>
-                <div style="display:flex;gap:8px">
-                    <button id="admin-sw-restore" style="padding:6px 8px">Restore</button>
-                    <button id="admin-sw-close-min" style="padding:6px 8px">Close</button>
-                </div>
-            </div>
-        `;
+        </div>
+    `;
 
     document.body.appendChild(overlay);
 
     document.getElementById('admin-sw-close').addEventListener('click', () => overlay.remove());
-    document.getElementById('admin-sw-refresh').addEventListener('click', () => refreshAdminSwLogs(true));
+    document.getElementById('admin-sw-refresh').addEventListener('click', () => refreshAdminSwLogs(true, 'both'));
     document.getElementById('admin-sw-copylogs').addEventListener('click', async () => {
         try {
             await copySwLogsToClipboard();
@@ -633,54 +702,30 @@ function createAdminSwLogOverlay() {
     // Minimize / Restore handlers
     document.getElementById('admin-sw-minimize').addEventListener('click', () => {
         try {
-            const overlayEl = document.getElementById('admin-sw-log-overlay');
             const main = document.getElementById('admin-sw-main');
             const minbar = document.getElementById('admin-sw-minbar');
-            if (!overlayEl || !main || !minbar) return;
-            // save original inline styles so we can restore later
-            overlayEl.dataset._origWidth = overlayEl.style.width || '';
-            overlayEl.dataset._origMaxHeight = overlayEl.style.maxHeight || '';
-            overlayEl.dataset._origHeight = overlayEl.style.height || '';
-            overlayEl.dataset._origOverflow = overlayEl.style.overflow || '';
-            overlayEl.dataset._origMainDisplay = main.style.display || 'block';
-
-            // hide main content and show minbar
+            const header = document.getElementById('admin-sw-header');
+            if (!main || !minbar || !header) return;
+            
             main.style.display = 'none';
             minbar.style.display = 'flex';
-            // hide header action buttons so they don't overflow the layout
-            const header = document.getElementById('admin-sw-header');
-            if (header) {
-                overlayEl.dataset._origHeaderDisplay = header.style.display || '';
-                header.style.display = 'none';
-            }
-            // tighten overlay box
-            overlayEl.style.width = '260px';
-            overlayEl.style.maxHeight = '';
-            overlayEl.style.height = '40px';
-            overlayEl.style.overflow = 'visible';
+            header.style.display = 'none';
+            overlay.style.width = 'min(280px, calc(100vw - 24px))';
+            overlay.style.height = 'auto';
         } catch (e) {}
     });
     document.getElementById('admin-sw-restore').addEventListener('click', () => {
         try {
-            const overlayEl = document.getElementById('admin-sw-log-overlay');
             const main = document.getElementById('admin-sw-main');
             const minbar = document.getElementById('admin-sw-minbar');
-            if (!overlayEl || !main || !minbar) return;
-            // restore previous inline styles (explicit) instead of relying on defaults
-            try { main.style.display = overlayEl.dataset._origMainDisplay || 'block'; } catch(_) { main.style.display = 'block'; }
-            minbar.style.display = 'none';
-            // restore header visibility
             const header = document.getElementById('admin-sw-header');
-            if (header) {
-                try { header.style.display = overlayEl.dataset._origHeaderDisplay || 'flex'; } catch(_) { header.style.display = 'flex'; }
-            }
-            // ensure overlay returns to full size
-            overlayEl.style.width = overlayEl.dataset._origWidth || '520px';
-            overlayEl.style.maxHeight = overlayEl.dataset._origMaxHeight || '70vh';
-            overlayEl.style.height = overlayEl.dataset._origHeight || '';
-            overlayEl.style.overflow = overlayEl.dataset._origOverflow || 'auto';
-            // remove saved state
-            try { delete overlayEl.dataset._origWidth; delete overlayEl.dataset._origMaxHeight; delete overlayEl.dataset._origHeight; delete overlayEl.dataset._origOverflow; delete overlayEl.dataset._origMainDisplay; } catch(_) {}
+            if (!main || !minbar || !header) return;
+            
+            main.style.display = 'flex';
+            minbar.style.display = 'none';
+            header.style.display = 'flex';
+            overlay.style.width = 'min(520px, calc(100vw - 24px))';
+            overlay.style.height = 'auto';
         } catch (e) {}
     });
     document.getElementById('admin-sw-close-min').addEventListener('click', () => { const o = document.getElementById('admin-sw-log-overlay'); if (o) o.remove(); });
@@ -728,11 +773,9 @@ function createAdminSwLogOverlay() {
             if (statusEl) statusEl.textContent = 'Error clearing DB';
         }
     });
-    document.getElementById('admin-sw-tab-pending').addEventListener('click', () => { document.getElementById('admin-sw-tab-pending').style.background='#081122'; document.getElementById('admin-sw-tab-logs').style.background='transparent'; refreshAdminSwLogs(false, 'pending'); });
-    document.getElementById('admin-sw-tab-logs').addEventListener('click', () => { document.getElementById('admin-sw-tab-logs').style.background='#081122'; document.getElementById('admin-sw-tab-pending').style.background='transparent'; refreshAdminSwLogs(false, 'logs'); });
 
-    // Load immediately
-    setTimeout(() => refreshAdminSwLogs(true), 200);
+
+    // Não carrega automaticamente - usuário deve clicar em Atualizar
 }
 
 async function refreshAdminSwLogs(forceAll = false, tab = 'both') {

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="transparent">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <title>Responder Convite</title>
     <style>
         * {
@@ -14,7 +15,7 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: transparent;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -44,45 +45,98 @@
         .popup-message {
             font-size: 16px;
             color: #666;
-            margin-bottom: 32px;
+            margin-bottom: 24px;
             line-height: 1.5;
         }
         
-        .button-group {
-            display: flex;
-            gap: 16px;
-            justify-content: center;
+        .schedule-info {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            text-align: left;
         }
         
-        .btn {
-            padding: 12px 24px;
+        .schedule-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 15px;
+        }
+        
+        .schedule-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .schedule-icon {
+            margin-right: 12px;
+            font-size: 18px;
+        }
+        
+        .response-section {
+            margin-bottom: 24px;
+        }
+        
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .radio-option {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .radio-option:hover {
+            border-color: #d1d5db;
+            background: #f9fafb;
+        }
+        
+        .radio-option.selected {
+            border-color: var(--new-accent-primary, #667eea);
+            background: color-mix(in srgb, var(--new-accent-primary, #667eea) 10%, transparent);
+        }
+        
+        .radio-option input[type="radio"] {
+            margin-right: 12px;
+            transform: scale(1.2);
+        }
+        
+        .radio-label {
+            font-size: 16px;
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        .confirm-btn {
+            width: 100%;
+            padding: 14px 24px;
+            background: var(--new-accent-primary, #667eea);
+            color: white;
             border: none;
             border-radius: 8px;
             font-size: 16px;
-            font-weight: 500;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
-            min-width: 100px;
         }
         
-        .btn-yes {
-            background: #10b981;
-            color: white;
-        }
-        
-        .btn-yes:hover {
-            background: #059669;
+        .confirm-btn:hover {
+            background: var(--new-accent-primary-hover, #5a67d8);
             transform: translateY(-1px);
         }
         
-        .btn-no {
-            background: #ef4444;
-            color: white;
-        }
-        
-        .btn-no:hover {
-            background: #dc2626;
-            transform: translateY(-1px);
+        .confirm-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
         }
     </style>
 </head>
@@ -91,18 +145,242 @@
         <h1 class="popup-title">🏐 Novo Jogo Agendado!</h1>
         <p class="popup-message">Você foi convidado para um jogo de vôlei. Deseja participar?</p>
         
-        <div class="button-group">
-            <button class="btn btn-yes" onclick="handleResponse('yes')">✅ Sim</button>
-            <button class="btn btn-no" onclick="handleResponse('no')">❌ Não</button>
+        <div class="schedule-info">
+            <div class="schedule-item">
+                <span class="material-icons schedule-icon">event</span>
+                <span id="schedule-date">Carregando...</span>
+            </div>
+            <div class="schedule-item">
+                <span class="material-icons schedule-icon">schedule</span>
+                <span id="schedule-time">Carregando...</span>
+            </div>
+            <div class="schedule-item">
+                <span class="material-icons schedule-icon">sports_volleyball</span>
+                <span id="schedule-type">Carregando...</span>
+            </div>
+            <div class="schedule-item">
+                <span class="material-icons schedule-icon">place</span>
+                <span id="schedule-location">Carregando...</span>
+            </div>
+            <div class="schedule-item" id="notes-item" style="display: none;">
+                <span class="material-icons schedule-icon">note</span>
+                <span id="schedule-notes"></span>
+            </div>
+        </div>
+        
+        <div class="response-section">
+            <div class="radio-group">
+                <label class="radio-option" for="going">
+                    <input type="radio" id="going" name="response" value="going">
+                    <span class="radio-label">Vou participar</span>
+                </label>
+                <label class="radio-option" for="maybe">
+                    <input type="radio" id="maybe" name="response" value="maybe">
+                    <span class="radio-label">Talvez</span>
+                </label>
+                <label class="radio-option" for="not_going">
+                    <input type="radio" id="not_going" name="response" value="not_going">
+                    <span class="radio-label">Não vou</span>
+                </label>
+            </div>
+            <button class="confirm-btn" onclick="handleConfirm()" disabled>Confirmar Resposta</button>
         </div>
     </div>
 
     <script>
-        function handleResponse(response) {
-            console.log('Resposta:', response);
-            // Por enquanto só fecha a janela
+        // Carrega dados do agendamento da URL
+        function loadScheduleData() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const dataParam = urlParams.get('data');
+                
+                if (dataParam) {
+                    const scheduleData = JSON.parse(decodeURIComponent(dataParam));
+                    
+                    // Busca o agendamento no localStorage usando o ID
+                    if (scheduleData.id) {
+                        const schedules = JSON.parse(localStorage.getItem('voleiScoreSchedules') || '[]');
+                        const schedule = schedules.find(s => s.id === scheduleData.id);
+                        
+                        if (schedule) {
+                            const gameDate = new Date(schedule.date + 'T' + schedule.startTime);
+                            const formattedDate = gameDate.toLocaleDateString('pt-BR');
+                            
+                            document.getElementById('schedule-date').textContent = formattedDate;
+                            document.getElementById('schedule-time').textContent = `${schedule.startTime} - ${schedule.endTime || 'N/A'}`;
+                            const gameType = schedule.gameType === 'beach' ? 'Areia' : 'Quadra';
+                            document.getElementById('schedule-type').textContent = gameType;
+                            document.getElementById('schedule-location').textContent = schedule.location;
+                            
+                            if (schedule.notes) {
+                                document.getElementById('schedule-notes').textContent = schedule.notes;
+                                document.getElementById('notes-item').style.display = 'flex';
+                            }
+                            return;
+                        }
+                    }
+                }
+                
+                // Fallback para dados de exemplo
+                document.getElementById('schedule-date').textContent = 'Data não disponível';
+                document.getElementById('schedule-time').textContent = 'Horário não disponível';
+                document.getElementById('schedule-type').textContent = 'Jogo';
+                document.getElementById('schedule-location').textContent = 'Local não disponível';
+            } catch (e) {
+                console.error('Erro ao carregar dados:', e);
+            }
+        }
+        
+        async function handleConfirm() {
+            const selectedOption = document.querySelector('input[name="response"]:checked');
+            if (selectedOption) {
+                const response = selectedOption.value;
+                console.log('Resposta selecionada:', response);
+                
+                try {
+                    await saveResponse(response);
+                    showSuccessMessage(response);
+                    console.log('Resposta salva com sucesso. Popup permanece aberto para diagnóstico.');
+                } catch (error) {
+                    console.error('Erro ao salvar resposta:', error);
+                    showErrorMessage(error);
+                }
+            }
+        }
+        
+        async function saveResponse(response) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const dataParam = urlParams.get('data');
+            
+            if (dataParam) {
+                const scheduleData = JSON.parse(decodeURIComponent(dataParam));
+                
+                if (scheduleData.id) {
+                    const schedules = JSON.parse(localStorage.getItem('voleiScoreSchedules') || '[]');
+                    const scheduleIndex = schedules.findIndex(s => s.id === scheduleData.id);
+                    
+                    if (scheduleIndex !== -1) {
+                        const schedule = schedules[scheduleIndex];
+                        
+                        // Inicializa rsvps se não existir
+                        if (!schedule.rsvps) {
+                            schedule.rsvps = {};
+                        }
+                        
+                        // Pega o ID do usuário (usa o userId da notificação)
+                        const userId = scheduleData.userId || 'fVTPCFEN5KSKt4me7FgPyNtXHMx1';
+                        
+                        // Salva a resposta no rsvps
+                        schedule.rsvps[userId] = response;
+                        
+                        // Atualiza o array e salva no localStorage
+                        schedules[scheduleIndex] = schedule;
+                        localStorage.setItem('voleiScoreSchedules', JSON.stringify(schedules));
+                        
+                        console.log('✅ RSVP salvo no localStorage:', schedule.rsvps);
+                        console.log('✅ Schedule atualizado:', schedule);
+                        
+                        // Verifica se foi salvo corretamente
+                        const verificacao = JSON.parse(localStorage.getItem('voleiScoreSchedules') || '[]');
+                        const scheduleVerificado = verificacao.find(s => s.id === scheduleData.id);
+                        console.log('✅ Verificação - Schedule encontrado:', scheduleVerificado);
+                        console.log('✅ Verificação - RSVPs:', scheduleVerificado?.rsvps);
+                        
+                        // Dispara evento customizado para atualizar a interface
+                        if (window.opener) {
+                            window.opener.postMessage({ type: 'SCHEDULE_UPDATED', scheduleId: scheduleData.id }, '*');
+                        }
+                        
+                        // Salva no Firebase
+                        try {
+                            console.log('🔄 Tentando salvar no Firebase...');
+                            const { updateSchedule } = await import('/js/data/schedules.js');
+                            await updateSchedule(schedule);
+                            console.log('✅ Schedule salvo no Firebase com sucesso');
+                        } catch (firebaseError) {
+                            console.error('❌ Erro ao salvar no Firebase:', firebaseError);
+                            throw firebaseError; // Re-throw para ser capturado pelo handleConfirm
+                        }
+                    }
+                }
+            }
+        }
+        
+        function showSuccessMessage(response) {
+            const messages = {
+                'going': 'Sua presença foi confirmada!',
+                'maybe': 'Resposta "Talvez" registrada!',
+                'not_going': 'Resposta "Não vou" registrada!'
+            };
+            
+            const container = document.querySelector('.popup-container');
+            container.innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">✅</div>
+                    <h2 style="color: var(--new-accent-primary, #667eea); margin-bottom: 12px;">Confirmado!</h2>
+                    <p style="color: #6b7280; margin-bottom: 20px;">${messages[response] || 'Resposta registrada!'}</p>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button onclick="goToScheduling()" style="padding: 10px 20px; background: var(--new-accent-primary, #667eea); color: white; border: none; border-radius: 6px; cursor: pointer;">Ver Agendamentos</button>
+                        <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer;">Fechar</button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function showErrorMessage(error) {
+            const container = document.querySelector('.popup-container');
+            container.innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">❌</div>
+                    <h2 style="color: #dc3545; margin-bottom: 12px;">Erro!</h2>
+                    <p style="color: #6b7280; margin-bottom: 20px;">Erro ao salvar resposta: ${error.message || error}</p>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button onclick="location.reload()" style="padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer;">Tentar Novamente</button>
+                        <button onclick="window.close()" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer;">Fechar</button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function goToScheduling() {
+            const baseUrl = window.location.origin + (window.location.hostname.includes('github.io') ? '/Voleizinho-das-Ruas/' : '/');
+            const schedulingUrl = baseUrl + '#scheduling';
+            window.open(schedulingUrl, '_blank');
             window.close();
         }
+        
+        function setupRadioButtons() {
+            const radioOptions = document.querySelectorAll('.radio-option');
+            const confirmBtn = document.querySelector('.confirm-btn');
+            const radioInputs = document.querySelectorAll('input[name="response"]');
+            
+            radioOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    const radio = option.querySelector('input[type="radio"]');
+                    radio.checked = true;
+                    
+                    // Remove selected class from all options
+                    radioOptions.forEach(opt => opt.classList.remove('selected'));
+                    // Add selected class to clicked option
+                    option.classList.add('selected');
+                    
+                    // Enable confirm button
+                    confirmBtn.disabled = false;
+                });
+            });
+            
+            radioInputs.forEach(input => {
+                input.addEventListener('change', () => {
+                    confirmBtn.disabled = false;
+                });
+            });
+        }
+        
+        // Carrega dados quando a página abre
+        document.addEventListener('DOMContentLoaded', () => {
+            loadScheduleData();
+            setupRadioButtons();
+        });
     </script>
 </body>
 </html>

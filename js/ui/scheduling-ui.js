@@ -1,67 +1,56 @@
-// js/ui/scheduling-ui.js
-// Funções relacionadas à interface da página de agendamento
-
 import * as Elements from './elements.js';
 import { displayMessage } from './messages.js';
 import * as SchedulesData from '../data/schedules.js';
 import { getCurrentUser } from '../firebase/auth.js';
 import { notifyNewSchedule, notifyCancelledSchedule, areNotificationsEnabled } from '../utils/notifications.js';
 import { initSchedulingAnimations, enhanceHoverEffects, setupLoadingAnimations } from './scheduling-animations.js';
-// import { showConfirmationModal } from './pages.js'; // Removido para evitar modal de confirmação
 import { getPlayers } from '../data/players.js';
 
 const SCHEDULES_STORAGE_KEY = 'voleiScoreSchedules';
 
-// Array para armazenar os jogos agendados
-let scheduledGames = []; // Esta variável deve manter o estado em memória
+let scheduledGames = [];
 let unsubscribeSchedules = null;
 let listenerInitialized = false;
-// NOVO: Flag para garantir que o event listener do botão só é adicionado uma vez
 let scheduleButtonListenerAdded = false;
 let fileHandlerInitialized = false;
-// Current selected images (base64 strings) tracked in memory so user can remove individual images
 let currentBase64List = [];
-// Map to keep proofs out of the DOM to avoid huge attributes (base64 blobs)
 const proofsByGameId = {};
-// ID do agendamento que está sendo editado no modal (se houver)
 let editingScheduleId = null;
 
-// Body scroll lock helpers at module scope so any code in this module can lock/unlock
 let _savedScrollY = 0;
+let _touchMoveBlocker = null;
+
 function lockBodyScroll() {
     _savedScrollY = window.scrollY || document.documentElement.scrollTop || 0;
     document.body.style.top = `-${_savedScrollY}px`;
     document.body.classList.add('modal-open');
 }
+
 function unlockBodyScroll() {
     document.body.classList.remove('modal-open');
     document.body.style.top = '';
     window.scrollTo(0, _savedScrollY);
 }
 
-// More robust lock implementation: prevent touchmove on document while modal open
-let _touchMoveBlocker = null;
 function enableTouchMoveBlocker() {
     if (_touchMoveBlocker) return;
     _touchMoveBlocker = function(e) {
-        // Allow scroll inside modal content only
         if (e.target.closest && e.target.closest('.schedule-modal-content')) return;
         e.preventDefault();
     };
     document.addEventListener('touchmove', _touchMoveBlocker, { passive: false });
-    // Also hide overflow on html/body as extra measure
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
 }
+
 function disableTouchMoveBlocker() {
     if (!_touchMoveBlocker) return;
-    try { document.removeEventListener('touchmove', _touchMoveBlocker, { passive: false }); } catch (e) { /* ignore */ }
+    try { document.removeEventListener('touchmove', _touchMoveBlocker, { passive: false }); } catch (e) {}
     _touchMoveBlocker = null;
     document.documentElement.style.overflow = '';
     document.body.style.overflow = '';
 }
 
-// Fecha o modal de agendamento com restauração do scroll/touch
 function closeScheduleModal() {
     const modal = document.getElementById('schedule-modal');
     if (!modal) return;
@@ -72,32 +61,23 @@ function closeScheduleModal() {
     disableTouchMoveBlocker();
 }
 
-/**
- * Carrega os agendamentos do localStorage.
- */
 function loadSchedulesFromLocalStorage() {
     const storedSchedules = localStorage.getItem(SCHEDULES_STORAGE_KEY);
     if (storedSchedules) {
         try {
             scheduledGames = JSON.parse(storedSchedules);
         } catch (e) {
-            // Log removido
-            scheduledGames = []; // Reseta se houver erro de parsing
+            scheduledGames = [];
         }
     } else {
-        scheduledGames = []; // Garante que é um array vazio se não houver nada no storage
+        scheduledGames = [];
     }
 }
 
-/**
- * Salva os agendamentos no localStorage.
- */
 function saveSchedulesToLocalStorage() {
     try {
         localStorage.setItem(SCHEDULES_STORAGE_KEY, JSON.stringify(scheduledGames));
-    } catch (e) {
-        // Log removido
-    }
+    } catch (e) {}
 }
 
 /**
@@ -117,18 +97,18 @@ function syncWithFirestoreAndLocalStorage() {
     
     // Sempre escuta o Firestore público (todos autenticados podem ler)
     unsubscribeSchedules = SchedulesData.subscribeSchedules((arr) => {
-        const newScheduledGames = Array.isArray(arr) ? arr.slice() : [];
+        const firebaseSchedules = Array.isArray(arr) ? arr.slice() : [];
         
         // Detecta mudanças (apenas após o primeiro carregamento)
         if (!isFirstLoad) {
             // Detecta novos agendamentos
-            const newSchedules = newScheduledGames.filter(game => 
+            const newSchedules = firebaseSchedules.filter(game => 
                 !previousSchedules.has(game.id) && 
                 game.status === 'upcoming'
             );
             
             // Detecta cancelamentos
-            const cancelledSchedules = newScheduledGames.filter(game => 
+            const cancelledSchedules = firebaseSchedules.filter(game => 
                 previousSchedules.has(game.id) && 
                 previousSchedules.get(game.id) === 'upcoming' &&
                 game.status === 'cancelled'
@@ -149,11 +129,24 @@ function syncWithFirestoreAndLocalStorage() {
             });
         }
         
+        // Mescla dados do Firebase com localStorage preservando RSVPs locais
+        const mergedSchedules = firebaseSchedules.map(firebaseGame => {
+            const localGame = scheduledGames.find(g => g.id === firebaseGame.id);
+            if (localGame && localGame.rsvps && Object.keys(localGame.rsvps).length > 0) {
+                // Preserva RSVPs locais se existirem
+                return {
+                    ...firebaseGame,
+                    rsvps: { ...firebaseGame.rsvps, ...localGame.rsvps }
+                };
+            }
+            return firebaseGame;
+        });
+        
         // Atualiza o mapa para a próxima comparação
         previousSchedules.clear();
-        newScheduledGames.forEach(game => previousSchedules.set(game.id, game.status));
+        mergedSchedules.forEach(game => previousSchedules.set(game.id, game.status));
         
-        scheduledGames = newScheduledGames;
+        scheduledGames = mergedSchedules;
         saveSchedulesToLocalStorage();
         renderScheduledGames();
         
@@ -161,7 +154,6 @@ function syncWithFirestoreAndLocalStorage() {
     });
 }
 
-// NOVO: Função para remover o listener (chame ao deslogar)
 export function cleanupSchedulingListener() {
     if (unsubscribeSchedules) {
         unsubscribeSchedules();
