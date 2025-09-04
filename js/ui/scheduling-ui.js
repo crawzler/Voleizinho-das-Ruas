@@ -20,6 +20,23 @@ let editingScheduleId = null;
 let _savedScrollY = 0;
 let _touchMoveBlocker = null;
 
+/**
+ * Aguarda o carregamento dos dados dos jogadores
+ * @param {number} maxWaitTime - Tempo máximo de espera em ms
+ * @returns {Promise<Array>} Lista de jogadores carregados
+ */
+async function waitForPlayersData(maxWaitTime = 3000) {
+    const startTime = Date.now();
+    let players = getPlayers();
+    
+    while (players.length === 0 && (Date.now() - startTime) < maxWaitTime) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        players = getPlayers();
+    }
+    
+    return players;
+}
+
 function lockBodyScroll() {
     _savedScrollY = window.scrollY || document.documentElement.scrollTop || 0;
     document.body.style.top = `-${_savedScrollY}px`;
@@ -1656,7 +1673,7 @@ export function updateSchedulingPermissions() {
 
 
 
-export function showResponsesModal(game) {
+export async function showResponsesModal(game) {
     try {
         lockBodyScroll();
         enableTouchMoveBlocker();
@@ -1668,8 +1685,59 @@ export function showResponsesModal(game) {
         const content = document.createElement('div');
         content.className = 'attendance-modal';
 
+        // Aguarda o carregamento dos jogadores antes de continuar
+        const players = await waitForPlayersData();
+        
+        // Se ainda não temos jogadores, mostra um loading
+        if (players.length === 0) {
+            content.innerHTML = `
+                <header class="att-modal__header">
+                    <div class="att-modal__head">
+                        <div>
+                            <h3 class="att-modal__title">Carregando dados...</h3>
+                        </div>
+                    </div>
+                    <button class="close-modal-btn" aria-label="Fechar">
+                        <span class="material-icons">close</span>
+                    </button>
+                </header>
+                <div class="att-groups">
+                    <p style="text-align: center; padding: 2rem;">Aguarde, carregando informações dos jogadores...</p>
+                </div>
+            `;
+            
+            overlay.appendChild(content);
+            document.body.appendChild(overlay);
+            
+            // Adiciona o handler de fechar no botão
+            const closeBtn = content.querySelector('.close-modal-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    overlay.remove();
+                    unlockBodyScroll();
+                    disableTouchMoveBlocker();
+                });
+            }
+            
+            // Tenta carregar novamente após um tempo
+            setTimeout(async () => {
+                const retryPlayers = await waitForPlayersData(2000);
+                if (retryPlayers.length > 0) {
+                    // Recarrega o modal com os dados
+                    overlay.remove();
+                    showResponsesModal(game);
+                } else {
+                    // Se ainda não carregou, continua com dados limitados mas permite interação
+                    overlay.remove();
+                    // Chama novamente mas forçando a continuação mesmo sem dados completos
+                    setTimeout(() => showResponsesModal(game), 100);
+                }
+            }, 1500);
+            
+            return;
+        }
+
         const rsvps = game.rsvps || {};
-        const players = getPlayers();
         const currentUser = getCurrentUser();
         const getPlayer = (uid) => players.find(p => p.uid === uid || p.id === uid) || null;
         const getName = (uid) => {
@@ -1775,6 +1843,44 @@ export function showResponsesModal(game) {
         // Atualiza UI do modal com base no estado atual (grupos e destaque)
         function refreshUI() {
             const { going, maybe, notGoing, myResponse } = computeLists();
+            
+            // Força uma verificação adicional para garantir que o usuário atual esteja na lista correta
+            if (currentUser && game.rsvps && game.rsvps[currentUser.uid]) {
+                const userResponse = game.rsvps[currentUser.uid];
+                const userInCorrectList = (
+                    (userResponse === 'going' && going.some(p => p.uid === currentUser.uid)) ||
+                    (userResponse === 'maybe' && maybe.some(p => p.uid === currentUser.uid)) ||
+                    (userResponse === 'not_going' && notGoing.some(p => p.uid === currentUser.uid))
+                );
+                
+                // Se o usuário não estiver na lista correta, força uma atualização
+                if (!userInCorrectList) {
+                    const updatedPlayers = getPlayers();
+                    const userItem = {
+                        uid: currentUser.uid,
+                        name: getName(currentUser.uid),
+                        photo: getPhoto(currentUser.uid)
+                    };
+                    
+                    // Remove o usuário de todas as listas
+                    const removeFromAll = (uid) => {
+                        const index1 = going.findIndex(p => p.uid === uid);
+                        const index2 = maybe.findIndex(p => p.uid === uid);
+                        const index3 = notGoing.findIndex(p => p.uid === uid);
+                        if (index1 !== -1) going.splice(index1, 1);
+                        if (index2 !== -1) maybe.splice(index2, 1);
+                        if (index3 !== -1) notGoing.splice(index3, 1);
+                    };
+                    
+                    removeFromAll(currentUser.uid);
+                    
+                    // Adiciona na lista correta
+                    if (userResponse === 'going') going.unshift(userItem);
+                    else if (userResponse === 'maybe') maybe.unshift(userItem);
+                    else if (userResponse === 'not_going') notGoing.unshift(userItem);
+                }
+            }
+            
             if (groupsContainer) {
                 const renderGroupWithResponse = (label, icon, colorVar, list, responseType) => {
                     const currentUserInList = currentUser ? list.find(p => p.uid === currentUser.uid) : null;
@@ -1810,8 +1916,13 @@ export function showResponsesModal(game) {
                 
                 if (currentUser) {
                     group.style.cursor = 'pointer';
-                    group.addEventListener('click', () => {
-                        registerResponse(responseType);
+                    group.addEventListener('click', async () => {
+                        await registerResponse(responseType);
+                        // Aguarda um pouco e atualiza novamente para garantir que os dados estejam sincronizados
+                        setTimeout(() => {
+                            refreshUI();
+                            addGroupClickHandlers(); // Re-adiciona os handlers após atualizar
+                        }, 200);
                     });
                 }
             });
@@ -1842,7 +1953,33 @@ export function showResponsesModal(game) {
                     }
                 }
                 
-                // Atualiza UI primeiro
+                // Força uma nova busca dos jogadores para garantir dados atualizados
+                const updatedPlayers = await waitForPlayersData(1000);
+                
+                // Atualiza as funções de busca com os dados mais recentes
+                const getUpdatedPlayer = (uid) => updatedPlayers.find(p => p.uid === uid || p.id === uid) || null;
+                const getUpdatedName = (uid) => {
+                    const p = getUpdatedPlayer(uid);
+                    return p ? (p.name || `Usuário ${uid}`).replace(' [local]','') : `Usuário ${uid}`;
+                };
+                const getUpdatedPhoto = (uid) => {
+                    const p = getUpdatedPlayer(uid);
+                    return (p && !p.isManual && p.photoURL) ? p.photoURL : 'assets/default-user-icon.svg';
+                };
+                
+                // Recalcula as listas com dados atualizados
+                const updatedRsvps = game.rsvps || {};
+                const going = [];
+                const maybe = [];
+                const notGoing = [];
+                Object.entries(updatedRsvps).forEach(([uid, response]) => {
+                    const item = { uid, name: getUpdatedName(uid), photo: getUpdatedPhoto(uid) };
+                    if (response === 'going') going.push(item);
+                    else if (response === 'maybe') maybe.push(item);
+                    else notGoing.push(item);
+                });
+                
+                // Atualiza UI com dados recalculados
                 refreshUI();
                 addGroupClickHandlers();
                 
@@ -1860,6 +1997,27 @@ export function showResponsesModal(game) {
                 } catch (firebaseError) {
                     // Ignora erros do Firebase - dados já estão salvos localmente
                 }
+                
+                // Força uma atualização da tela de agendamentos para refletir as mudanças
+                setTimeout(() => {
+                    // Atualiza o array global scheduledGames
+                    const globalIndex = scheduledGames.findIndex(g => g.id === game.id);
+                    if (globalIndex !== -1) {
+                        scheduledGames[globalIndex] = { ...game };
+                    }
+                    
+                    // Re-renderiza a lista de agendamentos
+                    renderScheduledGames();
+                    
+                    // Salva novamente no localStorage para garantir persistência
+                    saveSchedulesToLocalStorage();
+                    
+                    // Se o modal ainda estiver aberto, força uma atualização final
+                    if (document.body.contains(overlay)) {
+                        refreshUI();
+                        addGroupClickHandlers();
+                    }
+                }, 100);
             } catch (error) {
                 displayMessage('Erro ao salvar resposta. Tente novamente.', 'error');
             }
