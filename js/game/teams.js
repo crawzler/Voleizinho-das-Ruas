@@ -73,4 +73,9 @@ export function generateTeams(appId) {
     salvarTimesGerados(generatedTeams);
     displayMessage('Times gerados com sucesso!', 'success');
     renderTeams(generatedTeams);
+    
+    // Atualiza o drawer dos jogadores
+    if (window.updateDrawerContent) {
+        window.updateDrawerContent();
+    }
 }

@@ -436,6 +436,12 @@ export function swapTeams() {
     const config = loadConfig();
     const shouldDisplayPlayers = config.displayPlayers ?? true;
     renderScoringPagePlayers(currentTeam1, currentTeam2, shouldDisplayPlayers);
+    
+    // Atualiza o drawer dos jogadores
+    if (window.updateDrawerContent) {
+        window.updateDrawerContent();
+    }
+    
     // Persistir estado
     try { salvarEstado(getGameState()); } catch(e) {}
 
@@ -623,10 +629,18 @@ export function getAllGeneratedTeams() {
 
 export function setCurrentTeam1(players) {
     currentTeam1 = players;
+    // Atualiza o drawer quando o time 1 é alterado
+    if (window.updateDrawerContent) {
+        window.updateDrawerContent();
+    }
 }
 
 export function setCurrentTeam2(players) {
     currentTeam2 = players;
+    // Atualiza o drawer quando o time 2 é alterado
+    if (window.updateDrawerContent) {
+        window.updateDrawerContent();
+    }
 }
 
 export function setActiveTeam1Name(name) {

@@ -23,6 +23,7 @@ import { setupSchedulingPage, updateSchedulingPermissions } from './ui/schedulin
 import './ui/profile-menu.js';
 import { setupQuickSettings } from './ui/quick-settings.js';
 import { setupSidebar as setupModernSidebar } from './ui/sidebar-ui.js';
+
 import { registerNotificationServiceWorker } from './utils/notifications.js';
 import { initWelcomeNotifications } from './ui/welcome-notifications.js';
 import { initDailyReminders } from './utils/daily-reminders.js';
@@ -221,6 +222,138 @@ function disablePullToRefresh() {
 
 // Chama imediatamente
 disablePullToRefresh();
+
+// ===== TIMER DRAWER FUNCTIONS =====
+// Cache dos elementos DOM
+let timerDrawerElement = null;
+let timerDrawerTabElement = null;
+let isTimerDrawerInitialized = false;
+
+/**
+ * Inicializa o timer drawer
+ */
+function initTimerDrawer() {
+    // Previne múltiplas inicializações
+    if (isTimerDrawerInitialized) {
+        return;
+    }
+
+    timerDrawerElement = document.getElementById('timer-drawer');
+    timerDrawerTabElement = document.getElementById('timer-drawer-tab');
+    
+    if (!timerDrawerElement || !timerDrawerTabElement) {
+        return;
+    }
+
+    // Função para toggle do drawer
+    const handleTabClick = () => {
+        toggleTimerDrawer();
+    };
+
+    // Função para fechar drawer ao clicar fora
+    const handleDocumentClick = (e) => {
+        if (!timerDrawerElement.contains(e.target) && timerDrawerElement.classList.contains('expanded')) {
+            closeTimerDrawer();
+        }
+    };
+
+    // Função para prevenir fechamento ao clicar dentro
+    const handleDrawerClick = (e) => {
+        e.stopPropagation();
+    };
+
+    // Adiciona eventos
+    timerDrawerTabElement.addEventListener('click', handleTabClick);
+    document.addEventListener('click', handleDocumentClick);
+    timerDrawerElement.addEventListener('click', handleDrawerClick);
+
+    isTimerDrawerInitialized = true;
+
+    // Atualiza visibilidade inicial
+    updateTimerDrawerVisibility();
+}
+
+/**
+ * Alterna o estado do timer drawer (aberto/fechado)
+ */
+function toggleTimerDrawer() {
+    if (!timerDrawerElement) {
+        timerDrawerElement = document.getElementById('timer-drawer');
+    }
+    if (!timerDrawerElement) return;
+
+    if (timerDrawerElement.classList.contains('expanded')) {
+        closeTimerDrawer();
+    } else {
+        openTimerDrawer();
+    }
+}
+
+/**
+ * Abre o timer drawer
+ */
+function openTimerDrawer() {
+    if (!timerDrawerElement) {
+        timerDrawerElement = document.getElementById('timer-drawer');
+    }
+    if (!timerDrawerElement) return;
+
+    timerDrawerElement.classList.add('expanded');
+}
+
+/**
+ * Fecha o timer drawer
+ */
+function closeTimerDrawer() {
+    if (!timerDrawerElement) {
+        timerDrawerElement = document.getElementById('timer-drawer');
+    }
+    if (!timerDrawerElement) return;
+
+    timerDrawerElement.classList.remove('expanded');
+}
+
+/**
+ * Mostra ou oculta o timer drawer baseado na configuração
+ */
+function updateTimerDrawerVisibility() {
+    if (!timerDrawerElement) {
+        timerDrawerElement = document.getElementById('timer-drawer');
+    }
+    if (!timerDrawerElement) return;
+
+    // Verifica se deve exibir o timer com tratamento de erro
+    let config = {};
+    try {
+        config = JSON.parse(localStorage.getItem('volleyballConfig')) || {};
+    } catch (error) {
+        console.warn('Erro ao carregar configuração do timer drawer:', error);
+        config = {};
+    }
+    
+    const shouldDisplayTimer = config.displayTimer !== false; // padrão é true
+
+    // Verifica se está na página de pontuação
+    const scoringPage = document.getElementById('scoring-page');
+    const isInScoringPage = scoringPage && scoringPage.classList.contains('app-page--active');
+
+    // Verifica se não está na start-page
+    const startPage = document.getElementById('start-page');
+    const isInStartPage = startPage && startPage.classList.contains('app-page--active');
+
+    if (shouldDisplayTimer && isInScoringPage && !isInStartPage) {
+        timerDrawerElement.style.display = 'block';
+    } else {
+        timerDrawerElement.style.display = 'none';
+        closeTimerDrawer(); // Fecha se estiver aberto
+    }
+}
+
+// Exporta as funções para uso em outros módulos se necessário
+window.updateTimerDrawerVisibility = updateTimerDrawerVisibility;
+window.toggleTimerDrawer = toggleTimerDrawer;
+window.openTimerDrawer = openTimerDrawer;
+window.closeTimerDrawer = closeTimerDrawer;
 
 document.addEventListener('DOMContentLoaded', async () => {
     window.isAppReady = true;
@@ -1263,6 +1396,7 @@ async function copySwLogsToClipboard() {
     setupHistoryPage();
     setupSchedulingPage();
     setupQuickSettings();
+    initTimerDrawer();
 
     // Listeners for team page buttons
     const generateTeamsButton = document.getElementById('generate-teams-button');

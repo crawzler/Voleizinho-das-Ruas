@@ -13,6 +13,7 @@ import { cancelGame, deleteGame, setupSchedulingPage } from './scheduling-ui.js'
 import * as SchedulingUI from './scheduling-ui.js'; // Adicione esta linha para importar tudo
 import { addPlayer, removePlayer } from '../data/players.js'; // <-- ADICIONE ESTA LINHA
 
+
 let touchStartY = 0;
 const DRAG_THRESHOLD = 30; // Limite de movimento para diferenciar clique de arrastar
 let touchStartedOnSwap = false; // Flag para evitar pontuar quando o toque começou no botão de inverter
@@ -132,6 +133,13 @@ export async function showPage(pageIdToShow) {
     } else {
         document.body.classList.remove('start-page-active');
     }
+    
+    // NOVO: Força atualização da visibilidade do timer drawer após mudança de classe
+    setTimeout(() => {
+        if (window.updateTimerDrawerVisibility) {
+            window.updateTimerDrawerVisibility();
+        }
+    }, 50);
 
     // NOVO: marca quando a tela de pontuação está ativa para que CSS condicional de safe areas funcione
     if (pageIdToShow === 'scoring-page') {
@@ -146,6 +154,11 @@ export async function showPage(pageIdToShow) {
 
     closeSidebar();
     updateNavScoringButton(getIsGameInProgress(), currentPageId);
+    
+    // Atualiza visibilidade do timer drawer
+    if (window.updateTimerDrawerVisibility) {
+        window.updateTimerDrawerVisibility();
+    }
 
     // Atualiza item ativo do menu conforme a página atual
     try {
@@ -213,12 +226,46 @@ export async function showPage(pageIdToShow) {
             }
         } catch (_) { /* ignore */ }
         
-        // Setup da gaveta
+        // Setup da gaveta dos times
         const drawerTab = document.getElementById('drawer-tab');
         const drawer = document.getElementById('drawer');
         if (drawerTab && drawer) {
-            drawerTab.onclick = () => drawer.classList.toggle('expanded');
+            let autoCloseTimer = null;
+            
+            const closeDrawer = () => {
+                drawer.classList.remove('expanded');
+                if (autoCloseTimer) {
+                    clearTimeout(autoCloseTimer);
+                    autoCloseTimer = null;
+                }
+            };
+            
+            const openDrawer = () => {
+                drawer.classList.add('expanded');
+                if (autoCloseTimer) clearTimeout(autoCloseTimer);
+                autoCloseTimer = setTimeout(closeDrawer, 5000);
+            };
+            
+            drawerTab.onclick = () => {
+                if (drawer.classList.contains('expanded')) {
+                    closeDrawer();
+                } else {
+                    openDrawer();
+                }
+            };
+            
+            setupDrawerSwipe(drawer);
+            updateDrawerContent();
+            
+            // Fecha drawer ao clicar fora
+            document.addEventListener('click', (e) => {
+                if (!drawer.contains(e.target) && drawer.classList.contains('expanded')) {
+                    closeDrawer();
+                }
+            });
         }
+        
+        // Setup da gaveta do timer - controlado por main.js
         
 
         
@@ -657,6 +704,9 @@ export function selectTeamFromModal(teamIndex, panelId) {
     const shouldDisplayPlayers = config.displayPlayers ?? true;
     renderScoringPagePlayers(getCurrentTeam1(), getCurrentTeam2(), shouldDisplayPlayers);
     
+    // Atualiza o drawer dos jogadores
+    updateDrawerContent();
+    
     // Fecha o modal
     Elements.teamSelectionModal().classList.remove('modal-active');
     displayMessage(`Time ${panelId === 'team1' ? 1 : 2} atualizado para: ${teamDisplayName}`, "success");
@@ -984,14 +1034,144 @@ window.swapTeams = function() {
         import('../game/logic.js').then(({ swapTeams }) => {
             if (typeof swapTeams === 'function') {
                 swapTeams();
+                updateDrawerContent(); // Atualiza drawer após trocar times
                 displayMessage('Times trocados de lado!', 'success');
             }
         });
     });
 };
 
+// Função para atualizar conteúdo da gaveta
+export function updateDrawerContent() {
+    // Torna a função global para uso em outros módulos
+    window.updateDrawerContent = updateDrawerContent;
+    const team1Players = document.getElementById('drawer-team1-players');
+    const team2Players = document.getElementById('drawer-team2-players');
+    
+    // Busca a lista completa de jogadores para obter fotos
+    import('../data/players.js').then(({ getPlayers }) => {
+        const allPlayers = getPlayers();
+        
+        const findPlayerData = (playerName) => {
+            if (typeof playerName !== 'string') return null;
+            // Remove [local] do nome para busca
+            const cleanName = playerName.replace(' [local]', '');
+            return allPlayers.find(p => p.name === cleanName || p.name === playerName);
+        };
+        
+        if (team1Players) {
+            team1Players.innerHTML = '';
+            const team1 = getCurrentTeam1() || [];
+            if (team1.length === 0) {
+                const li = document.createElement('li');
+                li.textContent = 'Nenhum jogador';
+                li.style.fontStyle = 'italic';
+                team1Players.appendChild(li);
+            } else {
+                team1.forEach(playerName => {
+                    const li = document.createElement('li');
+                    li.className = 'drawer-player-item drawer-player-left';
+                    
+                    const span = document.createElement('span');
+                    span.textContent = playerName;
+                    
+                    const img = document.createElement('img');
+                    img.className = 'drawer-player-photo';
+                    
+                    const playerData = findPlayerData(playerName);
+                    img.src = (playerData && playerData.photoURL && playerData.photoURL !== 'null') ? playerData.photoURL : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSI4IiByPSIzIiBmaWxsPSIjOWNhM2FmIi8+CjxwYXRoIGQ9Im0xMiAxNGMtNC40IDAtOCAyLjctOCA2djJoMTZ2LTJjMC0zLjMtMy42LTYtOC02eiIgZmlsbD0iIzljYTNhZiIvPgo8L3N2Zz4K';
+                    img.alt = playerName;
+                    img.onerror = function() {
+                        this.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSI4IiByPSIzIiBmaWxsPSIjOWNhM2FmIi8+CjxwYXRoIGQ9Im0xMiAxNGMtNC40IDAtOCAyLjctOCA2djJoMTZ2LTJjMC0zLjMtMy42LTYtOC02eiIgZmlsbD0iIzljYTNhZiIvPgo8L3N2Zz4K';
+                    };
+                    
+                    li.appendChild(span);
+                    li.appendChild(img);
+                    team1Players.appendChild(li);
+                });
+            }
+        }
+        
+        if (team2Players) {
+            team2Players.innerHTML = '';
+            const team2 = getCurrentTeam2() || [];
+            if (team2.length === 0) {
+                const li = document.createElement('li');
+                li.textContent = 'Nenhum jogador';
+                li.style.fontStyle = 'italic';
+                team2Players.appendChild(li);
+            } else {
+                team2.forEach(playerName => {
+                    const li = document.createElement('li');
+                    li.className = 'drawer-player-item';
+                    
+                    const img = document.createElement('img');
+                    img.className = 'drawer-player-photo';
+                    
+                    const playerData = findPlayerData(playerName);
+                    img.src = (playerData && playerData.photoURL && playerData.photoURL !== 'null') ? playerData.photoURL : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSI4IiByPSIzIiBmaWxsPSIjOWNhM2FmIi8+CjxwYXRoIGQ9Im0xMiAxNGMtNC40IDAtOCAyLjctOCA2djJoMTZ2LTJjMC0zLjMtMy42LTYtOC02eiIgZmlsbD0iIzljYTNhZiIvPgo8L3N2Zz4K';
+                    img.alt = playerName;
+                    img.onerror = function() {
+                        this.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSI4IiByPSIzIiBmaWxsPSIjOWNhM2FmIi8+CjxwYXRoIGQ9Im0xMiAxNGMtNC40IDAtOCAyLjctOCA2djJoMTZ2LTJjMC0zLjMtMy42LTYtOC02eiIgZmlsbD0iIzljYTNhZiIvPgo8L3N2Zz4K';
+                    };
+                    
+                    const span = document.createElement('span');
+                    span.textContent = playerName;
+                    
+                    li.appendChild(img);
+                    li.appendChild(span);
+                    team2Players.appendChild(li);
+                });
+            }
+        }
+    }).catch(() => {
+        // Fallback caso não consiga carregar os jogadores
+        if (team1Players) {
+            team1Players.innerHTML = '<li style="font-style: italic;">Erro ao carregar</li>';
+        }
+        if (team2Players) {
+            team2Players.innerHTML = '<li style="font-style: italic;">Erro ao carregar</li>';
+        }
+    });
+}
+
 // NOVO: Proteção contra toasts duplicados de RSVP
 let lastRSVPToastAt = 0;
+
+// Função para configurar gestos de swipe na gaveta
+function setupDrawerSwipe(drawer) {
+    let startY = 0;
+    let currentY = 0;
+    let isDragging = false;
+    
+    drawer.addEventListener('touchstart', (e) => {
+        startY = e.touches[0].clientY;
+        isDragging = true;
+    }, { passive: true });
+    
+    drawer.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        currentY = e.touches[0].clientY;
+    }, { passive: true });
+    
+    drawer.addEventListener('touchend', () => {
+        if (!isDragging) return;
+        isDragging = false;
+        
+        const deltaY = currentY - startY;
+        const threshold = 30;
+        
+        if (Math.abs(deltaY) > threshold) {
+            if (deltaY > 0) {
+                // Swipe para baixo - abrir
+                drawer.classList.add('expanded');
+            } else {
+                // Swipe para cima - fechar
+                drawer.classList.remove('expanded');
+            }
+        }
+    }, { passive: true });
+}
 
 // Listener removido - o modal de confirmação estava sendo chamado daqui
 
@@ -1008,3 +1188,4 @@ const initialHash = window.location.hash.replace('#', '');
 if (initialHash) {
     showPage(initialHash);
 }
+

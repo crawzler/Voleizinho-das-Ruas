@@ -53,6 +53,11 @@ export const endGameButton = () => document.getElementById('end-game-button'); /
 export const team1Stars = () => document.getElementById('team1-stars');
 export const team2Stars = () => document.getElementById('team2-stars');
 
+// Timer Drawer Elements
+export const timerDrawer = () => document.getElementById('timer-drawer');
+export const timerDrawerTab = () => document.getElementById('timer-drawer-tab');
+export const timerDrawerContent = () => document.getElementById('timer-drawer-content');
+
 
 // Modal de Seleção de Time (usado na página de pontuação)
 export const teamSelectionModal = () => document.getElementById('team-selection-modal');

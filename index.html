@@ -156,12 +156,32 @@
 
         <!-- Página de Pontuação -->
         <section id="scoring-page" class="app-page scoring-page-layout">
-            <!-- Gaveta -->
+            <!-- Gaveta dos Times -->
             <div class="drawer" id="drawer">
                 <div class="drawer-tab" id="drawer-tab">
-                    <span class="material-icons">expand_more</span>
+                    <span class="material-icons">groups</span>
                 </div>
                 <div class="drawer-content" id="drawer-content">
+                    <div class="drawer-teams">
+                        <div class="drawer-team">
+                            <ul id="drawer-team1-players"></ul>
+                        </div>
+                        <div class="drawer-teams-sep">VS</div>
+                        <div class="drawer-team">
+                            <ul id="drawer-team2-players"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gaveta do Timer -->
+            <div class="timer-drawer" id="timer-drawer">
+                <div class="timer-drawer-tab" id="timer-drawer-tab">
+                    <span class="material-icons">timer</span>
+                </div>
+                <div class="timer-drawer-content" id="timer-drawer-content">
+                    <span id="timer-text" class="timer-display">00:00</span>
+                    <span id="set-timer-text" class="timer-display">00:00</span>
                 </div>
             </div>
 
@@ -221,17 +241,7 @@
                     <div id="team2-score" class="score-number">0</div>
                 </div>
             </div>
-            <!-- ADICIONADO O ID PARA O WRAPPER DO TIMER -->
-            <div id="timer-and-set-timer-wrapper" class="timer-and-set-timer-wrapper">
-                <div class="timer-wrapper">
-                    <span id="timer-text">00:00</span>
-                    <span class="material-icons timer-toggle-button">play_arrow</span>
-                </div>
-                <div class="set-timer-wrapper">
-                    <span class="material-icons">timer</span>
-                    <span id="set-timer-text">00:00</span>
-                </div>
-            </div>
+
         </section>
 
         <!-- Página de Times -->

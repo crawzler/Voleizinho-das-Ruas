@@ -40,6 +40,11 @@ function removePlayerFromTeam(teamIndex, playerIndex) {
                     pruneEmptyTeamsExceptNewlyCreated();
 
                     displayMessage(`${player} removido do time.`, 'success');
+                    
+                    // Atualiza o drawer dos jogadores
+                    if (window.updateDrawerContent) {
+                        window.updateDrawerContent();
+                    }
 
                     // Desmarca o jogador na tela de jogadores
                     if (player && !player.startsWith('[Vaga')) {
@@ -612,6 +617,11 @@ function performSubstitution(teamIndex, playerIndex, oldPlayer, newPlayer, newPl
 
                     updateSelectedPlayersCount();
                     
+                    // Atualiza o drawer dos jogadores
+                    if (window.updateDrawerContent) {
+                        window.updateDrawerContent();
+                    }
+                    
                     // Marcar jogador automaticamente se não era espaço vazio
                     if (!isOldPlayerEmptySlot) {
                         autoSelectPlayerInUI(newPlayer);
@@ -653,6 +663,11 @@ function addNewTeam() {
                 salvarTimesGerados(teams);
                 renderTeams(teams);
                 displayMessage(`${teamDisplayName} adicionado com sucesso!`, 'success');
+                
+                // Atualiza o drawer dos jogadores
+                if (window.updateDrawerContent) {
+                    window.updateDrawerContent();
+                }
             });
         });
     });
@@ -882,6 +897,11 @@ function fillTeamFromOthers(currentTeamIndex, opponentIndex) {
                     salvarTimesGerados(teams);
                     renderTeams(teams);
                     displayMessage(`${filled} vaga(s) preenchida(s) com jogadores aleatórios!`, 'success');
+                    
+                    // Atualiza o drawer dos jogadores
+                    if (window.updateDrawerContent) {
+                        window.updateDrawerContent();
+                    }
                 } else {
                     displayMessage('Não foi possível preencher as vagas.', 'warning');
                 }
@@ -951,6 +971,11 @@ export function renderScoringPagePlayers(team1 = [], team2 = [], shouldDisplayPl
 
     col1.innerHTML = makeList(team1);
     col2.innerHTML = makeList(team2);
+    
+    // Atualiza o drawer dos jogadores quando os times são renderizados
+    if (window.updateDrawerContent) {
+        window.updateDrawerContent();
+    }
 }
 
 export function updateTeamDisplayNamesAndColors(team1Name, team2Name, team1Color, team2Color) {

@@ -184,6 +184,11 @@ export function saveConfig() {
             }
         } catch (_) { /* ignore */ }
         
+        // NOVO: Atualiza visibilidade do timer drawer
+        if (window.updateTimerDrawerVisibility) {
+            window.updateTimerDrawerVisibility();
+        }
+        
         // Atualiza meta theme-color baseado no tema
         const metaThemeColor = document.querySelector('meta[name="theme-color"]');
         if (metaThemeColor) {

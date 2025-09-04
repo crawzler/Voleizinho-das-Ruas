@@ -3321,11 +3321,9 @@ body.start-page-active #team2-change-button {
     top: calc(50% + var(--safe-area-inset-top) / 2);
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: #2229;
-    color: white;
+    background-color: var(--sidebar-bg);
+    color: var(--text-primary);
     border-radius: 9999px;
-    width: 50px;
-    height: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3333,6 +3331,7 @@ body.start-page-active #team2-change-button {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
     z-index: 10;
     outline: none;
+    padding: 10px;
     -webkit-tap-highlight-color: transparent;
 }
 
@@ -5938,37 +5937,107 @@ input[type="password"] {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     z-index: 100;
     width: 60px;
-    transition: width 0.3s ease;
+    height: auto;
+    transition: width 0.3s ease, overflow 0s ease 0.3s;
+    overflow: hidden;    
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
 }
 
 .drawer.expanded {
-    width: 300px;
+    width: 260px;
+    transition: width 0.3s ease;
+    overflow: visible;
 }
 
 .drawer-tab {
-    padding: 8px;
     text-align: center;
     cursor: pointer;
+    transition: opacity 0.3s ease;
+}
+
+.drawer.expanded .drawer-tab {
+    display: none;
+    pointer-events: none;
 }
 
 .drawer-tab .material-icons {
     font-size: 20px;
     color: #666;
-    transition: transform 0.3s ease;
-}
-
-.drawer.expanded .drawer-tab .material-icons {
-    transform: rotate(180deg);
 }
 
 .drawer-content {
-    height: 0;
+    max-height: 0;
     overflow: hidden;
-    transition: height 0.3s ease;
+    transition: max-height 0.3s ease;
+    padding: 0;
 }
 
 .drawer.expanded .drawer-content {
-    height: 100px;
+    height: auto;
+    max-height: 220px;
+    padding: 10px 0;
+}
+
+.drawer-teams {
+    display: flex;
+    justify-content: center;
+}
+
+.drawer-team {
+}
+
+.drawer-teams-sep {
+    display: flex;
+    align-items: center;
+    color: var(--new-text-secondary);    
+}
+
+.drawer-team h4 {
+    margin: 0 0 5px 0;
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+}
+
+.drawer-team ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 12px;
+    color: #666;
+}
+
+.drawer-team li {
+    margin-bottom: 2px;
+}
+
+.drawer-player-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding:4px 1rem;
+}
+
+.drawer-player-photo {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #ddd;
+    background-color: #f5f5f5;
+    flex-shrink: 0;
+}
+
+.drawer-player-item span {
+    font-size: 12px;
+    color: #666;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.drawer-player-left {
 }
 
 
@@ -6808,4 +6877,96 @@ input:checked + .slider:before {
     opacity: 1;
     visibility: visible;
     display: flex;
+}
+
+/* Timer Drawer */
+.timer-drawer {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 25px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    z-index: 20;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    transition: width 0.3s ease, height 0.3s ease;
+}
+
+.timer-drawer.expanded {
+    width: 220px;
+    height: 40px;
+}
+
+.timer-drawer-tab {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 100%;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 21;
+}
+
+.timer-drawer-content {
+    opacity: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    transition: opacity 0.3s ease;
+}
+
+.timer-drawer.expanded .timer-drawer-content {
+    opacity: 1;
+}
+
+.timer-drawer-tab .material-icons {
+    font-size: 20px;
+    color: #666;
+    padding-top: 3px;
+    transition: font-size 0.3s ease, padding-top 0.3s ease;
+}
+
+.timer-drawer.expanded .timer-drawer-tab .material-icons {
+    display: flex;
+    align-items: center;
+    font-size: 28px;
+    padding-top: 0;
+}
+
+.timer-drawer .timer-display {
+    font-weight: 600;
+    color: #333;
+}
+
+.timer-drawer .timer-display:first-child {
+    font-size: 1.4rem;
+}
+
+.timer-drawer .timer-display:last-child {
+    font-size: 1.1rem;
+}
+
+.timer-drawer .timer-icon {
+    font-size: 24px;
+    color: #666;
+}
+
+.timer-drawer.expanded .timer-icon {
+    font-size: 32px;
+}
+
+/* Oculta timer drawer quando start-page está ativa */
+body.start-page-active .timer-drawer {
+    display: none !important;
 }
