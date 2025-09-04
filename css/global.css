@@ -163,10 +163,14 @@ html {
   width: 100%;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: none;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: none;
 }
 
 *, *::before, *::after {
   box-sizing: inherit;
+  overscroll-behavior: none;
 }
 
 body {
@@ -180,7 +184,9 @@ body {
   margin: 0;
   padding: 0;
   width: 100%;
+  overscroll-behavior: none;
   overscroll-behavior-x: none;
+  overscroll-behavior-y: none;
   transition: background-color 0.3s ease, color 0.3s ease;
   -webkit-user-select: none;
   -moz-user-select: none;

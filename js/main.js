@@ -182,8 +182,51 @@ function processPendingNotificationFromSession() {
     } catch (e) {}
 }
 
+// Desabilita pull-to-refresh completamente
+function disablePullToRefresh() {
+    // CSS overscroll-behavior
+    document.documentElement.style.overscrollBehavior = 'none';
+    document.body.style.overscrollBehavior = 'none';
+    
+    // Bloqueia touchstart no topo da página
+    document.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        const touch = e.touches[0];
+        if (touch.clientY <= 10 && window.scrollY === 0) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+    
+    // Bloqueia touchmove que pode causar pull-to-refresh
+    document.addEventListener('touchmove', (e) => {
+        if (window.scrollY === 0 && e.touches[0].clientY > e.touches[0].clientY) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+    
+    // Força overscroll-behavior em todos os elementos
+    const style = document.createElement('style');
+    style.textContent = `
+        *, *::before, *::after {
+            overscroll-behavior: none !important;
+            overscroll-behavior-y: none !important;
+        }
+        html, body {
+            overscroll-behavior: none !important;
+            overscroll-behavior-y: none !important;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// Chama imediatamente
+disablePullToRefresh();
+
 document.addEventListener('DOMContentLoaded', async () => {
     window.isAppReady = true;
+    
+    // Reforça a desabilitação após DOM carregar
+    disablePullToRefresh();
     
     // Limpeza preventiva de dados de notificação residuais para evitar abertura desnecessária do modal
     try {
@@ -833,9 +876,9 @@ function createAdminSwLogOverlay() {
     `;
     document.head.appendChild(style);
     
-    // Modal completo
+    // Modal completo - inicia minimizado
     overlay.innerHTML = `
-        <div id="admin-sw-full" style="display:block;">
+        <div id="admin-sw-full" style="display:none;">
             <div id="admin-sw-header" style="display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid rgba(255,255,255,0.1);">
                 <div style="display:flex;align-items:center;gap:10px">
                     <strong style="font-size:14px;color:#38bdf8;">🔧 Debug</strong>
@@ -854,10 +897,16 @@ function createAdminSwLogOverlay() {
                 <div id="admin-sw-log-list" style="overflow:auto;flex:1;background:rgba(0,0,0,0.3);padding:12px;border-radius:8px;font-family:'Courier New',monospace;white-space:pre-wrap;color:#e2e8f0;max-height:400px;border:1px solid rgba(255,255,255,0.1);">Clique em Atualizar para carregar dados...</div>
             </div>
         </div>
-        <div id="admin-sw-mini" style="display:none;padding:8px 12px;cursor:pointer;" title="Expandir Debug">
+        <div id="admin-sw-mini" style="display:block;padding:8px 12px;cursor:pointer;" title="Expandir Debug">
             <span style="font-size:13px;color:#38bdf8;">🔧</span>
         </div>
     `;
+
+    document.body.appendChild(overlay);
+    
+    // Ajusta o tamanho inicial para o modo minimizado
+    overlay.style.width = 'auto';
+    overlay.style.height = 'auto';
 
     document.body.appendChild(overlay);
 

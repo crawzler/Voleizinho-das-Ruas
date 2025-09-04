@@ -102,7 +102,7 @@
 /* Categorias de jogadores */
 #players-page .player-category-tabs {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 0.25rem;
     margin-bottom: 1rem;
     background: var(--new-bg-card, var(--bg-card));

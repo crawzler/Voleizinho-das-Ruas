@@ -6,7 +6,7 @@ import * as Elements from './elements.js';
 import { displayMessage } from './messages.js';
 
 let updatePlayerCountCallback = () => {}
-let currentCategory = 'todos'; // Categoria ativa atual
+let currentFilter = 'todos'; // Filtro ativo atual
 let deleteZoneSetup = false; // Flag para evitar múltiplas configurações
 let dropZonesSetup = false; // Flag para controlar se as drop zones já foram configuradas
 
@@ -18,24 +18,16 @@ export function renderPlayersList(players) {
     const playersListContainer = Elements.playersListContainer();
     if (!playersListContainer) return;
 
-    // Carrega o estado de seleção dos jogadores por categoria (ou todas, se estiver em 'todos')
+    // Carrega o estado de seleção dos jogadores
     let selectedPlayerIds = [];
     try {
-        if (currentCategory === 'todos') {
-            ['principais', 'esporadicos', 'random'].forEach(category => {
-                const saved = localStorage.getItem(`selectedPlayers_${category}`);
-                if (saved) {
-                    const ids = JSON.parse(saved);
-                    selectedPlayerIds.push(...ids);
-                }
-            });
-        } else {
-            const key = `selectedPlayers_${currentCategory}`;
-            const savedSelection = localStorage.getItem(key);
-            if (savedSelection) {
-                selectedPlayerIds = JSON.parse(savedSelection);
+        ['principais', 'esporadicos', 'random'].forEach(category => {
+            const saved = localStorage.getItem(`selectedPlayers_${category}`);
+            if (saved) {
+                const ids = JSON.parse(saved);
+                selectedPlayerIds.push(...ids);
             }
-        }
+        });
     } catch (e) {
         // Log removido
         selectedPlayerIds = [];
@@ -101,21 +93,18 @@ export function renderPlayersList(players) {
         return;
     }
 
-    // Filtra jogadores por categoria atual e ordena por nome
-    const filteredPlayers = currentCategory === 'todos' 
-        ? players // Mostra todos se categoria for 'todos'
-        : players.filter(player => {
-            const playerCategory = player.category || 'principais'; // Categoria padrão para jogadores antigos
-            return playerCategory === currentCategory;
-          });
+    // Filtra jogadores baseado no filtro atual
+    let filteredPlayers;
+    if (currentFilter === 'marcados') {
+        filteredPlayers = players.filter(player => selectedPlayerIds.includes(player.id));
+    } else if (currentFilter === 'desmarcados') {
+        filteredPlayers = players.filter(player => !selectedPlayerIds.includes(player.id));
+    } else {
+        filteredPlayers = players; // Todos ou fallback
+    }
     
-    // Ordenação de dois níveis: marcados primeiro, depois alfabética
-    filteredPlayers.sort((a, b) => {
-        const aMarked = selectedPlayerIds.includes(a.id) ? 0 : 1;
-        const bMarked = selectedPlayerIds.includes(b.id) ? 0 : 1;
-        if (aMarked !== bMarked) return aMarked - bMarked; // marcados (0) antes de não marcados (1)
-        return a.name.localeCompare(b.name);
-    });
+    // Ordenação alfabética
+    filteredPlayers.sort((a, b) => a.name.localeCompare(b.name));
     
     filteredPlayers.forEach(player => {
         const playerElement = document.createElement('div');
@@ -207,8 +196,8 @@ function setupCategoryTabs() {
                 // Adiciona active na aba clicada
                 tab.classList.add('active');
                 
-                // Atualiza categoria atual
-                currentCategory = tab.dataset.category;
+                // Atualiza filtro atual
+                currentFilter = tab.dataset.category;
                 
                 // Re-renderiza apenas se a categoria mudou
                 const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
@@ -219,35 +208,37 @@ function setupCategoryTabs() {
 }
 
 /**
- * Atualiza os contadores de jogadores nas abas de categoria
+ * Atualiza os contadores de jogadores nas abas de filtro
  */
 function updateCategoryCounters() {
     const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
-    const counts = {
-        principais: 0,
-        esporadicos: 0,
-        random: 0
-    };
     
-    players.forEach(player => {
-        const category = player.category || 'principais';
-        if (counts.hasOwnProperty(category)) {
-            counts[category]++;
-        }
-    });
+    // Carrega jogadores selecionados
+    let selectedPlayerIds = [];
+    try {
+        ['principais', 'esporadicos', 'random'].forEach(category => {
+            const saved = localStorage.getItem(`selectedPlayers_${category}`);
+            if (saved) {
+                const ids = JSON.parse(saved);
+                selectedPlayerIds.push(...ids);
+            }
+        });
+    } catch (e) {
+        selectedPlayerIds = [];
+    }
     
     const totalCount = players.length;
+    const marcadosCount = players.filter(p => selectedPlayerIds.includes(p.id)).length;
+    const desmarcadosCount = totalCount - marcadosCount;
     
     // Atualiza o texto das abas com os contadores
     const tabTodos = document.getElementById('tab-todos');
-    const tabPrincipais = document.getElementById('tab-principais');
-    const tabEsporadicos = document.getElementById('tab-esporadicos');
-    const tabRandom = document.getElementById('tab-random');
+    const tabMarcados = document.getElementById('tab-marcados');
+    const tabDesmarcados = document.getElementById('tab-desmarcados');
     
     if (tabTodos) tabTodos.innerHTML = `<span>Todos</span><span>${totalCount}</span>`;
-    if (tabPrincipais) tabPrincipais.innerHTML = `<span>Principais</span><span>${counts.principais}</span>`;
-    if (tabEsporadicos) tabEsporadicos.innerHTML = `<span>Esporádicos</span><span>${counts.esporadicos}</span>`;
-    if (tabRandom) tabRandom.innerHTML = `<span>Random</span><span>${counts.random}</span>`;
+    if (tabMarcados) tabMarcados.innerHTML = `<span>Marcados</span><span>${marcadosCount}</span>`;
+    if (tabDesmarcados) tabDesmarcados.innerHTML = `<span>Desmarcados</span><span>${desmarcadosCount}</span>`;
 }
 
 /**
@@ -356,13 +347,8 @@ function filterPlayers() {
         // Log removido
     }
     
-    // Ordenação de dois níveis na busca: marcados primeiro, depois alfabética
-    matchingPlayers.sort((a, b) => {
-        const aMarked = selectedPlayerIds.includes(a.id) ? 0 : 1;
-        const bMarked = selectedPlayerIds.includes(b.id) ? 0 : 1;
-        if (aMarked !== bMarked) return aMarked - bMarked;
-        return a.name.localeCompare(b.name);
-    });
+    // Ordenação alfabética na busca
+    matchingPlayers.sort((a, b) => a.name.localeCompare(b.name));
     
     matchingPlayers.forEach(player => {
         const playerElement = document.createElement('div');
@@ -515,7 +501,7 @@ export function savePlayerSelectionState(e) {
             return; // Evita sobrescrever seleções usando os checkboxes visíveis do filtro
         }
 
-        if (currentCategory === 'todos') {
+        if (currentFilter === 'todos') {
             // Na aba "Todos", atualiza as categorias específicas dos jogadores
             const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
             const categorySelections = {
@@ -538,14 +524,42 @@ export function savePlayerSelectionState(e) {
                 localStorage.setItem(`selectedPlayers_${category}`, JSON.stringify(categorySelections[category]));
             });
         } else {
-            // Para categorias específicas, salva normalmente
-            const selectedPlayerIds = [];
-            document.querySelectorAll('#players-list-container .player-checkbox:checked').forEach(checkbox => {
-                selectedPlayerIds.push(checkbox.dataset.playerId);
+            // Para filtros de marcados/desmarcados, atualiza baseado nos checkboxes visíveis
+            const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
+            const categorySelections = {
+                principais: [],
+                esporadicos: [],
+                random: []
+            };
+            
+            // Carrega seleções existentes
+            ['principais', 'esporadicos', 'random'].forEach(category => {
+                const saved = localStorage.getItem(`selectedPlayers_${category}`);
+                if (saved) {
+                    categorySelections[category] = JSON.parse(saved);
+                }
             });
             
-            const key = `selectedPlayers_${currentCategory}`;
-            localStorage.setItem(key, JSON.stringify(selectedPlayerIds));
+            // Atualiza baseado nos checkboxes visíveis
+            document.querySelectorAll('#players-list-container .player-checkbox').forEach(checkbox => {
+                const playerId = checkbox.dataset.playerId;
+                const player = players.find(p => p.id === playerId);
+                if (player) {
+                    const playerCategory = player.category || 'principais';
+                    const index = categorySelections[playerCategory].indexOf(playerId);
+                    
+                    if (checkbox.checked && index === -1) {
+                        categorySelections[playerCategory].push(playerId);
+                    } else if (!checkbox.checked && index !== -1) {
+                        categorySelections[playerCategory].splice(index, 1);
+                    }
+                }
+            });
+            
+            // Salva as seleções atualizadas
+            Object.keys(categorySelections).forEach(category => {
+                localStorage.setItem(`selectedPlayers_${category}`, JSON.stringify(categorySelections[category]));
+            });
         }
         
         // Atualiza seleções globais para a aba "Todos"
@@ -776,11 +790,11 @@ function updateGlobalSelections() {
 }
 
 /**
- * Muda a categoria ativa de jogadores
- * @param {string} category - A categoria para filtrar ('principais', 'esporadicos', 'random')
+ * Muda o filtro ativo de jogadores
+ * @param {string} filter - O filtro para aplicar ('todos', 'marcados', 'desmarcados')
  */
-export function setCurrentCategory(category) {
-    currentCategory = category;
+export function setCurrentFilter(filter) {
+    currentFilter = filter;
     const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
     renderPlayersList(players);
 }
@@ -1319,8 +1333,8 @@ function setupDropZones() {
             // Adiciona active na aba clicada
             newTab.classList.add('active');
             
-            // Atualiza categoria atual
-            currentCategory = newTab.dataset.category;
+            // Atualiza filtro atual
+            currentFilter = newTab.dataset.category;
             
             // Re-renderiza apenas se a categoria mudou
             const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
