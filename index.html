@@ -214,25 +214,34 @@
                     <div id="team1-score" class="score-number">0</div>
                 </div>
 
-                <div id="scoreboard-menu-button" class="button">
-                    <span class="material-icons">more_vert</span>
-                    <div id="scoreboard-menu-dropdown">
-                        <button class="scoreboard-dropdown-button">Inverter Times
+                <!-- Menu do Scoreboard -->
+                <div class="scoreboard-menu">
+                    <button class="scoreboard-menu-button" id="scoreboard-menu-button">
+                        <span class="material-icons">more_vert</span>
+                    </button>
+                    <div class="scoreboard-dropdown" id="scoreboard-dropdown">
+                        <button class="dropdown-item" data-action="swap">
                             <span class="material-icons">swap_horiz</span>
+                            Inverter Times
                         </button>
-                        <button class="scoreboard-dropdown-button">Substituir Time A
+                        <div class="dropdown-divider"></div>
+                        <button class="dropdown-item" data-action="change-team1">
                             <span class="material-icons">shuffle</span>
+                            Substituir Time A
                         </button>
-                        <button class="scoreboard-dropdown-button">Substituir Time B
+                        <button class="dropdown-item" data-action="change-team2">
                             <span class="material-icons">shuffle</span>
+                            Substituir Time B
                         </button>
-                        <button class="scoreboard-dropdown-button">Configurar Partida
+                        <div class="dropdown-divider"></div>
+                        <button class="dropdown-item" data-action="settings">
                             <span class="material-icons">settings</span>
+                            Configurações
                         </button>
                     </div>
                 </div>
 
-                <div id="scoreboard-menu-overlay" class="scoreboard-overlay"></div>
+                <div class="scoreboard-overlay" id="scoreboard-overlay"></div>
 
 
 

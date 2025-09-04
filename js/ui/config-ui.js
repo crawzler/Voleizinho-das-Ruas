@@ -107,6 +107,9 @@ export function loadConfig() {
         // NOVO: Aplica a classe para ocultar jogadores
         document.body.classList.toggle('hide-players', !(config.displayPlayers ?? true));
         
+        // NOVO: Aplica classe para controlar drawer baseado na configuração de exibir jogadores
+        document.body.classList.toggle('display-players-enabled', config.displayPlayers ?? true);
+        
         // Atualiza meta theme-color baseado no tema
         const metaThemeColor = document.querySelector('meta[name="theme-color"]');
         if (metaThemeColor) {
@@ -175,6 +178,9 @@ export function saveConfig() {
         
         // NOVO: Atualiza a classe para ocultar jogadores
         document.body.classList.toggle('hide-players', !config.displayPlayers);
+        
+        // NOVO: Atualiza classe para controlar drawer baseado na configuração de exibir jogadores
+        document.body.classList.toggle('display-players-enabled', config.displayPlayers);
         
         // NOVO: Controla visibilidade do timer na UI imediatamente
         try {
