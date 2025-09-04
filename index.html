@@ -156,6 +156,16 @@
 
         <!-- Página de Pontuação -->
         <section id="scoring-page" class="app-page scoring-page-layout">
+            <!-- Gaveta -->
+            <div class="drawer" id="drawer">
+                <div class="drawer-tab" id="drawer-tab">
+                    <span class="material-icons">expand_more</span>
+                </div>
+                <div class="drawer-content" id="drawer-content">
+                </div>
+            </div>
+
+            
             <!-- NOVO: Contêineres para as estrelas de sets vencidos -->
             <div id="team1-stars" class="stars-container"></div>
             <div id="team2-stars" class="stars-container"></div>
@@ -182,7 +192,6 @@
                 <div id="team1-panel" class="score-panel team1-panel">
                     <h3 id="team1-name" class="team-name">Time 1</h3>
                     <div id="team1-score" class="score-number">0</div>
-                    <div id="team1-players-column" class="team-players-column" style="display: none;"></div>
                 </div>
 
                 <div id="scoreboard-menu-button" class="button">
@@ -210,7 +219,6 @@
                 <div id="team2-panel" class="score-panel team2-panel">
                     <h3 id="team2-name" class="team-name">Time 2</h3>
                     <div id="team2-score" class="score-number">0</div>
-                    <div id="team2-players-column" class="team-players-column" style="display: none;"></div>
                 </div>
             </div>
             <!-- ADICIONADO O ID PARA O WRAPPER DO TIMER -->

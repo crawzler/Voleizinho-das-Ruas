@@ -200,7 +200,7 @@ body::-webkit-scrollbar,
 .players-list-container::-webkit-scrollbar,
 .accordion-content::-webkit-scrollbar,
 .select-team-modal-content-wrapper::-webkit-scrollbar,
-.team-players-column::-webkit-scrollbar,
+
 .teams-page-layout::-webkit-scrollbar,
 .teams-page-layout-sub::-webkit-scrollbar {
     width: 4px;
@@ -212,7 +212,7 @@ body::-webkit-scrollbar-track,
 .players-list-container::-webkit-scrollbar-track,
 .accordion-content::-webkit-scrollbar-track,
 .select-team-modal-content-wrapper::-webkit-scrollbar-track,
-.team-players-column::-webkit-scrollbar-track,
+
 .teams-page-layout::-webkit-scrollbar-track,
 .teams-page-layout-sub::-webkit-scrollbar-track {
     background: var(--scrollbar-track);
@@ -224,7 +224,7 @@ body::-webkit-scrollbar-thumb,
 .players-list-container::-webkit-scrollbar-thumb,
 .accordion-content::-webkit-scrollbar-thumb,
 .select-team-modal-content-wrapper::-webkit-scrollbar-thumb,
-.team-players-column::-webkit-scrollbar-thumb,
+
 .teams-page-layout::-webkit-scrollbar-thumb,
 .teams-page-layout-sub::-webkit-scrollbar-thumb {
     background: var(--scrollbar-thumb);
@@ -237,7 +237,7 @@ body::-webkit-scrollbar-thumb:hover,
 .players-list-container::-webkit-scrollbar-thumb:hover,
 .accordion-content::-webkit-scrollbar-thumb:hover,
 .select-team-modal-content-wrapper::-webkit-scrollbar-thumb:hover,
-.team-players-column::-webkit-scrollbar-thumb:hover,
+
 .teams-page-layout::-webkit-scrollbar-thumb:hover,
 .teams-page-layout-sub::-webkit-scrollbar-thumb:hover {
     opacity: 0.8;
@@ -3257,42 +3257,7 @@ input:checked + .switch-slider:before {
     background-color: transparent;
 }
 
-.team-players-column {
-    position: absolute;
-    display: block !important;
-    background-color: #2229;
-    border-radius: 8px;
-    padding: 10px;
-    margin: 5px;
-    width: 100px;
-    outline: none;
-    -webkit-tap-highlight-color: transparent;
-    overflow-y: auto;
-    overscroll-behavior-y: auto;
-    visibility: visible !important;
-}
 
-/* NOVO: Oculta colunas de jogadores quando start-page está ativa */
-body.start-page-active .team-players-column {
-    display: none !important;
-}
-
-/* NOVO: Oculta colunas de jogadores quando configuração está desabilitada */
-body.hide-players .team-players-column {
-    display: none !important;
-}
-
-/* NOVO: Oculta colunas vazias mesmo quando configuração está habilitada */
-.team-players-column:empty {
-    display: none !important;
-}
-
-.team-players-column:empty::before {
-    content: '';
-    display: block;
-    width: 100%;
-    height: 20px;
-}
 
 #team1-change-button {
     position: fixed;
@@ -3347,26 +3312,9 @@ body.start-page-active #team2-change-button {
     font-size: 18px;
 }
 
-.team-players-column ul {
-    margin: 0px;
-    padding: 0px;
-}
 
-.team-players-column ul li {
-    list-style: none;
-}
 
-@media (orientation: portrait) { 
-    #team2-players-column {    
-        top: 50%;
-        left: 0px;
-    }
 
-    #team1-players-column {    
-        bottom: 50%;
-        left: 0px;
-    }
-}
 
 #scoreboard-menu-button {
     position: absolute;
@@ -5316,15 +5264,7 @@ body:has(#login-page.app-page--active) .header-button-container {
         justify-content: space-between;
     }
 
-    #team2-players-column {    
-        top: 0px;
-        left: 50%;
-    }
 
-    #team1-players-column {    
-        top: 0px;
-        right: 50%;
-    }
 
     .score-panel {
         flex: 1; /* Ocupa espaço igual */
@@ -5986,6 +5926,52 @@ input[type="password"] {
         height: 10px;
     }
 }
+
+/* Gaveta */
+.drawer {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    width: 60px;
+    transition: width 0.3s ease;
+}
+
+.drawer.expanded {
+    width: 300px;
+}
+
+.drawer-tab {
+    padding: 8px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.drawer-tab .material-icons {
+    font-size: 20px;
+    color: #666;
+    transition: transform 0.3s ease;
+}
+
+.drawer.expanded .drawer-tab .material-icons {
+    transform: rotate(180deg);
+}
+
+.drawer-content {
+    height: 0;
+    overflow: hidden;
+    transition: height 0.3s ease;
+}
+
+.drawer.expanded .drawer-content {
+    height: 100px;
+}
+
+
 
 /* Estilos para a nova organização da seção de times */
 .teams-control-panel {

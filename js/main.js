@@ -1259,6 +1259,7 @@ async function copySwLogsToClipboard() {
     setupConfigUI();
     setupScoreInteractions();
     setupTeamSelectionModal();
+
     setupHistoryPage();
     setupSchedulingPage();
     setupQuickSettings();

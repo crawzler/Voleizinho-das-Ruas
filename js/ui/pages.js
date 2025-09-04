@@ -213,6 +213,15 @@ export async function showPage(pageIdToShow) {
             }
         } catch (_) { /* ignore */ }
         
+        // Setup da gaveta
+        const drawerTab = document.getElementById('drawer-tab');
+        const drawer = document.getElementById('drawer');
+        if (drawerTab && drawer) {
+            drawerTab.onclick = () => drawer.classList.toggle('expanded');
+        }
+        
+
+        
         // NOVO: Força atualização dos ícones
         setTimeout(() => {
             const team1Btn = document.getElementById('team1-change-button');
@@ -954,9 +963,32 @@ export function forceUpdateIcons() {
             icon2.style.fontFamily = 'Material Icons';
         }
     }
-    
-
 }
+
+
+
+// Funções globais para os botões da gaveta
+window.resetScore = function() {
+    import('./messages.js').then(({ displayMessage }) => {
+        import('../game/logic.js').then(({ resetScores }) => {
+            if (typeof resetScores === 'function') {
+                resetScores();
+                displayMessage('Placar resetado!', 'success');
+            }
+        });
+    });
+};
+
+window.swapTeams = function() {
+    import('./messages.js').then(({ displayMessage }) => {
+        import('../game/logic.js').then(({ swapTeams }) => {
+            if (typeof swapTeams === 'function') {
+                swapTeams();
+                displayMessage('Times trocados de lado!', 'success');
+            }
+        });
+    });
+};
 
 // NOVO: Proteção contra toasts duplicados de RSVP
 let lastRSVPToastAt = 0;

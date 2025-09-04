@@ -369,6 +369,22 @@ function resetSet() {
 }
 
 /**
+ * Reseta apenas o placar atual (não os sets).
+ */
+export function resetScores() {
+    if (!isGameInProgress) {
+        return;
+    }
+
+    team1Score = 0;
+    team2Score = 0;
+    updateScoreDisplay(team1Score, team2Score);
+    
+    // Persistir estado
+    try { salvarEstado(getGameState()); } catch(e) {}
+}
+
+/**
  * Troca os times de posição no placar.
  */
 export function swapTeams() {
