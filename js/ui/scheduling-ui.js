@@ -1918,11 +1918,6 @@ export async function showResponsesModal(game) {
                     group.style.cursor = 'pointer';
                     group.addEventListener('click', async () => {
                         await registerResponse(responseType);
-                        // Aguarda um pouco e atualiza novamente para garantir que os dados estejam sincronizados
-                        setTimeout(() => {
-                            refreshUI();
-                            addGroupClickHandlers(); // Re-adiciona os handlers após atualizar
-                        }, 200);
                     });
                 }
             });
@@ -1953,36 +1948,6 @@ export async function showResponsesModal(game) {
                     }
                 }
                 
-                // Força uma nova busca dos jogadores para garantir dados atualizados
-                const updatedPlayers = await waitForPlayersData(1000);
-                
-                // Atualiza as funções de busca com os dados mais recentes
-                const getUpdatedPlayer = (uid) => updatedPlayers.find(p => p.uid === uid || p.id === uid) || null;
-                const getUpdatedName = (uid) => {
-                    const p = getUpdatedPlayer(uid);
-                    return p ? (p.name || `Usuário ${uid}`).replace(' [local]','') : `Usuário ${uid}`;
-                };
-                const getUpdatedPhoto = (uid) => {
-                    const p = getUpdatedPlayer(uid);
-                    return (p && !p.isManual && p.photoURL) ? p.photoURL : 'assets/default-user-icon.svg';
-                };
-                
-                // Recalcula as listas com dados atualizados
-                const updatedRsvps = game.rsvps || {};
-                const going = [];
-                const maybe = [];
-                const notGoing = [];
-                Object.entries(updatedRsvps).forEach(([uid, response]) => {
-                    const item = { uid, name: getUpdatedName(uid), photo: getUpdatedPhoto(uid) };
-                    if (response === 'going') going.push(item);
-                    else if (response === 'maybe') maybe.push(item);
-                    else notGoing.push(item);
-                });
-                
-                // Atualiza UI com dados recalculados
-                refreshUI();
-                addGroupClickHandlers();
-                
                 const messages = {
                     'going': 'Presença confirmada!',
                     'maybe': 'Resposta "Talvez" registrada!',
@@ -1990,34 +1955,27 @@ export async function showResponsesModal(game) {
                 };
                 displayMessage(messages[response] || 'Resposta registrada!', 'success');
                 
-                // Tenta salvar no Firebase em background (não bloqueia a UI)
+                // Aguarda um momento e depois atualiza a UI
+                setTimeout(() => {
+                    refreshUI();
+                    addGroupClickHandlers();
+                    
+                    // Atualiza a tela de agendamentos
+                    const globalIndex = scheduledGames.findIndex(g => g.id === game.id);
+                    if (globalIndex !== -1) {
+                        scheduledGames[globalIndex] = { ...game };
+                    }
+                    renderScheduledGames();
+                    saveSchedulesToLocalStorage();
+                }, 300);
+                
+                // Tenta salvar no Firebase em background
                 try {
                     const { updateSchedule } = await import('../data/schedules.js');
                     await updateSchedule(game);
                 } catch (firebaseError) {
                     // Ignora erros do Firebase - dados já estão salvos localmente
                 }
-                
-                // Força uma atualização da tela de agendamentos para refletir as mudanças
-                setTimeout(() => {
-                    // Atualiza o array global scheduledGames
-                    const globalIndex = scheduledGames.findIndex(g => g.id === game.id);
-                    if (globalIndex !== -1) {
-                        scheduledGames[globalIndex] = { ...game };
-                    }
-                    
-                    // Re-renderiza a lista de agendamentos
-                    renderScheduledGames();
-                    
-                    // Salva novamente no localStorage para garantir persistência
-                    saveSchedulesToLocalStorage();
-                    
-                    // Se o modal ainda estiver aberto, força uma atualização final
-                    if (document.body.contains(overlay)) {
-                        refreshUI();
-                        addGroupClickHandlers();
-                    }
-                }, 100);
             } catch (error) {
                 displayMessage('Erro ao salvar resposta. Tente novamente.', 'error');
             }
