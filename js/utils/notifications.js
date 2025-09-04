@@ -264,28 +264,7 @@ export function handleNotificationAction(action, data) {
             const game = scheduledGames.find(g => g.id === gameId);
             
             if (game && module.showResponsesModal) {
-                if (autoResponse) {
-                    const user = getCurrentUser();
-                    if (user) {
-                        if (!game.rsvps) game.rsvps = {};
-                        game.rsvps[user.uid] = autoResponse;
-                        
-                        // Salva automaticamente
-                        setTimeout(async () => {
-                            try {
-                                const { updateSchedule } = await import('../data/schedules.js');
-                                const games = JSON.parse(localStorage.getItem('voleiScoreSchedules') || '[]');
-                                const gameIndex = games.findIndex(g => g.id === gameId);
-                                if (gameIndex !== -1) {
-                                    games[gameIndex] = game;
-                                    localStorage.setItem('voleiScoreSchedules', JSON.stringify(games));
-                                }
-                                await updateSchedule(game);
-                            } catch (error) {}
-                        }, 100);
-                    }
-                }
-                module.showResponsesModal(game);
+                module.showResponsesModal(game, autoResponse);
             }
         } catch (error) {
             sessionStorage.setItem('pendingOpenRsvpScheduleId', gameId);

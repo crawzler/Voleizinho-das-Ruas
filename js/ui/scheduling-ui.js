@@ -1673,7 +1673,7 @@ export function updateSchedulingPermissions() {
 
 
 
-export async function showResponsesModal(game) {
+export async function showResponsesModal(game, autoResponse = null) {
     try {
         lockBodyScroll();
         enableTouchMoveBlocker();
@@ -1923,65 +1923,62 @@ export async function showResponsesModal(game) {
             });
         };
         
-        const registerResponse = async (response) => {
+        const registerResponse = async (response, isAutomatic = false) => {
             if (!currentUser) {
                 displayMessage('Faça login para definir sua presença.', 'error');
                 return;
             }
             
-            try {
-                // Atualiza o objeto game local
-                if (!game.rsvps) game.rsvps = {};
-                game.rsvps[currentUser.uid] = response;
-                
-                // Atualiza localStorage E o array scheduledGames
-                const schedules = JSON.parse(localStorage.getItem('voleiScoreSchedules') || '[]');
-                const scheduleIndex = schedules.findIndex(s => s.id === game.id);
-                if (scheduleIndex !== -1) {
-                    schedules[scheduleIndex] = { ...schedules[scheduleIndex], rsvps: game.rsvps };
-                    localStorage.setItem('voleiScoreSchedules', JSON.stringify(schedules));
-                    
-                    // Atualiza também o array scheduledGames
-                    const globalScheduleIndex = scheduledGames.findIndex(s => s.id === game.id);
-                    if (globalScheduleIndex !== -1) {
-                        scheduledGames[globalScheduleIndex] = { ...scheduledGames[globalScheduleIndex], rsvps: game.rsvps };
-                    }
-                }
-                
-                const messages = {
-                    'going': 'Presença confirmada!',
-                    'maybe': 'Resposta "Talvez" registrada!',
-                    'not_going': 'Resposta "Não vou" registrada!'
-                };
-                displayMessage(messages[response] || 'Resposta registrada!', 'success');
-                
-                // Aguarda um momento e depois atualiza a UI
+            // Atualiza o objeto game local
+            if (!game.rsvps) game.rsvps = {};
+            game.rsvps[currentUser.uid] = response;
+            
+            // Atualiza localStorage
+            const schedules = JSON.parse(localStorage.getItem('voleiScoreSchedules') || '[]');
+            const scheduleIndex = schedules.findIndex(s => s.id === game.id);
+            if (scheduleIndex !== -1) {
+                schedules[scheduleIndex] = { ...schedules[scheduleIndex], rsvps: game.rsvps };
+                localStorage.setItem('voleiScoreSchedules', JSON.stringify(schedules));
+            }
+            
+            // Atualiza array global
+            const globalScheduleIndex = scheduledGames.findIndex(s => s.id === game.id);
+            if (globalScheduleIndex !== -1) {
+                scheduledGames[globalScheduleIndex] = { ...scheduledGames[globalScheduleIndex], rsvps: game.rsvps };
+            }
+            
+            const messages = {
+                'going': 'Presença confirmada!',
+                'maybe': 'Resposta "Talvez" registrada!',
+                'not_going': 'Resposta "Não vou" registrada!'
+            };
+            displayMessage(messages[response] || 'Resposta registrada!', 'success');
+            
+            // Se é automático, apenas atualiza a UI
+            if (isAutomatic) {
                 setTimeout(() => {
                     refreshUI();
                     addGroupClickHandlers();
-                    
-                    // Atualiza a tela de agendamentos
-                    const globalIndex = scheduledGames.findIndex(g => g.id === game.id);
-                    if (globalIndex !== -1) {
-                        scheduledGames[globalIndex] = { ...game };
-                    }
-                    renderScheduledGames();
-                    saveSchedulesToLocalStorage();
-                }, 300);
-                
-                // Tenta salvar no Firebase em background
-                try {
-                    const { updateSchedule } = await import('../data/schedules.js');
-                    await updateSchedule(game);
-                } catch (firebaseError) {
-                    // Ignora erros do Firebase - dados já estão salvos localmente
-                }
-            } catch (error) {
-                displayMessage('Erro ao salvar resposta. Tente novamente.', 'error');
+                }, 200);
+            } else {
+                // Se é manual, fecha e reabre o modal
+                close();
+                setTimeout(() => showResponsesModal(game), 100);
             }
+            
+            // Salva no Firebase
+            try {
+                const { updateSchedule } = await import('../data/schedules.js');
+                await updateSchedule(game);
+            } catch (error) {}
         };
         
         addGroupClickHandlers();
+        
+        // Se há uma resposta automática (vem de notificação), aplica imediatamente
+        if (autoResponse && currentUser) {
+            setTimeout(() => registerResponse(autoResponse, true), 500);
+        }
         
         const onRsvp = async (action) => {
             console.log(`[DEBUG: scheduling-ui.js] onRsvp called with action: ${action}`);
