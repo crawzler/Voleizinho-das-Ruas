@@ -48,6 +48,18 @@ export async function initFirebaseApp() {
     app = initializeApp(firebaseConfig);
     db = getFirestore(app);
     auth = getAuth(app);
+    
+    // Configurações para desenvolvimento local
+    if (window.location.hostname === 'localhost' || window.location.port === '5500') {
+        try {
+            // Força long polling em desenvolvimento para evitar erros WebChannel
+            if (db._delegate && db._delegate._settings) {
+                db._delegate._settings.experimentalForceLongPolling = true;
+            }
+        } catch (e) {
+            // Silencioso
+        }
+    }
 
     // --- ADICIONADO PARA TESTE NO CONSOLE ---
     // Estas variáveis agora estarão acessíveis no console do navegador (apenas para desenvolvimento/depuração)

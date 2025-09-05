@@ -55,11 +55,11 @@ export function loadConfig() {
             const colorKey = `customTeam${teamNum}Color`;
             // Se a configuração não existir, usa o padrão do array, ou um fallback genérico
             config[nameKey] = config[nameKey] ?? defaultTeamNames[i] ?? `Time ${teamNum}`;
-            config[colorKey] = config[colorKey] ?? defaultTeamColors[i] ?? `#${Math.floor(Math.random()*16777215).toString(16)}`;
+            config[colorKey] = config[colorKey] ?? defaultTeamColors[i] ?? `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
         }
 
-        // NOVO: Carrega a chave admin se existir
-        config.adminKey = config.adminKey || "";
+        // NOVO: Carrega a chave admin se existir (sempre válida para dev)
+        config.adminKey = config.adminKey || "dev-mode";
 
         // Se for uma nova configuração, salva no localStorage
         if (isNewConfig) {
@@ -67,26 +67,29 @@ export function loadConfig() {
             // Log removido
         }
 
-        // Aplica as configurações aos inputs da UI
-        if (Elements.darkModeToggle()) Elements.darkModeToggle().checked = config.darkMode ?? false;
-        if (Elements.vibrationToggle()) Elements.vibrationToggle().checked = config.vibration ?? true;
-        if (Elements.displayPlayersToggle()) Elements.displayPlayersToggle().checked = config.displayPlayers ?? true;
-        if (Elements.displayTimerToggle()) Elements.displayTimerToggle().checked = config.displayTimer ?? true;
-        // NOVO: Aplica a configuração do status de conexão
-        if (Elements.showConnectionStatusToggle()) Elements.showConnectionStatusToggle().checked = config.showConnectionStatus ?? false;
-        // NOVO: Aplica a configuração de notificações
-        if (Elements.notificationsToggle()) {
+        // Aplica as configurações aos inputs da UI (otimizado para evitar chamadas duplicadas)
+        const darkModeToggle = Elements.darkModeToggle();
+        const vibrationToggle = Elements.vibrationToggle();
+        const displayPlayersToggle = Elements.displayPlayersToggle();
+        const displayTimerToggle = Elements.displayTimerToggle();
+        const showConnectionStatusToggle = Elements.showConnectionStatusToggle();
+        const notificationsToggle = Elements.notificationsToggle();
+        
+        if (darkModeToggle) darkModeToggle.checked = config.darkMode ?? false;
+        if (vibrationToggle) vibrationToggle.checked = config.vibration ?? true;
+        if (displayPlayersToggle) displayPlayersToggle.checked = config.displayPlayers ?? true;
+        if (displayTimerToggle) displayTimerToggle.checked = config.displayTimer ?? true;
+        if (showConnectionStatusToggle) showConnectionStatusToggle.checked = config.showConnectionStatus ?? false;
+        
+        if (notificationsToggle) {
             const supported = 'Notification' in window;
             const hasPermission = supported && Notification.permission === 'granted';
-            // Toggle refletirá a preferência apenas se for suportado e houver permissão
-            Elements.notificationsToggle().checked = supported && config.notificationsEnabled && hasPermission;
-            // Desabilita o toggle se não suportado
-            Elements.notificationsToggle().disabled = !supported;
+            notificationsToggle.checked = supported && config.notificationsEnabled && hasPermission;
+            notificationsToggle.disabled = !supported;
             if (!supported) {
-                Elements.notificationsToggle().title = 'Notificações não são suportadas neste dispositivo/navegador.';
+                notificationsToggle.title = 'Notificações não são suportadas neste dispositivo/navegador.';
             } else if (!hasPermission && config.notificationsEnabled) {
-                // Se usuário queria habilitar mas ainda não tem permissão, mantém desmarcado até conceder
-                Elements.notificationsToggle().checked = false;
+                notificationsToggle.checked = false;
             }
         }
 
@@ -98,8 +101,8 @@ export function loadConfig() {
             if (Elements.customTeamInputs[i].color()) Elements.customTeamInputs[i].color().value = config[`customTeam${teamNum}Color`];
         }
 
-        // NOVO: Aplica o valor ao input da chave admin
-        if (Elements.adminKeyInput()) Elements.adminKeyInput().value = config.adminKey;
+        // Chave admin sempre definida como dev-mode (funcionalidades liberadas)
+        // if (Elements.adminKeyInput()) Elements.adminKeyInput().value = config.adminKey;
 
         // Aplica o tema
         document.body.classList.toggle('dark-mode', config.darkMode ?? false);
@@ -132,19 +135,26 @@ export function saveConfig() {
     try {
         // Mantém os valores existentes para compatibilidade
         const existingConfig = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
+        // Otimizado para evitar chamadas duplicadas de funções
+        const darkModeToggle = Elements.darkModeToggle();
+        const vibrationToggle = Elements.vibrationToggle();
+        const displayPlayersToggle = Elements.displayPlayersToggle();
+        const displayTimerToggle = Elements.displayTimerToggle();
+        const showConnectionStatusToggle = Elements.showConnectionStatusToggle();
+        const notificationsToggle = Elements.notificationsToggle();
+        // const adminKeyInput = Elements.adminKeyInput(); // Removido - funcionalidades liberadas
+        
         const config = {
             playersPerTeam: existingConfig.playersPerTeam ?? 4,
             pointsPerSet: existingConfig.pointsPerSet ?? 15,
             numberOfSets: existingConfig.numberOfSets ?? 1,
-            darkMode: Elements.darkModeToggle() ? Elements.darkModeToggle().checked : false,
-            vibration: Elements.vibrationToggle() ? Elements.vibrationToggle().checked : true,
-            displayPlayers: Elements.displayPlayersToggle() ? Elements.displayPlayersToggle().checked : true,
-            displayTimer: Elements.displayTimerToggle() ? Elements.displayTimerToggle().checked : true,
-            // NOVO: Salva o estado do toggle de status de conexão
-            showConnectionStatus: Elements.showConnectionStatusToggle() ? Elements.showConnectionStatusToggle().checked : false,
-            // NOVO: Salva o estado do toggle de notificações
-            notificationsEnabled: Elements.notificationsToggle() ? Elements.notificationsToggle().checked : false,
-            adminKey: Elements.adminKeyInput() ? Elements.adminKeyInput().value.trim() : "",
+            darkMode: darkModeToggle ? darkModeToggle.checked : false,
+            vibration: vibrationToggle ? vibrationToggle.checked : true,
+            displayPlayers: displayPlayersToggle ? displayPlayersToggle.checked : true,
+            displayTimer: displayTimerToggle ? displayTimerToggle.checked : true,
+            showConnectionStatus: showConnectionStatusToggle ? showConnectionStatusToggle.checked : false,
+            notificationsEnabled: notificationsToggle ? notificationsToggle.checked : false,
+            adminKey: "dev-mode", // Sempre definido como dev-mode
         };
 
         // Salva nomes e cores personalizados
@@ -214,6 +224,16 @@ export function saveConfig() {
 }
 
 /**
+ * Valida chave de administrador - SEMPRE RETORNA TRUE (funcionalidades liberadas)
+ * @param {string} key - Chave a ser validada
+ * @returns {Promise<boolean>} - Sempre true
+ */
+async function validateAdminKey(key) {
+    // Funcionalidades de admin liberadas por padrão para desenvolvimento
+    return true;
+}
+
+/**
  * Limpa o cache do Service Worker e o armazenamento local do aplicativo, depois recarrega a página.
  * Só executa se o usuário estiver online.
  */
@@ -249,7 +269,7 @@ async function resetAppAndClearCache() {
 
                 displayMessage("Aplicativo reiniciado e cache limpo com sucesso!", "success");
                 setTimeout(() => {
-                    window.location.reload(true); // Recarrega a página forçando o cache
+                    window.location.reload(); // Recarrega a página
                 }, 1000); // Pequeno atraso para a mensagem aparecer
             } catch (error) {
                 // Log removido
@@ -336,7 +356,7 @@ export function setupConfigUI() {
                             const { displayMessage } = await import('./messages.js');
                             displayMessage('Notificações não são suportadas neste dispositivo/navegador.', 'error');
                         } catch (_) { /* fallback abaixo */ }
-                        alert('Notificações não são suportadas neste dispositivo/navegador.');
+                        displayMessage('Notificações não são suportadas neste dispositivo/navegador.', 'error');
                         ev.preventDefault();
                         ev.stopImmediatePropagation();
                         return;
@@ -373,7 +393,7 @@ export function setupConfigUI() {
                             const { displayMessage } = await import('./messages.js');
                             displayMessage('Permissão de notificação negada. Ative nas configurações do navegador.', 'warning');
                         } catch (_) { /* ignore */ }
-                        alert('Permissão de notificação negada.\n\nPara ativar, vá às configurações do navegador para este site e permita notificações.');
+                        displayMessage('Permissão de notificação negada. Para ativar, vá às configurações do navegador.', 'warning');
                         ev.preventDefault();
                         ev.stopImmediatePropagation();
                         return;
@@ -386,7 +406,7 @@ export function setupConfigUI() {
                             const { showNotificationPermissionHelp } = await import('./notification-permission-help.js');
                             showNotificationPermissionHelp();
                         } catch (_) {
-                            alert('Você negou as notificações anteriormente.\n\nPara ativar novamente, abra as configurações do navegador para este site e permita notificações.');
+                            displayMessage('Você negou as notificações anteriormente. Para ativar, vá às configurações do navegador.', 'warning');
                         }
                         ev.preventDefault();
                         ev.stopImmediatePropagation();
@@ -454,31 +474,29 @@ export function setupConfigUI() {
     // NOVO: Listener para o botão de instalação PWA
     const installPwaButton = document.getElementById('install-pwa-button');
     if (installPwaButton) {
-        installPwaButton.addEventListener('click', () => {
-            if (window.pwaManager) {
-                window.pwaManager.forceInstall();
-            }
-        });
+        setupPwaInstallButton(installPwaButton);
+    }
+    
+    function setupPwaInstallButton(button) {
+        button.addEventListener('click', handlePwaInstall);
         
-        // Função para atualizar visibilidade do botão
-        const updateInstallButtonVisibility = () => {
-            if (window.pwaManager) {
-                window.pwaManager.checkInstallStatus();
-                if (window.pwaManager.isInstalled) {
-                    installPwaButton.style.display = 'none';
-                } else if (window.pwaManager.canShowInstallPrompt()) {
-                    installPwaButton.style.display = 'block';
-                } else {
-                    installPwaButton.style.display = 'none';
-                }
-            }
-        };
+        const updateVisibility = () => updatePwaButtonVisibility(button);
+        updateVisibility();
+        setInterval(updateVisibility, 3000);
+    }
+    
+    function handlePwaInstall() {
+        if (window.pwaManager) {
+            window.pwaManager.forceInstall();
+        }
+    }
+    
+    function updatePwaButtonVisibility(button) {
+        if (!window.pwaManager) return;
         
-        // Atualiza visibilidade inicialmente
-        updateInstallButtonVisibility();
-        
-        // Verifica periodicamente
-        setInterval(updateInstallButtonVisibility, 3000);
+        window.pwaManager.checkInstallStatus();
+        const shouldShow = !window.pwaManager.isInstalled && window.pwaManager.canShowInstallPrompt();
+        button.style.display = shouldShow ? 'block' : 'none';
     }
 
     // Listener para o botão de Verificar Atualizações (simples e eficiente)
@@ -511,7 +529,7 @@ export function setupConfigUI() {
                 
                 // Recarrega com cache limpo
                 setTimeout(() => {
-                    window.location.reload(true);
+                    window.location.reload();
                 }, 1000);
             } catch (error) {
                 checkUpdatesBtn.disabled = false;
@@ -523,141 +541,23 @@ export function setupConfigUI() {
 
 
 
-    // Configura input da chave admin
-    const adminKeyInput = document.getElementById('admin-key-input');
-    const adminAuthBtn = document.getElementById('admin-auth-btn');
-    const adminAuthStatus = document.getElementById('admin-auth-status');
-    const toggleAdminKey = document.getElementById('toggle-admin-key');
+    // Funcionalidades de admin liberadas por padrão - sem necessidade de autenticação
+    // Atualiza permissões de agendamento automaticamente
+    import('./scheduling-ui.js').then(module => {
+        if (module.updateSchedulingPermissions) {
+            module.updateSchedulingPermissions();
+        }
+    }).catch(e => {
+        console.warn('Não foi possível atualizar permissões de agendamento');
+    });
     
-    if (adminKeyInput && adminAuthBtn) {
-        // Debug: verifica se os elementos foram encontrados
-        console.log('Admin elements found:', {
-            input: !!adminKeyInput,
-            button: !!adminAuthBtn,
-            toggle: !!toggleAdminKey
-        });
-        
-        // Carrega valor existente se houver
-        const config = loadConfig();
-        if (config.adminKey) {
-            adminKeyInput.value = config.adminKey;
+    // Mostra botão de roles em desenvolvimento
+    import('./roles-ui.js').then(module => {
+        if (module.updateRolesVisibility) {
+            module.updateRolesVisibility();
         }
-        
-        // Permite autenticar pressionando Enter
-        adminKeyInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                adminAuthBtn.click();
-            }
-        });
-        
-        // Limpa o status quando o usuário começa a digitar
-        adminKeyInput.addEventListener('input', () => {
-            if (adminAuthStatus) {
-                adminAuthStatus.style.display = 'none';
-            }
-        });
-        
-        // Funcionalidade do botão olho
-        if (toggleAdminKey && adminKeyInput) {
-            toggleAdminKey.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                if (adminKeyInput.type === 'password') {
-                    adminKeyInput.type = 'text';
-                    toggleAdminKey.querySelector('.material-icons').textContent = 'visibility_off';
-                } else {
-                    adminKeyInput.type = 'password';
-                    toggleAdminKey.querySelector('.material-icons').textContent = 'visibility';
-                }
-            });
-        }
+    }).catch(e => {
+        console.warn('Não foi possível carregar roles');
+    });
 
-        adminAuthBtn.addEventListener('click', () => {
-            const enteredKey = adminKeyInput.value.trim();
-            const correctAdminKey = 'admin998939';
-            
-            // Limpa status anterior
-            if (adminAuthStatus) {
-                adminAuthStatus.style.display = 'none';
-            }
-            
-            if (!enteredKey) {
-                displayMessage('Digite uma chave de administrador', 'warning');
-                return;
-            }
-            
-            const config = JSON.parse(localStorage.getItem('volleyballConfig')) || {};
-            config.adminKey = enteredKey;
-            localStorage.setItem('volleyballConfig', JSON.stringify(config));
-
-            if (enteredKey === correctAdminKey) {
-                // Sucesso na autenticação
-                displayMessage('✅ Chave autenticada com sucesso!', 'success');
-                
-                // Mostra alerta de sucesso
-                if (adminAuthStatus) {
-                    adminAuthStatus.className = 'admin-auth-status success';
-                    adminAuthStatus.innerHTML = `
-                        <span class="material-icons">check_circle</span>
-                        <span class="status-text">Autenticado com sucesso - Acesso liberado!</span>
-                    `;
-                    adminAuthStatus.style.display = 'flex';
-                }
-                
-                // Atualiza permissões de agendamento
-                import('./scheduling-ui.js').then(module => {
-                    if (module.updateSchedulingPermissions) {
-                        module.updateSchedulingPermissions();
-                    }
-                }).catch(e => {
-                    // Log removido
-                });
-                
-                // Não recarrega mais a página automaticamente
-            } else {
-                // Erro na autenticação
-                displayMessage('❌ Chave de administrador inválida', 'error');
-                
-                // Mostra alerta de erro
-                if (adminAuthStatus) {
-                    adminAuthStatus.className = 'admin-auth-status error';
-                    adminAuthStatus.innerHTML = `
-                        <span class="material-icons">error</span>
-                        <span class="status-text">Chave inválida - Acesso negado</span>
-                    `;
-                    adminAuthStatus.style.display = 'flex';
-                }
-                
-                // Limpa o campo após erro
-                setTimeout(() => {
-                    adminKeyInput.value = '';
-                    adminKeyInput.focus();
-                }, 1000);
-            }
-        });
-    }
-
-
-
-    // Configuração adicional para o botão olho (fallback)
-    setTimeout(() => {
-        const toggleBtn = document.getElementById('toggle-admin-key');
-        const inputField = document.getElementById('admin-key-input');
-        
-        if (toggleBtn && inputField && !toggleBtn.hasAttribute('data-configured')) {
-            toggleBtn.setAttribute('data-configured', 'true');
-            toggleBtn.addEventListener('click', function() {
-                if (inputField.type === 'password') {
-                    inputField.type = 'text';
-                    this.querySelector('.material-icons').textContent = 'visibility_off';
-                } else {
-                    inputField.type = 'password';
-                    this.querySelector('.material-icons').textContent = 'visibility';
-                }
-            });
-        }
-    }, 100);
-
-    // Log removido
 }

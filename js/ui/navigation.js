@@ -1,5 +1,14 @@
 // Navegação da página de configurações
 document.addEventListener('DOMContentLoaded', function() {
+    // Função utilitária para query selector seguro
+    function safeQuerySelector(selector, parent = document) {
+        try {
+            return parent.querySelector(selector);
+        } catch (e) {
+            console.warn(`Erro ao buscar elemento: ${selector}`, e);
+            return null;
+        }
+    }
     const navItems = document.querySelectorAll('.config-nav-item');
     const sections = document.querySelectorAll('.config-section');
     
@@ -22,16 +31,34 @@ document.addEventListener('DOMContentLoaded', function() {
         item.addEventListener('click', (e) => {
             e.preventDefault();
             const sectionId = item.getAttribute('data-section');
-            showSection(sectionId);
+            if (sectionId) {
+                showSection(sectionId);
+            }
         });
     });
     
     // Atualizar preview das cores dos times
     function updateTeamPreview(teamNumber, color) {
-        const preview = document.querySelector(`#teams .team-card:nth-child(${teamNumber}) .team-preview`);
+        // Validar entrada de cor para prevenir injeção CSS
+        if (!isValidColor(color) || !isValidTeamNumber(teamNumber)) {
+            return;
+        }
+        
+        const preview = safeQuerySelector(`[data-team="${teamNumber}"] .team-preview`) || 
+                       safeQuerySelector(`#team-${teamNumber} .team-preview`);
         if (preview) {
             preview.style.background = color;
         }
+    }
+    
+    // Validar se é uma cor CSS válida
+    function isValidColor(color) {
+        return /^#[0-9A-Fa-f]{6}$/.test(color);
+    }
+    
+    // Validar se é um número de time válido
+    function isValidTeamNumber(teamNumber) {
+        return Number.isInteger(teamNumber) && teamNumber >= 1 && teamNumber <= 6;
     }
     
     // Event listeners para inputs de cor
@@ -42,5 +69,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateTeamPreview(i, e.target.value);
             });
         }
+    }
+    
+    // Navegação para tela de roles
+    const rolesNavButton = document.getElementById('nav-roles');
+    if (rolesNavButton) {
+        rolesNavButton.addEventListener('click', () => {
+            if (window.showPage) {
+                window.showPage('roles-page');
+            }
+        });
     }
 });

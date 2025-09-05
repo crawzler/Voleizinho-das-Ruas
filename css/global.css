@@ -212,6 +212,9 @@ body:not(.is-scrolling)::-webkit-scrollbar,
 .teams-page-layout-sub:not(.is-scrolling)::-webkit-scrollbar,
 #players-page:not(.is-scrolling)::-webkit-scrollbar,
 #teams-page:not(.is-scrolling)::-webkit-scrollbar,
+#users-page:not(.is-scrolling)::-webkit-scrollbar,
+.users-content:not(.is-scrolling)::-webkit-scrollbar,
+.users-grid:not(.is-scrolling)::-webkit-scrollbar,
 #history-page:not(.is-scrolling)::-webkit-scrollbar,
 #config-page:not(.is-scrolling)::-webkit-scrollbar,
 #scheduling-page:not(.is-scrolling)::-webkit-scrollbar,
@@ -236,6 +239,9 @@ body.is-scrolling::-webkit-scrollbar,
 .teams-page-layout-sub.is-scrolling::-webkit-scrollbar,
 #players-page.is-scrolling::-webkit-scrollbar,
 #teams-page.is-scrolling::-webkit-scrollbar,
+#users-page.is-scrolling::-webkit-scrollbar,
+.users-content.is-scrolling::-webkit-scrollbar,
+.users-grid.is-scrolling::-webkit-scrollbar,
 #history-page.is-scrolling::-webkit-scrollbar,
 #config-page.is-scrolling::-webkit-scrollbar,
 #scheduling-page.is-scrolling::-webkit-scrollbar,
@@ -260,6 +266,9 @@ body:not(.is-scrolling),
 .teams-page-layout-sub:not(.is-scrolling),
 #players-page:not(.is-scrolling),
 #teams-page:not(.is-scrolling),
+#users-page:not(.is-scrolling),
+.users-content:not(.is-scrolling),
+.users-grid:not(.is-scrolling),
 #history-page:not(.is-scrolling),
 #config-page:not(.is-scrolling),
 #scheduling-page:not(.is-scrolling),
@@ -283,6 +292,9 @@ body.is-scrolling,
 .teams-page-layout-sub.is-scrolling,
 #players-page.is-scrolling,
 #teams-page.is-scrolling,
+#users-page.is-scrolling,
+.users-content.is-scrolling,
+.users-grid.is-scrolling,
 #history-page.is-scrolling,
 #config-page.is-scrolling,
 #scheduling-page.is-scrolling,
@@ -294,41 +306,27 @@ body.is-scrolling,
   scrollbar-width: thin;
 }
 
-body::-webkit-scrollbar-track,
-.app-main-content::-webkit-scrollbar-track,
-.sidebar-menu::-webkit-scrollbar-track,
-.players-list-container::-webkit-scrollbar-track,
-.accordion-content::-webkit-scrollbar-track,
-.select-team-modal-content-wrapper::-webkit-scrollbar-track,
-.team-players-column::-webkit-scrollbar-track,
-.teams-page-layout::-webkit-scrollbar-track,
-.teams-page-layout-sub::-webkit-scrollbar-track {
-  background: var(--scrollbar-track);
+/* Scrollbar track (fundo) - transparente */
+*::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-body::-webkit-scrollbar-thumb,
-.app-main-content::-webkit-scrollbar-thumb,
-.sidebar-menu::-webkit-scrollbar-thumb,
-.players-list-container::-webkit-scrollbar-thumb,
-.accordion-content::-webkit-scrollbar-thumb,
-.select-team-modal-content-wrapper::-webkit-scrollbar-thumb,
-.team-players-column::-webkit-scrollbar-thumb,
-.teams-page-layout::-webkit-scrollbar-thumb,
-.teams-page-layout-sub::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: 2px;
+/* Scrollbar thumb (barra) - azul do tema */
+*::-webkit-scrollbar-thumb {
+  background: var(--new-accent-primary, var(--accent-primary));
+  border-radius: 4px;
+  opacity: 0.7;
 }
 
-body::-webkit-scrollbar-thumb:hover,
-.app-main-content::-webkit-scrollbar-thumb:hover,
-.sidebar-menu::-webkit-scrollbar-thumb:hover,
-.players-list-container::-webkit-scrollbar-thumb:hover,
-.accordion-content::-webkit-scrollbar-thumb:hover,
-.select-team-modal-content-wrapper::-webkit-scrollbar-thumb:hover,
-.team-players-column::-webkit-scrollbar-thumb:hover,
-.teams-page-layout::-webkit-scrollbar-thumb:hover,
-.teams-page-layout-sub::-webkit-scrollbar-thumb:hover {
-  opacity: 0.8;
+/* Scrollbar thumb hover - mais opaco */
+*::-webkit-scrollbar-thumb:hover {
+  opacity: 1;
+  background: var(--new-accent-primary-hover, var(--accent-primary));
+}
+
+/* Firefox - scrollbar azul */
+* {
+  scrollbar-color: var(--new-accent-primary, var(--accent-primary)) transparent;
 }
 
 /* Basic input */
@@ -336,6 +334,328 @@ input {
   width: 100%;
   flex-grow: 1;
   padding: 0.75rem;
+  border-radius: 8px;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  outline: none;
+  box-shadow: var(--shadow-light);
+  transition: all 0.3s ease;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Ícones de data e hora nos inputs */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  transition: filter 0.3s ease;
+}
+
+body.dark-mode input[type="date"]::-webkit-calendar-picker-indicator,
+body.dark-mode input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+body:not(.dark-mode) input[type="date"]::-webkit-calendar-picker-indicator,
+body:not(.dark-mode) input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: none;
+}
+
+/* Switch/Toggle Components - Base */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 28px;
+  margin: 0 0.5rem;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--new-border-medium, var(--border-color));
+  transition: 0.3s;
+  border-radius: 28px;
+  min-width: 0;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background: var(--new-bg-card, var(--bg-card));
+  transition: 0.3s;
+  border-radius: 50%;
+  box-shadow: var(--new-shadow-light, var(--shadow-light));
+}
+
+input:checked + .slider {
+  background: var(--new-accent-primary, var(--accent-primary));
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+/* Switch variants */
+.switch--small {
+  width: 44px;
+  height: 22px;
+}
+
+.switch--small .slider:before {
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+}
+
+.switch--small input:checked + .slider:before {
+  transform: translateX(22px);
+}
+
+/* Modern Switch (usado nas configurações) */
+.modern-switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 28px;
+  margin: 0;
+}
+
+.modern-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--new-border-medium, var(--border-color));
+  transition: 0.3s;
+  border-radius: 28px;
+}
+
+.switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background: var(--new-bg-card, var(--bg-card));
+  transition: 0.3s;
+  border-radius: 50%;
+  box-shadow: var(--new-shadow-light, var(--shadow-light));
+}
+
+.modern-switch input:checked + .switch-slider {
+  background: var(--new-accent-primary, var(--accent-primary));
+}
+
+.modern-switch input:checked + .switch-slider:before {
+  transform: translateX(20px);
+}
+
+/* Modal Base - Estilos reutilizáveis para todos os modais */
+.modal-overlay-base {
+  position: fixed;
+  inset: 0;
+  background-color: var(--bg-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.modal-overlay-base.show,
+.modal-overlay-base.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-content-base {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-radius: 16px;
+  padding: 1.75rem;
+  box-shadow: var(--shadow-heavy);
+  border: 1px solid var(--border-color);
+  transform: translateY(10px) scale(0.98);
+  transition: transform 0.25s ease;
+  max-width: 90%;
+  width: 100%;
+}
+
+.modal-overlay-base.show .modal-content-base,
+.modal-overlay-base.active .modal-content-base {
+  transform: translateY(0) scale(1);
+}
+
+/* Botões de Modal Base */
+.modal-actions-base {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.modal-button-base {
+  flex: 1;
+  padding: 0.8rem 1rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  box-shadow: var(--shadow-light);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.modal-button-primary {
+  background: var(--gradient-button);
+  color: var(--text-inverse);
+}
+
+.modal-button-primary:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+
+.modal-button-secondary {
+  background: var(--bg-button-secondary);
+  border: 1px solid var(--border-light);
+  color: var(--text-primary);
+}
+
+.modal-button-secondary:hover {
+  background: var(--bg-secondary);
+}
+
+/* Accordion Base - Estilos reutilizáveis */
+.accordion-base {
+  width: 100%;
+}
+
+.accordion-item-base {
+  width: 100%;
+  flex-shrink: 0;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  box-shadow: var(--shadow-light);
+  transition: all 0.3s ease;
+}
+
+.accordion-header-base {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 1rem;
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  border: none;
+  cursor: pointer;
+  font-size: 1.125rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.accordion-header-base:hover {
+  background-color: var(--bg-secondary);
+}
+
+.accordion-content-base {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+  color: var(--text-secondary);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  background-color: var(--bg-secondary);
+}
+
+/* Button Components - Base */
+button {
+  font-weight: bold;
+  color: var(--text-primary);
+  background-color: var(--bg-card);
+  padding: 0.75rem 1.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-light);
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+.button--primary {
+  color: var(--text-inverse);
+  background: var(--new-accent-primary);
+  border-color: transparent;
+}
+
+.button--primary:hover {
+  filter: brightness(1.1);
+}
+
+.button--secondary {
+  background-color: var(--bg-button-secondary);
+  color: white !important;
+  border-color: transparent;
+}
+
+.button--secondary:hover {
+  filter: brightness(1.1);
 }
 
 /* Accessibility helpers */

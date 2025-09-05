@@ -1,8 +1,8 @@
 // js/ui/welcome-notifications.js
 // Modal de boas-vindas para solicitar permissão de notificações
 
-import { requestNotificationPermission, setNotificationsEnabled } from '../utils/notifications.js';
-import { displayMessage } from './messages.js';
+import { requestNotificationPermission, setNotificationsEnabled } from './notifications.js';
+import { displayMessage } from '../ui/messages.js';
 
 const WELCOME_SHOWN_KEY = 'welcomeNotificationsShown';
 const SUPPRESS_NOTIF_PROMPT_KEY = 'notificationsPromptSuppressed';

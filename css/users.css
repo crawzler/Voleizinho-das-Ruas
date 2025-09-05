@@ -20,13 +20,19 @@
     -webkit-overflow-scrolling: touch !important;
     touch-action: pan-y !important;
     overscroll-behavior: contain;
+    scroll-behavior: smooth;
 }
+
+
 
 /* Conteúdo principal */
 .users-content {
     flex: 1;
-    padding: 1rem 0;
+    padding: 1rem;
+    width: 100%;
 }
+
+
 
 /* Grid de cards dos usuários */
 .users-grid {
@@ -34,6 +40,8 @@
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 1.5rem;
     padding: 1rem 0;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* Card individual do usuário */
@@ -193,6 +201,65 @@
     max-width: 400px;
     margin: 0 auto;
     line-height: 1.5;
+}
+
+/* Estado de loading */
+.loading-users {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--new-text-secondary, var(--text-secondary));
+}
+
+.loading-users .material-icons {
+    font-size: 3rem;
+    color: var(--new-accent-primary, var(--accent-primary));
+    margin-bottom: 1rem;
+    animation: spin 2s linear infinite;
+}
+
+.loading-users p {
+    font-size: 1rem;
+    margin: 0;
+    color: var(--new-text-primary, var(--text-primary));
+}
+
+/* Estado de erro */
+.error-users {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--new-text-secondary, var(--text-secondary));
+}
+
+.error-users .material-icons {
+    font-size: 4rem;
+    color: #ef4444;
+    margin-bottom: 1rem;
+}
+
+.error-users h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    color: var(--new-text-primary, var(--text-primary));
+}
+
+.error-users p {
+    font-size: 0.9rem;
+    margin: 0;
+    max-width: 400px;
+    margin: 0 auto;
+    line-height: 1.5;
+    color: var(--new-text-secondary, var(--text-secondary));
+}
+
+/* Animação de rotação para loading */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* Responsivo */
@@ -387,6 +454,23 @@
         opacity: 1;
         transform: translateY(0) scale(1);
     }
+}
+
+/* Melhorias para conexão instável */
+.user-card.connection-error {
+    opacity: 0.7;
+    border-color: #fbbf24;
+}
+
+.user-card.connection-error::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 40%, rgba(251, 191, 36, 0.1) 50%, transparent 60%);
+    pointer-events: none;
 }
 
 /* Ícone de editar role */

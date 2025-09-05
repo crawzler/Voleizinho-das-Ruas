@@ -4,6 +4,24 @@
 import { loadConfig, saveConfig } from './config-ui.js';
 import { displayMessage } from './messages.js';
 
+// Função utilitária para query selector seguro
+function safeQuerySelector(selector, parent = document) {
+    try {
+        return parent.querySelector(selector);
+    } catch (e) {
+        console.warn(`Erro ao buscar elemento: ${selector}`, e);
+        return null;
+    }
+}
+
+// Função utilitária para definir valor seguro
+function safeSetValue(selector, value, parent = document) {
+    const element = safeQuerySelector(selector, parent);
+    if (element && 'value' in element) {
+        element.value = value;
+    }
+}
+
 // Configura o modal de configurações rápidas
 export function setupQuickSettings() {
     const quickSettingsButton = document.getElementById('quick-settings-button');
@@ -21,8 +39,8 @@ export function setupQuickSettings() {
     // Carrega valores salvos na inicialização
     const loadValues = () => {
         const config = loadConfig();
-        if (pointsInput) pointsInput.value = config.pointsPerSet || 15;
-        if (setsInput) setsInput.value = config.numberOfSets || 1;
+        safeSetValue('#quick-points-per-set', config.pointsPerSet || 15);
+        safeSetValue('#quick-number-of-sets', config.numberOfSets || 1);
     };
     
     // Carrega valores iniciais
@@ -90,14 +108,13 @@ export function setupQuickSettings() {
 
 // Exposto para abrir o modal diretamente pelo menu do placar
 export function openQuickSettingsModal() {
-    const quickSettingsModal = document.getElementById('quick-settings-modal');
-    const pointsInput = document.getElementById('quick-points-per-set');
-    const setsInput = document.getElementById('quick-number-of-sets');
+    const quickSettingsModal = safeQuerySelector('#quick-settings-modal');
     if (!quickSettingsModal) return;
 
+    // Reutiliza a função de carregamento
     const config = loadConfig();
-    if (pointsInput) pointsInput.value = config.pointsPerSet || 15;
-    if (setsInput) setsInput.value = config.numberOfSets || 1;
+    safeSetValue('#quick-points-per-set', config.pointsPerSet || 15);
+    safeSetValue('#quick-number-of-sets', config.numberOfSets || 1);
 
     quickSettingsModal.classList.add('active');
 }

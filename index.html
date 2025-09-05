@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="css/scheduling.css">
     <link rel="stylesheet" href="css/history.css">
     <link rel="stylesheet" href="css/offline-fallback.css">
+    <link rel="stylesheet" href="css/roles.css">
 
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" crossorigin="anonymous">
     <link rel="manifest" href="manifest.json">
@@ -71,16 +72,19 @@
         </div>
         <nav class="sidebar-nav">
             <button id="nav-scoring" class="sidebar-nav-item">
-                <span class="material-icons sidebar-nav-icon">sports_volleyball</span> Pontuação
+                <span class="material-icons sidebar-nav-icon">scoreboard</span> Pontuação
             </button>
             <button id="nav-teams" class="sidebar-nav-item">
                 <span class="material-icons sidebar-nav-icon">groups</span> Times
             </button>
             <button id="nav-players" class="sidebar-nav-item">
-                <span class="material-icons sidebar-nav-icon">person</span> Jogadores
+                <span class="material-icons sidebar-nav-icon">sports_volleyball</span> Jogadores
             </button>
             <button id="nav-scheduling" class="sidebar-nav-item">
                 <span class="material-icons sidebar-nav-icon">calendar_month</span> Agendamentos
+            </button>
+            <button id="nav-users" class="sidebar-nav-item">
+                <span class="material-icons sidebar-nav-icon">people</span> Usuários
             </button>
             <button id="nav-history" class="sidebar-nav-item">
                 <span class="material-icons sidebar-nav-icon">history</span> Histórico
@@ -90,11 +94,11 @@
             </button>
             <!-- REMOVIDO: Botão de Sair -->
             <!-- Botão de Configurações MOVIDO para o sidebar principal -->
+            <button id="nav-roles" class="sidebar-nav-item" style="display: none;">
+                <span class="material-icons sidebar-nav-icon">admin_panel_settings</span> Roles
+            </button>
             <button id="nav-config" class="sidebar-nav-item" >
                 <span class="material-icons sidebar-nav-icon">settings</span> Configurações
-            </button>
-            <button id="nav-users" class="sidebar-nav-item" style="display: none;">
-                <span class="material-icons sidebar-nav-icon">admin_panel_settings</span> Gerenciamento
             </button>
         </nav>
     </div>
@@ -310,12 +314,14 @@
                     <button id="add-player-button" class="button button--primary">Adicionar</button>
                 </div>
                 <div class="player-list-controls">
-                    <label class="switch">
-                        <input type="checkbox" id="select-all-players-toggle">
-                        <span class="slider round"></span>
-                    </label>
-                    <span  class="player-count-display">Todos</span>
-                    <span>Jogadores: <span id="player-count">0/0</span></span> 
+                    <span>Jogadores: <span id="player-count">0/0</span></span>
+                    <div class="select-all-toggle">
+                        <span>Selecionar Todos</span>
+                        <label class="modern-switch">
+                            <input type="checkbox" id="select-all-players-toggle">
+                            <span class="switch-slider"></span>
+                        </label>
+                    </div>
                 </div>
                 <div id="players-list-container" class="players-list-container">
                     <!-- Jogadores serão renderizados aqui -->
@@ -338,6 +344,10 @@
             
             <div class="config-main">
                 <div class="config-sidebar">
+                    <div class="config-sidebar-header">
+                        <h2 class="config-sidebar-title">Configurações</h2>
+                        <p class="config-sidebar-subtitle">Personalize sua experiência</p>
+                    </div>
                     <nav class="config-nav">
                         <a href="#general" class="config-nav-item active" data-section="general">
                             <span class="material-icons">tune</span>
@@ -510,27 +520,12 @@
                         </div>
                         
                         <div class="admin-panel">
-                            <div class="admin-auth">
+                            <div class="admin-notice">
                                 <h3>
-                                    <span class="material-icons">key</span>
-                                    Autenticação
+                                    <span class="material-icons">developer_mode</span>
+                                    Modo Desenvolvedor
                                 </h3>
-                                <div class="admin-auth-form">
-                                    <div class="admin-key-group">
-                                        <input type="password" id="admin-key-input" class="admin-key-input" placeholder="Digite a chave de administrador" autocomplete="off">
-                                        <button type="button" id="toggle-admin-key" class="toggle-password-btn">
-                                            <span class="material-icons">visibility</span>
-                                        </button>
-                                    </div>
-                                    <button id="admin-auth-btn" class="admin-auth-btn">
-                                        <span class="material-icons">lock_open</span>
-                                        Autenticar
-                                    </button>
-                                </div>
-                                <div id="admin-auth-status" class="admin-auth-status">
-                                    <span class="material-icons">check_circle</span>
-                                    <span class="status-text">Autenticado com sucesso</span>
-                                </div>
+                                <p style="color: var(--text-secondary); margin: 0.5rem 0 1.5rem;">Todas as funcionalidades administrativas estão liberadas por padrão para facilitar o desenvolvimento.</p>
                             </div>
                             
                             <div class="admin-actions">
@@ -645,19 +640,22 @@
 
         <!-- Página de Agendamentos -->
         <section id="scheduling-page" class="app-page scheduling-page-layout">
-            <div class="scheduling-header">
-                <div class="scheduling-header-content">
-                    <h1 class="scheduling-title">Agendamentos</h1>
-                    <p class="scheduling-subtitle">Acompanhe os agendamentos dos jogos</p>
-                </div>
-            </div>
-            
             <div class="scheduling-main">
                 <div class="scheduling-sidebar">
+                    <div class="scheduling-header">
+                        <div class="scheduling-header-content">
+                            <h1 class="scheduling-title">Agendamentos</h1>
+                            <p class="scheduling-subtitle">Acompanhe os agendamentos dos jogos</p>
+                        </div>
+                    </div>
                     <nav class="scheduling-nav">
                         <button class="scheduling-nav-item active" data-section="upcoming">
                             <span class="material-icons">upcoming</span>
                             <span>Próximos</span>
+                        </button>
+                        <button class="scheduling-nav-item" data-section="cancelled">
+                            <span class="material-icons">cancel</span>
+                            <span>Cancelados</span>
                         </button>
                         <button class="scheduling-nav-item" data-section="past">
                             <span class="material-icons">history</span>
@@ -691,6 +689,20 @@
                         <div class="games-group">
                             <div id="past-games-list" class="games-list">
                                 <!-- Jogos passados serão exibidos aqui -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Seção Cancelados -->
+                    <div class="scheduling-section" id="cancelled">
+                        <div class="section-header">
+                            <h2>Jogos Cancelados</h2>
+                            <p>Jogos que foram cancelados com motivo</p>
+                        </div>
+                        
+                        <div class="games-group">
+                            <div id="cancelled-games-list" class="games-list">
+                                <!-- Jogos cancelados serão exibidos aqui -->
                             </div>
                         </div>
                     </div>
@@ -775,11 +787,11 @@
             </div>
         </section>
 
-        <!-- Página de Gerenciamento -->
+        <!-- Página de Usuários -->
         <section id="users-page" class="app-page users-page-layout">
             <div class="teams-header">
                 <div class="teams-header-content">
-                    <h1 class="teams-title">Gerenciamento</h1>
+                    <h1 class="teams-title">Usuários</h1>
                     <p class="teams-subtitle">Painel administrativo - Usuários autenticados</p>
                 </div>
             </div>
@@ -793,6 +805,35 @@
         <section id="stats-page" class="app-page stats-page-layout">
             <h2 class="page-heading">Estatísticas dos Jogadores</h2>
             <!--<h4>Em desenvolvimento...</h4>-->
+        </section>
+
+        <!-- Página de Roles -->
+        <section id="roles-page" class="app-page roles-page-layout">
+            <div class="roles-header">
+                <div class="roles-header-content">
+                    <h1 class="roles-title">Roles</h1>
+                    <p class="roles-subtitle">Configure permissões por nível de acesso</p>
+                </div>
+            </div>
+            
+            <div class="roles-content">
+                <div class="role-selector">
+                    <label>Selecione a role para editar:</label>
+                    <div class="custom-dropdown" id="role-dropdown">
+                        <div class="dropdown-selected" id="dropdown-selected">
+                            <span class="selected-text">Escolha uma role...</span>
+                            <span class="material-icons dropdown-arrow">expand_more</span>
+                        </div>
+                        <div class="dropdown-options" id="dropdown-options">
+                            <!-- Opções serão inseridas aqui -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="permissions-content">
+                    <p>Selecione uma role para editar suas permissões</p>
+                </div>
+            </div>
         </section>
     </main>
 
@@ -906,7 +947,7 @@
     </div>
 
     <script type="module" src="js/main.js"></script>
-    <script src="js/config-navigation.js"></script>
+    <script src="js/ui/navigation.js"></script>
     
     <script>
         // Força fullscreen no PWA, mas somente se o navegador permitir sem gesto do usuário.

@@ -4,6 +4,16 @@
 import { requestNotificationPermission, areNotificationsEnabled, setNotificationsEnabled, areNotificationsSupported } from '../utils/notifications.js';
 import { displayMessage } from './messages.js';
 
+// Função utilitária para query selector seguro
+function safeQuerySelector(selector, parent = document) {
+    try {
+        return parent.querySelector(selector);
+    } catch (e) {
+        console.warn(`Erro ao buscar elemento: ${selector}`, e);
+        return null;
+    }
+}
+
 /**
  * Cria o botão de configuração de notificações
  */
@@ -53,18 +63,18 @@ export function createNotificationButton() {
  */
 function updateButtonState(button) {
     const isEnabled = areNotificationsEnabled();
-    const icon = button.querySelector('.material-icons');
-    const text = button.querySelector('.btn-text');
+    const icon = safeQuerySelector('.material-icons', button);
+    const text = safeQuerySelector('.btn-text', button);
     
     if (isEnabled) {
         button.classList.add('enabled');
-        icon.textContent = 'notifications_active';
-        text.textContent = 'Notificações Ativas';
+        if (icon) icon.textContent = 'notifications_active';
+        if (text) text.textContent = 'Notificações Ativas';
         button.title = 'Notificações estão ativadas';
     } else {
         button.classList.remove('enabled');
-        icon.textContent = 'notifications_off';
-        text.textContent = 'Ativar Notificações';
+        if (icon) icon.textContent = 'notifications_off';
+        if (text) text.textContent = 'Ativar Notificações';
         button.title = 'Clique para ativar notificações';
     }
 }
@@ -73,20 +83,24 @@ function updateButtonState(button) {
  * Adiciona o botão de notificações à página de agendamentos
  */
 export function addNotificationButtonToScheduling() {
-    const schedulingPage = document.getElementById('scheduling-page');
-    if (!schedulingPage) return;
-    
-    // Verifica se já existe o botão
-    if (schedulingPage.querySelector('.notification-toggle-btn')) return;
-    
-    const button = createNotificationButton();
-    
-    // Adiciona o botão no topo da página
-    const header = schedulingPage.querySelector('h2');
-    if (header) {
-        const buttonContainer = document.createElement('div');
-        buttonContainer.className = 'notification-button-container';
-        buttonContainer.appendChild(button);
-        header.parentNode.insertBefore(buttonContainer, header.nextSibling);
+    try {
+        const schedulingPage = document.getElementById('scheduling-page');
+        if (!schedulingPage) return;
+        
+        // Verifica se já existe o botão
+        if (schedulingPage.querySelector('.notification-toggle-btn')) return;
+        
+        const button = createNotificationButton();
+        
+        // Adiciona o botão no topo da página
+        const header = safeQuerySelector('h2', schedulingPage);
+        if (header && header.parentNode) {
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'notification-button-container';
+            buttonContainer.appendChild(button);
+            header.parentNode.insertBefore(buttonContainer, header.nextSibling);
+        }
+    } catch (error) {
+        console.warn('Erro ao adicionar botão de notificações:', error);
     }
 }

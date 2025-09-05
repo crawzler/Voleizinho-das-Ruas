@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isGameInProgress && isScoringPageActive) {
             navScoringButton.innerHTML = '<span class="material-icons sidebar-nav-icon">add_circle</span> Novo Jogo';
         } else {
-            navScoringButton.innerHTML = '<span class="material-icons sidebar-nav-icon">sports_volleyball</span> Pontuação';
+            navScoringButton.innerHTML = '<span class="material-icons sidebar-nav-icon">scoreboard</span> Pontuação';
         }
     }
 

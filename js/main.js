@@ -25,8 +25,8 @@ import { setupQuickSettings } from './ui/quick-settings.js';
 import { setupSidebar as setupModernSidebar } from './ui/sidebar-ui.js';
 import { getUserRole } from './ui/users.js';
 
-import { registerNotificationServiceWorker } from './utils/notifications.js';
-import { initWelcomeNotifications } from './ui/welcome-notifications.js';
+import { registerNotificationServiceWorker } from './notifications/notifications.js';
+import { initWelcomeNotifications } from './notifications/welcome-notifications.js';
 import { initDailyReminders } from './utils/daily-reminders.js';
 import connectivityManager from './utils/connectivity.js';
 import offlineStorage from './utils/offline-storage.js';
@@ -34,6 +34,8 @@ import pwaManager from './utils/pwa-manager.js';
 import { getActiveTeam1Name } from '../js/game/logic.js';
 import { getActiveTeam2Name } from '../js/game/logic.js';
 import safeAreasManager from './utils/safe-areas.js';
+import firestoreRecovery from './firebase/recovery.js';
+import './firebase/dev-fix.js';
 
 import { signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
@@ -150,7 +152,7 @@ function processNotificationHashParams() {
         const id = params.get('id');
         if (action || id) {
             const data = id ? { id } : null;
-            import('./utils/notifications.js').then(mod => {
+            import('./notifications/notifications.js').then(mod => {
                 if (mod && typeof mod.handleNotificationAction === 'function') {
                     mod.handleNotificationAction(action || 'view', data);
                 }
@@ -169,7 +171,7 @@ function processPendingNotificationFromSession() {
         const data = JSON.parse(raw);
         sessionStorage.removeItem('pendingNotification');
         if (data && data.type === 'NOTIFICATION_ACTION') {
-            import('./utils/notifications.js').then(mod => {
+            import('./notifications/notifications.js').then(mod => {
                 if (mod && typeof mod.handleNotificationAction === 'function') {
                     mod.handleNotificationAction(data.action, data.data || null);
                 }
@@ -607,6 +609,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const { app, db, auth } = await initFirebaseApp();
     const appId = getAppId();
+    
+    // Aplica otimizações Firestore
+    try {
+        const { applyDevFirestoreFix } = await import('./firebase/dev-fix.js');
+        await applyDevFirestoreFix();
+        console.log('Otimizações Firestore aplicadas');
+    } catch (error) {
+        console.warn('Erro ao aplicar otimizações Firestore:', error);
+    }
 
     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
         try {
@@ -629,7 +640,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         sessionStorage.setItem('pendingNotification', JSON.stringify(event.data));
                     } else {
                         // Call handler from notifications util if available
-                        import('./utils/notifications.js').then(mod => {
+                        import('./notifications/notifications.js').then(mod => {
                             if (mod && typeof mod.handleNotificationAction === 'function') {
                                 mod.handleNotificationAction(event.data.action, event.data.data || null);
                             }
@@ -657,7 +668,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     
                     // Processa imediatamente se o app estiver pronto
                     if (window.isAppReady) {
-                        import('./utils/notifications.js').then(mod => {
+                        import('./notifications/notifications.js').then(mod => {
                             if (mod && typeof mod.handleNotificationAction === 'function') {
                                 mod.handleNotificationAction(event.data.action, event.data.data || null);
                             }
@@ -843,7 +854,7 @@ async function processPendingActionsFromSwDb() {
                 console.log(`[DEBUG: main.js] Processing pending action:`, item);
                 
                 // Aguarda o módulo carregar antes de processar
-                const mod = await import('./utils/notifications.js');
+                const mod = await import('./notifications/notifications.js');
                 if (mod && typeof mod.handleNotificationAction === 'function') {
                     // Adiciona um pequeno delay entre ações para evitar conflitos
                     await new Promise(resolve => setTimeout(resolve, 200));
@@ -1496,12 +1507,33 @@ async function copySwLogsToClipboard() {
     }
     
 
+    // Configura listener para recuperação Firestore
+    firestoreRecovery.addListener((event) => {
+        switch (event) {
+            case 'recovery-start':
+                updateConnectionIndicator('reconnecting');
+                displayMessage("Detectado problema de conexão. Reconectando...", "warning");
+                break;
+            case 'recovery-success':
+                updateConnectionIndicator('online');
+                displayMessage("Conexão restaurada com sucesso!", "success");
+                break;
+            case 'recovery-failed':
+                updateConnectionIndicator('offline');
+                displayMessage("Falha na reconexão. Usando dados locais.", "error");
+                break;
+        }
+    });
+
     connectivityManager.onStatusChange(async (status) => {
         if (status === 'online') {
             displayMessage("Online novamente! Sincronizando dados...", "info");
             updateConnectionIndicator('reconnecting');
             
             try {
+                // Reset sistema de recuperação ao voltar online
+                firestoreRecovery.reset();
+                
                 const { app, db, auth } = await initFirebaseApp();
                 const appId = getAppId();
                 
@@ -1516,7 +1548,6 @@ async function copySwLogsToClipboard() {
                 displayMessage("Dados sincronizados com sucesso!", "success");
                 updateConnectionIndicator('online');
             } catch (error) {
-
                 displayMessage("Erro ao sincronizar dados", "error");
                 updateConnectionIndicator('offline');
             }
@@ -1566,7 +1597,7 @@ async function copySwLogsToClipboard() {
         const scrollables = new Set();
         const selectors = [
             'body', '.app-main-content', '.sidebar-menu',
-            '#players-page', '#teams-page', '#history-page', '#config-page', '#scheduling-page',
+            '#players-page', '#teams-page', '#users-page', '.users-content', '.users-grid', '#history-page', '#config-page', '#scheduling-page',
             '.players-list-container', '.teams-page-layout-sub', '.scheduling-container', '.tab-content', '.schedule-modal-content', '.substitute-modal-content', '.substitute-players-list', '.accordion-content', '.select-team-modal-content-wrapper', '.team-players-column'
         ];
         const elems = selectors.flatMap(sel => Array.from(document.querySelectorAll(sel)));
@@ -1593,7 +1624,7 @@ async function copySwLogsToClipboard() {
     const modalOpen = document.querySelector('.quick-settings-modal.active') || document.querySelector('.substitute-modal') || document.querySelector('.select-team-modal-container.modal-active') || document.querySelector('.confirmation-modal-overlay.active') || document.querySelector('.schedule-modal.active');
         if (modalOpen) return;
 
-    if (e.target.closest('.substitute-modal-content') || e.target.closest('.substitute-players-list') || e.target.closest('.teams-page-layout-sub') || e.target.closest('.players-list-container') || e.target.closest('.quick-settings-content') || e.target.closest('.quick-settings-modal') || e.target.closest('.config-page-layout') || e.target.closest('.accordion-content') || e.target.closest('.accordion-content-sub') || e.target.closest('.settings-list') || e.target.closest('.accordion-content-sub-teams') || e.target.closest('.accordion-content-sub-full-width') || e.target.closest('#scheduling-page') || e.target.closest('.scheduling-container') || e.target.closest('.tab-content') || e.target.closest('.schedule-modal') || e.target.closest('.schedule-modal-content')) {
+    if (e.target.closest('.substitute-modal-content') || e.target.closest('.substitute-players-list') || e.target.closest('.teams-page-layout-sub') || e.target.closest('.players-list-container') || e.target.closest('.quick-settings-content') || e.target.closest('.quick-settings-modal') || e.target.closest('.config-page-layout') || e.target.closest('.accordion-content') || e.target.closest('.accordion-content-sub') || e.target.closest('.settings-list') || e.target.closest('.accordion-content-sub-teams') || e.target.closest('.accordion-content-sub-full-width') || e.target.closest('#scheduling-page') || e.target.closest('.scheduling-container') || e.target.closest('.tab-content') || e.target.closest('.schedule-modal') || e.target.closest('.schedule-modal-content') || e.target.closest('#users-page') || e.target.closest('.users-content') || e.target.closest('.users-grid')) {
             return;
         }
         const startY = e.touches[0].clientY;
@@ -1623,7 +1654,10 @@ async function copySwLogsToClipboard() {
             e.target.closest('.scheduling-container') ||
             e.target.closest('.tab-content') ||
             e.target.closest('.schedule-modal') ||
-            e.target.closest('.schedule-modal-content')) {
+            e.target.closest('.schedule-modal-content') ||
+            e.target.closest('#users-page') ||
+            e.target.closest('.users-content') ||
+            e.target.closest('.users-grid')) {
             return;
         }
         e.preventDefault();
@@ -1681,6 +1715,27 @@ async function copySwLogsToClipboard() {
     }, 100);
 
     window.isAppReady = true;
+
+    // Verifica saúde da conexão Firestore após inicialização
+    setTimeout(async () => {
+        try {
+            const isHealthy = await firestoreRecovery.checkConnectionHealth();
+            if (!isHealthy) {
+                console.warn('Conexão Firestore pode estar instável');
+                // Tenta aplicar correções automáticas
+                const fixes = await applyFirestoreFixes();
+                if (fixes.length > 0) {
+                    console.log('Correções aplicadas:', fixes);
+                }
+            }
+            
+
+        } catch (e) {
+            // Silencioso
+        }
+    }, 3000);
+    
+
 
     // Verifica se há ações pendentes de notificação (apenas se realmente veio de uma notificação)
     setTimeout(() => {

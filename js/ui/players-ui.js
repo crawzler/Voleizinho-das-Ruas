@@ -148,9 +148,9 @@ export function renderPlayersList(players) {
                     <img src="${userPhoto}" alt="Foto do jogador" class="player-avatar" onerror="this.src='assets/default-user-icon.svg'">
                     <span data-local="${isLocal}">${player.name.replace(' [local]', '')}</span>
                 </div>
-                <label class="switch">
+                <label class="modern-switch">
                     <input type="checkbox" class="player-checkbox" data-player-id="${player.id}" ${isChecked}>
-                    <span class="slider round"></span>
+                    <span class="switch-slider"></span>
                 </label>
             </div>
             <button class="remove-button ${showDeleteButton ? 'visible' : ''}" data-player-id="${player.id}">
@@ -177,10 +177,10 @@ export function renderPlayersList(players) {
         checkbox.addEventListener('change', savePlayerSelectionState);
     });
     
-    // Toggle "Selecionar Todos" removido temporariamente para evitar conflitos com busca
+    // Configura o toggle "Selecionar Todos"
+    setupSelectAllToggle();
 
     updatePlayerCount();
-    updateSelectAllToggle();
     
     // Configurar busca de jogadores e abas de categoria
     setupPlayerSearch();
@@ -192,6 +192,61 @@ export function renderPlayersList(players) {
         setupDropZones();
     }
 
+}
+
+/**
+ * Configura o toggle "Selecionar Todos"
+ */
+function setupSelectAllToggle() {
+    const selectAllToggle = document.getElementById('select-all-players-toggle');
+    if (!selectAllToggle) return;
+    
+    // Remove listener anterior se existir
+    selectAllToggle.removeEventListener('change', handleSelectAllToggle);
+    
+    // Adiciona novo listener
+    selectAllToggle.addEventListener('change', handleSelectAllToggle);
+    
+    // Atualiza o estado inicial
+    updateSelectAllToggle();
+}
+
+/**
+ * Manipula o evento de mudança do toggle "Selecionar Todos"
+ */
+function handleSelectAllToggle(e) {
+    const isChecked = e.target.checked;
+    const checkboxes = document.querySelectorAll('#players-list-container .player-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = isChecked;
+    });
+    
+    // Salva o estado
+    savePlayerSelectionState();
+}
+
+/**
+ * Atualiza o estado do toggle "Selecionar Todos"
+ */
+export function updateSelectAllToggle() {
+    const selectAllToggle = document.getElementById('select-all-players-toggle');
+    if (!selectAllToggle) return;
+    
+    const checkboxes = document.querySelectorAll('#players-list-container .player-checkbox');
+    const checkedBoxes = document.querySelectorAll('#players-list-container .player-checkbox:checked');
+    
+    if (checkboxes.length === 0) {
+        selectAllToggle.checked = false;
+        selectAllToggle.indeterminate = false;
+    } else if (checkedBoxes.length > 0) {
+        // Ativa o toggle quando há pelo menos um jogador selecionado
+        selectAllToggle.checked = true;
+        selectAllToggle.indeterminate = false;
+    } else {
+        selectAllToggle.checked = false;
+        selectAllToggle.indeterminate = false;
+    }
 }
 
 /**
@@ -290,12 +345,7 @@ function clearSearch() {
         if (clearButton) {
             clearButton.style.display = 'none';
         }
-        // Reseta o toggle antes de re-renderizar
-        const selectAllToggle = Elements.selectAllPlayersToggle();
-        if (selectAllToggle) {
-            selectAllToggle.checked = false;
-            selectAllToggle.indeterminate = false;
-        }
+        // Reseta o toggle antes de re-renderizar - removido (toggle antigo)
         // Re-renderiza a lista completa da categoria atual
         const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
         renderPlayersList(players);
@@ -390,9 +440,9 @@ function filterPlayers() {
                     <img src="${userPhoto}" alt="Foto do jogador" class="player-avatar" onerror="this.src='assets/default-user-icon.svg'">
                     <span data-local="${isLocal}">${player.name.replace(' [local]', '')}</span>
                 </div>
-                <label class="switch">
+                <label class="modern-switch">
                     <input type="checkbox" class="player-checkbox" data-player-id="${player.id}" ${isChecked}>
-                    <span class="slider round"></span>
+                    <span class="switch-slider"></span>
                 </label>
             </div>
             <button class="remove-button ${showDeleteButton ? 'visible' : ''}" data-player-id="${player.id}">
@@ -419,7 +469,6 @@ function filterPlayers() {
     });
     
     updatePlayerCount();
-    updateSelectAllToggle();
 }
 
 /**
@@ -432,6 +481,9 @@ export function updatePlayerCount() {
     if (playerCountDisplay) {
         playerCountDisplay.textContent = `${selectedCount}/${totalCount}`;
     }
+    
+    // Atualiza o toggle "Selecionar Todos"
+    updateSelectAllToggle();
     
     // Atualizar também o contador na tela de times usando a função correta
     import('./pages.js').then(({ updateSelectedPlayersCount }) => {
@@ -494,9 +546,8 @@ export function savePlayerSelectionState(e) {
             autoAddPlayersToTeams();
             autoRemoveDeselectedPlayersFromTeams();
 
-            // Atualiza UI local (contador e toggle visual)
+            // Atualiza UI local (contador)
             updatePlayerCount();
-            updateSelectAllToggle();
 
             // NOVO: reordenar imediatamente a lista enquanto busca está ativa
             const playersPage = document.getElementById('players-page');
@@ -624,7 +675,6 @@ export function savePlayerSelectionState(e) {
                         }
                     });
                     updatePlayerCount();
-                    updateSelectAllToggle();
                 }, 100);
             }, 50);
         }
@@ -1479,39 +1529,5 @@ export function unselectPlayerInUI(playerName) {
     }
 }
 
-/**
- * Atualiza o estado do toggle "Selecionar Todos".
- */
-export function updateSelectAllToggle() {
-    const selectAllToggle = Elements.selectAllPlayersToggle();
-    if (!selectAllToggle) return;
 
-    // Verifica se há busca ativa
-    const playerInput = document.getElementById('player-input');
-    const isSearchActive = playerInput && playerInput.value.trim().length > 0;
-    
-    // Durante busca, desabilita o toggle para evitar comportamento indesejado
-    if (isSearchActive) {
-        selectAllToggle.disabled = true;
-        return;
-    }
-    
-    // Reabilita o toggle quando não há busca
-    selectAllToggle.disabled = false;
-
-    const checkboxes = document.querySelectorAll('#players-list-container .player-checkbox');
-    const checkedBoxes = document.querySelectorAll('#players-list-container .player-checkbox:checked');
-
-    // Nova lógica: o toggle fica ativo se houver pelo menos um selecionado
-    if (checkboxes.length === 0) {
-        selectAllToggle.checked = false;
-        selectAllToggle.indeterminate = false;
-    } else if (checkedBoxes.length > 0) {
-        selectAllToggle.checked = true;
-        selectAllToggle.indeterminate = false;
-    } else {
-        selectAllToggle.checked = false;
-        selectAllToggle.indeterminate = false;
-    }
-}
 

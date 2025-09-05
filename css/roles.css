@@ -1,0 +1,381 @@
+/* Roles Management Page Styles */
+.roles-page-layout {
+    min-height: 100vh;
+    height: 100%;
+    padding-bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.roles-header {
+    padding: 2rem 1rem 1.5rem;
+    color: var(--new-text-primary);
+    text-align: center;
+}
+
+.roles-header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.roles-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+    letter-spacing: -0.02em;
+    color: var(--new-text-primary);
+}
+
+.roles-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin: 0;
+    font-weight: 400;
+    color: var(--new-text-secondary);
+}
+
+.roles-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+    flex: 1;
+    overflow: visible;
+    touch-action: manipulation;
+    pointer-events: auto;
+}
+
+.role-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.role-selector label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--new-text-primary);
+}
+
+/* Custom Dropdown */
+.custom-dropdown {
+    position: relative;
+    max-width: 300px;
+}
+
+.dropdown-selected {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--new-border-color);
+    border-radius: 8px;
+    background: var(--new-bg-input);
+    color: var(--new-text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.dropdown-selected:hover {
+    border-color: var(--new-accent-primary);
+}
+
+.dropdown-selected.active {
+    border-color: var(--new-accent-primary);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.dropdown-arrow {
+    transition: transform 0.2s ease;
+    color: var(--new-text-secondary);
+}
+
+.dropdown-selected.active .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.dropdown-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--new-bg-card);
+    border-radius: 8px;
+    z-index: 1000;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    margin-top: 4px;
+}
+
+.dropdown-options.show {
+    max-height: 300px;
+    border: 1px solid var(--new-border-color);
+    box-shadow: var(--new-shadow-medium);
+}
+
+.dropdown-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    border-bottom: 1px solid var(--new-border-light);
+}
+
+.dropdown-option:last-child {
+    border-bottom: none;
+}
+
+.dropdown-option:hover {
+    background: var(--new-bg-tertiary);
+}
+
+.role-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.role-icon .material-icons {
+    font-size: 18px;
+}
+
+.role-name {
+    font-weight: 500;
+    color: var(--new-text-primary);
+}
+
+#permissions-content {
+    flex: 1;
+}
+
+/* Permission Categories */
+.permission-category {
+    background: var(--new-bg-card);
+    border-radius: 16px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    border: 1px solid var(--new-border-color);
+    box-shadow: var(--new-shadow-light);
+}
+
+.category-title {
+    background: linear-gradient(135deg, var(--new-bg-secondary), var(--new-bg-card));
+    color: var(--new-text-primary);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: 1px solid var(--new-border-color);
+}
+
+.category-title .material-icons {
+    font-size: 20px;
+    color: var(--new-accent-primary);
+}
+
+.permission-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--new-border-light);
+    transition: background 0.2s ease;
+    gap: 1rem;
+}
+
+.permission-item:last-child {
+    border-bottom: none;
+}
+
+.permission-item:hover {
+    background: var(--new-bg-tertiary);
+}
+
+.permission-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.permission-label {
+    color: var(--new-text-primary);
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.permission-description {
+    color: var(--new-text-secondary);
+    font-size: 0.875rem;
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* Modern Switch */
+.modern-switch {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 28px;
+    margin: 0;
+    flex-shrink: 0;
+    margin-top: 0.25rem;
+}
+
+.modern-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.switch-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--new-border-medium);
+    transition: 0.3s;
+    border-radius: 28px;
+}
+
+.switch-slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background: var(--new-bg-card);
+    transition: 0.3s;
+    border-radius: 50%;
+    box-shadow: var(--new-shadow-light);
+}
+
+.modern-switch input:checked + .switch-slider {
+    background: var(--new-accent-primary);
+}
+
+.modern-switch input:checked + .switch-slider:before {
+    transform: translateX(20px);
+}
+
+/* Save Button */
+.save-permissions-btn {
+    background: linear-gradient(135deg, var(--new-accent-primary), var(--new-accent-primary-hover));
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1rem;
+    margin-top: 2rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+    display: block;
+    width: 100%;
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.save-permissions-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(135deg, var(--new-accent-primary-hover), var(--new-accent-primary));
+}
+
+.save-permissions-btn:active {
+    transform: translateY(0);
+}
+
+/* Empty State */
+#permissions-content p {
+    text-align: left;
+    color: var(--new-text-secondary);
+    font-size: 1rem;
+    font-style: italic;
+    line-height: 1rem;
+}
+
+/* Dark Mode Adjustments */
+body.dark-mode .switch-slider {
+    background: var(--new-border-medium);
+}
+
+body.dark-mode .switch-slider:before {
+    background: var(--new-bg-card);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .roles-content {
+        max-width: none;
+    }
+    
+    .roles-header {
+        padding: 1.5rem 1rem;
+    }
+    
+    .roles-title {
+        font-size: 2rem;
+    }
+    
+    .custom-dropdown {
+        max-width: 100%;
+    }
+    
+    .permission-item {
+        padding: 1rem;
+        align-items: flex-start;
+    }
+    
+    .permission-label {
+        font-size: 1rem;
+    }
+    
+    .permission-description {
+        font-size: 0.8rem;
+    }
+}
+
+/* Scrollbar Styling */
+#roles-page::-webkit-scrollbar {
+    width: 6px;
+}
+
+#roles-page::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#roles-page::-webkit-scrollbar-thumb {
+    background: var(--new-accent-primary);
+    border-radius: 3px;
+    opacity: 0.7;
+}
+
+#roles-page::-webkit-scrollbar-thumb:hover {
+    opacity: 1;
+    background: var(--new-accent-primary-hover);
+}

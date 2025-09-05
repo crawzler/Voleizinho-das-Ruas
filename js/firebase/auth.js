@@ -8,9 +8,10 @@ import * as Elements from '../ui/elements.js';
 import { displayMessage } from '../ui/messages.js';
 import { updateConnectionIndicator, hideLoadingOverlay, markAuthInitialized } from '../main.js'; // Importa hideLoadingOverlay
 import { setupSchedulingPage, cleanupSchedulingListener, updateSchedulingPermissions } from '../ui/scheduling-ui.js';
+import { updateRolesVisibility } from '../ui/roles-ui.js';
 import { deleteDoc, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getAppId } from './config.js';
-import { initWelcomeNotifications } from '../ui/welcome-notifications.js';
+import { initWelcomeNotifications } from '../notifications/welcome-notifications.js';
 
 let currentUser = null;
 
@@ -162,6 +163,7 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
             setupSchedulingPage(); // Adicione esta linha para garantir que o listener de agendamentos seja refeito ao logar
             updateSchedulingPermissions(); // Atualiza permissões de agendamento
             updatePlayerModificationAbility(true);
+            updateRolesVisibility(); // Atualiza visibilidade da tela de roles
             
             if (sessionStorage.getItem('fromNotification') === 'true' || sessionStorage.getItem('justNavigatedToScheduling') === 'true') {
                 if (sessionStorage.getItem('fromNotification') === 'true') {
@@ -432,18 +434,9 @@ async function updateManagementMenuVisibility(user) {
     const managementMenu = document.getElementById('nav-users');
     if (!managementMenu) return;
     
-    let hasPermission = false;
-    
-    if (user && !user.isAnonymous) {
-        try {
-            const { hasPermission: checkPermission, USER_ROLES } = await import('../ui/users.js');
-            hasPermission = await checkPermission(user.uid, USER_ROLES.MODERATOR);
-        } catch (e) {
-            hasPermission = false;
-        }
-    }
-    
-    managementMenu.style.display = hasPermission ? 'flex' : 'none';
+    // Menu de usuários agora aparece para todos os usuários autenticados
+    const shouldShow = user && !user.isAnonymous;
+    managementMenu.style.display = shouldShow ? 'flex' : 'none';
 }
 
 /**

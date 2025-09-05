@@ -2,6 +2,8 @@
 // Interface para gerenciamento de usuários autenticados
 
 import { getCurrentUser } from '../firebase/auth.js';
+import firestoreRecovery from '../firebase/recovery.js';
+import { safeFirestoreRead, safeFirestoreWrite } from '../firebase/wrapper.js';
 
 // Sistema de roles/tags para usuários
 export const USER_ROLES = {
@@ -55,6 +57,112 @@ export const ROLE_UIDS = {
 // Cache local para roles
 const roleCache = new Map();
 
+// Cache para status online dos usuários
+const onlineStatusCache = new Map();
+let presenceListener = null;
+
+/**
+ * Verifica se um usuário está online
+ */
+export async function checkUserOnlineStatus(uid) {
+    if (!uid) return false;
+    
+    // Se é o usuário atual, está online
+    const currentUser = getCurrentUser();
+    if (currentUser && currentUser.uid === uid && !currentUser.isAnonymous) {
+        return true;
+    }
+    
+    // Verifica cache primeiro
+    if (onlineStatusCache.has(uid)) {
+        const cached = onlineStatusCache.get(uid);
+        // Cache válido por 30 segundos
+        if (Date.now() - cached.timestamp < 30000) {
+            return cached.isOnline;
+        }
+    }
+    
+    // Busca status no Firebase com timeout e retry
+    try {
+        const { initFirebaseApp } = await import('../firebase/config.js');
+        const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
+        
+        const { db } = await initFirebaseApp();
+        const appId = localStorage.getItem('appId') || 'default';
+        
+        const presenceDoc = await safeFirestoreRead(
+            () => getDoc(doc(db, 'artifacts', appId, 'presence', uid))
+        );
+        
+        let isOnline = false;
+        if (presenceDoc.exists()) {
+            const data = presenceDoc.data();
+            const lastSeen = new Date(data.lastSeen || 0);
+            const now = new Date();
+            // Considera online se visto nos últimos 5 minutos
+            isOnline = (now - lastSeen) < 300000;
+        }
+        
+        // Atualiza cache
+        onlineStatusCache.set(uid, {
+            isOnline,
+            timestamp: Date.now()
+        });
+        
+        return isOnline;
+    } catch (error) {
+        // Em caso de erro, assume offline e usa cache se disponível
+        if (onlineStatusCache.has(uid)) {
+            return onlineStatusCache.get(uid).isOnline;
+        }
+        return false;
+    }
+}
+
+/**
+ * Atualiza presença do usuário atual
+ */
+export async function updateUserPresence() {
+    const currentUser = getCurrentUser();
+    if (!currentUser || currentUser.isAnonymous) return;
+    
+    try {
+        const { initFirebaseApp } = await import('../firebase/config.js');
+        const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
+        
+        const { db } = await initFirebaseApp();
+        const appId = localStorage.getItem('appId') || 'default';
+        
+        await safeFirestoreWrite(
+            () => setDoc(doc(db, 'artifacts', appId, 'presence', currentUser.uid), {
+                lastSeen: new Date().toISOString(),
+                isOnline: true
+            })
+        );
+    } catch (error) {
+        // Silencioso - não loga para evitar spam
+    }
+}
+
+/**
+ * Inicia o sistema de presença
+ */
+export function startPresenceSystem() {
+    // Atualiza presença a cada 2 minutos
+    if (presenceListener) clearInterval(presenceListener);
+    
+    updateUserPresence();
+    presenceListener = setInterval(updateUserPresence, 120000);
+    
+    // Atualiza ao sair da página
+    window.addEventListener('beforeunload', () => {
+        const currentUser = getCurrentUser();
+        if (currentUser && !currentUser.isAnonymous) {
+            navigator.sendBeacon('/api/offline', JSON.stringify({ uid: currentUser.uid }));
+        }
+    });
+}
+
 /**
  * Obtém o role de um usuário baseado no UID
  */
@@ -66,14 +174,25 @@ export async function getUserRole(uid) {
         return roleCache.get(uid);
     }
     
-    // Tenta buscar no Firebase
+    // Fallback para verificação local primeiro (mais rápido)
+    for (const [role, uids] of Object.entries(ROLE_UIDS)) {
+        if (uids.includes(uid)) {
+            roleCache.set(uid, role);
+            return role;
+        }
+    }
+    
+    // Tenta buscar no Firebase com timeout
     try {
         const { initFirebaseApp } = await import('../firebase/config.js');
         const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
         
         const { db } = await initFirebaseApp();
         const appId = localStorage.getItem('appId') || 'default';
-        const roleDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'userRoles', uid));
+        
+        const roleDoc = await safeFirestoreRead(
+            () => getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'userRoles', uid))
+        );
         
         if (roleDoc.exists()) {
             const role = roleDoc.data().role;
@@ -81,15 +200,7 @@ export async function getUserRole(uid) {
             return role;
         }
     } catch (error) {
-        console.error('Erro ao buscar role no Firebase:', error);
-    }
-    
-    // Fallback para verificação local
-    for (const [role, uids] of Object.entries(ROLE_UIDS)) {
-        if (uids.includes(uid)) {
-            roleCache.set(uid, role);
-            return role;
-        }
+        // Silencioso - não loga erro para evitar spam no console
     }
     
     roleCache.set(uid, USER_ROLES.USER);
@@ -105,7 +216,7 @@ export async function setUserRole(uid, newRole) {
     // Atualiza cache
     roleCache.set(uid, newRole);
     
-    // Salva no Firebase
+    // Salva no Firebase com timeout e retry
     try {
         const { initFirebaseApp } = await import('../firebase/config.js');
         const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
@@ -113,10 +224,12 @@ export async function setUserRole(uid, newRole) {
         const { db } = await initFirebaseApp();
         const appId = localStorage.getItem('appId') || 'default';
         
-        await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'userRoles', uid), {
-            role: newRole,
-            updatedAt: new Date().toISOString()
-        });
+        await safeFirestoreWrite(
+            () => setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'userRoles', uid), {
+                role: newRole,
+                updatedAt: new Date().toISOString()
+            })
+        );
         
         console.log('Role salva no Firebase:', uid, newRole);
     } catch (error) {
@@ -186,11 +299,67 @@ export async function renderUsersCards(players) {
         return;
     }
 
-    authenticatedUsers.sort((a, b) => a.name.localeCompare(b.name));
+    // Mostra loading enquanto carrega roles
+    usersGrid.innerHTML = `
+        <div class="loading-users">
+            <span class="material-icons">hourglass_empty</span>
+            <p>Carregando usuários...</p>
+        </div>
+    `;
 
-    for (let i = 0; i < authenticatedUsers.length; i++) {
-        const card = await createUserCard(authenticatedUsers[i], i);
-        usersGrid.appendChild(card);
+    try {
+        // Ordena por importância das roles e depois por nome com timeout
+        const usersWithRoles = await Promise.allSettled(
+            authenticatedUsers.map(async (user) => {
+                try {
+                    const role = await getUserRole(user.uid);
+                    return { ...user, role };
+                } catch (e) {
+                    // Em caso de erro, usa role padrão
+                    return { ...user, role: USER_ROLES.USER };
+                }
+            })
+        );
+        
+        // Filtra apenas resultados bem-sucedidos
+        const validUsers = usersWithRoles
+            .filter(result => result.status === 'fulfilled')
+            .map(result => result.value);
+        
+        const roleOrder = [USER_ROLES.DEV, USER_ROLES.ADMIN, USER_ROLES.MODERATOR, USER_ROLES.USER];
+        validUsers.sort((a, b) => {
+            const aIndex = roleOrder.indexOf(a.role);
+            const bIndex = roleOrder.indexOf(b.role);
+            if (aIndex !== bIndex) return aIndex - bIndex;
+            return a.name.localeCompare(b.name);
+        });
+
+        // Limpa loading
+        usersGrid.innerHTML = '';
+
+        // Renderiza cards com delay para melhor UX
+        for (let i = 0; i < validUsers.length; i++) {
+            try {
+                const card = await createUserCard(validUsers[i], i);
+                usersGrid.appendChild(card);
+                
+                // Pequeno delay entre cards para evitar travamento
+                if (i < validUsers.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+            } catch (e) {
+                console.warn('Erro ao criar card do usuário:', validUsers[i].name, e);
+            }
+        }
+    } catch (error) {
+        console.error('Erro ao renderizar usuários:', error);
+        usersGrid.innerHTML = `
+            <div class="error-users">
+                <span class="material-icons">error_outline</span>
+                <h3>Erro ao carregar usuários</h3>
+                <p>Tente recarregar a página ou verifique sua conexão.</p>
+            </div>
+        `;
     }
 }
 
@@ -204,7 +373,7 @@ async function createUserCard(player, index) {
 
     const currentUser = getCurrentUser();
     const isCurrentUser = currentUser && currentUser.uid === player.uid;
-    const isOnline = isCurrentUser && !currentUser.isAnonymous;
+    const isOnline = await checkUserOnlineStatus(player.uid);
 
     const email = extractEmailFromPlayer(player);
     const joinDate = formatJoinDate(player.createdAt);
@@ -241,7 +410,7 @@ async function createUserCard(player, index) {
             
             <div class="user-detail">
                 <span class="material-icons">fingerprint</span>
-                <span>ID: ${player.uid.substring(0, 8)}...</span>
+                <span>ID: ${await getDisplayableUserId(player.uid, currentUser)}</span>
             </div>
             
             ${isCurrentUser ? `
@@ -301,7 +470,84 @@ export function initializeUsersPage() {
         players = [];
     }
 
+    // Configura listener para recuperação de conexão
+    firestoreRecovery.addListener((event) => {
+        const usersGrid = document.getElementById('users-grid');
+        if (!usersGrid) return;
+        
+        switch (event) {
+            case 'recovery-start':
+                usersGrid.innerHTML = `
+                    <div class="loading-users">
+                        <span class="material-icons">sync</span>
+                        <p>Reconectando...</p>
+                    </div>
+                `;
+                break;
+            case 'recovery-success':
+                // Recarrega a página de usuários
+                setTimeout(() => initializeUsersPage(), 1000);
+                break;
+            case 'recovery-failed':
+                usersGrid.innerHTML = `
+                    <div class="error-users">
+                        <span class="material-icons">wifi_off</span>
+                        <h3>Problema de conexão</h3>
+                        <p>Tentando reconectar automaticamente...</p>
+                    </div>
+                `;
+                break;
+        }
+    });
+
+    // Inicializa com delay para evitar conflitos de conexão
+    setTimeout(() => {
+        try {
+            startPresenceSystem();
+        } catch (e) {
+            console.warn('Erro ao iniciar sistema de presença:', e);
+        }
+    }, 500);
+    
     renderUsersCards(players);
+    setupUsersPageGestures();
+}
+
+/**
+ * Configura gestos de slide para a página de usuários
+ */
+function setupUsersPageGestures() {
+    const usersPage = document.getElementById('users-page');
+    if (!usersPage) return;
+
+    let startY = 0;
+    let startX = 0;
+    let isScrolling = false;
+
+    usersPage.addEventListener('touchstart', (e) => {
+        startY = e.touches[0].clientY;
+        startX = e.touches[0].clientX;
+        isScrolling = false;
+    }, { passive: true });
+
+    usersPage.addEventListener('touchmove', (e) => {
+        if (!isScrolling) {
+            const currentY = e.touches[0].clientY;
+            const currentX = e.touches[0].clientX;
+            const deltaY = Math.abs(currentY - startY);
+            const deltaX = Math.abs(currentX - startX);
+            
+            // Se o movimento vertical for maior que o horizontal, é scroll
+            if (deltaY > deltaX) {
+                isScrolling = true;
+            }
+        }
+    }, { passive: true });
+
+    // Melhora a responsividade do scroll
+    usersPage.addEventListener('scroll', () => {
+        usersPage.style.scrollBehavior = 'smooth';
+    }, { passive: true });
 }
 
 /**
@@ -310,8 +556,39 @@ export function initializeUsersPage() {
 export function updateUsersPage(players) {
     const usersPage = document.getElementById('users-page');
     if (usersPage && usersPage.classList.contains('app-page--active')) {
-        renderUsersCards(players);
+        // Verifica saúde da conexão antes de atualizar
+        firestoreRecovery.checkConnectionHealth().then(isHealthy => {
+            if (isHealthy) {
+                renderUsersCards(players);
+            } else {
+                console.warn('Conexão Firestore instável, pulando atualização');
+            }
+        }).catch(() => {
+            // Em caso de erro, ainda tenta renderizar com dados locais
+            renderUsersCards(players);
+        });
     }
+}
+
+/**
+ * Determina qual ID mostrar baseado nas permissões do usuário
+ */
+async function getDisplayableUserId(targetUid, currentUser) {
+    if (!currentUser || !targetUid) return 'Oculto';
+    
+    // Se é o próprio usuário, mostra o ID completo
+    if (currentUser.uid === targetUid) {
+        return targetUid;
+    }
+    
+    // Se é dev, mostra o ID completo de todos
+    const currentUserRole = await getUserRole(currentUser.uid);
+    if (currentUserRole === USER_ROLES.DEV) {
+        return targetUid;
+    }
+    
+    // Para outros usuários, mostra apenas os primeiros 8 caracteres
+    return targetUid.substring(0, 8) + '...';
 }
 
 /**

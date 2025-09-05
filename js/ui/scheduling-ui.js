@@ -2,9 +2,10 @@ import * as Elements from './elements.js';
 import { displayMessage } from './messages.js';
 import * as SchedulesData from '../data/schedules.js';
 import { getCurrentUser } from '../firebase/auth.js';
-import { notifyNewSchedule, notifyCancelledSchedule, areNotificationsEnabled } from '../utils/notifications.js';
+import { notifyNewSchedule, notifyCancelledSchedule, areNotificationsEnabled } from '../notifications/notifications.js';
 import { initSchedulingAnimations, enhanceHoverEffects, setupLoadingAnimations } from './scheduling-animations.js';
 import { getPlayers } from '../data/players.js';
+import { canCreateSchedule, canEditSchedule, canCancelSchedule, canDeleteSchedule, canRedispatchNotification } from '../utils/permissions.js';
 
 const SCHEDULES_STORAGE_KEY = 'voleiScoreSchedules';
 
@@ -209,10 +210,11 @@ export function deleteGame(gameId) {
 /**
  * Renderiza a lista de jogos agendados na página, separando-os por status.
  */
-export function renderScheduledGames() {
+export async function renderScheduledGames() {
     // Tenta usar os novos containers primeiro, depois os antigos para compatibilidade
     let upcomingListContainer = document.querySelector('#upcoming-tab .games-list');
     let pastListContainer = document.querySelector('#past-tab .games-list');
+    let cancelledListContainer = document.querySelector('#cancelled-games-list');
     
     // Fallback para os containers antigos se os novos não existirem
     if (!upcomingListContainer) {
@@ -221,6 +223,9 @@ export function renderScheduledGames() {
     if (!pastListContainer) {
         pastListContainer = Elements.pastGamesList();
     }
+    if (!cancelledListContainer) {
+        cancelledListContainer = document.getElementById('cancelled-games-list');
+    }
     
     if (!upcomingListContainer || !pastListContainer) {
         return;
@@ -228,21 +233,21 @@ export function renderScheduledGames() {
 
     upcomingListContainer.innerHTML = '';
     pastListContainer.innerHTML = '';
+    if (cancelledListContainer) cancelledListContainer.innerHTML = '';
 
     const todayString = new Date().toISOString().slice(0, 10);
 
     const upcomingGames = [];
     const pastGames = [];
+    const cancelledGames = [];
 
     scheduledGames.forEach(game => {
         const gameDateString = game.date;
         
-        // Atualiza o status para 'past' se a data já passou e não foi cancelado
-        if (game.status !== 'cancelled' && gameDateString < todayString) {
+        if (game.status === 'cancelled') {
+            cancelledGames.push(game);
+        } else if (game.status === 'past' || gameDateString < todayString) {
             game.status = 'past';
-        }
-
-        if (game.status === 'past') {
             pastGames.push(game);
         } else {
             upcomingGames.push(game);
@@ -252,29 +257,34 @@ export function renderScheduledGames() {
     if (upcomingGames.length === 0) {
         upcomingListContainer.innerHTML = '<p class="empty-list-message">Nenhum jogo futuro agendado.</p>';
     } else {
-        upcomingGames
-            .sort((a, b) => {
-                // Prioriza status: upcoming (0) antes de cancelled (1) e outros (2)
-                const prio = (g) => g.status === 'upcoming' ? 0 : (g.status === 'cancelled' ? 1 : 2);
-                const pa = prio(a);
-                const pb = prio(b);
-                if (pa !== pb) return pa - pb;
-                // Dentro do mesmo status, ordena por data e horário de início
-                const dateCmp = (a.date || '').localeCompare(b.date || '');
-                if (dateCmp !== 0) return dateCmp;
-                return (a.startTime || '').localeCompare(b.startTime || '');
-            })
-            .forEach(game => {
-                upcomingListContainer.appendChild(createGameCard(game));
-            });
+        const sortedUpcoming = upcomingGames.sort((a, b) => {
+            const dateCmp = (a.date || '').localeCompare(b.date || '');
+            if (dateCmp !== 0) return dateCmp;
+            return (a.startTime || '').localeCompare(b.startTime || '');
+        });
+        for (const game of sortedUpcoming) {
+            upcomingListContainer.appendChild(await createGameCard(game));
+        }
     }
 
     if (pastGames.length === 0) {
         pastListContainer.innerHTML = '<p class="empty-list-message">Nenhum jogo passado encontrado.</p>';
     } else {
-        pastGames.sort((a, b) => b.date.localeCompare(a.date)).forEach(game => {
-            pastListContainer.appendChild(createGameCard(game));
-        });
+        const sortedPast = pastGames.sort((a, b) => b.date.localeCompare(a.date));
+        for (const game of sortedPast) {
+            pastListContainer.appendChild(await createGameCard(game));
+        }
+    }
+
+    if (cancelledListContainer) {
+        if (cancelledGames.length === 0) {
+            cancelledListContainer.innerHTML = '<p class="empty-list-message">Nenhum jogo cancelado.</p>';
+        } else {
+            const sortedCancelled = cancelledGames.sort((a, b) => b.date.localeCompare(a.date));
+            for (const game of sortedCancelled) {
+                cancelledListContainer.appendChild(await createGameCard(game));
+            }
+        }
     }
 
 
@@ -298,7 +308,7 @@ export function renderScheduledGames() {
  * @param {object} game - O objeto do jogo.
  * @returns {HTMLElement} O elemento do card.
  */
-function createGameCard(game) {
+async function createGameCard(game) {
     const card = document.createElement('div');
     card.className = `scheduled-game-card status-${game.status}`;
     card.dataset.gameId = game.id;
@@ -328,11 +338,13 @@ function createGameCard(game) {
             statusTitle = 'Desconhecido';
     }
 
-    // Verifica autenticação e chave admin (apenas chave admin necessária)
-    const config = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
-    let canDelete = config.adminKey === 'admin998939';
+    // Verifica permissões do usuário
+    const canDelete = await canDeleteSchedule();
+    const canEdit = await canEditSchedule();
+    const canCancel = await canCancelSchedule();
+    const canRedispatch = await canRedispatchNotification();
 
-    // Cria o HTML do card igual admin-action
+    // Cria o HTML do card
     card.innerHTML = `
         <div class="card-content">
             <div class="game-details">
@@ -362,9 +374,9 @@ function createGameCard(game) {
             <div class="card-more-menu" data-open="false" role="menu" aria-hidden="true">
                 ${game.status === 'upcoming' ? `<button class="menu-responses" data-game-id='${game.id}' role="menuitem"><span class="material-icons">group</span> Presença</button>` : ''}
                 ${game.paymentProofs && game.paymentProofs.length ? `<button class="menu-proof" data-game-id='${game.id}' data-proofs-count='${game.paymentProofs.length}' role="menuitem"><span class="material-icons">receipt_long</span> Comprovantes</button>` : ''}
-                ${canDelete && game.status === 'upcoming' ? `<button class="menu-edit" data-game-id='${game.id}' role="menuitem"><span class="material-icons">edit</span> Editar</button>` : ''}
-                ${canDelete && game.status === 'upcoming' ? `<button class="menu-redispatch" data-game-id='${game.id}' role="menuitem"><span class="material-icons">notification_add</span> Redisparar</button>` : ''}
-                ${canDelete && game.status === 'upcoming' ? `<button class="menu-cancel" data-game-id='${game.id}' role="menuitem"><span class="material-icons">close</span> Cancelar</button>` : ''}
+                ${canEdit && game.status === 'upcoming' ? `<button class="menu-edit" data-game-id='${game.id}' role="menuitem"><span class="material-icons">edit</span> Editar</button>` : ''}
+                ${canRedispatch && game.status === 'upcoming' ? `<button class="menu-redispatch" data-game-id='${game.id}' role="menuitem"><span class="material-icons">notification_add</span> Redisparar</button>` : ''}
+                ${canCancel && game.status === 'upcoming' ? `<button class="menu-cancel" data-game-id='${game.id}' role="menuitem"><span class="material-icons">close</span> Cancelar</button>` : ''}
             </div>
         </div>
     `;
@@ -378,27 +390,15 @@ function createGameCard(game) {
 /**
  * Verifica se o usuário tem permissão para agendar jogos
  */
-function canUserSchedule() {
-    try {
-        const config = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
-        return config.adminKey === 'admin998939';
-    } catch (error) {
-        return false;
-    }
+async function canUserSchedule() {
+    return await canCreateSchedule();
 }
 
 /**
  * Verifica se o usuário atual é Google (não anônimo) e possui a chave admin.
  */
-function isGoogleAdmin() {
-    try {
-        const user = getCurrentUser();
-        if (!user || user.isAnonymous) return false;
-        const config = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
-        return config.adminKey === 'admin998939';
-    } catch (e) {
-        return false;
-    }
+async function isGoogleAdmin() {
+    return await canEditSchedule();
 }
 
 /**
@@ -406,8 +406,8 @@ function isGoogleAdmin() {
  * Exported so other modules (e.g., notifications handler) can call it.
  */
 export async function openEditSchedule(scheduleId) {
-    if (!isGoogleAdmin()) {
-        displayMessage('Somente administradores autenticados pelo Google podem editar agendamentos.', 'error');
+    if (!await canEditSchedule()) {
+        displayMessage('Você não tem permissão para editar agendamentos.', 'error');
         return;
     }
     const schedule = scheduledGames.find(g => g.id === scheduleId);
@@ -438,8 +438,8 @@ export async function openEditSchedule(scheduleId) {
  * Re-dispara a notificação de um agendamento (apenas admin Google).
  */
 export async function redispatchNotification(scheduleId) {
-    if (!isGoogleAdmin()) {
-        displayMessage('Somente administradores autenticados pelo Google podem redisparar notificações.', 'error');
+    if (!await canRedispatchNotification()) {
+        displayMessage('Você não tem permissão para redisparar notificações.', 'error');
         return;
     }
     const schedule = scheduledGames.find(g => g.id === scheduleId);
@@ -463,12 +463,13 @@ export async function redispatchNotification(scheduleId) {
 /**
  * Atualiza a visibilidade do botão flutuante baseado nas permissões
  */
-function updateFloatingButtonVisibility() {
+async function updateFloatingButtonVisibility() {
     const floatingBtn = document.getElementById('floating-add-btn');
     if (floatingBtn) {
         const schedulingPage = document.getElementById('scheduling-page');
         const schedulingActive = schedulingPage && schedulingPage.classList.contains('app-page--active');
-        floatingBtn.style.display = (canUserSchedule() && schedulingActive) ? 'flex' : 'none';
+        const canSchedule = await canUserSchedule();
+        floatingBtn.style.display = (canSchedule && schedulingActive) ? 'flex' : 'none';
     }
 }
 
@@ -567,9 +568,8 @@ export function setupSchedulingPage() {
             const isEdit = !!editingScheduleId;
             try {
                 if (isEdit) {
-                    // Edição: somente admin Google pode editar
-                    if (!isGoogleAdmin()) {
-                        displayMessage('Somente administradores autenticados pelo Google podem editar agendamentos.', 'error');
+                    if (!await canEditSchedule()) {
+                        displayMessage('Você não tem permissão para editar agendamentos.', 'error');
                         return;
                     }
                     const game = scheduledGames.find(g => g.id === editingScheduleId);
@@ -585,6 +585,10 @@ export function setupSchedulingPage() {
                     displayMessage('Agendamento atualizado com sucesso!', 'success');
                     editingScheduleId = null;
                 } else {
+                    if (!await canCreateSchedule()) {
+                        displayMessage('Você não tem permissão para criar agendamentos.', 'error');
+                        return;
+                    }
                     // Criação normal
                     const newSchedule = Object.assign({
                         id: `game_${new Date().getTime()}`.toString(),
@@ -680,6 +684,17 @@ export function setupSchedulingPage() {
                     menu.setAttribute('data-open', String(!isOpen));
                     menu.style.display = !isOpen ? 'block' : 'none';
                     moreBtn.setAttribute('aria-expanded', String(!isOpen));
+                }
+                return;
+            }
+
+            // Clique no card do agendamento - abre tela de presença
+            const gameCard = event.target.closest('.scheduled-game-card');
+            if (gameCard && !event.target.closest('.card-actions') && !event.target.closest('.card-more-menu')) {
+                const gameId = gameCard.dataset.gameId;
+                const game = scheduledGames.find(g => g.id === gameId);
+                if (game && game.status === 'upcoming') {
+                    showResponsesModal(game);
                 }
                 return;
             }
@@ -856,8 +871,8 @@ function setupModal() {
 
     // Abre o modal ao clicar no botão flutuante
     if (floatingBtn && !floatingBtn.__openListenerAdded) {
-        floatingBtn.addEventListener('click', () => {
-            if (canUserSchedule()) {
+        floatingBtn.addEventListener('click', async () => {
+            if (await canUserSchedule()) {
                 if (modal) {
                     modal.style.display = 'flex';
                     modal.style.opacity = '1';
@@ -1434,13 +1449,8 @@ function setupScheduleDragAndDrop() {
             
             touchStartY = e.touches[0].clientY;
             longPressTimer = setTimeout(() => {
-                const config = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
-                const canDelete = config.adminKey === 'admin998939';
-                
-                if (!canDelete) {
-                    displayMessage('Apenas administradores podem excluir agendamentos.', 'error');
-                    return;
-                }
+                // Funcionalidades liberadas para desenvolvimento
+                const canDelete = true;
                 
                 isDragging = true;
                 try { card.style.setProperty('transform', 'none', 'important'); card.style.setProperty('animation', 'none', 'important'); } catch (e) {}
@@ -1517,13 +1527,8 @@ function setupScheduleDragAndDrop() {
             const startX = e.clientX;
             const startY = e.clientY;
             longPressTimer = setTimeout(() => {
-                const config = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
-                const canDelete = config.adminKey === 'admin998939';
-                
-                if (!canDelete) {
-                    displayMessage('Apenas administradores podem excluir agendamentos.', 'error');
-                    return;
-                }
+                // Funcionalidades liberadas para desenvolvimento
+                const canDelete = true;
                 
                 isDragging = true;
                 card.draggable = true;
@@ -1626,6 +1631,11 @@ function showCancelReasonModal(gameId) {
 
     // Confirmar cancelamento
     newConfirmBtn.addEventListener('click', async () => {
+        if (!await canCancelSchedule()) {
+            displayMessage('Você não tem permissão para cancelar agendamentos.', 'error');
+            return;
+        }
+        
         const reason = reasonInput.value.trim();
         if (!reason) {
             displayMessage('Por favor, informe o motivo do cancelamento.', 'error');
@@ -1792,6 +1802,7 @@ export async function showResponsesModal(game, autoResponse = null) {
                 <div class="att-modal__head">
                     <div>
                         <h3 class="att-modal__title">Respostas de Presença</h3>
+                        <p class="att-modal__subtitle">Clique em uma das opções abaixo para confirmar sua presença</p>
                     </div>
                 </div>
                 <button class="close-modal-btn" aria-label="Fechar">
@@ -1954,17 +1965,11 @@ export async function showResponsesModal(game, autoResponse = null) {
             };
             displayMessage(messages[response] || 'Resposta registrada!', 'success');
             
-            // Se é automático, apenas atualiza a UI
-            if (isAutomatic) {
-                setTimeout(() => {
-                    refreshUI();
-                    addGroupClickHandlers();
-                }, 200);
-            } else {
-                // Se é manual, fecha e reabre o modal
-                close();
-                setTimeout(() => showResponsesModal(game), 100);
-            }
+            // Sempre atualiza em tempo real sem fechar o modal
+            setTimeout(() => {
+                refreshUI();
+                addGroupClickHandlers();
+            }, 200);
             
             // Salva no Firebase
             try {

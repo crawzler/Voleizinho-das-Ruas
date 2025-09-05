@@ -13,7 +13,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);
 }
-.header-button:hover { background: var(--sidebar-item-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
+.header-button:hover { background: var(--sidebar-item-hover); }
 .header-button .material-icons { color: var(--sidebar-text); font-size: 1.25rem; }
 
 .sidebar-menu { position: fixed; top: 0; right: 0; width: var(--sidebar-width); height: 100vh; padding: 1rem; background: var(--sidebar-bg); border-left: 1px solid var(--sidebar-border); box-shadow: var(--sidebar-shadow); transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1002; display: flex; flex-direction: column; backdrop-filter: blur(10px); will-change: transform; -webkit-transform: translateX(100%); -webkit-transition: -webkit-transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -21,11 +21,11 @@
 
 .sidebar-header { padding: 0.5rem; border-bottom: 1px solid var(--sidebar-border); background: linear-gradient(135deg, var(--sidebar-bg) 0%, rgba(102, 126, 234, 0.02) 100%); position: relative; z-index: 1004; margin-bottom: 10px; }
 .user-profile-header { display: flex; align-items: center; gap: 0.75rem; padding: 0.25rem; border-radius: 12px; cursor: pointer; transition: all 0.2s ease; position: relative; background: rgba(102, 126, 234, 0.05); border: 1px solid rgba(102, 126, 234, 0.1); z-index: 1005; }
-.user-profile-header:hover { background: rgba(102, 126, 234, 0.08); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15); }
+.user-profile-header:hover { background: rgba(102, 126, 234, 0.08); }
 .user-profile-picture { width: 50px; height: 50px; border-radius: 10px; object-fit: cover; border: 2px solid rgba(102, 126, 234, 0.2); flex-shrink: 0; }
 .user-display-name { width: 100%; font-weight: 600; font-size: 0.95rem; color: var(--sidebar-text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .profile-menu-arrow { color: var(--sidebar-text-muted); font-size: 1.2rem; transition: transform 0.2s ease; }
-.user-profile-header:hover .profile-menu-arrow { transform: rotate(180deg); }
+
 
 .profile-menu { position: absolute; top: 100%; left: 0; right: 0; background: var(--sidebar-bg); border: 1px solid var(--sidebar-border); border-radius: 8px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); margin-top: 0.5rem; opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.2s ease; z-index: 1006; }
 .profile-menu.show { opacity: 1; visibility: visible; transform: translateY(0); }
@@ -35,9 +35,8 @@
 .profile-menu-divider { height: 1px; background: var(--sidebar-border); margin: 0.5rem 0; }
 
 .sidebar-nav { display: flex; flex-direction: column; gap: 0rem; flex: 1; padding: 0; overflow-y: auto; }
-.sidebar-nav-item { display: flex; align-items: center; justify-content: flex-start; gap: 1rem; border-radius: 10px; padding: 0.5rem 0.75rem; background: none; border: none; box-shadow: none; color: var(--sidebar-text); font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: all 0.2s ease; position: relative; overflow: hidden; text-align: left; }
+.sidebar-nav-item { display: flex; align-items: center; justify-content: flex-start; gap: 1rem; border-radius: 10px; padding: 0.5rem 0.75rem; background: none; border: none; box-shadow: none; color: var(--sidebar-text); font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: background 0.2s ease, color 0.2s ease; position: relative; overflow: hidden; text-align: left; }
 .sidebar-nav-item::before { content: ''; position: absolute; left: 0; top: 0; height: 100%; width: 3px; background: var(--sidebar-item-active); transform: scaleY(0); transition: transform 0.2s ease; }
-.sidebar-nav-item:hover { background: var(--sidebar-item-hover); color: var(--sidebar-text); transform: translateX(4px); }
 .sidebar-nav-item.active { background: linear-gradient(135deg, var(--sidebar-item-active), rgba(102, 126, 234, 0.9)); color: var(--sidebar-text-active); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); }
 .sidebar-nav-item.active::before { transform: scaleY(1); }
 .sidebar-nav-icon { font-size: 1.25rem; flex-shrink: 0; opacity: 0.8; }

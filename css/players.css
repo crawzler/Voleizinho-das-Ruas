@@ -23,48 +23,7 @@
     overscroll-behavior: contain;
 }
 
-/* Switch moderno para página de jogadores */
-#players-page .switch {
-    position: relative;
-    display: inline-block;
-    width: 48px;
-    height: 28px;
-    margin: 0 0.5rem;
-}
 
-#players-page .slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--new-border-medium, var(--border-color));
-    transition: 0.3s;
-    border-radius: 28px;
-    min-width: 0;
-}
-
-#players-page .slider:before {
-    position: absolute;
-    content: "";
-    height: 20px;
-    width: 20px;
-    left: 4px;
-    bottom: 4px;
-    background: var(--new-bg-card, var(--bg-card));
-    transition: 0.3s;
-    border-radius: 50%;
-    box-shadow: var(--new-shadow-light, var(--shadow-light));
-}
-
-#players-page input:checked + .slider {
-    background: var(--new-accent-primary, var(--accent-primary));
-}
-
-#players-page input:checked + .slider:before {
-    transform: translateX(20px);
-}
 
 /* Layout de adição de jogadores */
 #players-page .players-page-layout-add {
@@ -184,21 +143,23 @@
 /* Controles da lista de jogadores */
 #players-page .player-list-controls {
     display: flex;
-    justify-content: space-between;
-    align-items: center;    
-    flex-direction: row-reverse;
     padding: 0.5rem 0.75rem;
     border-radius: 10px;
-}
-
-#players-page .player-list-controls .player-count-display,
-#players-page .player-list-controls span {
+    justify-content: space-between;
+    align-items: center;
     color: var(--new-text-secondary, var(--text-secondary));
 }
 
-#players-page .player-count-display {
-    margin-left: auto;
+/* Toggle "Selecionar Todos" */
+#players-page .select-all-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 500;
 }
+
+
 
 /* Container da lista de jogadores */
 #players-page .players-list-container {

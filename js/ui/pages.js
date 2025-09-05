@@ -5,7 +5,7 @@ import * as Elements from './elements.js';
 import { getIsGameInProgress, resetGameForNewMatch, getCurrentTeam1, getCurrentTeam2, getActiveTeam1Name, getActiveTeam2Name, getActiveTeam1Color, getActiveTeam2Color, incrementScore, decrementScore, getAllGeneratedTeams, setCurrentTeam1, setCurrentTeam2, setActiveTeam1Name, setActiveTeam2Name, setActiveTeam1Color, setActiveTeam2Color, getTeam1Score, getTeam2Score } from '../game/logic.js';
 import { updateScoreDisplay, updateTimerDisplay, updateSetTimerDisplay, renderScoringPagePlayers, updateTeamDisplayNamesAndColors, updateNavScoringButton, renderTeams, renderTeamsInModal } from './game-ui.js';
 import { loadConfig, saveConfig, setupConfigUI } from './config-ui.js';
-import { renderPlayersList, updatePlayerCount, updateSelectAllToggle, savePlayerSelectionState } from './players-ui.js';
+import { renderPlayersList, updatePlayerCount, savePlayerSelectionState } from './players-ui.js';
 import { getCurrentUser, logout } from '../firebase/auth.js';
 import { displayMessage } from './messages.js';
 // Importa as funções de scheduling-ui.js que serão usadas nos callbacks do modal
@@ -185,7 +185,6 @@ export async function showPage(pageIdToShow) {
         }
         updatePlayerModificationAbility(!!currentUser);
         updatePlayerCount();
-        updateSelectAllToggle();
     } else if (pageIdToShow === 'users-page') {
         // Verifica permissões antes de inicializar
         const currentUser = getCurrentUser();
@@ -333,6 +332,13 @@ export async function showPage(pageIdToShow) {
                 }
             } catch (_) { /* noop */ }
         }
+    } else if (pageIdToShow === 'roles-page') {
+        // Carrega dinamicamente o módulo de roles
+        import('./roles-ui.js').then(({ setupRolesPage }) => {
+            setupRolesPage();
+        }).catch(() => {
+            displayMessage('Erro ao carregar página de roles', 'error');
+        });
     }
 }
 
@@ -345,11 +351,8 @@ export function updatePlayerModificationAbility(canModify) {
     const playerInput = Elements.playerInput();
     const addPlayerButton = Elements.addPlayerButton();
     const removeButtons = document.querySelectorAll('#players-list-container .remove-button');
-    const selectAllToggle = Elements.selectAllPlayersToggle();
-
     if (playerInput) playerInput.disabled = !canModify;
     if (addPlayerButton) addPlayerButton.disabled = !canModify;
-    if (selectAllToggle) selectAllToggle.disabled = !canModify;
 
     removeButtons.forEach(button => {
         button.disabled = !canModify;
@@ -357,8 +360,7 @@ export function updatePlayerModificationAbility(canModify) {
         button.style.opacity = canModify ? '1' : '0.5';
     });
 
-    if (!canModify && selectAllToggle) {
-        selectAllToggle.checked = false;
+    if (!canModify) {
         const checkboxes = document.querySelectorAll('#players-list-container .player-checkbox');
         checkboxes.forEach(cb => cb.checked = false);
         updatePlayerCount();
@@ -371,7 +373,6 @@ export function updatePlayerModificationAbility(canModify) {
 
     const playerListControls = document.querySelector('.player-list-controls');
     if (playerListControls) {
-        playerListControls.style.display = 'flex';
     }
 }
 
@@ -582,31 +583,7 @@ export function setupPageNavigation(startGameHandler, getPlayersHandler, appId) 
         });
     }
 
-    if (Elements.selectAllPlayersToggle()) {
-        Elements.selectAllPlayersToggle().addEventListener('change', (event) => {
-            const isChecked = event.target.checked;
-            const actionText = isChecked ? 'marcar' : 'desmarcar';
 
-            showConfirmationModal(
-                `Deseja ${actionText} todos os jogadores visíveis?`,
-                () => {
-                    const checkboxes = document.querySelectorAll('#players-list-container .player-checkbox');
-                    checkboxes.forEach(checkbox => {
-                        checkbox.checked = isChecked;
-                    });
-                    // Persiste a seleção por categoria
-                    try { savePlayerSelectionState(); } catch (_) {}
-                    updatePlayerCount();
-                    updateSelectAllToggle();
-                },
-                () => {
-                    // Reverte o estado do toggle se cancelar
-                    event.target.checked = !isChecked;
-                    updateSelectAllToggle();
-                }
-            );
-        });
-    }
 
     if (Elements.playersListContainer()) {
         // Substitua o listener abaixo para só remover após confirmação
@@ -630,7 +607,6 @@ export function setupPageNavigation(startGameHandler, getPlayersHandler, appId) 
         Elements.playersListContainer().addEventListener('change', (event) => {
             if (event.target.classList.contains('player-checkbox')) {
                 updatePlayerCount();
-                updateSelectAllToggle();
             }
         });
     }

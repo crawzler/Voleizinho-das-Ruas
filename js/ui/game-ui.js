@@ -1038,7 +1038,7 @@ export function updateNavScoringButton(isGameInProgress, currentPageId) {
         if (isGameInProgress && isScoringActive) {
             btn.innerHTML = '<span class="material-icons sidebar-nav-icon">add_circle</span> Novo Jogo';
         } else {
-            btn.innerHTML = '<span class="material-icons sidebar-nav-icon">sports_volleyball</span> Pontuação';
+            btn.innerHTML = '<span class="material-icons sidebar-nav-icon">scoreboard</span> Pontuação';
         }
     } catch (_) {
         // Evita erros de inicialização

@@ -1,7 +1,7 @@
 // js/utils/daily-reminders.js
 // Sistema de lembretes diários para jogos agendados
 
-import { notifyTodayGame, areNotificationsEnabled } from './notifications.js';
+import { notifyTodayGame, areNotificationsEnabled } from '../notifications/notifications.js';
 import { getAllSchedules } from '../data/schedules.js';
 
 const LAST_CHECK_KEY = 'lastDailyCheck';

@@ -1,6 +1,18 @@
 /* Scheduling Page - Extracted core styles */
 
 /* Page Layout */
+#scheduling-page.app-page--active {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  background: var(--new-bg-primary, var(--bg-primary));
+  color: var(--new-text-primary, var(--text-primary));
+}
+
 .scheduling-page-layout {
   display: flex;
   flex-direction: column;
@@ -10,19 +22,20 @@
 }
 
 /* Header */
-.scheduling-header { padding: 3rem 2rem 2rem; color: var(--new-text-primary, var(--text-primary)); }
+.scheduling-header { position: sticky; top: 0; z-index: 10; padding: 1rem 0.75rem 0.75rem; color: var(--new-text-primary, var(--text-primary)); background: var(--new-bg-primary, var(--bg-primary)); }
 .scheduling-header-content { max-width: 1200px; margin: 0 auto; }
-.scheduling-title { font-size: 2.5rem; font-weight: 700; margin: 0 0 0.5rem; letter-spacing: -0.02em; color: var(--new-text-primary, var(--text-primary)); transition: color 0.3s ease; }
-.scheduling-subtitle { font-size: 1.1rem; opacity: 0.9; margin: 0; font-weight: 400; color: var(--new-text-secondary, var(--text-secondary)); transition: color 0.3s ease; }
+.scheduling-title { font-size: 1.25rem; font-weight: 600; margin: 0 0 0.25rem; letter-spacing: -0.02em; color: var(--new-text-primary, var(--text-primary)); transition: color 0.3s ease; }
+.scheduling-subtitle { font-size: 0.8rem; opacity: 0.8; margin: 0; font-weight: 400; color: var(--new-text-secondary, var(--text-secondary)); transition: color 0.3s ease; }
 
 /* Main Layout */
-.scheduling-main { display: flex; max-width: 1200px; margin: 0 auto; flex: 1; gap: 2rem; padding: 0; }
+.scheduling-main { display: flex; width: 90%; flex: 1; gap: 2rem; padding: 0; }
 .scheduling-container { display: flex; flex-direction: column; gap: 2rem; width: 100%; max-width: 1200px; }
 
 /* Sidebar Navigation */
-.scheduling-sidebar { width: 240px; flex-shrink: 0; }
-.scheduling-nav { position: sticky; justify-content: space-evenly; flex-wrap: nowrap; top: 2rem; background: var(--new-bg-card, var(--bg-card)); border-radius: 12px; padding: 0.5rem; box-shadow: var(--new-shadow-light, var(--shadow-light)); border: 1px solid var(--new-border-color, var(--border-color)); }
-.scheduling-nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.875rem 1rem; border-radius: 8px; text-decoration: none; color: var(--new-text-secondary, var(--text-secondary)); font-weight: 500; transition: var(--new-transition-fast, all 0.2s ease); cursor: pointer; border: none; background: none; width: 100%; text-align: left; box-shadow: none; }
+.scheduling-sidebar { width: 200px; flex-shrink: 0; position: sticky; top: 0; height: fit-content; }
+.scheduling-nav { justify-content: space-evenly; flex-wrap: nowrap; background: var(--new-bg-card, var(--bg-card)); border-radius: 12px; padding: 0.5rem; box-shadow: var(--new-shadow-light, var(--shadow-light)); border: 1px solid var(--new-border-color, var(--border-color)); }
+.scheduling-nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.875rem 1rem; border-radius: 8px; text-decoration: none; color: var(--new-text-secondary, var(--text-secondary)); font-weight: 500; transition: var(--new-transition-fast, all 0.2s ease); cursor: pointer; border: none; background: none; width: 100%; text-align: left; box-shadow: none; 
+    justify-content: flex-start;}
 .scheduling-nav-item:hover { background: var(--new-bg-tertiary, var(--bg-tertiary)); color: var(--new-text-medium, var(--text-primary)); }
 .scheduling-nav-item.active { background: var(--new-accent-primary, var(--accent-primary)); color: var(--new-text-inverse, var(--text-inverse)); }
 .scheduling-nav-item .material-icons { font-size: 1.25rem; }
@@ -70,6 +83,8 @@
 /* Game Cards */
 .scheduled-game-card { position: relative; display: flex; align-items: center; justify-content: space-between; padding: 1rem; border: 1px solid var(--new-border-color, var(--border-color)); border-radius: 8px; background: var(--new-bg-secondary, var(--bg-secondary)); transition: var(--new-transition-fast, all 0.2s ease); margin-bottom: 0.75rem; }
 .scheduled-game-card:hover { background: var(--new-bg-tertiary, var(--bg-tertiary)); border-color: var(--new-border-medium, var(--border-dark)); transform: translateY(-2px); box-shadow: var(--new-shadow-medium, var(--shadow-medium)); }
+.scheduled-game-card.status-upcoming { cursor: pointer; }
+.scheduled-game-card.status-upcoming:hover { background: var(--new-bg-tertiary, var(--bg-tertiary)); border-color: var(--new-accent-primary, var(--accent-primary)); }
 .games-list .scheduled-game-card { background: var(--new-bg-secondary, var(--bg-secondary)); border: 1px solid var(--new-border-color, var(--border-color)); border-radius: 12px; padding: 1rem; position: relative; transition: var(--new-transition-fast, all 0.2s ease); }
 .games-list .scheduled-game-card:hover { transform: translateY(-2px); box-shadow: var(--new-shadow-medium, var(--shadow-medium)); border-color: var(--new-border-medium, var(--border-dark)); background: var(--new-bg-tertiary, var(--bg-tertiary)); }
 .card-content { display: flex; align-items: center; gap: 0.75rem; flex: 1; }
@@ -179,11 +194,14 @@
 /* Responsive */
 @media (max-width: 768px) {
   .scheduling-main { flex-direction: column; padding: 0; width: 100%; gap: 1rem; }
-  .scheduling-sidebar { width: 100%; }
+  .scheduling-sidebar { width: 100%; position: static; }
   .scheduling-nav { display: flex; overflow-x: auto; gap: 0.5rem; padding: 0.5rem; }
-  .scheduling-nav-item { white-space: nowrap; }
-  .scheduling-header { padding: 2rem 1rem 1.5rem; }
-  .scheduling-title { font-size: 2rem; text-align: center; }
+  .scheduling-nav-item { white-space: nowrap; min-width: 0; flex-shrink: 1; justify-content: center;}
+  .scheduling-nav-item[data-section="cancelled"] span:last-child { display: none; }
+  .scheduling-nav-item[data-section="cancelled"]::after { content: "Cancel."; }
+  .scheduling-header { padding: 1rem 1rem 0.75rem; position: static; }
+  .scheduling-title { font-size: 1.5rem; text-align: center; }
+  .scheduling-subtitle { text-align: center; }
   .section-header, .games-list { padding-left: 1rem; padding-right: 1rem; }
   .schedule-modal-content { padding: 1.5rem; margin: 0.5rem; }
   .scheduling-container { gap: 1.5rem; }
@@ -318,6 +336,101 @@
 }
 
 .att-group--maybe .att-card--current {
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  border: 1.5px solid #F59E0B;
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.25);
+}
+
+.att-group--maybe .att-card--current:hover {
+  background: linear-gradient(135deg, #D97706, #F59E0B);
+  box-shadow: 0 12px 30px rgba(245, 158, 11, 0.3);
+}
+
+.att-group--not-going .att-card--current {
+  background: linear-gradient(135deg, #EF4444, #DC2626);
+  border: 1.5px solid #EF4444;
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.25);
+}
+
+.att-group--not-going .att-card--current:hover {
+  background: linear-gradient(135deg, #DC2626, #EF4444);
+  box-shadow: 0 12px 30px rgba(239, 68, 68, 0.3);
+}
+
+/* Avatar e nome nos cards */
+.att-card__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  border: 2px solid rgba(0,0,0,0.08);
+  transition: all 0.2s ease;
+}
+
+.att-card--current .att-card__avatar {
+  color: white;
+  border-color: rgba(255,255,255,0.3);
+}
+
+.att-card__name {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: center;
+  line-height: 1.2;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.att-card--current .att-card__name {
+  color: white;
+  font-weight: 600;
+}
+
+/* Footer do modal */
+.att-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Responsivo para modal de presença */
+@media (max-width: 480px) {
+  .attendance-modal {
+    margin: 0.5rem;
+    padding: 1rem;
+  }
+  
+  .att-grid {
+    grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
+    gap: 0.5rem;
+  }
+  
+  .att-card {
+    padding: 0.5rem 0.25rem;
+  }
+  
+  .att-card__avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
+  }
+  
+  .att-card__name {
+    font-size: 0.7rem;
+  }
+}att-group--maybe .att-card--current {
   background: linear-gradient(135deg, #F59E0B, #D97706);
   border: 1.5px solid #F59E0B;
   box-shadow: 0 4px 20px rgba(245, 158, 11, 0.25);

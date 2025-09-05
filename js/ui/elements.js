@@ -31,6 +31,7 @@ export const configPage = () => document.getElementById('config-page');
 export const historyPage = () => document.getElementById('history-page');
 export const schedulingPage = () => document.getElementById('scheduling-page');
 export const statsPage = () => document.getElementById('stats-page');
+export const rolesPage = () => document.getElementById('roles-page');
 
 // Elementos da página de Login
 export const googleLoginButton = () => document.getElementById('google-login-button');
@@ -74,7 +75,7 @@ export const playerInput = () => document.getElementById('player-input');
 export const addPlayerButton = () => document.getElementById('add-player-button');
 export const playersListContainer = () => document.getElementById('players-list-container');
 export const playerCountSpan = () => document.getElementById('player-count');
-export const selectAllPlayersToggle = () => document.getElementById('select-all-players-toggle');
+
 
 // Elementos da página de Configurações
 export const playersPerTeamInput = () => document.getElementById('players-per-team');
@@ -118,6 +119,7 @@ export const navPlayersButton = () => document.getElementById('nav-players');
 export const navHistoryButton = () => document.getElementById('nav-history');
 export const navSchedulingButton = () => document.getElementById('nav-scheduling');
 export const navStatsButton = () => document.getElementById('nav-stats');
+export const navRolesButton = () => document.getElementById('nav-roles');
 export const navConfigButton = () => document.getElementById('nav-config');
 
 // NOVO: Headers do Accordion
@@ -153,5 +155,5 @@ export const statusText = () => document.querySelector('#connection-indicator .s
 // NOVO: Overlay de Carregamento
 export const loadingOverlay = () => document.getElementById('loading-overlay');
 
-// Campo de Chave Admin (nova adição)
-export const adminKeyInput = () => document.getElementById('admin-key-input');
+// Campo de Chave Admin removido - funcionalidades liberadas por padrão
+// export const adminKeyInput = () => document.getElementById('admin-key-input');
