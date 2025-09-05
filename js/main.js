@@ -23,6 +23,7 @@ import { setupSchedulingPage, updateSchedulingPermissions } from './ui/schedulin
 import './ui/profile-menu.js';
 import { setupQuickSettings } from './ui/quick-settings.js';
 import { setupSidebar as setupModernSidebar } from './ui/sidebar-ui.js';
+import { getUserRole } from './ui/users.js';
 
 import { registerNotificationServiceWorker } from './utils/notifications.js';
 import { initWelcomeNotifications } from './ui/welcome-notifications.js';
@@ -40,18 +41,12 @@ let authListenerInitialized = false;
 export function markAuthInitialized() { authListenerInitialized = true; }
 let loadingTimeout = null;
 
-// Use exatamente os UIDs das regras do Firebase
-const ADMIN_UIDS = [
-    "fVTPCFEN5KSKt4me7FgPyNtXHMx1",
-    "Q7cjHJcQoMV9J8IEaxnFFbWNXw22"
-    // Adicione mais UIDs de admin aqui, se necessário
-];
-
 // Função utilitária para checar se o usuário atual é admin
 function isCurrentUserAdmin() {
     const user = getCurrentUser();
     if (!user || !user.uid) return false;
-    return ADMIN_UIDS.includes(user.uid);
+    // Usa a configuração centralizada de roles
+    return getUserRole ? getUserRole(user.uid) === 'dev' : false;
 }
 
 // Função utilitária para checar se o usuário atual está autenticado com Google

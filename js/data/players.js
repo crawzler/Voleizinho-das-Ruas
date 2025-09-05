@@ -133,6 +133,10 @@ export function setupFirestorePlayersListener(dbInstance, appIdentifier) {
             import('../ui/pages.js').then(({ updateSelectedPlayersCount }) => {
                 updateSelectedPlayersCount();
             }).catch(() => {});
+            // Atualiza página de usuários se estiver ativa
+            import('../ui/users.js').then(({ updateUsersPage }) => {
+                updateUsersPage(players);
+            }).catch(() => {});
             hasInitialFirestoreLoadAttempted = true;
         },
         (error) => {

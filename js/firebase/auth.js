@@ -132,6 +132,9 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
         updateProfileMenuLoginState();
         updateConnectionIndicator(navigator.onLine ? 'online' : 'offline');
         hideLoadingOverlay();
+        
+        // Controla visibilidade do menu de gerenciamento
+        updateManagementMenuVisibility(user);
 
         if (user) {
             if (Elements.userIdDisplay()) Elements.userIdDisplay().textContent = `ID: ${user.uid}`;
@@ -419,6 +422,28 @@ async function createPlayerInFirestore(dbInstance, appId, uid, name, photoURL = 
         isManual: false,
         createdAt: new Date().toISOString()
     }, { merge: true });
+}
+
+/**
+ * Controla a visibilidade do menu de gerenciamento baseado nas permissões do usuário
+ * @param {Object} user - Usuário atual
+ */
+async function updateManagementMenuVisibility(user) {
+    const managementMenu = document.getElementById('nav-users');
+    if (!managementMenu) return;
+    
+    let hasPermission = false;
+    
+    if (user && !user.isAnonymous) {
+        try {
+            const { hasPermission: checkPermission, USER_ROLES } = await import('../ui/users.js');
+            hasPermission = await checkPermission(user.uid, USER_ROLES.MODERATOR);
+        } catch (e) {
+            hasPermission = false;
+        }
+    }
+    
+    managementMenu.style.display = hasPermission ? 'flex' : 'none';
 }
 
 /**

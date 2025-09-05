@@ -207,6 +207,21 @@ export function renderTeams(teams) {
                 playerItem.classList.add('empty-slot-item');
             } else {
                 playerName.textContent = player;
+                
+                // Adiciona badge de role se for jogador Google
+                setTimeout(() => {
+                    const allPlayers = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
+                    const playerData = allPlayers.find(p => p.name === player && !p.isManual && p.uid);
+                    if (playerData) {
+                        import('./users.js').then(({ createRoleBadge }) => {
+                            createRoleBadge(playerData.uid).then(badge => {
+                                if (badge) {
+                                    playerName.innerHTML = player + badge;
+                                }
+                            }).catch(() => {});
+                        }).catch(() => {});
+                    }
+                }, 100);
             }
             
             playerItem.appendChild(playerName);
@@ -483,6 +498,17 @@ function loadPlayersForSubstitution(container, searchInput, teamIndex, playerInd
                     const name = document.createElement('span');
                     name.className = 'substitute-player-name';
                     name.textContent = player.name;
+                    
+                    // Adiciona badge de role se necessário
+                    if (!player.isManual && player.uid) {
+                        import('./users.js').then(({ createRoleBadge }) => {
+                            createRoleBadge(player.uid).then(badge => {
+                                if (badge) {
+                                    name.innerHTML = player.name + badge;
+                                }
+                            });
+                        }).catch(() => {});
+                    }
                     
                     const status = document.createElement('span');
                     status.className = 'substitute-player-status';

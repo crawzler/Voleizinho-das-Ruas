@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/teams.css">
     <link rel="stylesheet" href="css/players.css">
+    <link rel="stylesheet" href="css/users.css">
     <link rel="stylesheet" href="css/config.css">
     <link rel="stylesheet" href="css/scheduling.css">
     <link rel="stylesheet" href="css/history.css">
@@ -91,6 +92,9 @@
             <!-- Botão de Configurações MOVIDO para o sidebar principal -->
             <button id="nav-config" class="sidebar-nav-item" >
                 <span class="material-icons sidebar-nav-icon">settings</span> Configurações
+            </button>
+            <button id="nav-users" class="sidebar-nav-item" style="display: none;">
+                <span class="material-icons sidebar-nav-icon">admin_panel_settings</span> Gerenciamento
             </button>
         </nav>
     </div>
@@ -768,6 +772,21 @@
             <div id="scheduling-delete-zone" class="delete-zone" style="display: none;">
                 <span class="material-icons">delete</span>
                 <span>Solte aqui para excluir</span>
+            </div>
+        </section>
+
+        <!-- Página de Gerenciamento -->
+        <section id="users-page" class="app-page users-page-layout">
+            <div class="teams-header">
+                <div class="teams-header-content">
+                    <h1 class="teams-title">Gerenciamento</h1>
+                    <p class="teams-subtitle">Painel administrativo - Usuários autenticados</p>
+                </div>
+            </div>
+            <div class="users-content">
+                <div id="users-grid" class="users-grid">
+                    <!-- Cards dos usuários serão renderizados aqui -->
+                </div>
             </div>
         </section>
 

@@ -139,7 +139,19 @@
   scrollbar-width: thin;
 }
 @media (min-width: 480px) {
-  .substitute-players-list { grid-template-columns: 1fr 1fr; }
+  .substitute-players-list { grid-template-columns: 1fr; }
 }
 .substitute-player-item { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; background: var(--bg-card); border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 12px; padding: 0.75rem 0.85rem; cursor: pointer; transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.05s ease; }
 .substitute-player-item:hover { transform: translateY(-1px); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08); background: var(--bg-card); }
+
+/* Role badges nos cards dos times */
+.team-card-list .role-badge {
+    font-size: 0.6rem !important;
+    padding: 0.15rem 0.35rem !important;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+.team-card-list .role-badge .material-icons {
+    font-size: 0.7rem !important;
+}

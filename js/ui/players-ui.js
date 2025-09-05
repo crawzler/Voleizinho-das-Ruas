@@ -127,6 +127,21 @@ export function renderPlayersList(players) {
             userPhoto = player.photoURL;
         }
         
+        // Adiciona badge de role se necessário
+        let roleBadge = '';
+        if (!player.isManual && player.uid) {
+            import('./users.js').then(({ createRoleBadge }) => {
+                createRoleBadge(player.uid).then(badge => {
+                    if (badge) {
+                        const nameSpan = playerElement.querySelector('.player-avatar-name span');
+                        if (nameSpan && !nameSpan.querySelector('.role-badge-small')) {
+                            nameSpan.innerHTML += badge;
+                        }
+                    }
+                });
+            }).catch(() => {});
+        }
+        
         playerElement.innerHTML = `
             <div class="player-info">
                 <div class="player-avatar-name">

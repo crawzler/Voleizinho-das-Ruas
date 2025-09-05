@@ -185,7 +185,28 @@ export async function showPage(pageIdToShow) {
         }
         updatePlayerModificationAbility(!!currentUser);
         updatePlayerCount();
-        updateSelectAllToggle();    } else if (pageIdToShow === 'teams-page') {
+        updateSelectAllToggle();
+    } else if (pageIdToShow === 'users-page') {
+        // Verifica permissões antes de inicializar
+        const currentUser = getCurrentUser();
+        let hasPermission = false;
+        
+        if (currentUser && !currentUser.isAnonymous) {
+            const { hasPermission: checkPermission, USER_ROLES } = await import('./users.js');
+            hasPermission = checkPermission(currentUser.uid, USER_ROLES.MODERATOR);
+        }
+        
+        if (hasPermission) {
+            import('./users.js').then(({ initializeUsersPage }) => {
+                initializeUsersPage();
+            }).catch(() => {
+                console.warn('Erro ao carregar página de usuários');
+            });
+        } else {
+            showPage('players-page');
+            displayMessage('Acesso negado. Apenas administradores podem acessar esta área.', 'error');
+        }
+    } else if (pageIdToShow === 'teams-page') {
         renderTeams(getAllGeneratedTeams());
         // Carregar valor atual da configuração no campo
         const playersPerTeamInput = document.getElementById('players-per-team-input');

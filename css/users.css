@@ -1,0 +1,416 @@
+/* Container principal da página de usuários */
+#users-page.users-page-layout {
+    background: var(--new-bg-primary, var(--bg-primary));
+    color: var(--new-text-primary, var(--text-primary));
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding: 1rem;
+}
+
+/* Controle de scroll para a página de usuários */
+#users-page.app-page--active {
+    position: absolute !important;
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    overscroll-behavior: contain;
+}
+
+/* Conteúdo principal */
+.users-content {
+    flex: 1;
+    padding: 1rem 0;
+}
+
+/* Grid de cards dos usuários */
+.users-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem 0;
+}
+
+/* Card individual do usuário */
+.user-card {
+    background: var(--new-bg-secondary, var(--bg-secondary));
+    border: 1px solid var(--new-border-color, var(--border-color));
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: var(--new-shadow-light, var(--shadow-light));
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.user-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+    border-color: var(--new-accent-primary, var(--accent-primary));
+}
+
+/* Header do card com foto e nome */
+.user-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.user-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--new-accent-primary, var(--accent-primary));
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    flex-shrink: 0;
+}
+
+.user-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.user-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--new-text-primary, var(--text-primary));
+    margin: 0 0 0.25rem 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-email {
+    font-size: 0.85rem;
+    color: var(--new-text-secondary, var(--text-secondary));
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Badge de Role */
+.role-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.role-badge .material-icons {
+    font-size: 0.9rem;
+}
+
+/* Informações adicionais */
+.user-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--new-border-light, rgba(255, 255, 255, 0.1));
+}
+
+.user-detail {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--new-text-secondary, var(--text-secondary));
+}
+
+.user-detail .material-icons {
+    font-size: 1rem;
+    color: var(--new-accent-primary, var(--accent-primary));
+}
+
+/* Estado online/offline */
+.user-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10B981;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.status-indicator.offline {
+    background: #6B7280;
+    box-shadow: 0 0 0 2px rgba(107, 114, 128, 0.2);
+}
+
+.status-text {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--new-text-secondary, var(--text-secondary));
+}
+
+/* Mensagem quando não há usuários */
+.empty-users {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--new-text-secondary, var(--text-secondary));
+}
+
+.empty-users .material-icons {
+    font-size: 4rem;
+    color: var(--new-text-muted, var(--text-muted));
+    margin-bottom: 1rem;
+}
+
+.empty-users h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    color: var(--new-text-primary, var(--text-primary));
+}
+
+.empty-users p {
+    font-size: 0.9rem;
+    margin: 0;
+    max-width: 400px;
+    margin: 0 auto;
+    line-height: 1.5;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+    .users-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        padding: 0.5rem 0;
+    }
+    
+    .user-card {
+        padding: 1.25rem;
+    }
+    
+    .user-avatar {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .user-name {
+        font-size: 1rem;
+    }
+    
+    .user-email {
+        font-size: 0.8rem;
+    }
+    
+    #users-page.users-page-layout {
+        padding: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .users-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    
+    .user-card {
+        padding: 1rem;
+    }
+    
+    .user-header {
+        gap: 0.75rem;
+    }
+}
+
+/* Animação de entrada dos cards */
+.user-card {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Delay escalonado para animação */
+.user-card:nth-child(1) { animation-delay: 0.1s; }
+.user-card:nth-child(2) { animation-delay: 0.2s; }
+.user-card:nth-child(3) { animation-delay: 0.3s; }
+.user-card:nth-child(4) { animation-delay: 0.4s; }
+.user-card:nth-child(5) { animation-delay: 0.5s; }
+.user-card:nth-child(6) { animation-delay: 0.6s; }
+
+/* Modal de edição de roles */
+.role-edit-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+    animation: fadeIn 0.2s ease;
+}
+
+.role-edit-content {
+    background: var(--new-bg-card, var(--bg-modal));
+    border: 1px solid var(--new-border-color, var(--border-color));
+    border-radius: 16px;
+    padding: 1.5rem 1.5rem 1rem 1.5rem;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+}
+
+.role-edit-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--new-border-color, var(--border-color));
+}
+
+.role-edit-header h3 {
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.role-edit-header p {
+    color: var(--text-muted);
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.role-options-grid {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.role-option-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bg-tertiary);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.role-option-card:hover {
+    background: var(--bg-secondary);
+    transform: translateY(-1px);
+}
+
+.role-option-card.selected {
+    border-color: var(--accent-primary);
+    background: var(--bg-secondary);
+    box-shadow: 0 0 0 1px var(--accent-primary);
+}
+
+.role-option-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.role-option-badge .material-icons {
+    color: white;
+    font-size: 1.2rem;
+}
+
+.role-option-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.role-option-info h4 {
+    color: var(--text-primary);
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.role-option-check .material-icons {
+    color: var(--accent-primary);
+    font-size: 1.3rem;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { 
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Ícone de editar role */
+.edit-role-icon {
+    position: absolute;
+    bottom: 0.75rem;
+    right: 0.75rem;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    box-shadow: none;   
+    background-color: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(4px);
+    padding: 0;
+}
+
+.edit-role-icon .material-icons {
+    font-size: 1rem;
+}
+
