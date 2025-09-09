@@ -1,6 +1,7 @@
 import { displayMessage } from './messages.js';
 
 let selectedRole = null;
+let documentClickListener = null;
 
 const ROLES = {
     dev: { title: 'Desenvolvedor', color: 'linear-gradient(135deg, #FF6B6B, #FF8E53)', icon: 'code' },
@@ -111,11 +112,8 @@ export async function setupRolesPage() {
 }
 
 function showRolesNavigation() {
-    const navButton = document.getElementById('nav-roles');
-    if (navButton) {
-        navButton.style.display = 'flex';
-        navButton.style.visibility = 'visible';
-    }
+    // A visibilidade é controlada pelo sistema de autenticação
+    // Esta função não precisa mais fazer nada
 }
 
 function loadRolePermissions() {
@@ -134,6 +132,10 @@ function renderRolesList() {
     const selectedElement = document.getElementById('dropdown-selected');
     
     if (!dropdown || !optionsContainer || !selectedElement) return;
+    
+    // Remove listeners antigos
+    selectedElement.replaceWith(selectedElement.cloneNode(true));
+    const newSelectedElement = document.getElementById('dropdown-selected');
     
     // Limpa opções existentes
     optionsContainer.innerHTML = '';
@@ -158,8 +160,9 @@ function renderRolesList() {
     });
     
     // Event listener para abrir/fechar dropdown
-    selectedElement.addEventListener('click', () => {
-        const isActive = selectedElement.classList.contains('active');
+    newSelectedElement.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isActive = newSelectedElement.classList.contains('active');
         if (isActive) {
             closeDropdown();
         } else {
@@ -167,12 +170,18 @@ function renderRolesList() {
         }
     });
     
+    // Remove listener anterior se existir
+    if (documentClickListener) {
+        document.removeEventListener('click', documentClickListener);
+    }
+    
     // Fechar dropdown ao clicar fora
-    document.addEventListener('click', (e) => {
+    documentClickListener = (e) => {
         if (!dropdown.contains(e.target)) {
             closeDropdown();
         }
-    });
+    };
+    document.addEventListener('click', documentClickListener);
 }
 
 function openDropdown() {
@@ -252,35 +261,10 @@ function renderPermissionsPanel(roleKey) {
         <button class="save-permissions-btn" onclick="saveRolePermissions()">
             Salvar Permissões
         </button>
+
     `;
     
-    // Implementar scroll manual para página de roles
-    const rolesPage = document.getElementById('roles-page');
-    if (rolesPage) {
-        let startY = 0;
-        let currentY = 0;
-        let isScrolling = false;
-        
-        rolesPage.addEventListener('touchstart', (e) => {
-            startY = e.touches[0].clientY;
-            currentY = rolesPage.scrollTop;
-            isScrolling = true;
-        }, { passive: true });
-        
-        rolesPage.addEventListener('touchmove', (e) => {
-            if (!isScrolling) return;
-            
-            const touchY = e.touches[0].clientY;
-            const deltaY = startY - touchY;
-            const newScrollTop = currentY + deltaY;
-            
-            rolesPage.scrollTop = Math.max(0, Math.min(newScrollTop, rolesPage.scrollHeight - rolesPage.clientHeight));
-        }, { passive: true });
-        
-        rolesPage.addEventListener('touchend', () => {
-            isScrolling = false;
-        }, { passive: true });
-    }
+
 }
 
 window.saveRolePermissions = function() {
@@ -313,3 +297,4 @@ export function updateRolesVisibility() {
 export function getRolePermissions(role) {
     return DEFAULT_ROLE_PERMISSIONS[role] || DEFAULT_ROLE_PERMISSIONS.user;
 }
+

@@ -751,8 +751,7 @@
 }
 
 /* Controle de scroll para páginas: permite scroll normal */
-#teams-page.app-page--active,
-#roles-page.app-page--active {
+#teams-page.app-page--active {
     position: fixed !important;
     top: 0 !important;
     right: 0 !important;
@@ -763,12 +762,6 @@
     touch-action: auto !important;
     overscroll-behavior: auto !important;
     pointer-events: auto !important;
-}
-
-/* Força scroll por toque na página de roles */
-#roles-page.app-page--active * {
-    overscroll-behavior: auto !important;
-    touch-action: auto !important;
 }
 
 /* Controle de scroll para a página de agendamentos */

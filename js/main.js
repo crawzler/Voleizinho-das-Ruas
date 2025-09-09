@@ -51,6 +51,25 @@ function isCurrentUserAdmin() {
     return getUserRole ? getUserRole(user.uid) === 'dev' : false;
 }
 
+// Função para controlar visibilidade da aba de gerenciamento
+function updateRolesTabVisibility() {
+    const rolesTab = document.getElementById('nav-roles');
+    if (rolesTab) {
+        const user = getCurrentUser();
+        // Só mostra para usuários autenticados (não anônimos) e que sejam devs
+        if (user && !user.isAnonymous && isCurrentUserAdmin()) {
+            rolesTab.style.display = 'flex';
+        } else {
+            rolesTab.style.display = 'none';
+        }
+    }
+}
+
+// Chama a função sempre que a página carrega
+setInterval(() => {
+    updateRolesTabVisibility();
+}, 2000);
+
 // Função utilitária para checar se o usuário atual está autenticado com Google
 function isCurrentUserGoogle() {
     const user = getCurrentUser();
@@ -185,30 +204,34 @@ function disablePullToRefresh() {
     // CSS overscroll-behavior
     document.documentElement.style.overscrollBehavior = 'none';
     document.body.style.overscrollBehavior = 'none';
+
+    // Helper: não bloquear gestos iniciados dentro de contêineres com rolagem interna (Roles/Users/etc)
+    const isInsideScrollableContainer = (target) => {
+        if (!target) return false;
+        return !!target.closest('#roles-page, .roles-content, .roles-page-layout, #users-page, .users-content, #players-page, .players-list-container, .player-category-tabs, #teams-page, .teams-page-layout-sub, .team-players-column, #config-page, #scheduling-page, .modal, .dropdown-options');
+    };
     
-    // Bloqueia touchstart no topo da página
+    // Bloqueia pull-to-refresh no topo da janela, mas respeita contêineres internos
     document.addEventListener('touchstart', (e) => {
         if (e.touches.length !== 1) return;
+        if (isInsideScrollableContainer(e.target)) return; // não bloquear dentro de áreas scrolláveis
         const touch = e.touches[0];
         if (touch.clientY <= 10 && window.scrollY === 0) {
-            e.preventDefault();
+            if (e.cancelable) e.preventDefault();
         }
     }, { passive: false });
     
-    // Bloqueia touchmove que pode causar pull-to-refresh
+    // Bloqueia touchmove que pode causar pull-to-refresh somente no contexto global
     document.addEventListener('touchmove', (e) => {
-        if (window.scrollY === 0 && e.touches[0].clientY > e.touches[0].clientY) {
-            e.preventDefault();
+        if (isInsideScrollableContainer(e.target)) return; // não bloquear dentro de áreas scrolláveis
+        if (window.scrollY === 0) {
+            if (e.cancelable) e.preventDefault();
         }
     }, { passive: false });
     
-    // Força overscroll-behavior em todos os elementos
+    // Força overscroll-behavior apenas em html/body, evitando afetar todos os elementos
     const style = document.createElement('style');
     style.textContent = `
-        *, *::before, *::after {
-            overscroll-behavior: none !important;
-            overscroll-behavior-y: none !important;
-        }
         html, body {
             overscroll-behavior: none !important;
             overscroll-behavior-y: none !important;
@@ -1390,6 +1413,16 @@ async function copySwLogsToClipboard() {
 
 
     setupAuthListener(auth, db, appId);
+    
+    // Atualiza visibilidade da aba de gerenciamento após auth
+    setTimeout(() => {
+        updateRolesTabVisibility();
+    }, 1000);
+    
+    // Também atualiza quando o usuário muda
+    window.addEventListener('user-changed', () => {
+        setTimeout(updateRolesTabVisibility, 500);
+    });
 
 
     setupSidebar();
@@ -1624,7 +1657,7 @@ async function copySwLogsToClipboard() {
     const modalOpen = document.querySelector('.quick-settings-modal.active') || document.querySelector('.substitute-modal') || document.querySelector('.select-team-modal-container.modal-active') || document.querySelector('.confirmation-modal-overlay.active') || document.querySelector('.schedule-modal.active');
         if (modalOpen) return;
 
-    if (e.target.closest('.substitute-modal-content') || e.target.closest('.substitute-players-list') || e.target.closest('.teams-page-layout-sub') || e.target.closest('.players-list-container') || e.target.closest('.quick-settings-content') || e.target.closest('.quick-settings-modal') || e.target.closest('.config-page-layout') || e.target.closest('.accordion-content') || e.target.closest('.accordion-content-sub') || e.target.closest('.settings-list') || e.target.closest('.accordion-content-sub-teams') || e.target.closest('.accordion-content-sub-full-width') || e.target.closest('#scheduling-page') || e.target.closest('.scheduling-container') || e.target.closest('.tab-content') || e.target.closest('.schedule-modal') || e.target.closest('.schedule-modal-content') || e.target.closest('#users-page') || e.target.closest('.users-content') || e.target.closest('.users-grid')) {
+    if (e.target.closest('#roles-page') || e.target.closest('.roles-content') || e.target.closest('.dropdown-options') || e.target.closest('.substitute-modal-content') || e.target.closest('.substitute-players-list') || e.target.closest('#players-page') || e.target.closest('.players-list-container') || e.target.closest('.player-category-tabs') || e.target.closest('#teams-page') || e.target.closest('.teams-page-layout-sub') || e.target.closest('.team-players-column') || e.target.closest('.quick-settings-content') || e.target.closest('.quick-settings-modal') || e.target.closest('.config-page-layout') || e.target.closest('.accordion-content') || e.target.closest('.accordion-content-sub') || e.target.closest('.settings-list') || e.target.closest('.accordion-content-sub-teams') || e.target.closest('.accordion-content-sub-full-width') || e.target.closest('#scheduling-page') || e.target.closest('.scheduling-container') || e.target.closest('.tab-content') || e.target.closest('.schedule-modal') || e.target.closest('.schedule-modal-content') || e.target.closest('#users-page') || e.target.closest('.users-content') || e.target.closest('.users-grid')) {
             return;
         }
         const startY = e.touches[0].clientY;
@@ -1657,7 +1690,16 @@ async function copySwLogsToClipboard() {
             e.target.closest('.schedule-modal-content') ||
             e.target.closest('#users-page') ||
             e.target.closest('.users-content') ||
-            e.target.closest('.users-grid')) {
+            e.target.closest('.users-grid') ||
+            e.target.closest('#roles-page') ||
+            e.target.closest('.roles-content') ||
+            e.target.closest('.roles-page-layout') ||
+            e.target.closest('#players-page') ||
+            e.target.closest('.players-list-container') ||
+            e.target.closest('.player-category-tabs') ||
+            e.target.closest('#teams-page') ||
+            e.target.closest('.teams-page-layout-sub') ||
+            e.target.closest('.team-players-column')) {
             return;
         }
         e.preventDefault();

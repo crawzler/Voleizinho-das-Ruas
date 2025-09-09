@@ -134,8 +134,14 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
         updateConnectionIndicator(navigator.onLine ? 'online' : 'offline');
         hideLoadingOverlay();
         
+        // Dispara evento de mudança de usuário
+        window.dispatchEvent(new CustomEvent('user-changed', { detail: { user } }));
+        
         // Controla visibilidade do menu de gerenciamento
         updateManagementMenuVisibility(user);
+        
+        // Controla visibilidade da aba de gerenciamento (roles)
+        updateRolesTabVisibility(user);
 
         if (user) {
             if (Elements.userIdDisplay()) Elements.userIdDisplay().textContent = `ID: ${user.uid}`;
@@ -437,6 +443,27 @@ async function updateManagementMenuVisibility(user) {
     // Menu de usuários agora aparece para todos os usuários autenticados
     const shouldShow = user && !user.isAnonymous;
     managementMenu.style.display = shouldShow ? 'flex' : 'none';
+}
+
+/**
+ * Controla a visibilidade da aba de gerenciamento (roles) baseado no role do usuário
+ * @param {Object} user - Usuário atual
+ */
+function updateRolesTabVisibility(user) {
+    const rolesTab = document.getElementById('nav-roles');
+    if (!rolesTab) return;
+    
+    // Só mostra para usuários autenticados (não anônimos) e que sejam devs
+    // Em desenvolvimento, sempre mostra para usuários autenticados
+    const shouldShow = user && !user.isAnonymous;
+    rolesTab.style.display = shouldShow ? 'flex' : 'none';
+    
+    // Força atualização no DOM
+    if (shouldShow) {
+        rolesTab.classList.add('visible');
+    } else {
+        rolesTab.classList.remove('visible');
+    }
 }
 
 /**

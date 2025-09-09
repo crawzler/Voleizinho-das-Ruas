@@ -152,6 +152,13 @@ export async function showPage(pageIdToShow) {
         try { await exitFullscreen(); } catch (_) { /* ignore */ }
     }
 
+    // NOVO: marca quando a tela de Roles está ativa para liberar scroll na página inteira
+    if (pageIdToShow === 'roles-page') {
+        document.body.classList.add('roles-page-active');
+    } else {
+        document.body.classList.remove('roles-page-active');
+    }
+
     closeSidebar();
     updateNavScoringButton(getIsGameInProgress(), currentPageId);
     

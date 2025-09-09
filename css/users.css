@@ -28,7 +28,6 @@
 /* Conteúdo principal */
 .users-content {
     flex: 1;
-    padding: 1rem;
     width: 100%;
 }
 
@@ -285,10 +284,6 @@
     
     .user-email {
         font-size: 0.8rem;
-    }
-    
-    #users-page.users-page-layout {
-        padding: 0.5rem;
     }
 }
 

@@ -545,6 +545,17 @@ input:checked + .slider:before {
   transition: all 0.2s ease;
 }
 
+.modal-button-base {
+  flex: 1;
+  padding: 0.8rem 1rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  box-shadow: var(--shadow-light);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
 .modal-button-primary {
   background: var(--gradient-button);
   color: var(--text-inverse);
@@ -720,6 +731,20 @@ body:not(.scoring-page-active) {
     height: auto !important;
     min-height: 100svh;
   }
+}
+
+/* Permitir scroll full-page especificamente na tela de Roles */
+body.roles-page-active .app-main-content {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+/* Ajuste: garantir que a seção roles ocupe altura automática para permitir scroll da página */
+body.roles-page-active #roles-page.roles-page-layout {
+  height: auto !important;
+  min-height: 100svh;
 }
 
 /* Debug (inativo por padrão; use body.debug-safe-areas para ativar overlays) */
