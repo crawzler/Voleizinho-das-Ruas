@@ -468,8 +468,9 @@ async function updateFloatingButtonVisibility() {
     if (floatingBtn) {
         const schedulingPage = document.getElementById('scheduling-page');
         const schedulingActive = schedulingPage && schedulingPage.classList.contains('app-page--active');
-        const canSchedule = await canUserSchedule();
-        floatingBtn.style.display = (canSchedule && schedulingActive) ? 'flex' : 'none';
+        // Exibe o botão sempre que a página de agendamentos estiver ativa;
+        // a verificação de permissão permanece no clique de abertura do modal
+        floatingBtn.style.display = schedulingActive ? 'flex' : 'none';
     }
 }
 
@@ -869,17 +870,15 @@ function setupModal() {
         modal.__overlayListenerAdded = true;
     }
 
-    // Abre o modal ao clicar no botão flutuante
+    // Abre o modal ao clicar no botão flutuante (sempre abre; permissão é checada ao salvar)
     if (floatingBtn && !floatingBtn.__openListenerAdded) {
         floatingBtn.addEventListener('click', async () => {
-            if (await canUserSchedule()) {
-                if (modal) {
-                    modal.style.display = 'flex';
-                    modal.style.opacity = '1';
-                    modal.style.visibility = 'visible';
-                    lockBodyScroll();
-                    enableTouchMoveBlocker();
-                }
+            if (modal) {
+                modal.style.display = 'flex';
+                modal.style.opacity = '1';
+                modal.style.visibility = 'visible';
+                lockBodyScroll();
+                enableTouchMoveBlocker();
             }
         });
         floatingBtn.__openListenerAdded = true;

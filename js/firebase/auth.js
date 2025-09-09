@@ -440,9 +440,8 @@ async function updateManagementMenuVisibility(user) {
     const managementMenu = document.getElementById('nav-users');
     if (!managementMenu) return;
     
-    // Menu de usuários agora aparece para todos os usuários autenticados
-    const shouldShow = user && !user.isAnonymous;
-    managementMenu.style.display = shouldShow ? 'flex' : 'none';
+    // Visibilidade controlada centralmente por main.js (apenas dev)
+    managementMenu.style.display = 'none';
 }
 
 /**
@@ -453,17 +452,9 @@ function updateRolesTabVisibility(user) {
     const rolesTab = document.getElementById('nav-roles');
     if (!rolesTab) return;
     
-    // Só mostra para usuários autenticados (não anônimos) e que sejam devs
-    // Em desenvolvimento, sempre mostra para usuários autenticados
-    const shouldShow = user && !user.isAnonymous;
-    rolesTab.style.display = shouldShow ? 'flex' : 'none';
-    
-    // Força atualização no DOM
-    if (shouldShow) {
-        rolesTab.classList.add('visible');
-    } else {
-        rolesTab.classList.remove('visible');
-    }
+    // Visibilidade controlada centralmente por main.js (apenas dev)
+    rolesTab.style.display = 'none';
+    rolesTab.classList.remove('visible');
 }
 
 /**

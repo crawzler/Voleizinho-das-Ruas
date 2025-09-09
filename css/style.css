@@ -389,12 +389,45 @@
 
 /* Previously we hid the external helper when badge present — keep it visible per user preference */
 
-/* Floating add button z-index controlled by CSS rather than inline style */
+/* Floating add button (global FAB) */
 .floating-add-btn {
     position: fixed;
     right: 20px;
     bottom: 20px;
-    z-index: 9999;
+    z-index: 800;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--new-accent-primary, var(--accent-primary));
+    color: var(--new-text-inverse, #fff);
+    border: none;
+    border-radius: 999px;
+    box-shadow: 0 8px 20px Fvrgba(0, 0, 0, 0.35);
+    cursor: pointer;
+    transition: transform 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
+}
+
+.floating-add-btn:hover {
+    filter: brightness(1.05);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(37, 99, 235, 0.4);
+}
+
+.floating-add-btn .material-icons {
+    font-size: 22px;
+    line-height: 1;
+}
+
+.floating-add-btn .fab-label {
+    font-weight: 600;
+    letter-spacing: 0.2px;
+}
+
+@media (max-width: 400px) {
+    /* Em telas muito pequenas, esconder o label para manter o FAB compacto */
+    .floating-add-btn .fab-label { display: none; }
+    .floating-add-btn { padding: 0.75rem 1rem; }
 }
 
 /* When files are selected, show a subtle badge on the file input button */
@@ -628,6 +661,48 @@
 
 .user-profile-header:hover .profile-menu-arrow {
     transform: rotate(180deg);
+}
+
+/* Badge de role no header do perfil (sidebar) */
+.user-role-badge {
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    height: 22px;
+    padding: 0 0.55rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    border: 1px solid rgba(0,0,0,0.25);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+/* Variações por role - cores consistentes com o app */
+.user-role-badge.role-dev {
+    background: #111827;
+    color: #fff;
+    border-color: #000;
+}
+.user-role-badge.role-admin {
+    background: var(--new-accent-primary, var(--accent-primary));
+    color: #fff;
+    border-color: rgba(0,0,0,0.25);
+}
+.user-role-badge.role-moderator {
+    background: #10b981;
+    color: #fff;
+    border-color: #047857;
+}
+.user-role-badge.role-user {
+    background: #6b7280;
+    color: #fff;
+    border-color: #374151;
 }
 
 .profile-menu {
@@ -1374,33 +1449,6 @@
     min-height: 100vh;
 }
 
-/* Cabeçalho no padrão do redesign */
-.teams-header {
-    padding: 2rem 1rem 1.5rem;
-    color: var(--new-text-primary, var(--text-primary));
-    text-align: center;
-}
-
-.teams-header-content {
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.teams-title {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin: 0 0 0.5rem;
-    letter-spacing: -0.02em;
-    color: var(--new-text-primary, var(--text-primary));
-}
-
-.teams-subtitle {
-    font-size: 1.1rem;
-    opacity: 0.9;
-    margin: 0;
-    font-weight: 400;
-    color: var(--new-text-secondary, var(--text-secondary));
-}
 
 .teams-page-layout-sub {
     display: flex;
@@ -4481,9 +4529,6 @@ input[type="password"] {
         margin-top: 0 !important;
     }
     
-    .scheduling-header {
-        padding-top: max(var(--safe-area-inset-top), 1rem);
-    }
 }
 
 /* Remove barra de endereço em browsers mobile */

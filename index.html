@@ -311,7 +311,6 @@
                         <input type="text" id="player-input" placeholder="Digite o nome do jogador..." class="form-input">
                         <button id="clear-input-button" class="clear-input-button" style="display: none;">×</button>
                     </div>
-                    <button id="add-player-button" class="button button--primary">Adicionar</button>
                 </div>
                 <div class="player-list-controls">
                     <span>Jogadores: <span id="player-count">0/0</span></span>
@@ -331,6 +330,11 @@
                     <span>Solte aqui para excluir</span>
                 </div>
             </div>
+            <!-- Botão Flutuante para novo jogador -->
+            <button id="players-floating-add-btn" class="floating-add-btn" title="Novo jogador" style="display:none;">
+                <span class="material-icons">add</span>
+                <span class="fab-label" style="display:inline;">Novo</span>
+            </button>
         </section>
 
         <!-- Página de Configurações -->
@@ -712,6 +716,7 @@
             <!-- Botão Flutuante para Agendar (apenas para admins) -->
             <button id="floating-add-btn" class="floating-add-btn">
                 <span class="material-icons">add</span>
+                <span class="fab-label" style="display:inline;">Novo</span>
             </button>
             
 
@@ -921,18 +926,7 @@
         </div>
     </div>
 
-    <!-- Modal de seleção de categoria -->
-    <div id="category-selection-modal" class="confirmation-modal-overlay">
-        <div class="confirmation-modal-content">
-            <p id="category-selection-message" class="confirmation-message">Em qual categoria deseja adicionar o jogador?</p>
-            <div class="category-selection-buttons">
-                <button id="category-principais-btn" class="button confirmation-button--confirm">Principais</button>
-                <button id="category-esporadicos-btn" class="button confirmation-button--confirm">Esporádicos</button>
-                <button id="category-random-btn" class="button confirmation-button--confirm">Random</button>
-            </div>
-        </div>
-    </div>
-
+    
     <!-- Modal de cancelamento com motivo -->
     <div id="cancel-reason-modal" class="confirmation-modal-overlay">
         <div class="confirmation-modal-content">

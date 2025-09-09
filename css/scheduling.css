@@ -195,12 +195,12 @@
 @media (max-width: 768px) {
   .scheduling-main { flex-direction: column; padding: 0; width: 100%; gap: 1rem; }
   .scheduling-sidebar { width: 100%; position: static; }
-  .scheduling-nav { display: flex; overflow-x: auto; gap: 0.5rem; padding: 0.5rem; }
+  .scheduling-nav { display: flex; overflow-x: auto; padding: 0.5rem; }
   .scheduling-nav-item { white-space: nowrap; min-width: 0; flex-shrink: 1; justify-content: center;}
   .scheduling-nav-item[data-section="cancelled"] span:last-child { display: none; }
   .scheduling-nav-item[data-section="cancelled"]::after { content: "Cancel."; }
-  .scheduling-header { padding: 1rem 1rem 0.75rem; position: static; }
-  .scheduling-title { font-size: 1.5rem; text-align: center; }
+  .scheduling-header { padding: 1rem; position: static; }
+  .scheduling-title { font-size: 2rem; text-align: center; }
   .scheduling-subtitle { text-align: center; }
   .section-header, .games-list { padding-left: 1rem; padding-right: 1rem; }
   .schedule-modal-content { padding: 1.5rem; margin: 0.5rem; }

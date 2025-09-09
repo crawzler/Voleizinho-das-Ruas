@@ -269,6 +269,14 @@ function renderPermissionsPanel(roleKey) {
 
 window.saveRolePermissions = function() {
     if (!selectedRole) return;
+
+    // Confirmação antes de salvar
+    const roleTitle = ROLES[selectedRole]?.title || selectedRole;
+    const confirmed = window.confirm(`Deseja salvar as permissões do role \"${roleTitle}\"?`);
+    if (!confirmed) {
+        displayMessage('Operação cancelada.', 'info');
+        return;
+    }
     
     const checkboxes = document.querySelectorAll('#permissions-content input[type="checkbox"]');
     const permissions = {};

@@ -44,30 +44,35 @@ export function markAuthInitialized() { authListenerInitialized = true; }
 let loadingTimeout = null;
 
 // Função utilitária para checar se o usuário atual é admin
-function isCurrentUserAdmin() {
+async function isCurrentUserAdmin() {
     const user = getCurrentUser();
     if (!user || !user.uid) return false;
-    // Usa a configuração centralizada de roles
-    return getUserRole ? getUserRole(user.uid) === 'dev' : false;
+    try {
+        const role = await getUserRole(user.uid);
+        return role === 'dev';
+    } catch (e) {
+        return false;
+    }
 }
 
 // Função para controlar visibilidade da aba de gerenciamento
-function updateRolesTabVisibility() {
+async function updateRolesTabVisibility() {
     const rolesTab = document.getElementById('nav-roles');
-    if (rolesTab) {
-        const user = getCurrentUser();
-        // Só mostra para usuários autenticados (não anônimos) e que sejam devs
-        if (user && !user.isAnonymous && isCurrentUserAdmin()) {
-            rolesTab.style.display = 'flex';
-        } else {
-            rolesTab.style.display = 'none';
-        }
+    if (!rolesTab) return;
+    const user = getCurrentUser();
+    if (!user || user.isAnonymous) {
+        rolesTab.style.display = 'none';
+        return;
     }
+    const isDev = await isCurrentUserAdmin();
+    rolesTab.style.display = isDev ? 'flex' : 'none';
 }
 
 // Chama a função sempre que a página carrega
 setInterval(() => {
+    // Atualiza abas sensíveis à permissão (dev-only)
     updateRolesTabVisibility();
+    updateUsersTabVisibility();
 }, 2000);
 
 // Função utilitária para checar se o usuário atual está autenticado com Google
@@ -76,6 +81,15 @@ function isCurrentUserGoogle() {
     if (!user || !user.uid) return false;
     // Firebase define isAnonymous = true para usuários anônimos
     return !user.isAnonymous;
+}
+
+// Controla visibilidade da aba de gerenciamento de usuários (Users)
+async function updateUsersTabVisibility() {
+    const usersTab = document.getElementById('nav-users');
+    if (!usersTab) return;
+    const user = getCurrentUser();
+    const shouldShow = !!(user && !user.isAnonymous);
+    usersTab.style.display = shouldShow ? 'flex' : 'none';
 }
 
 /**
@@ -1414,14 +1428,18 @@ async function copySwLogsToClipboard() {
 
     setupAuthListener(auth, db, appId);
     
-    // Atualiza visibilidade da aba de gerenciamento após auth
+    // Atualiza visibilidade das abas de gerenciamento após auth
     setTimeout(() => {
         updateRolesTabVisibility();
+        updateUsersTabVisibility();
     }, 1000);
     
     // Também atualiza quando o usuário muda
     window.addEventListener('user-changed', () => {
-        setTimeout(updateRolesTabVisibility, 500);
+        setTimeout(() => {
+            updateRolesTabVisibility();
+            updateUsersTabVisibility();
+        }, 500);
     });
 
 

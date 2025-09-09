@@ -103,23 +103,13 @@ export function setupFirestorePlayersListener(dbInstance, appIdentifier) {
                 firestorePlayers.push({ ...doc.data(), id: doc.id });
             });
 
-            // Mescla jogadores do Firestore com jogadores locais, preservando categorias locais
+            // Mescla jogadores do Firestore com jogadores locais (sem categorias)
             const localPlayers = getLocalPlayersWithTag();
             const localOnlyPlayers = localPlayers.filter(player =>
                 player.isLocal && !firestorePlayers.some(fp => fp.id === player.id)
             );
 
-            // Preserva categorias que foram alteradas localmente
-            const mergedPlayers = firestorePlayers.map(firestorePlayer => {
-                const localPlayer = localPlayers.find(lp => lp.id === firestorePlayer.id);
-                if (localPlayer && localPlayer.category && localPlayer.category !== firestorePlayer.category) {
-                    // Preserva a categoria local se foi alterada
-                    return { ...firestorePlayer, category: localPlayer.category };
-                }
-                return firestorePlayer;
-            });
-
-            players = [...mergedPlayers, ...localOnlyPlayers];
+            players = [...firestorePlayers, ...localOnlyPlayers];
 
             // Sempre salva a lista completa no localStorage
             try {
@@ -214,7 +204,7 @@ export async function adminAddPlayer(dbInstance, appId, name) {
  * @param {string} [uid] - UID do jogador (opcional, APENAS para registro via Google).
  * @returns {Promise<void>}
  */
-export async function addPlayer(dbInstance, appId, name, uid = null, forceManual = true, category = 'principais') {
+export async function addPlayer(dbInstance, appId, name, uid = null, forceManual = true) {
     if (!name || name.trim().length < 2) {
         throw new Error("Nome inválido");
     }
@@ -252,8 +242,7 @@ export async function addPlayer(dbInstance, appId, name, uid = null, forceManual
         isManual: true,
         id: playerId,
         isLocal: (!navigator.onLine || !dbInstance || !isAdmin),
-        createdBy: createdBy, // Registra o UID do usuário que criou o jogador
-        category: category || 'principais' // Categoria especificada ou padrão
+        createdBy: createdBy // Registra o UID do usuário que criou o jogador
     };
 
     // Se estiver offline, não for admin, ou não tiver dbInstance, salva apenas no localStorage

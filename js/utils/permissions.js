@@ -1,16 +1,19 @@
 import { getCurrentUser } from '../firebase/auth.js';
+import { getUserRole } from '../ui/users.js';
 
 let permissionsCache = null;
 let cacheTimestamp = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 
 // Função para obter o role do usuário atual
-function getCurrentUserRole() {
+async function getCurrentUserRole() {
     const user = getCurrentUser();
-    if (!user) return 'user';
-    
-    // Em desenvolvimento, sempre retorna 'dev'
-    return 'dev';
+    if (!user || !user.uid) return 'user';
+    try {
+        return await getUserRole(user.uid);
+    } catch (e) {
+        return 'user';
+    }
 }
 
 // Função para obter permissões do role
@@ -61,7 +64,7 @@ async function getUserPermissions() {
         return permissionsCache;
     }
 
-    const userRole = getCurrentUserRole();
+    const userRole = await getCurrentUserRole();
     permissionsCache = getRolePermissions(userRole);
     cacheTimestamp = now;
     return permissionsCache;

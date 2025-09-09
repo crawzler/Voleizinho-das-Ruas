@@ -2,10 +2,10 @@
 #teams-page.teams-page-layout { background: var(--new-bg-primary, var(--bg-primary)); color: var(--new-text-primary, var(--text-primary)); display: flex; flex-direction: column; min-height: 100vh; }
 
 /* Cabeçalho */
-.teams-header { padding: 2rem 1rem 1.5rem; color: var(--new-text-primary, var(--text-primary)); text-align: center; }
+.teams-header { padding: 1rem; color: var(--new-text-primary, var(--text-primary)); text-align: center; }
 .teams-header-content { max-width: 1200px; margin: 0 auto; }
-.teams-title { font-size: 2.5rem; font-weight: 700; margin: 0 0 0.5rem; letter-spacing: -0.02em; color: var(--new-text-primary, var(--text-primary)); }
-.teams-subtitle { font-size: 1.1rem; opacity: 0.9; margin: 0; font-weight: 400; color: var(--new-text-secondary, var(--text-secondary)); }
+.teams-title { font-size: 2rem; font-weight: 600; margin: 0 0 0.25rem; letter-spacing: -0.02em; color: var(--new-text-primary, var(--text-primary)); }
+.teams-subtitle { font-size: 1rem; opacity: 0.9; margin: 0; font-weight: 400; color: var(--new-text-secondary, var(--text-secondary)); }
 
 /* Subárea com rolagem e sombras indicativas */
 .teams-page-layout-sub { display: flex; flex-direction: column; gap: 1rem; flex-grow: 1; width: 100%; min-height: 0; overflow: visible !important; height: auto !important; padding-bottom: 2rem; }
