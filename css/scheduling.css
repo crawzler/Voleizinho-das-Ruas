@@ -165,6 +165,16 @@
 
 .card-more-menu button:hover { background: var(--new-bg-tertiary, var(--bg-tertiary)); }
 
+/* Estilo especial para a opção de excluir */
+.card-more-menu .menu-delete {
+  color: #EF4444;
+}
+
+.card-more-menu .menu-delete:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #DC2626;
+}
+
 /* Small adjustments for specific action buttons */
 .card-cancel-x { background: transparent; border: none; color: var(--new-text-muted, var(--text-muted)); width: 32px; height: 32px; padding: 4px; }
 .card-proof-btn, .card-responses-btn { padding: 6px 8px; font-size: 0.8rem; }
@@ -172,7 +182,7 @@
 
 
 /* Schedule Modal */
-.schedule-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.7); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 1rem; }
+.schedule-modal { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.7); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 1rem;     backdrop-filter: blur(4px);}
 .schedule-modal-content { background: var(--new-bg-card, var(--bg-card)); border: 1px solid var(--new-border-color, var(--border-color)); border-radius: 12px; padding: 2rem; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; box-shadow: var(--new-shadow-heavy, var(--shadow-heavy)); }
 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); position: relative; }
 .modal-header h3 { color: var(--new-text-dark, var(--text-primary)); font-size: 1.25rem; font-weight: 600; margin: 0; }
@@ -218,17 +228,18 @@
 /* Attendance Modal styles (migrated from attendance-modal.css) */
 /* Overlay inherits from .confirmation-modal-overlay */
 .attendance-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--bg-overlay);
-  z-index: 3000;
+  z-index: 3000 !important;
   padding: 1rem;
+  backdrop-filter: blur(4px);
 }
 
 /* Content inherits from .confirmation-modal-content */

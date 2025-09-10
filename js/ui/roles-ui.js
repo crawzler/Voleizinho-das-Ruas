@@ -1,4 +1,5 @@
 import { displayMessage } from './messages.js';
+import { clearPermissionsCache } from '../utils/permissions.js';
 
 let selectedRole = null;
 let documentClickListener = null;
@@ -6,8 +7,9 @@ let documentClickListener = null;
 const ROLES = {
     dev: { title: 'Desenvolvedor', color: 'linear-gradient(135deg, #FF6B6B, #FF8E53)', icon: 'code' },
     admin: { title: 'Administrador', color: 'linear-gradient(135deg, #E74C3C, #8E44AD)', icon: 'admin_panel_settings' },
-    mod: { title: 'Moderador', color: 'linear-gradient(135deg, #F39C12, #E67E22)', icon: 'shield' },
-    user: { title: 'Usuário', color: 'linear-gradient(135deg, #6C5CE7, #A29BFE)', icon: 'person' }
+    moderator: { title: 'Moderador', color: 'linear-gradient(135deg, #F39C12, #E67E22)', icon: 'shield' },
+    user: { title: 'Usuário', color: 'linear-gradient(135deg, #6C5CE7, #A29BFE)', icon: 'person' },
+    anonymous: { title: 'Anônimo', color: 'linear-gradient(135deg, #9CA3AF, #D1D5DB)', icon: 'person_outline' }
 };
 
 const PERMISSIONS = {
@@ -65,6 +67,24 @@ const PERMISSIONS = {
             }
         }
     },
+    players: {
+        title: 'Jogadores',
+        icon: 'sports_volleyball',
+        permissions: {
+            create: {
+                label: 'Cadastrar jogadores',
+                description: 'Permite cadastrar novos jogadores (local ou servidor)'
+            },
+            createServer: {
+                label: 'Cadastrar no servidor',
+                description: 'Salva no Firestore (requer "Cadastrar jogadores")'
+            },
+            delete: {
+                label: 'Excluir jogador',
+                description: 'Permite excluir jogadores (remotos)'
+            }
+        }
+    },
     others: {
         title: 'Outros',
         icon: 'bug_report',
@@ -83,24 +103,35 @@ const DEFAULT_ROLE_PERMISSIONS = {
         scheduling: { createSchedule: true, editSchedule: true, cancelSchedule: true, redispatchNotification: true, deleteSchedule: true },
         users: { viewUsersPage: true, viewUserIds: true, editUserRoles: true },
         configs: { editCustomTeams: true },
+        players: { create: true, createServer: true, delete: true },
         others: { debugAccess: true }
     },
     admin: {
         scheduling: { createSchedule: true, editSchedule: true, cancelSchedule: true, redispatchNotification: true, deleteSchedule: true },
         users: { viewUsersPage: true, viewUserIds: false, editUserRoles: false },
         configs: { editCustomTeams: true },
+        players: { create: true, createServer: true, delete: true },
         others: { debugAccess: false }
     },
-    mod: {
+    moderator: {
         scheduling: { createSchedule: true, editSchedule: true, cancelSchedule: false, redispatchNotification: false, deleteSchedule: false },
         users: { viewUsersPage: false, viewUserIds: false, editUserRoles: false },
         configs: { editCustomTeams: false },
+        players: { create: true, createServer: false, delete: false },
         others: { debugAccess: false }
     },
     user: {
         scheduling: { createSchedule: false, editSchedule: false, cancelSchedule: false, redispatchNotification: false, deleteSchedule: false },
         users: { viewUsersPage: false, viewUserIds: false, editUserRoles: false },
         configs: { editCustomTeams: false },
+        players: { create: true, createServer: false, delete: false },
+        others: { debugAccess: false }
+    },
+    anonymous: {
+        scheduling: { createSchedule: false, editSchedule: false, cancelSchedule: false, redispatchNotification: false, deleteSchedule: false },
+        users: { viewUsersPage: false, viewUserIds: false, editUserRoles: false },
+        configs: { editCustomTeams: false },
+        players: { create: true, createServer: false, delete: false },
         others: { debugAccess: false }
     }
 };
@@ -116,14 +147,54 @@ function showRolesNavigation() {
     // Esta função não precisa mais fazer nada
 }
 
-function loadRolePermissions() {
+async function loadRolePermissions() {
+    // Carrega do Firebase primeiro
+    try {
+        await loadRolePermissionsFromFirebase();
+    } catch (e) {
+        console.warn('Erro ao carregar permissões do Firebase, usando localStorage');
+    }
+    
+    // Fallback para localStorage
     const saved = localStorage.getItem('rolePermissions');
     if (saved) {
         try {
             const savedPermissions = JSON.parse(saved);
-            Object.assign(DEFAULT_ROLE_PERMISSIONS, savedPermissions);
+            // Migra chave antiga 'mod' para 'moderator' se necessário
+            if (savedPermissions.mod && !savedPermissions.moderator) {
+                savedPermissions.moderator = savedPermissions.mod;
+                delete savedPermissions.mod;
+            }
+            // Apenas aplica se não carregou do Firebase
+            Object.keys(savedPermissions).forEach(role => {
+                if (!DEFAULT_ROLE_PERMISSIONS[role] || Object.keys(DEFAULT_ROLE_PERMISSIONS[role]).length === 0) {
+                    DEFAULT_ROLE_PERMISSIONS[role] = savedPermissions[role];
+                }
+            });
         } catch (e) {}
     }
+}
+
+// Função para carregar permissões do Firebase
+async function loadRolePermissionsFromFirebase() {
+    const { initFirebaseApp } = await import('../firebase/config.js');
+    const { collection, getDocs } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
+    const { safeFirestoreRead } = await import('../firebase/wrapper.js');
+    
+    const { db } = await initFirebaseApp();
+    const appId = localStorage.getItem('appId') || 'default';
+    
+    const rolePermissionsRef = collection(db, `artifacts/${appId}/public/data/rolePermissions`);
+    const snapshot = await safeFirestoreRead(
+        () => getDocs(rolePermissionsRef)
+    );
+    
+    snapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.role && data.permissions) {
+            DEFAULT_ROLE_PERMISSIONS[data.role] = data.permissions;
+        }
+    });
 }
 
 function renderRolesList() {
@@ -264,10 +335,27 @@ function renderPermissionsPanel(roleKey) {
 
     `;
     
-
+    // Dependência: players.createServer depende de players.create
+    try {
+        const createCb = container.querySelector('input[type="checkbox"][data-category="players"][data-permission="create"]');
+        const createServerCb = container.querySelector('input[type="checkbox"][data-category="players"][data-permission="createServer"]');
+        const updateCreateServerState = () => {
+            if (!createCb || !createServerCb) return;
+            if (!createCb.checked) {
+                createServerCb.checked = false;
+                createServerCb.disabled = true;
+            } else {
+                createServerCb.disabled = false;
+            }
+        };
+        if (createCb && createServerCb) {
+            updateCreateServerState();
+            createCb.addEventListener('change', updateCreateServerState);
+        }
+    } catch (_) { /* ignore */ }
 }
 
-window.saveRolePermissions = function() {
+window.saveRolePermissions = async function() {
     if (!selectedRole) return;
 
     // Confirmação antes de salvar
@@ -291,12 +379,53 @@ window.saveRolePermissions = function() {
         
         permissions[category][permission] = checkbox.checked;
     });
+
+    // Enforce dependency: players.createServer only if players.create is true
+    if (permissions.players && permissions.players.create !== true) {
+        permissions.players.createServer = false;
+    }
     
-    DEFAULT_ROLE_PERMISSIONS[selectedRole] = permissions;
-    localStorage.setItem('rolePermissions', JSON.stringify(DEFAULT_ROLE_PERMISSIONS));
-    
-    displayMessage(`Permissões do role ${ROLES[selectedRole].title} salvas!`, 'success');
+    try {
+        // Salva no Firebase
+        await saveRolePermissionsToFirebase(selectedRole, permissions);
+        
+        // Atualiza localmente
+        DEFAULT_ROLE_PERMISSIONS[selectedRole] = permissions;
+        localStorage.setItem('rolePermissions', JSON.stringify(DEFAULT_ROLE_PERMISSIONS));
+        
+        // Limpa o cache de permissões para forçar atualização
+        clearPermissionsCache();
+        
+        // Atualiza visibilidade das abas no sidebar
+        if (typeof window.updateAdminTabsVisibility === 'function') {
+            setTimeout(() => window.updateAdminTabsVisibility(), 500);
+        }
+        
+        displayMessage(`Permissões do role ${ROLES[selectedRole].title} salvas!`, 'success');
+    } catch (error) {
+        displayMessage('Erro ao salvar permissões no servidor', 'error');
+        console.error('Erro ao salvar permissões:', error);
+    }
 };
+
+// Função para salvar permissões no Firebase
+async function saveRolePermissionsToFirebase(role, permissions) {
+    const { initFirebaseApp } = await import('../firebase/config.js');
+    const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
+    const { safeFirestoreWrite } = await import('../firebase/wrapper.js');
+    
+    const { db } = await initFirebaseApp();
+    const appId = localStorage.getItem('appId') || 'default';
+    
+    const rolePermissionsRef = doc(db, `artifacts/${appId}/public/data/rolePermissions`, role);
+    await safeFirestoreWrite(
+        () => setDoc(rolePermissionsRef, {
+            role,
+            permissions,
+            updatedAt: new Date().toISOString()
+        })
+    );
+}
 
 export function updateRolesVisibility() {
     setupRolesPage();

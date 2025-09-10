@@ -76,7 +76,7 @@
 .substitute-modal-close:hover { color: #E5E7EB; }
 .substitute-search { width: 100%; padding: 0.75rem; margin-bottom: 1rem; background-color: var(--bg-input); border: 1px solid var(--border-light); border-radius: 6px; color: #E5E7EB; font-size: 1rem; }
 .substitute-search:focus { outline: none; border-color: #2563EB; }
-.substitute-players-list { max-height: 50vh; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.substitute-players-list { max-height: 50vh; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; }
 .substitute-players-list::-webkit-scrollbar { width: 6px; }
 .substitute-players-list::-webkit-scrollbar-track { background: transparent; }
 .substitute-players-list::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 2px; }
@@ -108,10 +108,14 @@
   border-radius: 16px;
   width: 100%;
   overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y !important;
   box-shadow: var(--shadow-heavy);
   animation: substitutePop 0.24s ease;
+  /* CORREÇÃO: Garante que o modal não seja afetado pelo sistema de prevenção de pull-to-refresh */
+  position: relative;
+  z-index: 2001;
 }
 
 @keyframes substitutePop {
@@ -137,6 +141,10 @@
   gap: 0.5rem;
   padding: 0.25rem 0;
   scrollbar-width: thin;
+  /* CORREÇÃO: Permite scroll/swipe no modal de substituição */
+  touch-action: pan-y !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 @media (min-width: 480px) {
   .substitute-players-list { grid-template-columns: 1fr; }
@@ -144,7 +152,74 @@
 .substitute-player-item { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; background: var(--bg-card); border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 12px; padding: 0.75rem 0.85rem; cursor: pointer; transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.05s ease; }
 .substitute-player-item:hover { transform: translateY(-1px); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08); background: var(--bg-card); }
 
-/* Role badges nos cards dos times */
+/* Container do jogador no modal de substituição */
+.substitute-player-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.substitute-player-photo {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 1px solid var(--border-color);
+}
+
+.substitute-player-info {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.substitute-player-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Player container nos cards dos times */
+.player-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.player-photo {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 1px solid var(--new-border-color, var(--border-color));
+}
+
+.player-info {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.player-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Role badges nos cards dos times - apenas ícone */
 .team-card-list .role-badge {
     font-size: 0.6rem !important;
     padding: 0.15rem 0.35rem !important;
@@ -154,4 +229,21 @@
 
 .team-card-list .role-badge .material-icons {
     font-size: 0.7rem !important;
+}
+
+/* Role badge apenas com ícone */
+.role-badge-icon-only {
+    padding: 0.2rem !important;
+    min-width: 20px !important;
+    height: 20px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 50% !important;
+    flex-shrink: 0;
+}
+
+.role-badge-icon-only .material-icons {
+    font-size: 0.75rem !important;
+    margin: 0 !important;
 }

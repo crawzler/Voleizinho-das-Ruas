@@ -3,7 +3,7 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, updateProfile } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"; // Importe getAuth e updateProfile
-import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { initializeFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 let app;
 let db;
@@ -46,7 +46,24 @@ export async function initFirebaseApp() {
 
     // Inicializa o Firebase App
     app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
+    // Configurações do Firestore para maior compatibilidade (evita erros WebChannel 400 em dev)
+    try {
+        const isLocal = (typeof window !== 'undefined') && (
+            window.location.protocol === 'file:' ||
+            window.location.hostname === 'localhost' ||
+            window.location.port === '5500'
+        );
+        const settings = {
+            ignoreUndefinedProperties: true,
+            experimentalAutoDetectLongPolling: true,
+            useFetchStreams: true,
+            ...(isLocal ? { experimentalForceLongPolling: true } : {})
+        };
+        db = initializeFirestore(app, settings);
+    } catch (_) {
+        // Fallback mínimo caso initializeFirestore falhe por algum motivo
+        db = initializeFirestore(app, { ignoreUndefinedProperties: true });
+    }
     auth = getAuth(app);
     
     // Configurações para desenvolvimento local

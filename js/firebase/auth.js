@@ -9,6 +9,7 @@ import { displayMessage } from '../ui/messages.js';
 import { updateConnectionIndicator, hideLoadingOverlay, markAuthInitialized } from '../main.js'; // Importa hideLoadingOverlay
 import { setupSchedulingPage, cleanupSchedulingListener, updateSchedulingPermissions } from '../ui/scheduling-ui.js';
 import { updateRolesVisibility } from '../ui/roles-ui.js';
+import { clearPermissionsCache } from '../utils/permissions.js';
 import { deleteDoc, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { getAppId } from './config.js';
 import { initWelcomeNotifications } from '../notifications/welcome-notifications.js';
@@ -130,6 +131,10 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
 
         try { markAuthInitialized(); } catch (_) {}
         setCurrentUser(user); // Update the currentUser
+        
+        // Limpa o cache de permissões quando o usuário muda
+        clearPermissionsCache();
+        
         updateProfileMenuLoginState();
         updateConnectionIndicator(navigator.onLine ? 'online' : 'offline');
         hideLoadingOverlay();
@@ -137,11 +142,10 @@ export function setupAuthListener(authInstance, dbInstance, appId) {
         // Dispara evento de mudança de usuário
         window.dispatchEvent(new CustomEvent('user-changed', { detail: { user } }));
         
-        // Controla visibilidade do menu de gerenciamento
-        updateManagementMenuVisibility(user);
-        
-        // Controla visibilidade da aba de gerenciamento (roles)
-        updateRolesTabVisibility(user);
+        // Atualiza visibilidade das abas de admin
+        if (typeof window.updateAdminTabsVisibility === 'function') {
+            setTimeout(() => window.updateAdminTabsVisibility(), 500);
+        }
 
         if (user) {
             if (Elements.userIdDisplay()) Elements.userIdDisplay().textContent = `ID: ${user.uid}`;
@@ -288,6 +292,7 @@ export async function loginWithGoogle() {
             } else {
                 displayMessage(`Bem-vindo de volta, ${playerName}!`, "success");
             }
+            
             // Atualiza o displayName do usuário localmente (opcional)
             if (Elements.userDisplayName()) {
                 Elements.userDisplayName().textContent = playerName;
@@ -432,30 +437,9 @@ async function createPlayerInFirestore(dbInstance, appId, uid, name, photoURL = 
     }, { merge: true });
 }
 
-/**
- * Controla a visibilidade do menu de gerenciamento baseado nas permissões do usuário
- * @param {Object} user - Usuário atual
- */
-async function updateManagementMenuVisibility(user) {
-    const managementMenu = document.getElementById('nav-users');
-    if (!managementMenu) return;
-    
-    // Visibilidade controlada centralmente por main.js (apenas dev)
-    managementMenu.style.display = 'none';
-}
 
-/**
- * Controla a visibilidade da aba de gerenciamento (roles) baseado no role do usuário
- * @param {Object} user - Usuário atual
- */
-function updateRolesTabVisibility(user) {
-    const rolesTab = document.getElementById('nav-roles');
-    if (!rolesTab) return;
-    
-    // Visibilidade controlada centralmente por main.js (apenas dev)
-    rolesTab.style.display = 'none';
-    rolesTab.classList.remove('visible');
-}
+
+
 
 /**
  * Solicita ao usuário um nome para exibição.

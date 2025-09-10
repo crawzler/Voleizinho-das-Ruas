@@ -10,7 +10,8 @@ export const USER_ROLES = {
     DEV: 'dev',
     ADMIN: 'admin', 
     MODERATOR: 'moderator',
-    USER: 'user'
+    USER: 'user',
+    ANONYMOUS: 'anonymous'
 };
 
 export const ROLE_CONFIG = {
@@ -41,6 +42,13 @@ export const ROLE_CONFIG = {
         color: '#6C5CE7',
         icon: 'person',
         gradient: 'linear-gradient(135deg, #6C5CE7, #A29BFE)'
+    },
+    [USER_ROLES.ANONYMOUS]: {
+        name: 'Anônimo',
+        shortName: 'Anon',
+        color: '#9CA3AF',
+        icon: 'person_outline',
+        gradient: 'linear-gradient(135deg, #9CA3AF, #D1D5DB)'
     }
 };
 
@@ -168,42 +176,32 @@ export function startPresenceSystem() {
  */
 export async function getUserRole(uid) {
     if (!uid) return USER_ROLES.USER;
+
+    // Retorna 'anonymous' se o usuário atual for anônimo e corresponder ao uid
+    try {
+        const u = getCurrentUser();
+        if (u && u.isAnonymous && u.uid === uid) {
+            return USER_ROLES.ANONYMOUS;
+        }
+    } catch (_) {}
     
-    // Verifica cache primeiro
-    if (roleCache.has(uid)) {
-        return roleCache.get(uid);
-    }
-    
-    // Fallback para verificação local primeiro (mais rápido)
+    // Verificação local por UID (prioridade máxima)
     for (const [role, uids] of Object.entries(ROLE_UIDS)) {
         if (uids.includes(uid)) {
-            roleCache.set(uid, role);
             return role;
         }
     }
     
-    // Tenta buscar no Firebase com timeout
+    // Busca role no Firebase (sempre busca para garantir dados atualizados)
     try {
-        const { initFirebaseApp } = await import('../firebase/config.js');
-        const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
-        
-        const { db } = await initFirebaseApp();
-        const appId = localStorage.getItem('appId') || 'default';
-        
-        const roleDoc = await safeFirestoreRead(
-            () => getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'userRoles', uid))
-        );
-        
-        if (roleDoc.exists()) {
-            const role = roleDoc.data().role;
-            roleCache.set(uid, role);
-            return role;
+        const firebaseRole = await getRoleFromFirebase(uid);
+        if (firebaseRole) {
+            return firebaseRole;
         }
-    } catch (error) {
-        // Silencioso - não loga erro para evitar spam no console
+    } catch (e) {
+        // Silencioso
     }
     
-    roleCache.set(uid, USER_ROLES.USER);
     return USER_ROLES.USER;
 }
 
@@ -211,33 +209,13 @@ export async function getUserRole(uid) {
  * Define o role de um usuário
  */
 export async function setUserRole(uid, newRole) {
-    if (!uid || !USER_ROLES[newRole.toUpperCase()]) return;
+    if (!uid || !Object.values(USER_ROLES).includes(newRole)) return;
     
-    // Atualiza cache
-    roleCache.set(uid, newRole);
+    // Salva apenas no Firebase (dados globais)
+    await saveRoleToFirebase(uid, newRole);
     
-    // Salva no Firebase com timeout e retry
-    try {
-        const { initFirebaseApp } = await import('../firebase/config.js');
-        const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
-        
-        const { db } = await initFirebaseApp();
-        const appId = localStorage.getItem('appId') || 'default';
-        
-        await safeFirestoreWrite(
-            () => setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'userRoles', uid), {
-                role: newRole,
-                updatedAt: new Date().toISOString()
-            })
-        );
-        
-        console.log('Role salva no Firebase:', uid, newRole);
-    } catch (error) {
-        console.error('Erro ao salvar role no Firebase:', error);
-        // Remove do cache se falhou
-        roleCache.delete(uid);
-        throw error;
-    }
+    // Limpa cache para forçar busca atualizada
+    clearRoleCache();
 }
 
 /**
@@ -260,7 +238,8 @@ export async function createRoleBadge(uid, useShortName = true) {
     if (!uid || uid.startsWith('manual_')) return '';
     
     const userRole = await getUserRole(uid);
-    if (userRole === USER_ROLES.USER) return '';
+    // Não exibe badge apenas para 'anonymous'
+    if (userRole === USER_ROLES.ANONYMOUS) return '';
     
     const roleConfig = ROLE_CONFIG[userRole];
     const displayName = useShortName ? (roleConfig.shortName || roleConfig.name) : roleConfig.name;
@@ -381,13 +360,21 @@ async function createUserCard(player, index) {
     const userRole = await getUserRole(player.uid);
     const roleConfig = ROLE_CONFIG[userRole];
     const currentUserRole = getCurrentUser() ? await getUserRole(getCurrentUser().uid) : USER_ROLES.USER;
-    const canEditRoles = currentUserRole === USER_ROLES.DEV && userRole !== USER_ROLES.DEV;
+    let canEditRoles = false;
+    try {
+        const { canEditUserRoles } = await import('../utils/permissions.js');
+        canEditRoles = await canEditUserRoles();
+    } catch (_) {
+        canEditRoles = (currentUserRole === USER_ROLES.DEV);
+    }
+    canEditRoles = canEditRoles && userRole !== USER_ROLES.DEV;
 
     card.innerHTML = `
+        ${userRole !== USER_ROLES.ANONYMOUS ? `
         <div class="role-badge" style="background: ${roleConfig.gradient}">
             <span class="material-icons">${roleConfig.icon}</span>
             ${roleConfig.name}
-        </div>
+        </div>` : ''}
         
         <div class="user-header">
             <img src="${player.photoURL || 'assets/default-user-icon.svg'}" 
@@ -575,19 +562,22 @@ export function updateUsersPage(players) {
  */
 async function getDisplayableUserId(targetUid, currentUser) {
     if (!currentUser || !targetUid) return 'Oculto';
-    
-    // Se é o próprio usuário, mostra o ID completo
-    if (currentUser.uid === targetUid) {
-        return targetUid;
+    // Sempre mostra o próprio ID completo
+    if (currentUser.uid === targetUid) return targetUid;
+
+    // Verifica permissão centralizada para ver IDs completos
+    try {
+        const { canViewUserIds } = await import('../utils/permissions.js');
+        const allowed = await canViewUserIds();
+        if (allowed) return targetUid;
+    } catch (_) {
+        // Fallback: dev pode ver IDs completos
+        try {
+            const role = await getUserRole(currentUser.uid);
+            if (role === USER_ROLES.DEV) return targetUid;
+        } catch (_) {}
     }
-    
-    // Se é dev, mostra o ID completo de todos
-    const currentUserRole = await getUserRole(currentUser.uid);
-    if (currentUserRole === USER_ROLES.DEV) {
-        return targetUid;
-    }
-    
-    // Para outros usuários, mostra apenas os primeiros 8 caracteres
+    // Caso não tenha permissão, retorna ID abreviado
     return targetUid.substring(0, 8) + '...';
 }
 
@@ -595,7 +585,31 @@ async function getDisplayableUserId(targetUid, currentUser) {
  * Função global para editar role do usuário
  */
 window.editUserRole = async function(uid, userName) {
-    const currentRole = await getUserRole(uid);
+    // Verifica permissão para editar roles
+    try {
+        const { canEditUserRoles } = await import('../utils/permissions.js');
+        const allowed = await canEditUserRoles();
+        if (!allowed) {
+            alert('Você não tem permissão para editar roles.');
+            return;
+        }
+    } catch (_) {
+        const me = getCurrentUser();
+        const myRole = me ? await getUserRole(me.uid) : USER_ROLES.USER;
+        if (myRole !== USER_ROLES.DEV) {
+            alert('Você não tem permissão para editar roles.');
+            return;
+        }
+    }
+
+    // Impede editar usuário com role DEV
+    const targetRole = await getUserRole(uid);
+    if (targetRole === USER_ROLES.DEV) {
+        alert('Não é permitido alterar a role de um desenvolvedor.');
+        return;
+    }
+
+    const currentRole = targetRole;
     
     // Remove DEV das opções disponíveis
     const availableRoles = Object.values(USER_ROLES).filter(role => role !== USER_ROLES.DEV);
@@ -640,14 +654,119 @@ window.editUserRole = async function(uid, userName) {
     document.body.appendChild(modal);
 };
 
+/**
+ * Limpa o cache de roles para forçar busca atualizada
+ */
+export function clearRoleCache() {
+    roleCache.clear();
+}
+
+/**
+ * Busca role do usuário no Firebase
+ */
+async function getRoleFromFirebase(uid) {
+    try {
+        const { initFirebaseApp } = await import('../firebase/config.js');
+        const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
+        
+        const { db } = await initFirebaseApp();
+        const appId = localStorage.getItem('appId') || 'default';
+        
+        const roleDocRef = doc(db, `artifacts/${appId}/public/data/userRoles`, uid);
+        const roleDoc = await safeFirestoreRead(
+            () => getDoc(roleDocRef)
+        );
+        
+        if (roleDoc.exists()) {
+            const data = roleDoc.data();
+            return data.role || USER_ROLES.USER;
+        }
+        
+        return null;
+    } catch (error) {
+        return null;
+    }
+}
+
+/**
+ * Salva role do usuário no Firebase
+ */
+async function saveRoleToFirebase(uid, role) {
+    try {
+        const { initFirebaseApp } = await import('../firebase/config.js');
+        const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
+        
+        const { db } = await initFirebaseApp();
+        const appId = localStorage.getItem('appId') || 'default';
+        
+        // Busca nome do usuário nos jogadores
+        let userName = 'Usuário';
+        try {
+            const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
+            const player = players.find(p => p.uid === uid);
+            if (player && player.name) {
+                userName = player.name;
+            }
+        } catch (_) {}
+        
+        // Salva na tabela de roles
+        const roleDocRef = doc(db, `artifacts/${appId}/public/data/userRoles`, uid);
+        await safeFirestoreWrite(
+            () => setDoc(roleDocRef, {
+                uid,
+                role,
+                userName,
+                updatedAt: new Date().toISOString()
+            }, { merge: true })
+        );
+    } catch (error) {
+        // Se não tem permissão no Firebase, salva apenas localmente
+        throw error;
+    }
+}
+
 window.selectRole = async function(role, element) {
     const uid = element.closest('.role-edit-modal').dataset.uid;
+
+    try {
+        const { canEditUserRoles } = await import('../utils/permissions.js');
+        const allowed = await canEditUserRoles();
+        if (!allowed) {
+            alert('Você não tem permissão para editar roles.');
+            return;
+        }
+    } catch (_) {
+        const me = getCurrentUser();
+        const myRole = me ? await getUserRole(me.uid) : USER_ROLES.USER;
+        if (myRole !== USER_ROLES.DEV) {
+            alert('Você não tem permissão para editar roles.');
+            return;
+        }
+    }
+
+    if (role === USER_ROLES.DEV) {
+        alert('Não é permitido definir role de desenvolvedor por aqui.');
+        return;
+    }
     
-    console.log('Definindo role:', uid, role);
     try {
         await setUserRole(uid, role);
+        clearRoleCache(); // Limpa cache para forçar atualização
         document.querySelector('.role-edit-modal').remove();
         initializeUsersPage();
+        
+        // Força re-renderização dos times se estiver na página de times
+        const teamsPage = document.getElementById('teams-page');
+        if (teamsPage && teamsPage.classList.contains('app-page--active')) {
+            import('../game/teams.js').then(({ renderTeams }) => {
+                import('../game/logic.js').then(({ getAllGeneratedTeams }) => {
+                    const teams = getAllGeneratedTeams();
+                    if (teams && teams.length > 0) {
+                        renderTeams(teams);
+                    }
+                }).catch(() => {});
+            }).catch(() => {});
+        }
     } catch (error) {
         alert('Erro ao salvar role. Verifique suas permissões.');
     }

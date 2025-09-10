@@ -330,11 +330,22 @@
                     <span>Solte aqui para excluir</span>
                 </div>
             </div>
-            <!-- Botão Flutuante para novo jogador -->
-            <button id="players-floating-add-btn" class="floating-add-btn" title="Novo jogador" style="display:none;">
-                <span class="material-icons">add</span>
-                <span class="fab-label" style="display:inline;">Novo</span>
-            </button>
+
+            
+            <!-- Modal para Novo Jogador -->
+            <div id="new-player-modal" class="confirmation-modal-overlay" style="display:none;">
+                <div class="confirmation-modal-content">
+                    <h3 style="margin: 0 0 1rem; color: var(--text-primary);">Novo Jogador</h3>
+                    <div class="field-group">
+                        <label for="new-player-name-input">Nome do jogador:</label>
+                        <input type="text" id="new-player-name-input" placeholder="Digite o nome do jogador..." class="modern-input" style="width: 100%; margin-top: 0.5rem;">
+                    </div>
+                    <div class="confirmation-buttons" style="margin-top: 1.5rem;">
+                        <button id="add-new-player-btn" class="button confirmation-button--confirm">Adicionar</button>
+                        <button id="cancel-new-player-btn" class="button confirmation-button--cancel">Cancelar</button>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- Página de Configurações -->
@@ -524,14 +535,7 @@
                         </div>
                         
                         <div class="admin-panel">
-                            <div class="admin-notice">
-                                <h3>
-                                    <span class="material-icons">developer_mode</span>
-                                    Modo Desenvolvedor
-                                </h3>
-                                <p style="color: var(--text-secondary); margin: 0.5rem 0 1.5rem;">Todas as funcionalidades administrativas estão liberadas por padrão para facilitar o desenvolvimento.</p>
-                            </div>
-                            
+                                                        
                             <div class="admin-actions">
                                 <div class="admin-action">
                                     <div class="admin-action-info">
@@ -841,6 +845,12 @@
             </div>
         </section>
     </main>
+
+    <!-- Botão Flutuante para novo jogador (MOVIDO PARA FORA DAS PÁGINAS) -->
+    <button id="players-floating-add-btn" class="floating-add-btn" title="Novo jogador" style="display:none;">
+        <span class="material-icons">add</span>
+        <span class="fab-label" style="display:inline;">Novo</span>
+    </button>
 
     <!-- Confirmation Modal Structure (NOVO) -->
     <div id="confirmation-modal" class="confirmation-modal-overlay">

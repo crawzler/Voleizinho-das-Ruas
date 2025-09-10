@@ -143,6 +143,11 @@ export function renderTeams(teams) {
     const teamsGridLayoutElement = Elements.teamsGridLayout();
     if (!teamsGridLayoutElement) return;
 
+    // Limpa cache de roles para garantir dados atualizados
+    import('./users.js').then(({ clearRoleCache }) => {
+        clearRoleCache();
+    }).catch(() => {});
+
     teamsGridLayoutElement.innerHTML = '';
 
     const config = loadConfig();
@@ -198,33 +203,78 @@ export function renderTeams(teams) {
             const playerItem = document.createElement('li');
             playerItem.className = 'player-item';
             
-            const playerName = document.createElement('span');
             const isEmptySlot = player.startsWith('[Vaga');
             
             if (isEmptySlot) {
+                const playerName = document.createElement('span');
                 playerName.textContent = player;
                 playerName.className = 'empty-slot';
                 playerItem.classList.add('empty-slot-item');
+                playerItem.appendChild(playerName);
             } else {
+                // Container para foto e informações do jogador
+                const playerContainer = document.createElement('div');
+                playerContainer.className = 'player-container';
+                
+                // Foto do jogador
+                const playerPhoto = document.createElement('img');
+                playerPhoto.className = 'player-photo';
+                playerPhoto.src = 'assets/default-user-icon.svg';
+                playerPhoto.alt = player;
+                
+                // Container para nome e badge
+                const playerInfo = document.createElement('div');
+                playerInfo.className = 'player-info';
+                
+                const playerName = document.createElement('span');
+                playerName.className = 'player-name';
                 playerName.textContent = player;
                 
-                // Adiciona badge de role se for jogador Google
+                playerInfo.appendChild(playerName);
+                playerContainer.appendChild(playerPhoto);
+                playerContainer.appendChild(playerInfo);
+                playerItem.appendChild(playerContainer);
+                
+                // Busca dados do jogador para foto e role
                 setTimeout(() => {
                     const allPlayers = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
-                    const playerData = allPlayers.find(p => p.name === player && !p.isManual && p.uid);
+                    const playerData = allPlayers.find(p => p.name === player);
                     if (playerData) {
-                        import('./users.js').then(({ createRoleBadge }) => {
-                            createRoleBadge(playerData.uid).then(badge => {
-                                if (badge) {
-                                    playerName.innerHTML = player + badge;
-                                }
+                        // Atualiza foto se disponível
+                        if (playerData.photoURL) {
+                            playerPhoto.src = playerData.photoURL;
+                            playerPhoto.onerror = () => {
+                                playerPhoto.src = 'assets/default-user-icon.svg';
+                            };
+                        }
+                        
+                        // Adiciona badge de role apenas com ícone se for jogador Google
+                        if (!playerData.isManual && playerData.uid) {
+                            import('./users.js').then(({ createRoleBadge, clearRoleCache }) => {
+                                // Força busca atualizada das roles
+                                clearRoleCache();
+                                createRoleBadge(playerData.uid).then(badge => {
+                                    if (badge) {
+                                        const temp = document.createElement('div');
+                                        temp.innerHTML = badge;
+                                        const badgeEl = temp.firstElementChild;
+                                        if (badgeEl) {
+                                            const iconEl = badgeEl.querySelector('.material-icons');
+                                            if (iconEl) {
+                                                // Remove texto, mantendo apenas o ícone
+                                                badgeEl.innerHTML = '';
+                                                badgeEl.appendChild(iconEl);
+                                                badgeEl.classList.add('role-badge-icon-only');
+                                                playerInfo.appendChild(badgeEl);
+                                            }
+                                        }
+                                    }
+                                }).catch(() => {});
                             }).catch(() => {});
-                        }).catch(() => {});
+                        }
                     }
                 }, 100);
             }
-            
-            playerItem.appendChild(playerName);
             
             const substituteContainer = document.createElement('div');
             substituteContainer.className = 'substitute-container';
@@ -491,24 +541,68 @@ function loadPlayersForSubstitution(container, searchInput, teamIndex, playerInd
                     return;
                 }
                 
-                filteredPlayers.forEach(player => {
+                // Ordena jogadores: primeiro por time (índice do time), depois por nome
+                const sortedPlayers = filteredPlayers.slice().sort((a, b) => {
+                    const aTeam = playersInTeams.has(a.name) ? playersInTeams.get(a.name) : Number.MAX_SAFE_INTEGER;
+                    const bTeam = playersInTeams.has(b.name) ? playersInTeams.get(b.name) : Number.MAX_SAFE_INTEGER;
+                    if (aTeam !== bTeam) return aTeam - bTeam;
+                    return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+                });
+                
+                sortedPlayers.forEach(player => {
                     const item = document.createElement('div');
                     item.className = 'substitute-player-item';
+                    
+                    // Container para foto e informações do jogador
+                    const playerContainer = document.createElement('div');
+                    playerContainer.className = 'substitute-player-container';
+                    
+                    // Foto do jogador
+                    const playerPhoto = document.createElement('img');
+                    playerPhoto.className = 'substitute-player-photo';
+                    playerPhoto.src = player.photoURL || 'assets/default-user-icon.svg';
+                    playerPhoto.alt = player.name;
+                    playerPhoto.onerror = () => {
+                        playerPhoto.src = 'assets/default-user-icon.svg';
+                    };
+                    
+                    // Container para nome e badge
+                    const playerInfo = document.createElement('div');
+                    playerInfo.className = 'substitute-player-info';
                     
                     const name = document.createElement('span');
                     name.className = 'substitute-player-name';
                     name.textContent = player.name;
                     
+                    playerInfo.appendChild(name);
+                    
                     // Adiciona badge de role se necessário
                     if (!player.isManual && player.uid) {
-                        import('./users.js').then(({ createRoleBadge }) => {
-                            createRoleBadge(player.uid).then(badge => {
+                        import('./users.js').then(({ createRoleBadge, clearRoleCache }) => {
+                            // Força busca atualizada das roles
+                            clearRoleCache();
+                            Promise.resolve(createRoleBadge(player.uid)).then(badge => {
                                 if (badge) {
-                                    name.innerHTML = player.name + badge;
+                                    const temp = document.createElement('div');
+                                    temp.innerHTML = badge;
+                                    const badgeEl = temp.firstElementChild;
+                                    if (badgeEl) {
+                                        const iconEl = badgeEl.querySelector('.material-icons');
+                                        if (iconEl) {
+                                            // Remove texto, mantendo apenas o ícone
+                                            badgeEl.innerHTML = '';
+                                            badgeEl.appendChild(iconEl);
+                                            badgeEl.classList.add('role-badge-icon-only');
+                                            playerInfo.appendChild(badgeEl);
+                                        }
+                                    }
                                 }
-                            });
+                            }).catch(() => {});
                         }).catch(() => {});
                     }
+                    
+                    playerContainer.appendChild(playerPhoto);
+                    playerContainer.appendChild(playerInfo);
                     
                     const status = document.createElement('span');
                     status.className = 'substitute-player-status';
@@ -531,7 +625,7 @@ function loadPlayersForSubstitution(container, searchInput, teamIndex, playerInd
                         status.classList.add('status-available');
                     }
                     
-                    item.appendChild(name);
+                    item.appendChild(playerContainer);
                     item.appendChild(status);
                     
                     item.onclick = () => {

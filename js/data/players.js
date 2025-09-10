@@ -214,26 +214,24 @@ export async function addPlayer(dbInstance, appId, name, uid = null, forceManual
     const random = Math.floor(Math.random() * 100000);
     const playerId = `manual_${timestamp}_${random}`;
 
-    // Verifica se o usuário atual é admin
-    let isAdmin = false;
+    // Verifica role do usuário para decidir persistência remota
+    let canWriteFirestore = false;
     let createdBy = null;
     try {
         const currentUser = getCurrentUser();
         if (currentUser) {
             createdBy = currentUser.uid;
-            // Lista de UIDs de administradores (mesma do main.js)
-            const ADMIN_UIDS = [
-                "fVTPCFEN5KSKt4me7FgPyNtXHMx1",
-                "Q7cjHJcQoMV9J8IEaxnFFbWNXw22"
-            ];
-            isAdmin = ADMIN_UIDS.includes(currentUser.uid);
+            const { getUserRole, USER_ROLES } = await import('../ui/users.js');
+            const role = await getUserRole(currentUser.uid);
+            canWriteFirestore = !!(navigator.onLine && dbInstance && !currentUser.isAnonymous && (role === USER_ROLES.DEV || role === USER_ROLES.ADMIN || role === USER_ROLES.MODERATOR));
         }
     } catch (e) {
         // Silent error
+        canWriteFirestore = false;
     }
 
-    // Se não for admin ou estiver offline, adiciona tag [local]
-    const playerName = (!navigator.onLine || !dbInstance || !isAdmin) ? `${name.trim()} [local]` : name.trim();
+    // Se não puder gravar remotamente, adiciona tag [local]
+    const playerName = (!canWriteFirestore) ? `${name.trim()} [local]` : name.trim();
     
     const playerData = {
         uid: playerId,
@@ -241,12 +239,12 @@ export async function addPlayer(dbInstance, appId, name, uid = null, forceManual
         createdAt: new Date().toISOString(),
         isManual: true,
         id: playerId,
-        isLocal: (!navigator.onLine || !dbInstance || !isAdmin),
+        isLocal: (!canWriteFirestore),
         createdBy: createdBy // Registra o UID do usuário que criou o jogador
     };
 
-    // Se estiver offline, não for admin, ou não tiver dbInstance, salva apenas no localStorage
-    if (!navigator.onLine || !dbInstance || !isAdmin) {
+    // Se não puder gravar no Firestore, salva apenas no localStorage
+    if (!canWriteFirestore) {
         try {
             const stored = localStorage.getItem('volleyballPlayers');
             let localPlayers = stored ? JSON.parse(stored) : [];
@@ -265,7 +263,7 @@ export async function addPlayer(dbInstance, appId, name, uid = null, forceManual
         }
     }
 
-    // Se for admin e estiver online, tenta salvar no Firestore
+    // Se permitido, tenta salvar no Firestore
     try {
         const playerDocRef = doc(dbInstance, `artifacts/${appId}/public/data/players`, playerId);
         await setDoc(playerDocRef, playerData);

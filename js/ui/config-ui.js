@@ -287,10 +287,35 @@ async function resetAppAndClearCache() {
 /**
  * Configura os event listeners para os inputs de configuração.
  */
-export function setupConfigUI() {
+export async function setupConfigUI() {
 
 
     loadConfig();
+
+    // Permissões: bloquear edição de times personalizados quando não permitido
+    try {
+        const { canEditCustomTeams } = await import('../utils/permissions.js');
+        const allowed = await canEditCustomTeams();
+        const disable = !allowed;
+        if (Array.isArray(Elements.customTeamInputs)) {
+            Elements.customTeamInputs.forEach(input => {
+                try {
+                    const nameEl = input.name && typeof input.name === 'function' ? input.name() : null;
+                    if (nameEl) {
+                        nameEl.disabled = disable;
+                        nameEl.title = disable ? 'Sem permissão para editar times personalizados' : '';
+                    }
+                } catch (_) { /* ignore */ }
+                try {
+                    const colorEl = input.color && typeof input.color === 'function' ? input.color() : null;
+                    if (colorEl) {
+                        colorEl.disabled = disable;
+                        colorEl.title = disable ? 'Sem permissão para editar times personalizados' : '';
+                    }
+                } catch (_) { /* ignore */ }
+            });
+        }
+    } catch (_) { /* ignore */ }
 
     // Garante que toques dentro da área de configurações não subam até o body e sejam bloqueados
     const settingsListEl = document.querySelector('.settings-list');

@@ -391,10 +391,10 @@
 
 /* Floating add button (global FAB) */
 .floating-add-btn {
-    position: fixed;
-    right: 20px;
-    bottom: 20px;
-    z-index: 800;
+    position: fixed !important;
+    right: 20px !important;
+    bottom: 20px !important;
+    z-index: 1000 !important;
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
@@ -403,7 +403,7 @@
     color: var(--new-text-inverse, #fff);
     border: none;
     border-radius: 999px;
-    box-shadow: 0 8px 20px Fvrgba(0, 0, 0, 0.35);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
     cursor: pointer;
     transition: transform 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
 }
@@ -3484,13 +3484,34 @@ body.modal-open {
     transition: color 0.3s ease;
 }
 
+/* CORREÇÃO GLOBAL: Garante que todos os overlays/modais sejam sempre posicionados relativos ao viewport */
+/* Esta regra sobrescreve qualquer contexto de posicionamento criado por elementos pai */
+.confirmation-modal-overlay,
+.schedule-modal,
+.proof-viewer-modal,
+.welcome-modal-overlay,
+.quick-settings-modal,
+.attendance-modal-overlay,
+#new-player-modal,
+#category-selection-modal,
+#cancel-reason-modal,
+.substitute-modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 3000 !important;
+    transform: none !important;
+}
+
 /* Container para mensagens de notificação */
 .message-container {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1000;
+    position: fixed !important;
+    top: 20px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 1000 !important;
     display: flex;
     flex-direction: column;
     gap: 10px;

@@ -33,19 +33,13 @@ export function renderPlayersList(players) {
         selectedPlayerIds = [];
     }
 
-    // Verifica autenticação e chave admin
-    const config = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
-
-    // Tenta obter o usuário, mas com proteção contra erros de inicialização
+    // Verifica autenticação para ações na UI (sem admin key)
     let user = null;
     let canDelete = false;
     try {
         user = getCurrentUser();
-        const isAdminKey = config.adminKey === 'admin998939';
-        const isGoogleUser = user && !user.isAnonymous;
-        canDelete = isAdminKey && isGoogleUser;
+        canDelete = !!(user && !user.isAnonymous);
     } catch (error) {
-        // Log removido
         // Continue mesmo com erro, tratando como usuário não autenticado
     }
 
@@ -399,18 +393,13 @@ function filterPlayers() {
         selectedPlayerIds = [];
     }
     
-    // Verifica permissões de exclusão
-    const config = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
+    // Verifica autenticação para UI (sem admin key)
     let user = null;
     let canDelete = false;
     try {
         user = getCurrentUser();
-        const isAdminKey = config.adminKey === 'admin998939';
-        const isGoogleUser = user && !user.isAnonymous;
-        canDelete = isAdminKey && isGoogleUser;
-    } catch (error) {
-        // Log removido
-    }
+        canDelete = !!(user && !user.isAnonymous);
+    } catch (error) {}
     
     // Ordenação alfabética na busca
     matchingPlayers.sort((a, b) => a.name.localeCompare(b.name));
@@ -1434,33 +1423,23 @@ async function movePlayerToCategory(playerId, newCategory) {
         // Re-renderiza para atualizar em tempo real
         renderPlayersList(players);
         
-        // Tenta salvar no Firebase se for admin
+        // Tenta salvar no Firebase somente com permissão adequada
         if (navigator.onLine && !player.isLocal) {
             try {
-                const { getCurrentUser } = await import('../firebase/auth.js');
-                const currentUser = getCurrentUser();
-                
-                // Verifica se é admin
-                const config = JSON.parse(localStorage.getItem('volleyballConfig') || '{}');
-                const isAdminKey = config.adminKey === 'admin998939';
-                const isGoogleUser = currentUser && !currentUser.isAnonymous;
-                const isAdmin = isAdminKey && isGoogleUser;
-                
-                if (isAdmin) {
-                    const { getFirestoreDb } = await import('../firebase/config.js');
+                const { canEditUserRoles } = await import('../utils/permissions.js');
+                const allowed = await canEditUserRoles();
+                if (allowed) {
+                    const { getFirestoreDb, getAppId } = await import('../firebase/config.js');
                     const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js');
-                    const { getAppId } = await import('../firebase/config.js');
-                    
                     const db = getFirestoreDb();
                     const appId = getAppId();
-                    
                     if (db && appId) {
                         const playerDocRef = doc(db, `artifacts/${appId}/public/data/players`, playerId);
                         await updateDoc(playerDocRef, { category: newCategory });
                     }
                 }
             } catch (error) {
-                // Log removido
+                // Silencioso
             }
         }
         

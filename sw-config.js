@@ -3,8 +3,7 @@
 
 const SW_CONFIG = {
     // Versão do cache - incremente para forçar atualização
-    CACHE_VERSION: 'VdR-0.7.6c_RMK',
-    
+    CACHE_VERSION: 'VdR-0.7.7_RMK',    
     // Estratégias de cache
     STRATEGIES: {
         CACHE_FIRST: 'cache-first',
@@ -52,23 +51,25 @@ const SW_CONFIG = {
         /\/api\/analytics/,
         /\/api\/logs/,
         /chrome-extension:/,
-        /moz-extension:/
+        /moz-extension:/,
+        /firestore\.googleapis\.com/,
+        /google\.firestore\.v1\.Firestore/
     ],
     
     // Recursos externos com fallbacks
     EXTERNAL_RESOURCES: {
         'https://fonts.googleapis.com/icon?family=Material+Icons': {
             fallback: './css/offline-fallback.css',
-            strategy: 'STALE_WHILE_REVALIDATE'
+            strategy: 'stale-while-revalidate'
         },
         'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js': {
-            strategy: 'CACHE_FIRST'
+            strategy: 'network-first'
         },
         'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js': {
-            strategy: 'CACHE_FIRST'
+            strategy: 'network-first'
         },
         'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js': {
-            strategy: 'CACHE_FIRST'
+            strategy: 'network-first'
         }
     },
     

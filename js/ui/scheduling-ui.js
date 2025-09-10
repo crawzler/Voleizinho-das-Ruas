@@ -5,7 +5,7 @@ import { getCurrentUser } from '../firebase/auth.js';
 import { notifyNewSchedule, notifyCancelledSchedule, areNotificationsEnabled } from '../notifications/notifications.js';
 import { initSchedulingAnimations, enhanceHoverEffects, setupLoadingAnimations } from './scheduling-animations.js';
 import { getPlayers } from '../data/players.js';
-import { canCreateSchedule, canEditSchedule, canCancelSchedule, canDeleteSchedule, canRedispatchNotification } from '../utils/permissions.js';
+import { canCreateSchedule, canEditSchedule, canCancelSchedule, canDeleteSchedule, canRedispatchNotification, refreshUserPermissions } from '../utils/permissions.js';
 
 const SCHEDULES_STORAGE_KEY = 'voleiScoreSchedules';
 
@@ -338,11 +338,46 @@ async function createGameCard(game) {
             statusTitle = 'Desconhecido';
     }
 
+    // Força atualização das permissões para garantir que estejam corretas
+    await refreshUserPermissions();
+    
     // Verifica permissões do usuário
     const canDelete = await canDeleteSchedule();
     const canEdit = await canEditSchedule();
     const canCancel = await canCancelSchedule();
     const canRedispatch = await canRedispatchNotification();
+
+    // Constrói as opções do menu baseado nas permissões e status do jogo
+    let menuOptions = '';
+    
+    // Opção de presença - sempre disponível para jogos futuros
+    if (game.status === 'upcoming') {
+        menuOptions += `<button class="menu-responses" data-game-id='${game.id}' role="menuitem"><span class="material-icons">group</span> Presença</button>`;
+    }
+    
+    // Opção de comprovantes - sempre disponível se existirem
+    if (game.paymentProofs && game.paymentProofs.length) {
+        menuOptions += `<button class="menu-proof" data-game-id='${game.id}' data-proofs-count='${game.paymentProofs.length}' role="menuitem"><span class="material-icons">receipt_long</span> Comprovantes</button>`;
+    }
+    
+    // Opções administrativas - baseadas nas permissões do usuário
+    if (game.status === 'upcoming') {
+        if (canEdit) {
+            menuOptions += `<button class="menu-edit" data-game-id='${game.id}' role="menuitem"><span class="material-icons">edit</span> Editar</button>`;
+        }
+        
+        if (canRedispatch) {
+            menuOptions += `<button class="menu-redispatch" data-game-id='${game.id}' role="menuitem"><span class="material-icons">notification_add</span> Redisparar</button>`;
+        }
+        
+        if (canCancel) {
+            menuOptions += `<button class="menu-cancel" data-game-id='${game.id}' role="menuitem"><span class="material-icons">close</span> Cancelar</button>`;
+        }
+        
+        if (canDelete) {
+            menuOptions += `<button class="menu-delete" data-game-id='${game.id}' role="menuitem"><span class="material-icons">delete</span> Excluir</button>`;
+        }
+    }
 
     // Cria o HTML do card
     card.innerHTML = `
@@ -372,11 +407,7 @@ async function createGameCard(game) {
         <div class="card-actions">
             <button class="card-more-btn" aria-haspopup="true" aria-expanded="false" title="Ações"><span class="material-icons">more_vert</span></button>
             <div class="card-more-menu" data-open="false" role="menu" aria-hidden="true">
-                ${game.status === 'upcoming' ? `<button class="menu-responses" data-game-id='${game.id}' role="menuitem"><span class="material-icons">group</span> Presença</button>` : ''}
-                ${game.paymentProofs && game.paymentProofs.length ? `<button class="menu-proof" data-game-id='${game.id}' data-proofs-count='${game.paymentProofs.length}' role="menuitem"><span class="material-icons">receipt_long</span> Comprovantes</button>` : ''}
-                ${canEdit && game.status === 'upcoming' ? `<button class="menu-edit" data-game-id='${game.id}' role="menuitem"><span class="material-icons">edit</span> Editar</button>` : ''}
-                ${canRedispatch && game.status === 'upcoming' ? `<button class="menu-redispatch" data-game-id='${game.id}' role="menuitem"><span class="material-icons">notification_add</span> Redisparar</button>` : ''}
-                ${canCancel && game.status === 'upcoming' ? `<button class="menu-cancel" data-game-id='${game.id}' role="menuitem"><span class="material-icons">close</span> Cancelar</button>` : ''}
+                ${menuOptions}
             </div>
         </div>
     `;
@@ -421,11 +452,11 @@ export async function openEditSchedule(scheduleId) {
     editingScheduleId = scheduleId;
     const dateInput = Elements.dateInput();
     if (dateInput) dateInput.value = schedule.date || '';
-    if (Elements.startTimeInput) Elements.startTimeInput().value = schedule.startTime || '';
-    if (Elements.endTimeInput) Elements.endTimeInput().value = schedule.endTime || '';
-    if (Elements.locationInput) Elements.locationInput().value = schedule.location || '';
-    if (Elements.surfaceSelect) Elements.surfaceSelect.value = schedule.surface || '';
-    if (Elements.notesInput) Elements.notesInput().value = schedule.notes || '';
+    if (Elements.startTimeInput()) Elements.startTimeInput().value = schedule.startTime || '';
+    if (Elements.endTimeInput()) Elements.endTimeInput().value = schedule.endTime || '';
+    if (Elements.locationInput()) Elements.locationInput().value = schedule.location || '';
+    if (Elements.surfaceSelect()) Elements.surfaceSelect().value = schedule.surface || '';
+    if (Elements.notesInput()) Elements.notesInput().value = schedule.notes || '';
     // Show modal
     modal.style.display = 'flex';
     modal.style.opacity = '1';
@@ -468,9 +499,9 @@ async function updateFloatingButtonVisibility() {
     if (floatingBtn) {
         const schedulingPage = document.getElementById('scheduling-page');
         const schedulingActive = schedulingPage && schedulingPage.classList.contains('app-page--active');
-        // Exibe o botão sempre que a página de agendamentos estiver ativa;
-        // a verificação de permissão permanece no clique de abertura do modal
-        floatingBtn.style.display = schedulingActive ? 'flex' : 'none';
+        const hasPermission = await canCreateSchedule();
+        // Exibe o botão apenas se a página estiver ativa E o usuário tiver permissão
+        floatingBtn.style.display = (schedulingActive && hasPermission) ? 'flex' : 'none';
     }
 }
 
@@ -531,7 +562,7 @@ export function setupSchedulingPage() {
             const startTime = Elements.startTimeInput().value;
             const endTime = Elements.endTimeInput().value;
             const location = Elements.locationInput().value.trim();
-            const surface = Elements.surfaceSelect ? Elements.surfaceSelect().value : '';
+            const surface = Elements.surfaceSelect() ? Elements.surfaceSelect().value : '';
             const notes = Elements.notesInput().value.trim();
             const paymentProofInput = document.getElementById('payment-proof-input');
             
@@ -582,9 +613,13 @@ export function setupSchedulingPage() {
                     // Atualiza campos locais
                     Object.assign(game, payload);
                     game.updatedAt = new Date().toISOString();
+                    
+                    // Atualiza localStorage e UI imediatamente
+                    saveSchedulesToLocalStorage();
+                    renderScheduledGames();
+                    
                     await SchedulesData.updateSchedule(game);
                     displayMessage('Agendamento atualizado com sucesso!', 'success');
-                    editingScheduleId = null;
                 } else {
                     if (!await canCreateSchedule()) {
                         displayMessage('Você não tem permissão para criar agendamentos.', 'error');
@@ -597,6 +632,11 @@ export function setupSchedulingPage() {
                         createdAt: new Date().toISOString()
                     }, payload);
 
+                    // Adiciona ao array local imediatamente
+                    scheduledGames.push(newSchedule);
+                    saveSchedulesToLocalStorage();
+                    renderScheduledGames();
+
                     await SchedulesData.saveSchedule(newSchedule);
                     // Envia notificação para todos os usuários
                     if (areNotificationsEnabled()) {
@@ -605,56 +645,35 @@ export function setupSchedulingPage() {
                     displayMessage('Jogo agendado com sucesso!', 'success');
                 }
 
-                // Fecha o modal
-                const modal = document.getElementById('schedule-modal');
-                if (modal) {
-                    modal.style.display = 'none';
-                    modal.style.visibility = 'hidden';
-                    modal.style.opacity = '0';
-                    unlockBodyScroll();
-                    disableTouchMoveBlocker();
+                // Fecha o modal e limpa campos
+                closeScheduleModal();
+                
+                // Limpa campos após sucesso
+                Elements.dateInput().value = '';
+                Elements.startTimeInput().value = '';
+                Elements.endTimeInput().value = '';
+                Elements.locationInput().value = '';
+                if (Elements.surfaceSelect()) Elements.surfaceSelect().value = '';
+                Elements.notesInput().value = '';
+                
+                const paymentProofInput = document.getElementById('payment-proof-input');
+                if (paymentProofInput) {
+                    paymentProofInput.value = '';
+                    const preview = document.getElementById('file-preview');
+                    const previewsList = document.getElementById('file-previews');
+                    if (previewsList) previewsList.innerHTML = '';
+                    currentBase64List = [];
+                    if (preview) preview.style.display = 'none';
                 }
-                // Limpa campos somente no caso de criação
-                if (!isEdit) {
-                    Elements.dateInput().value = '';
-                    Elements.startTimeInput().value = '';
-                    Elements.endTimeInput().value = '';
-                    Elements.locationInput().value = '';
-                    if (Elements.surfaceSelect) Elements.surfaceSelect.value = '';
-                    Elements.notesInput().value = '';
-                    const paymentProofInput = document.getElementById('payment-proof-input');
-                    if (paymentProofInput) {
-                        paymentProofInput.value = '';
-                        const preview = document.getElementById('file-preview');
-                        const previewsList = document.getElementById('file-previews');
-                        if (previewsList) previewsList.innerHTML = '';
-                        currentBase64List = [];
-                        if (preview) preview.style.display = 'none';
-                    }
-                }
+                
+                editingScheduleId = null;
+                
             } catch (err) {
                 if (err && err.code === "permission-denied") {
-                    displayMessage('Você não tem permissão para agendar/editar jogos. Apenas administradores podem.', 'error');
+                    displayMessage('Você não tem permissão para agendar/editar jogos.', 'error');
                 } else {
                     displayMessage('Erro ao salvar agendamento. Tente novamente.', 'error');
                 }
-                return; // Não limpa o formulário se houve erro
-            }
-
-            // Clear form fields after successful scheduling
-            Elements.dateInput().value = '';
-            Elements.startTimeInput().value = '';
-            Elements.endTimeInput().value = '';
-            Elements.locationInput().value = '';
-            if (Elements.surfaceSelect) Elements.surfaceSelect().value = '';
-            Elements.notesInput().value = '';
-            if (paymentProofInput) {
-                paymentProofInput.value = '';
-                const preview = document.getElementById('file-preview');
-                const previewsList = document.getElementById('file-previews');
-                if (previewsList) previewsList.innerHTML = '';
-                currentBase64List = [];
-                if (preview) preview.style.display = 'none';
             }
         });
     }
@@ -718,6 +737,21 @@ export function setupSchedulingPage() {
                     redispatchNotification(gameId);
                 } else if (menuItem.classList.contains('menu-cancel')) {
                     showCancelReasonModal(gameId);
+                } else if (menuItem.classList.contains('menu-delete')) {
+                    if (confirm('Tem certeza que deseja excluir este agendamento permanentemente?')) {
+                        try {
+                            scheduledGames = scheduledGames.filter(g => g.id !== gameId);
+                            saveSchedulesToLocalStorage();
+                            await SchedulesData.deleteSchedule(gameId);
+                            displayMessage('Agendamento excluído com sucesso!', 'success');
+                        } catch (err) {
+                            if (err && err.code === "permission-denied") {
+                                displayMessage('Você não tem permissão para excluir jogos.', 'error');
+                            } else {
+                                displayMessage('Erro ao excluir agendamento. Tente novamente.', 'error');
+                            }
+                        }
+                    }
                 }
                 // close any open menu after action
                 const parentMenu = menuItem.closest('.card-more-menu');
@@ -870,9 +904,13 @@ function setupModal() {
         modal.__overlayListenerAdded = true;
     }
 
-    // Abre o modal ao clicar no botão flutuante (sempre abre; permissão é checada ao salvar)
+    // Abre o modal ao clicar no botão flutuante (verifica permissão primeiro)
     if (floatingBtn && !floatingBtn.__openListenerAdded) {
         floatingBtn.addEventListener('click', async () => {
+            if (!await canCreateSchedule()) {
+                displayMessage('Você não tem permissão para criar agendamentos.', 'error');
+                return;
+            }
             if (modal) {
                 modal.style.display = 'flex';
                 modal.style.opacity = '1';
@@ -1331,7 +1369,10 @@ function setupScheduleDragAndDrop() {
             
             const gameId = e.dataTransfer.getData('text/plain');
             if (gameId && gameId.trim()) {
-                if (confirm('Tem certeza que deseja excluir este agendamento?')) {
+                const allowed = await canDeleteSchedule();
+                if (!allowed) {
+                    displayMessage('Você não tem permissão para excluir jogos.', 'error');
+                } else if (confirm('Tem certeza que deseja excluir este agendamento?')) {
                     scheduledGames = scheduledGames.filter(g => g.id !== gameId);
                     saveSchedulesToLocalStorage();
                     try {
@@ -1447,9 +1488,11 @@ function setupScheduleDragAndDrop() {
             if (isMouseDown) return;
             
             touchStartY = e.touches[0].clientY;
-            longPressTimer = setTimeout(() => {
-                // Funcionalidades liberadas para desenvolvimento
-                const canDelete = true;
+            longPressTimer = setTimeout(async () => {
+                try {
+                    const allowed = await canDeleteSchedule();
+                    if (!allowed) return;
+                } catch (_) { return; }
                 
                 isDragging = true;
                 try { card.style.setProperty('transform', 'none', 'important'); card.style.setProperty('animation', 'none', 'important'); } catch (e) {}
@@ -1496,7 +1539,10 @@ function setupScheduleDragAndDrop() {
                 
                 if (elementBelow && elementBelow.closest('#scheduling-delete-zone')) {
                     const gameId = card.dataset.gameId;
-                    if (confirm('Tem certeza que deseja excluir este agendamento?')) {
+                    const allowed = await canDeleteSchedule();
+                    if (!allowed) {
+                        displayMessage('Você não tem permissão para excluir jogos.', 'error');
+                    } else if (confirm('Tem certeza que deseja excluir este agendamento?')) {
                         scheduledGames = scheduledGames.filter(g => g.id !== gameId);
                         saveSchedulesToLocalStorage();
                         try {
@@ -1525,9 +1571,11 @@ function setupScheduleDragAndDrop() {
             isMouseDown = true;
             const startX = e.clientX;
             const startY = e.clientY;
-            longPressTimer = setTimeout(() => {
-                // Funcionalidades liberadas para desenvolvimento
-                const canDelete = true;
+            longPressTimer = setTimeout(async () => {
+                try {
+                    const allowed = await canDeleteSchedule();
+                    if (!allowed) return;
+                } catch (_) { return; }
                 
                 isDragging = true;
                 card.draggable = true;
@@ -1676,8 +1724,10 @@ function showCancelReasonModal(gameId) {
 }
 
 // Exporta função para atualizar visibilidade (para ser chamada quando login/logout)
-export function updateSchedulingPermissions() {
-    updateFloatingButtonVisibility();
+export async function updateSchedulingPermissions() {
+    await updateFloatingButtonVisibility();
+    // Força re-renderização dos cards para atualizar menus
+    await renderScheduledGames();
 }
 
 

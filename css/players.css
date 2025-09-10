@@ -11,7 +11,7 @@
 
 /* Controle de scroll para a página de jogadores */
 #players-page.app-page--active {
-    position: absolute !important;
+    position: fixed !important;
     top: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
@@ -134,10 +134,9 @@
     gap: 1rem;
     flex-grow: 1;
     width: 100%;
-    min-height: 0;
     overflow: visible !important;
     height: auto !important;
-    padding-bottom: 2rem;
+    padding-bottom: 1rem;
 }
 
 /* Controles da lista de jogadores */
@@ -375,6 +374,19 @@
 }
 
 /* Modal de Substituição: estilos migrados para teams.css (globais) para evitar duplicação. */
+
+
+
+
+
+/* Controle de visibilidade do botão flutuante - apenas na página de jogadores */
+#players-floating-add-btn {
+    display: none !important;
+}
+
+body:has(#players-page.app-page--active) #players-floating-add-btn {
+    display: flex !important;
+}
 
 /* Ghost global para jogadores (fora do escopo de #players-page) */
 .drag-ghost.player-list-item {

@@ -33,24 +33,28 @@ function getRolePermissions(role) {
             scheduling: { createSchedule: true, editSchedule: true, cancelSchedule: true, redispatchNotification: true, deleteSchedule: true },
             users: { viewUsersPage: true, viewUserIds: true, editUserRoles: true },
             configs: { editCustomTeams: true },
+            players: { create: true, createServer: true, delete: true },
             others: { debugAccess: true }
         },
         admin: {
             scheduling: { createSchedule: true, editSchedule: true, cancelSchedule: true, redispatchNotification: true, deleteSchedule: true },
             users: { viewUsersPage: true, viewUserIds: false, editUserRoles: false },
             configs: { editCustomTeams: true },
+            players: { create: true, createServer: true, delete: true },
             others: { debugAccess: false }
         },
-        mod: {
+        moderator: {
             scheduling: { createSchedule: true, editSchedule: true, cancelSchedule: false, redispatchNotification: false, deleteSchedule: false },
             users: { viewUsersPage: false, viewUserIds: false, editUserRoles: false },
             configs: { editCustomTeams: false },
+            players: { create: true, createServer: false, delete: false },
             others: { debugAccess: false }
         },
         user: {
             scheduling: { createSchedule: false, editSchedule: false, cancelSchedule: false, redispatchNotification: false, deleteSchedule: false },
             users: { viewUsersPage: false, viewUserIds: false, editUserRoles: false },
             configs: { editCustomTeams: false },
+            players: { create: true, createServer: false, delete: false },
             others: { debugAccess: false }
         }
     };
@@ -73,6 +77,12 @@ async function getUserPermissions() {
 export function clearPermissionsCache() {
     permissionsCache = null;
     cacheTimestamp = 0;
+}
+
+// Força uma nova verificação de permissões ignorando o cache
+export async function refreshUserPermissions() {
+    clearPermissionsCache();
+    return await getUserPermissions();
 }
 
 // Scheduling permissions
@@ -123,8 +133,95 @@ export async function canEditCustomTeams() {
     return perms.configs?.editCustomTeams || false;
 }
 
+// Players permissions
+export async function canAddPlayer() {
+    const perms = await getUserPermissions();
+    return perms.players?.create || false;
+}
+
+export async function canAddPlayerServer() {
+    const perms = await getUserPermissions();
+    // Só permite server se create também estiver habilitado
+    return (perms.players?.create && perms.players?.createServer) || false;
+}
+
+export async function canDeletePlayer() {
+    const perms = await getUserPermissions();
+    return perms.players?.delete || false;
+}
+
 // Others permissions
 export async function canAccessDebug() {
     const perms = await getUserPermissions();
     return perms.others?.debugAccess || false;
+}
+
+// Função de debug para verificar permissões no console
+export async function debugPermissions() {
+    const userRole = await getCurrentUserRole();
+    const permissions = await getUserPermissions();
+    
+    console.group('=== DEBUG: Permissões do Usuário ===');
+    console.log('Role atual:', userRole);
+    console.log('Permissões completas:', permissions);
+    console.log('Scheduling permissions:', {
+        canCreate: await canCreateSchedule(),
+        canEdit: await canEditSchedule(),
+        canCancel: await canCancelSchedule(),
+        canDelete: await canDeleteSchedule(),
+        canRedispatch: await canRedispatchNotification()
+    });
+    console.log('Users permissions:', {
+        canViewUsersPage: await canViewUsersPage(),
+        canViewUserIds: await canViewUserIds(),
+        canEditUserRoles: await canEditUserRoles()
+    });
+    console.log('Config permissions:', {
+        canEditCustomTeams: await canEditCustomTeams()
+    });
+    console.log('Players permissions:', {
+        canAddPlayer: await canAddPlayer(),
+        canAddPlayerServer: await canAddPlayerServer(),
+        canDeletePlayer: await canDeletePlayer()
+    });
+    console.log('Other permissions:', {
+        canAccessDebug: await canAccessDebug()
+    });
+    console.groupEnd();
+    
+    return { userRole, permissions };
+}
+
+// Expor função de debug globalmente para uso no console
+if (typeof window !== 'undefined') {
+    window.debugPermissions = debugPermissions;
+    
+    // Função para testar visibilidade das abas
+    window.testTabVisibility = async function() {
+        const usersTab = document.getElementById('nav-users');
+        const rolesTab = document.getElementById('nav-roles');
+        
+        console.group('=== DEBUG: Visibilidade das Abas ===');
+        console.log('Aba Usuários:', {
+            elemento: !!usersTab,
+            visivel: usersTab ? usersTab.style.display !== 'none' : false,
+            display: usersTab ? usersTab.style.display : 'n/a'
+        });
+        console.log('Aba Gerenciamento:', {
+            elemento: !!rolesTab,
+            visivel: rolesTab ? rolesTab.style.display !== 'none' : false,
+            display: rolesTab ? rolesTab.style.display : 'n/a'
+        });
+        
+        const canViewUsers = await canViewUsersPage();
+        const canEditRoles = await canEditUserRoles();
+        
+        console.log('Permissões:', {
+            canViewUsersPage: canViewUsers,
+            canEditUserRoles: canEditRoles
+        });
+        console.groupEnd();
+        
+        return { canViewUsers, canEditRoles };
+    };
 }

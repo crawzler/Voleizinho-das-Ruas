@@ -44,35 +44,53 @@ export function markAuthInitialized() { authListenerInitialized = true; }
 let loadingTimeout = null;
 
 // Função utilitária para checar se o usuário atual é admin
-async function isCurrentUserAdmin() {
+function isCurrentUserAdmin() {
     const user = getCurrentUser();
     if (!user || !user.uid) return false;
-    try {
-        const role = await getUserRole(user.uid);
-        return role === 'dev';
-    } catch (e) {
-        return false;
-    }
+    // Usa a configuração centralizada de roles
+    return getUserRole ? getUserRole(user.uid) === 'dev' : false;
 }
 
-// Função para controlar visibilidade da aba de gerenciamento
-async function updateRolesTabVisibility() {
+// Função para controlar visibilidade das abas de usuários e gerenciamento
+async function updateAdminTabsVisibility() {
+    const usersTab = document.getElementById('nav-users');
     const rolesTab = document.getElementById('nav-roles');
-    if (!rolesTab) return;
+    
     const user = getCurrentUser();
+    
+    // Se não há usuário ou é anônimo, esconde ambas as abas
     if (!user || user.isAnonymous) {
-        rolesTab.style.display = 'none';
+        if (usersTab) usersTab.style.display = 'none';
+        if (rolesTab) rolesTab.style.display = 'none';
         return;
     }
-    const isDev = await isCurrentUserAdmin();
-    rolesTab.style.display = isDev ? 'flex' : 'none';
+    
+    try {
+        // Importa as funções de permissão dinamicamente
+        const { canViewUsersPage, canEditUserRoles } = await import('./utils/permissions.js');
+        
+        // Controla visibilidade da aba de usuários
+        if (usersTab) {
+            const canViewUsers = await canViewUsersPage();
+            usersTab.style.display = canViewUsers ? 'flex' : 'none';
+        }
+        
+        // Controla visibilidade da aba de gerenciamento (roles)
+        if (rolesTab) {
+            const canEditRoles = await canEditUserRoles();
+            rolesTab.style.display = canEditRoles ? 'flex' : 'none';
+        }
+    } catch (error) {
+        // Fallback: só mostra para devs
+        const isDev = isCurrentUserAdmin();
+        if (usersTab) usersTab.style.display = isDev ? 'flex' : 'none';
+        if (rolesTab) rolesTab.style.display = isDev ? 'flex' : 'none';
+    }
 }
 
 // Chama a função sempre que a página carrega
 setInterval(() => {
-    // Atualiza abas sensíveis à permissão (dev-only)
-    updateRolesTabVisibility();
-    updateUsersTabVisibility();
+    updateAdminTabsVisibility();
 }, 2000);
 
 // Função utilitária para checar se o usuário atual está autenticado com Google
@@ -81,15 +99,6 @@ function isCurrentUserGoogle() {
     if (!user || !user.uid) return false;
     // Firebase define isAnonymous = true para usuários anônimos
     return !user.isAnonymous;
-}
-
-// Controla visibilidade da aba de gerenciamento de usuários (Users)
-async function updateUsersTabVisibility() {
-    const usersTab = document.getElementById('nav-users');
-    if (!usersTab) return;
-    const user = getCurrentUser();
-    const shouldShow = !!(user && !user.isAnonymous);
-    usersTab.style.display = shouldShow ? 'flex' : 'none';
 }
 
 /**
@@ -222,7 +231,7 @@ function disablePullToRefresh() {
     // Helper: não bloquear gestos iniciados dentro de contêineres com rolagem interna (Roles/Users/etc)
     const isInsideScrollableContainer = (target) => {
         if (!target) return false;
-        return !!target.closest('#roles-page, .roles-content, .roles-page-layout, #users-page, .users-content, #players-page, .players-list-container, .player-category-tabs, #teams-page, .teams-page-layout-sub, .team-players-column, #config-page, #scheduling-page, .modal, .dropdown-options');
+        return !!target.closest('#roles-page, .roles-content, .roles-page-layout, .permission-category, .permission-item, #permissions-content, #users-page, .users-content, #players-page, .players-list-container, .player-category-tabs, #teams-page, .teams-page-layout-sub, .team-players-column, #config-page, #scheduling-page, .modal, .dropdown-options, .substitute-modal, .substitute-modal-content, .substitute-players-list');
     };
     
     // Bloqueia pull-to-refresh no topo da janela, mas respeita contêineres internos
@@ -1428,19 +1437,23 @@ async function copySwLogsToClipboard() {
 
     setupAuthListener(auth, db, appId);
     
-    // Atualiza visibilidade das abas de gerenciamento após auth
+    // Atualiza visibilidade das abas de admin após auth
     setTimeout(() => {
-        updateRolesTabVisibility();
-        updateUsersTabVisibility();
+        updateAdminTabsVisibility();
     }, 1000);
     
     // Também atualiza quando o usuário muda
     window.addEventListener('user-changed', () => {
-        setTimeout(() => {
-            updateRolesTabVisibility();
-            updateUsersTabVisibility();
-        }, 500);
+        setTimeout(updateAdminTabsVisibility, 500);
     });
+    
+    // Atualiza imediatamente após a autenticação
+    setTimeout(() => {
+        updateAdminTabsVisibility();
+    }, 3000);
+    
+    // Torna a função global para uso em outros módulos
+    window.updateAdminTabsVisibility = updateAdminTabsVisibility;
 
 
     setupSidebar();
@@ -1648,7 +1661,7 @@ async function copySwLogsToClipboard() {
         const scrollables = new Set();
         const selectors = [
             'body', '.app-main-content', '.sidebar-menu',
-            '#players-page', '#teams-page', '#users-page', '.users-content', '.users-grid', '#history-page', '#config-page', '#scheduling-page',
+            '#players-page', '#teams-page', '#users-page', '.users-content', '.users-grid', '#history-page', '#config-page', '#scheduling-page', '#roles-page', '.roles-content', '.roles-page-layout',
             '.players-list-container', '.teams-page-layout-sub', '.scheduling-container', '.tab-content', '.schedule-modal-content', '.substitute-modal-content', '.substitute-players-list', '.accordion-content', '.select-team-modal-content-wrapper', '.team-players-column'
         ];
         const elems = selectors.flatMap(sel => Array.from(document.querySelectorAll(sel)));
@@ -1675,7 +1688,7 @@ async function copySwLogsToClipboard() {
     const modalOpen = document.querySelector('.quick-settings-modal.active') || document.querySelector('.substitute-modal') || document.querySelector('.select-team-modal-container.modal-active') || document.querySelector('.confirmation-modal-overlay.active') || document.querySelector('.schedule-modal.active');
         if (modalOpen) return;
 
-    if (e.target.closest('#roles-page') || e.target.closest('.roles-content') || e.target.closest('.dropdown-options') || e.target.closest('.substitute-modal-content') || e.target.closest('.substitute-players-list') || e.target.closest('#players-page') || e.target.closest('.players-list-container') || e.target.closest('.player-category-tabs') || e.target.closest('#teams-page') || e.target.closest('.teams-page-layout-sub') || e.target.closest('.team-players-column') || e.target.closest('.quick-settings-content') || e.target.closest('.quick-settings-modal') || e.target.closest('.config-page-layout') || e.target.closest('.accordion-content') || e.target.closest('.accordion-content-sub') || e.target.closest('.settings-list') || e.target.closest('.accordion-content-sub-teams') || e.target.closest('.accordion-content-sub-full-width') || e.target.closest('#scheduling-page') || e.target.closest('.scheduling-container') || e.target.closest('.tab-content') || e.target.closest('.schedule-modal') || e.target.closest('.schedule-modal-content') || e.target.closest('#users-page') || e.target.closest('.users-content') || e.target.closest('.users-grid')) {
+    if (e.target.closest('#roles-page') || e.target.closest('.roles-content') || e.target.closest('.dropdown-options') || e.target.closest('.substitute-modal') || e.target.closest('.substitute-modal-content') || e.target.closest('.substitute-players-list') || e.target.closest('#players-page') || e.target.closest('.players-list-container') || e.target.closest('.player-category-tabs') || e.target.closest('#teams-page') || e.target.closest('.teams-page-layout-sub') || e.target.closest('.team-players-column') || e.target.closest('.quick-settings-content') || e.target.closest('.quick-settings-modal') || e.target.closest('.config-page-layout') || e.target.closest('.accordion-content') || e.target.closest('.accordion-content-sub') || e.target.closest('.settings-list') || e.target.closest('.accordion-content-sub-teams') || e.target.closest('.accordion-content-sub-full-width') || e.target.closest('#scheduling-page') || e.target.closest('.scheduling-container') || e.target.closest('.tab-content') || e.target.closest('.schedule-modal') || e.target.closest('.schedule-modal-content') || e.target.closest('#users-page') || e.target.closest('.users-content') || e.target.closest('.users-grid')) {
             return;
         }
         const startY = e.touches[0].clientY;
@@ -1691,6 +1704,7 @@ async function copySwLogsToClipboard() {
         if (e.target.closest('.players-list-container') ||
             e.target.closest('.player-category-tabs') ||
             e.target.closest('.teams-page-layout-sub') ||
+            e.target.closest('.substitute-modal') ||
             e.target.closest('.substitute-modal-content') ||
             e.target.closest('.substitute-players-list') ||
             e.target.closest('.quick-settings-content') ||
@@ -1711,13 +1725,7 @@ async function copySwLogsToClipboard() {
             e.target.closest('.users-grid') ||
             e.target.closest('#roles-page') ||
             e.target.closest('.roles-content') ||
-            e.target.closest('.roles-page-layout') ||
-            e.target.closest('#players-page') ||
-            e.target.closest('.players-list-container') ||
-            e.target.closest('.player-category-tabs') ||
-            e.target.closest('#teams-page') ||
-            e.target.closest('.teams-page-layout-sub') ||
-            e.target.closest('.team-players-column')) {
+            e.target.closest('.roles-page-layout')) {
             return;
         }
         e.preventDefault();

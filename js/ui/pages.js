@@ -152,13 +152,6 @@ export async function showPage(pageIdToShow) {
         try { await exitFullscreen(); } catch (_) { /* ignore */ }
     }
 
-    // NOVO: marca quando a tela de Roles está ativa para liberar scroll na página inteira
-    if (pageIdToShow === 'roles-page') {
-        document.body.classList.add('roles-page-active');
-    } else {
-        document.body.classList.remove('roles-page-active');
-    }
-
     closeSidebar();
     updateNavScoringButton(getIsGameInProgress(), currentPageId);
     
@@ -183,9 +176,6 @@ export async function showPage(pageIdToShow) {
         }
     } catch (_) { /* ignore */ }
 
-    // Atualiza/insere badge de role no perfil do usuário
-    try { await updateUserRoleBadge(); } catch (_) { /* ignore */ }
-
     if (pageIdToShow === 'players-page') {
         let currentUser = null;
         try {
@@ -195,28 +185,25 @@ export async function showPage(pageIdToShow) {
         }
         updatePlayerModificationAbility(!!currentUser);
         updatePlayerCount();
-
-        // Configura botão flutuante "Novo" para adicionar jogador
-        try {
-            const floatingBtn = document.getElementById('players-floating-add-btn');
-            if (floatingBtn && !floatingBtn.__playersListenerAdded) {
-                floatingBtn.addEventListener('click', () => {
-                    openNewPlayerModal();
-                });
-                floatingBtn.__playersListenerAdded = true;
-            }
-            if (floatingBtn) floatingBtn.style.display = (currentUser && !currentUser.isAnonymous) ? 'flex' : 'none';
-            // Garante posicionamento fixo relativo ao viewport
-            portalPlayersFabToBody();
-        } catch (_) { /* ignore */ }
+        
+        // Atualiza visibilidade do botão flutuante baseado nas permissões
+        updateFloatingAddButtonVisibility();
+        
+        // Configura o botão flutuante se ainda não foi configurado
+        setupFloatingAddButton();
     } else if (pageIdToShow === 'users-page') {
         // Verifica permissões antes de inicializar
         const currentUser = getCurrentUser();
         let hasPermission = false;
         
         if (currentUser && !currentUser.isAnonymous) {
-            const { hasPermission: checkPermission, USER_ROLES } = await import('./users.js');
-            hasPermission = checkPermission(currentUser.uid, USER_ROLES.MODERATOR);
+            try {
+                const { canViewUsersPage } = await import('../utils/permissions.js');
+                hasPermission = await canViewUsersPage();
+            } catch (error) {
+                console.warn('Erro ao verificar permissões:', error);
+                hasPermission = false;
+            }
         }
         
         if (hasPermission) {
@@ -227,7 +214,7 @@ export async function showPage(pageIdToShow) {
             });
         } else {
             showPage('players-page');
-            displayMessage('Acesso negado. Apenas administradores podem acessar esta área.', 'error');
+            displayMessage('Acesso negado. Apenas usuários com permissão podem acessar esta área.', 'error');
         }
     } else if (pageIdToShow === 'teams-page') {
         renderTeams(getAllGeneratedTeams());
@@ -357,22 +344,6 @@ export async function showPage(pageIdToShow) {
             } catch (_) { /* noop */ }
         }
     } else if (pageIdToShow === 'roles-page') {
-        // Protege rota: apenas dev pode acessar
-        try {
-            const { getCurrentUser } = await import('../firebase/auth.js');
-            const { getUserRole } = await import('./users.js');
-            const u = getCurrentUser();
-            const role = u && u.uid ? await getUserRole(u.uid) : 'user';
-            if (role !== 'dev') {
-                showPage('players-page');
-                displayMessage('Acesso negado. Apenas desenvolvedores podem acessar esta área.', 'error');
-                return;
-            }
-        } catch (_) {
-            showPage('players-page');
-            displayMessage('Acesso negado.', 'error');
-            return;
-        }
         // Carrega dinamicamente o módulo de roles
         import('./roles-ui.js').then(({ setupRolesPage }) => {
             setupRolesPage();
@@ -417,6 +388,28 @@ export function updatePlayerModificationAbility(canModify) {
 }
 
 /**
+ * Atualiza a visibilidade do botão flutuante de adicionar jogador baseado nas permissões
+ */
+export async function updateFloatingAddButtonVisibility() {
+    const floatingButton = document.getElementById('players-floating-add-btn');
+    if (!floatingButton) return;
+    
+    const currentUser = getCurrentUser();
+    let canAdd = false;
+    
+    if (currentUser && !currentUser.isAnonymous) {
+        try {
+            const { canAddPlayer } = await import('../utils/permissions.js');
+            canAdd = await canAddPlayer();
+        } catch (error) {
+            canAdd = false;
+        }
+    }
+    
+    floatingButton.style.display = canAdd ? 'flex' : 'none';
+}
+
+/**
  * NOVO: Atualiza o texto e a ação do botão de login/logout no mini-menu do perfil.
  */
 export function updateProfileMenuLoginState() {
@@ -446,50 +439,6 @@ export function updateSidebarUserName(playerName) {
     if (Elements.userDisplayName()) {
         Elements.userDisplayName().textContent = playerName || "Visitante";
     }
-}
-
-// Mostra a role do usuário como um badge ao lado do nome
-async function updateUserRoleBadge() {
-    const container = Elements.userProfileHeader ? Elements.userProfileHeader() : document.getElementById('user-profile-header');
-    if (!container) return;
-
-    const user = (typeof getCurrentUser === 'function') ? getCurrentUser() : null;
-    let role = null;
-    let ROLE_CONFIG = null;
-    if (user && !user.isAnonymous && user.uid) {
-        try {
-            const mod = await import('./users.js');
-            role = await mod.getUserRole(user.uid);
-            ROLE_CONFIG = mod.ROLE_CONFIG;
-        } catch (_) { role = null; }
-    }
-
-    let badge = container.querySelector('#user-role-badge');
-    if (!role) {
-        if (badge) badge.remove();
-        return;
-    }
-
-    const config = ROLE_CONFIG ? ROLE_CONFIG[role] : null;
-    const label = (config && (config.shortName || config.name)) ? (config.shortName || config.name) : String(role).toUpperCase();
-
-    if (!badge) {
-        badge = document.createElement('span');
-        badge.id = 'user-role-badge';
-        badge.className = 'user-role-badge';
-        const arrow = container.querySelector('.profile-menu-arrow');
-        container.insertBefore(badge, arrow || null);
-    }
-    badge.textContent = label;
-    badge.dataset.role = role;
-    // Aplica o mesmo gradiente/cor usado nos cards da tela de usuários
-    if (config && config.gradient) {
-        badge.style.background = config.gradient;
-        badge.style.color = '#ffffff';
-        badge.style.borderColor = 'rgba(0,0,0,0.25)';
-    }
-    // Remove classes específicas para evitar sobrescrever a cor inline
-    badge.classList.remove('role-dev','role-admin','role-moderator','role-user');
 }
 
 /**
@@ -656,9 +605,14 @@ export function setupPageNavigation(startGameHandler, getPlayersHandler, appId) 
         addPlayerButton.addEventListener('click', async () => {
             const playerInput = document.getElementById('player-input');
             const playerName = playerInput ? playerInput.value.trim() : '';
-            if (!playerName) return;
-            openNewPlayerModal(playerName);
-            if (playerInput) playerInput.value = '';
+            
+            if (playerName) {
+                // Mostra modal de seleção de categoria
+                showCategorySelectionModal(playerName, appId);
+                if (playerInput) {
+                    playerInput.value = '';
+                }
+            }
         });
     }
 
@@ -984,83 +938,150 @@ function handleCancelClick() {
 export function updateSelectedPlayersCount() {
     const selectedPlayersCountElement = document.getElementById('selected-players-count');
     if (selectedPlayersCountElement) {
+        // Obter dados dos jogadores do localStorage
         const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
         const totalCount = players.length;
-        const selectedCount = document.querySelectorAll('#players-list-container .player-checkbox:checked').length;
+        
+        // Contar jogadores selecionados de todas as categorias
+        let selectedCount = 0;
+        ['principais', 'esporadicos', 'random'].forEach(category => {
+            const categorySelections = localStorage.getItem(`selectedPlayers_${category}`);
+            if (categorySelections) {
+                const ids = JSON.parse(categorySelections);
+                selectedCount += ids.length;
+            }
+        });
+        
         selectedPlayersCountElement.textContent = `${selectedCount}/${totalCount}`;
     }
 }
 
-// Garante que o FAB de jogadores fique fora de containers com transform/overflow
-function portalPlayersFabToBody() {
-    const btn = document.getElementById('players-floating-add-btn');
-    if (!btn) return;
-    if (btn.parentElement !== document.body) {
-        try { document.body.appendChild(btn); } catch (_) {}
+// Função para mostrar modal de seleção de categoria
+function showCategorySelectionModal(playerName, appId) {
+    const modal = document.getElementById('category-selection-modal');
+    const messageElement = document.getElementById('category-selection-message');
+    
+    if (!modal || !messageElement) return;
+    
+    messageElement.textContent = `Em qual categoria deseja adicionar "${playerName}"?`;
+    modal.classList.add('active');
+    
+    // Remove listeners antigos
+    const buttons = modal.querySelectorAll('.category-selection-buttons .button');
+    buttons.forEach(btn => {
+        btn.replaceWith(btn.cloneNode(true));
+    });
+    
+    // Adiciona novos listeners
+    document.getElementById('category-principais-btn').addEventListener('click', () => {
+        addPlayerWithCategory(playerName, 'principais', appId);
+        hideCategorySelectionModal();
+    });
+    
+    document.getElementById('category-esporadicos-btn').addEventListener('click', () => {
+        addPlayerWithCategory(playerName, 'esporadicos', appId);
+        hideCategorySelectionModal();
+    });
+    
+    document.getElementById('category-random-btn').addEventListener('click', () => {
+        addPlayerWithCategory(playerName, 'random', appId);
+        hideCategorySelectionModal();
+    });
+}
+
+// Função para esconder modal de seleção de categoria
+function hideCategorySelectionModal() {
+    const modal = document.getElementById('category-selection-modal');
+    if (modal) {
+        modal.classList.remove('active');
     }
 }
 
-// Removido: seleção de categoria não é mais usada
-
-// Modal de novo jogador (sem categorias)
-function openNewPlayerModal(initialName = '') {
-    const overlay = document.createElement('div');
-    overlay.className = 'confirmation-modal-overlay active';
-
-    const content = document.createElement('div');
-    content.className = 'confirmation-modal-content';
-    content.innerHTML = `
-        <h3 style="margin:0 0 .5rem; color: var(--text-primary); display:flex; align-items:center; gap:.5rem;">
-            <span class="material-icons" style="font-size:1.2rem;">person_add</span>
-            Novo Jogador
-        </h3>
-        <div class="form-group" style="margin: .5rem 0 1rem;">
-            <label for="new-player-name">Nome</label>
-            <input id="new-player-name" type="text" class="form-input" placeholder="Digite o nome do jogador" autocomplete="off" />
-        </div>
-        <div style="display:flex; gap:.5rem; flex-wrap:wrap; justify-content:flex-end;">
-            <button id="new-player-add" class="button confirmation-button--confirm">Adicionar</button>
-            <button id="new-player-cancel" class="button confirmation-button--cancel">Cancelar</button>
-        </div>
-    `;
-    overlay.appendChild(content);
-    document.body.appendChild(overlay);
-
-    const input = content.querySelector('#new-player-name');
-    if (initialName) input.value = initialName;
-    setTimeout(() => input && input.focus(), 50);
-
-    const close = () => { try { overlay.remove(); } catch(_){} };
-    content.querySelector('#new-player-cancel')?.addEventListener('click', close);
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
-
-    const appId = localStorage.getItem('appId') || 'default';
-    const handleAdd = async () => {
-        const name = (input?.value || '').trim();
-        if (!name) {
-            const { displayMessage } = await import('./messages.js');
-            displayMessage('Digite um nome para cadastrar o jogador.', 'warning');
-            input?.focus();
-            return;
+// Função para adicionar jogador com categoria
+async function addPlayerWithCategory(playerName, category, appId) {
+    try {
+        let db = null;
+        if (navigator.onLine) {
+            const { getFirestoreDb } = await import('../firebase/config.js');
+            db = getFirestoreDb();
         }
-        try {
-            let db = null;
-            if (navigator.onLine) {
-                const { getFirestoreDb } = await import('../firebase/config.js');
-                db = getFirestoreDb();
+        
+        await addPlayer(db, appId, playerName, null, true, category);
+        displayMessage(`Jogador "${playerName}" adicionado em ${getCategoryDisplayName(category)}!`, "success");
+    } catch (error) {
+        displayMessage("Erro ao adicionar jogador. Tente novamente.", "error");
+    }
+}
+
+// Configura o botão flutuante de adicionar jogador
+function setupFloatingAddButton() {
+    const floatingBtn = document.getElementById('players-floating-add-btn');
+    const modal = document.getElementById('new-player-modal');
+    const nameInput = document.getElementById('new-player-name-input');
+    const addBtn = document.getElementById('add-new-player-btn');
+    const cancelBtn = document.getElementById('cancel-new-player-btn');
+    
+    if (floatingBtn && modal) {
+        // Abrir modal ao clicar no botão flutuante
+        floatingBtn.addEventListener('click', () => {
+            modal.style.display = 'flex';
+            setTimeout(() => nameInput?.focus(), 100);
+        });
+        
+        // Fechar modal ao cancelar
+        cancelBtn?.addEventListener('click', () => {
+            modal.style.display = 'none';
+            nameInput.value = '';
+        });
+        
+        // Adicionar jogador
+        addBtn?.addEventListener('click', () => {
+            const name = nameInput.value.trim();
+            if (name) {
+                // Usar a função existente de adicionar jogador
+                if (window.playersManager && window.playersManager.addPlayer) {
+                    window.playersManager.addPlayer(name);
+                } else {
+                    // Fallback para função direta
+                    addPlayerWithCategory(name, 'principais', 'default');
+                }
+                modal.style.display = 'none';
+                nameInput.value = '';
             }
-            await addPlayer(db, appId, name);
-            const { displayMessage } = await import('./messages.js');
-            displayMessage(`Jogador "${name}" adicionado!`, 'success');
-            close();
-            try { updatePlayerCount(); } catch(_){}
-        } catch (error) {
-            const { displayMessage } = await import('./messages.js');
-            displayMessage('Erro ao adicionar jogador. Tente novamente.', 'error');
-        }
-    };
+        });
+        
+        // Adicionar com Enter
+        nameInput?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addBtn?.click();
+            }
+        });
+        
+        // Fechar modal ao clicar fora
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+                nameInput.value = '';
+            }
+        });
+    }
+}
 
-    content.querySelector('#new-player-add')?.addEventListener('click', handleAdd);
+// Chama a configuração do botão flutuante quando o DOM estiver pronto
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupFloatingAddButton);
+} else {
+    setupFloatingAddButton();
+}
+
+// Função para obter nome de exibição da categoria
+function getCategoryDisplayName(category) {
+    const categoryNames = {
+        'principais': 'Principais',
+        'esporadicos': 'Esporádicos', 
+        'random': 'Random'
+    };
+    return categoryNames[category] || category;
 }
 
 // NOVO: Função para forçar atualização dos ícones
