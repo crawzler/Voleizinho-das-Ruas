@@ -84,6 +84,10 @@ export function setupFirestorePlayersListener(dbInstance, appIdentifier) {
         if (localPlayers.length > 0) {
             players = localPlayers;
         renderPlayersList(players);
+        // Atualiza contadores das abas
+        import('../ui/players-ui.js').then(({ updateCategoryCounters }) => {
+            updateCategoryCounters();
+        }).catch(() => {});
     }
         hasInitialFirestoreLoadAttempted = false;
         return;
@@ -122,6 +126,10 @@ export function setupFirestorePlayersListener(dbInstance, appIdentifier) {
             // Atualiza contador na tela de times
             import('../ui/pages.js').then(({ updateSelectedPlayersCount }) => {
                 updateSelectedPlayersCount();
+            }).catch(() => {});
+            // Atualiza contadores das abas
+            import('../ui/players-ui.js').then(({ updateCategoryCounters }) => {
+                updateCategoryCounters();
             }).catch(() => {});
             // Atualiza página de usuários se estiver ativa
             import('../ui/users.js').then(({ updateUsersPage }) => {

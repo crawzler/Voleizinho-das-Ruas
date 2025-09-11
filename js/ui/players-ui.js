@@ -113,7 +113,14 @@ export function renderPlayersList(players) {
         let showDeleteButton = false;
         
         // Verifica se este jogador estava selecionado anteriormente
-        const isChecked = selectedPlayerIds.includes(player.id) ? 'checked' : '';
+        const playerCategory = player.category || 'principais';
+        const categoryKey = `selectedPlayers_${playerCategory}`;
+        let categorySelectedIds = [];
+        try {
+            const saved = localStorage.getItem(categoryKey);
+            if (saved) categorySelectedIds = JSON.parse(saved);
+        } catch (e) { categorySelectedIds = []; }
+        const isChecked = categorySelectedIds.includes(player.id) ? 'checked' : '';
         
         // Determina a foto do usuário - só para jogadores Google (não manuais)
         let userPhoto = 'assets/default-user-icon.svg'; // Ícone padrão
@@ -163,23 +170,25 @@ export function renderPlayersList(players) {
             }
         }
         
+        // Usar onclick direto para garantir funcionamento
+        const checkbox = playerElement.querySelector('.player-checkbox');
+        if (checkbox) {
+            // checkbox.onclick = savePlayerSelectionState;
+            checkbox.addEventListener('change', savePlayerSelectionState);
+        }
+        
         playersListContainer.appendChild(playerElement);
-    });
-    
-    // Adiciona event listeners para os checkboxes
-    document.querySelectorAll('#players-list-container .player-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', savePlayerSelectionState);
     });
     
     // Configura o toggle "Selecionar Todos"
     setupSelectAllToggle();
 
     updatePlayerCount();
+    updateCategoryCounters();
     
     // Configurar busca de jogadores e abas de categoria
     setupPlayerSearch();
     setupCategoryTabs();
-    updateCategoryCounters();
     
     // Configurar drop zones apenas uma vez
     if (!dropZonesSetup) {
@@ -213,7 +222,9 @@ function handleSelectAllToggle(e) {
     const checkboxes = document.querySelectorAll('#players-list-container .player-checkbox');
     
     checkboxes.forEach(checkbox => {
-        checkbox.checked = isChecked;
+        if (checkbox.checked !== isChecked) {
+            checkbox.checked = isChecked;
+        }
     });
     
     // Salva o estado
@@ -233,10 +244,14 @@ export function updateSelectAllToggle() {
     if (checkboxes.length === 0) {
         selectAllToggle.checked = false;
         selectAllToggle.indeterminate = false;
-    } else if (checkedBoxes.length > 0) {
-        // Ativa o toggle quando há pelo menos um jogador selecionado
+    } else if (checkedBoxes.length === checkboxes.length) {
+        // Todos estão selecionados
         selectAllToggle.checked = true;
         selectAllToggle.indeterminate = false;
+    } else if (checkedBoxes.length > 0) {
+        // Alguns estão selecionados
+        selectAllToggle.checked = false;
+        selectAllToggle.indeterminate = true;
     } else {
         selectAllToggle.checked = false;
         selectAllToggle.indeterminate = false;
@@ -274,7 +289,7 @@ function setupCategoryTabs() {
 /**
  * Atualiza os contadores de jogadores nas abas de filtro
  */
-function updateCategoryCounters() {
+export function updateCategoryCounters() {
     const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
     
     // Carrega jogadores selecionados
@@ -415,7 +430,14 @@ function filterPlayers() {
         // Botão de excluir removido - usa apenas drag and drop
         let showDeleteButton = false;
         
-        const isChecked = selectedPlayerIds.includes(player.id) ? 'checked' : '';
+        const playerCategory = player.category || 'principais';
+        const categoryKey = `selectedPlayers_${playerCategory}`;
+        let categorySelectedIds = [];
+        try {
+            const saved = localStorage.getItem(categoryKey);
+            if (saved) categorySelectedIds = JSON.parse(saved);
+        } catch (e) { categorySelectedIds = []; }
+        const isChecked = categorySelectedIds.includes(player.id) ? 'checked' : '';
         
         // Determina a foto do usuário para busca também - só para jogadores Google (não manuais)
         let userPhoto = 'assets/default-user-icon.svg'; // Ícone padrão
@@ -449,15 +471,18 @@ function filterPlayers() {
             }
         }
         
+        // Usar onclick direto para garantir funcionamento
+        const checkbox = playerElement.querySelector('.player-checkbox');
+        if (checkbox) {
+            // checkbox.onclick = savePlayerSelectionState;
+            checkbox.addEventListener('change', savePlayerSelectionState);
+        }
+        
         playersListContainer.appendChild(playerElement);
     });
     
-    // Adiciona event listeners para os checkboxes
-    document.querySelectorAll('#players-list-container .player-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', savePlayerSelectionState);
-    });
-    
     updatePlayerCount();
+    updateCategoryCounters();
 }
 
 /**
@@ -500,176 +525,118 @@ export function updatePlayerCount() {
  * Salva o estado de seleção dos jogadores no localStorage por categoria
  */
 export function savePlayerSelectionState(e) {
-    try {
-        // Detecta se a busca está ativa
-        const playerInput = document.getElementById('player-input');
-        const isSearchActive = playerInput && playerInput.value.trim().length > 0;
+    // Expor globalmente
+    window.savePlayerSelectionState = savePlayerSelectionState;
 
-        // Quando a busca está ativa, atualiza SOMENTE o checkbox alterado,
-        // preservando o restante das seleções já salvas por categoria.
-        if (isSearchActive && e && e.target && e.target.classList && e.target.classList.contains('player-checkbox')) {
-            const playerId = e.target.dataset.playerId;
-            const isChecked = e.target.checked;
+    const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
 
-            const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
-            const player = players.find(p => p.id === playerId);
-            const playerCategory = (player && player.category) ? player.category : 'principais';
+    // Atualização: detectar toggle e aplicar feedback visual em todas as abas
+    let willAnimateLeave = false;
+    let toggledPlayer = null;
+    let newChecked = null;
+    let toggledItemEl = null;
+    if (e && e.target && e.target.classList && e.target.classList.contains('player-checkbox')) {
+        const checkboxEl = e.target;
+        newChecked = checkboxEl.checked;
+        const isUnchecking = (newChecked === false);
+        const playerId = checkboxEl.dataset.playerId;
+        toggledPlayer = players.find(p => p.id === playerId) || null;
+        toggledItemEl = checkboxEl.closest('.player-list-item');
 
-            let categoryIds = [];
-            try {
-                const saved = localStorage.getItem(`selectedPlayers_${playerCategory}`);
-                if (saved) categoryIds = JSON.parse(saved);
-            } catch (_) { categoryIds = []; }
-
-            const idx = categoryIds.indexOf(playerId);
-            if (isChecked && idx === -1) categoryIds.push(playerId);
-            if (!isChecked && idx !== -1) categoryIds.splice(idx, 1);
-
-            localStorage.setItem(`selectedPlayers_${playerCategory}`, JSON.stringify(categoryIds));
-
-            // Atualiza seleções globais e contadores
-            updateGlobalSelections();
-            import('./pages.js').then(({ updateSelectedPlayersCount }) => {
-                updateSelectedPlayersCount();
-            }).catch(() => {});
-            autoAddPlayersToTeams();
-            autoRemoveDeselectedPlayersFromTeams();
-
-            // Atualiza UI local (contador)
-            updatePlayerCount();
-
-            // NOVO: reordenar imediatamente a lista enquanto busca está ativa
-            const playersPage = document.getElementById('players-page');
-            if (playersPage && playersPage.classList.contains('app-page--active')) {
-                // Aguarda um pouco antes de reordenar para garantir que o estado foi salvo
-                setTimeout(() => {
-                    filterPlayers();
-                    // Loop de verificação para garantir que o jogador está marcado
-                    setTimeout(() => {
-                        const checkbox = document.querySelector(`#players-list-container .player-checkbox[data-player-id="${playerId}"]`);
-                        if (checkbox && checkbox.checked !== isChecked) {
-                            checkbox.checked = isChecked;
-                        }
-                    }, 100);
-                }, 50);
-            }
-            return; // Evita sobrescrever seleções usando os checkboxes visíveis do filtro
-        }
-
-        if (currentFilter === 'todos') {
-            // Na aba "Todos", atualiza as categorias específicas dos jogadores
-            const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
-            const categorySelections = {
-                principais: [],
-                esporadicos: [],
-                random: []
-            };
-            
-            document.querySelectorAll('#players-list-container .player-checkbox:checked').forEach(checkbox => {
-                const playerId = checkbox.dataset.playerId;
-                const player = players.find(p => p.id === playerId);
-                if (player) {
-                    const playerCategory = player.category || 'principais';
-                    categorySelections[playerCategory].push(playerId);
-                }
-            });
-            
-            // Salva as seleções nas categorias específicas
-            Object.keys(categorySelections).forEach(category => {
-                localStorage.setItem(`selectedPlayers_${category}`, JSON.stringify(categorySelections[category]));
-            });
+        // Vai sair da lista atual? (usar filtro ativo)
+        let willLeave = false;
+        if (currentFilter === 'marcados') {
+            willLeave = !newChecked; // desmarcar remove da aba
+        } else if (currentFilter === 'desmarcados') {
+            willLeave = !!newChecked; // marcar remove da aba
         } else {
-            // Para filtros de marcados/desmarcados, atualiza baseado nos checkboxes visíveis
-            const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
-            const categorySelections = {
-                principais: [],
-                esporadicos: [],
-                random: []
-            };
-            
-            // Carrega seleções existentes
-            ['principais', 'esporadicos', 'random'].forEach(category => {
-                const saved = localStorage.getItem(`selectedPlayers_${category}`);
-                if (saved) {
-                    categorySelections[category] = JSON.parse(saved);
-                }
-            });
-            
-            // Atualiza baseado nos checkboxes visíveis
-            document.querySelectorAll('#players-list-container .player-checkbox').forEach(checkbox => {
-                const playerId = checkbox.dataset.playerId;
-                const player = players.find(p => p.id === playerId);
-                if (player) {
-                    const playerCategory = player.category || 'principais';
-                    const index = categorySelections[playerCategory].indexOf(playerId);
-                    
-                    if (checkbox.checked && index === -1) {
-                        categorySelections[playerCategory].push(playerId);
-                    } else if (!checkbox.checked && index !== -1) {
-                        categorySelections[playerCategory].splice(index, 1);
-                    }
-                }
-            });
-            
-            // Salva as seleções atualizadas
-            Object.keys(categorySelections).forEach(category => {
-                localStorage.setItem(`selectedPlayers_${category}`, JSON.stringify(categorySelections[category]));
-            });
+            // 'todos' não remove, apenas feedback visual leve
+            willLeave = false;
         }
-        
-        // Atualiza seleções globais para a aba "Todos"
-        updateGlobalSelections();
-        
-        // Atualiza o contador na tela de times
-        import('./pages.js').then(({ updateSelectedPlayersCount }) => {
-            updateSelectedPlayersCount();
-        }).catch(() => {});
-        
-        // Adiciona automaticamente novos jogadores aos times existentes
-        autoAddPlayersToTeams();
-        // Remove automaticamente dos times os jogadores desmarcados
-        autoRemoveDeselectedPlayersFromTeams();
 
-        // NOVO: reordenar imediatamente a lista quando a página de jogadores estiver visível
-        const playersPage = document.getElementById('players-page');
-        if (playersPage && playersPage.classList.contains('app-page--active')) {
-            const playerInputNow = document.getElementById('player-input');
-            const isSearchActiveNow = playerInputNow && playerInputNow.value.trim().length > 0;
-            
-            // Aguarda um pouco antes de reordenar para garantir que o estado foi salvo
-            setTimeout(() => {
-                if (isSearchActiveNow) {
-                    filterPlayers();
-                } else {
-                    const allPlayers = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
-                    renderPlayersList(allPlayers);
-                }
-                
-                // Loop de verificação para garantir que todos os checkboxes estão corretos
+        // Aplica efeito adequado
+        if (toggledItemEl) {
+            if (willLeave) {
+                toggledItemEl.classList.add('marking-out');
+                if (isUnchecking) toggledItemEl.classList.add('unmarking');
+                // Evita múltiplos cliques durante a animação de saída
+                checkboxEl.disabled = true;
+            } else {
+                toggledItemEl.classList.add('selection-pulse');
+                if (isUnchecking) toggledItemEl.classList.add('unmarking');
                 setTimeout(() => {
-                    document.querySelectorAll('#players-list-container .player-checkbox').forEach(checkbox => {
-                        const playerId = checkbox.dataset.playerId;
-                        const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
-                        const player = players.find(p => p.id === playerId);
-                        if (player) {
-                            const playerCategory = player.category || 'principais';
-                            const savedSelection = localStorage.getItem(`selectedPlayers_${playerCategory}`);
-                            if (savedSelection) {
-                                const selectedIds = JSON.parse(savedSelection);
-                                const shouldBeChecked = selectedIds.includes(playerId);
-                                if (checkbox.checked !== shouldBeChecked) {
-                                    checkbox.checked = shouldBeChecked;
-                                }
-                            }
-                        }
-                    });
-                    updatePlayerCount();
-                }, 100);
-            }, 50);
+                    if (toggledItemEl) {
+                        toggledItemEl.classList.remove('selection-pulse');
+                        if (isUnchecking) toggledItemEl.classList.remove('unmarking');
+                    }
+                }, 350);
+            }
         }
-    } catch (e) {
-        // Log removido
+        willAnimateLeave = willLeave;
+
+        // Mensagem de confirmação (sem tag visual)
+        try {
+            const action = newChecked ? 'Marcado' : 'Desmarcado';
+            displayMessage(`${action}: ${toggledPlayer ? toggledPlayer.name : 'Jogador'}`);
+        } catch (_) {}
     }
+
+    // Carrega seleções existentes por categoria para não perder itens fora do filtro/DOM
+    let categorySelections = { principais: [], esporadicos: [], random: [] };
+    try {
+        categorySelections.principais = JSON.parse(localStorage.getItem('selectedPlayers_principais') || '[]');
+    } catch (_) { categorySelections.principais = []; }
+    try {
+        categorySelections.esporadicos = JSON.parse(localStorage.getItem('selectedPlayers_esporadicos') || '[]');
+    } catch (_) { categorySelections.esporadicos = []; }
+    try {
+        categorySelections.random = JSON.parse(localStorage.getItem('selectedPlayers_random') || '[]');
+    } catch (_) { categorySelections.random = []; }
+
+    // Atualiza seleções apenas para os checkboxes presentes no DOM
+    document.querySelectorAll('#players-list-container .player-checkbox').forEach(checkbox => {
+        const playerId = checkbox.dataset.playerId;
+        const player = players.find(p => p.id === playerId);
+        if (!player) return;
+        const category = player.category || 'principais';
+        const arr = categorySelections[category] || [];
+        const idx = arr.indexOf(playerId);
+        if (checkbox.checked) {
+            if (idx === -1) arr.push(playerId);
+        } else {
+            if (idx !== -1) arr.splice(idx, 1);
+        }
+        categorySelections[category] = arr;
+    });
+
+    // Salva por categoria
+    Object.keys(categorySelections).forEach(category => {
+        localStorage.setItem(`selectedPlayers_${category}`, JSON.stringify(categorySelections[category]));
+    });
+
+    updateGlobalSelections();
+    updatePlayerCount();
+    updateCategoryCounters();
+    
+    // Re-renderiza apenas quando a mudança deve retirar o item da aba atual
+    if (currentFilter === 'marcados' || currentFilter === 'desmarcados') {
+        const doRender = () => {
+            const players = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
+            renderPlayersList(players);
+        };
+        if (willAnimateLeave) {
+            setTimeout(doRender, 400);
+        } else {
+            doRender();
+        }
+    }
+    
+    import('./pages.js').then(({ updateSelectedPlayersCount }) => {
+        updateSelectedPlayersCount();
+    }).catch(() => {});
+    
+    autoAddPlayersToTeams();
+    autoRemoveDeselectedPlayersFromTeams();
 }
 
 /**
@@ -827,7 +794,7 @@ function autoRemoveDeselectedPlayersFromTeams() {
     });
 }
 
-function updateGlobalSelections() {
+export function updateGlobalSelections() {
     try {
         const allSelected = [];
         ['principais', 'esporadicos', 'random'].forEach(category => {
@@ -1495,6 +1462,7 @@ export function unselectPlayerInUI(playerName) {
 
             // ATUALIZADO: Chamar updateGlobalSelections para manter a aba "Todos" em sincronia
             updateGlobalSelections();
+            updateCategoryCounters();
 
             // Atualiza a contagem de jogadores
             updatePlayerCount();

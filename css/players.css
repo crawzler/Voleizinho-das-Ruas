@@ -233,7 +233,41 @@
     transition: none !important;
 }
 
-/* Informações do jogador */
+/* Feedback visual ao marcar/desmarcar */
+#players-page .player-list-item.selection-pulse {
+    box-shadow: 0 0 0 0 rgba(102,126,234,0.45);
+    animation: selectionPulse 0.35s ease-out;
+}
+
+@keyframes selectionPulse {
+    0% { box-shadow: 0 0 0 0 rgba(102,126,234,0.45); }
+    70% { box-shadow: 0 0 0 8px rgba(102,126,234,0.0); }
+    100% { box-shadow: 0 0 0 0 rgba(102,126,234,0.0); }
+}
+
+/* Saída suave quando o item vai sair da aba atual */
+#players-page .player-list-item.marking-out {
+    border-color: var(--new-accent-primary, var(--accent-primary));
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.35);
+    background: linear-gradient(0deg, rgba(102,126,234,0.10), transparent), var(--new-bg-secondary, var(--bg-secondary));
+    animation: playerMarkOut 0.38s ease forwards;
+}
+
+/* Removido: pseudo-elemento ::after com texto 'Marcado' */
+#players-page .player-list-item.marking-out::after { content: none; }
+
+@keyframes playerMarkOut {
+    0% { opacity: 1; transform: translateX(0); }
+    60% { opacity: 1; transform: translateX(6px); }
+    100% { opacity: 0; transform: translateX(16px); }
+}
+
+@keyframes tagPop {
+    0% { opacity: 0; transform: translateY(-50%) scale(0.8); }
+    100% { opacity: 1; transform: translateY(-50%) scale(1); }
+}
+
+/* Informações do jogador (restaurado) */
 #players-page .player-info {
     display: flex;
     align-items: center;
@@ -259,7 +293,7 @@
     border: 1px solid var(--new-border-color, var(--border-color));
 }
 
-/* Estilo específico para o ícone SVG padrão */
+/* Estilo específico para o ícone SVG padrão (restaurado) */
 #players-page .player-avatar[src*="default-user-icon.svg"] {
     padding: 8px;
     background-color: var(--bg-primary);
@@ -270,7 +304,7 @@
     transition: color 0.3s ease;
 }
 
-/* Indicador para jogadores locais */
+/* Indicador para jogadores locais (restaurado) */
 #players-page .player-avatar-name span[data-local="true"] {
     position: relative;
     padding-right: 24px;
@@ -291,7 +325,7 @@
     opacity: 0.5;
 }
 
-/* Botão de remoção */
+/* Botão de remoção (restaurado) */
 #players-page .remove-button {
     background-color: transparent;
     box-shadow: none;
@@ -319,7 +353,7 @@
     border-color: #EF4444;
 }
 
-/* Zona de exclusão */
+/* Zona de exclusão (restaurado) */
 #players-page .delete-zone {
     position: fixed;
     bottom: 0;
@@ -373,13 +407,7 @@
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
 }
 
-/* Modal de Substituição: estilos migrados para teams.css (globais) para evitar duplicação. */
-
-
-
-
-
-/* Controle de visibilidade do botão flutuante - apenas na página de jogadores */
+/* Controle de visibilidade do botão flutuante - apenas na página de jogadores (restaurado) */
 #players-floating-add-btn {
     display: none !important;
 }
@@ -388,7 +416,7 @@ body:has(#players-page.app-page--active) #players-floating-add-btn {
     display: flex !important;
 }
 
-/* Ghost global para jogadores (fora do escopo de #players-page) */
+/* Ghost global para jogadores (restaurado) */
 .drag-ghost.player-list-item {
     display: flex;
     align-items: center;
@@ -427,13 +455,13 @@ body:has(#players-page.app-page--active) #players-floating-add-btn {
     border: 1px solid var(--new-border-color, var(--border-color));
 }
 
-/* Estilo específico quando o avatar é o SVG padrão dentro do ghost */
+/* Estilo específico quando o avatar é o SVG padrão dentro do ghost (restaurado) */
 .drag-ghost .player-avatar[src*="default-user-icon.svg"] {
     padding: 8px;
     background-color: var(--bg-primary);
 }
 
-/* Oculta botão de remoção dentro do ghost para não quebrar o layout */
+/* Oculta botão de remoção dentro do ghost para não quebrar o layout (restaurado) */
 .drag-ghost .remove-button {
     display: none !important;
 }
@@ -444,4 +472,39 @@ body:has(#players-page.app-page--active) #players-floating-add-btn {
     justify-content: space-between;
     flex: 1;
     gap: 1rem;
+}
+/* Pulso padrão (azul) já definido acima */
+
+/* Variante vermelha quando DESMARCAR */
+#players-page .player-list-item.selection-pulse.unmarking {
+    box-shadow: 0 0 0 0 rgba(240,55,55,0.45);
+    animation: selectionPulseRed 0.35s ease-out;
+}
+
+@keyframes selectionPulseRed {
+    0% { box-shadow: 0 0 0 0 rgba(240,55,55,0.45); }
+    70% { box-shadow: 0 0 0 8px rgba(240,55,55,0.0); }
+    100% { box-shadow: 0 0 0 0 rgba(240,55,55,0.0); }
+}
+
+/* Saída vermelha quando DESMARCAR */
+#players-page .player-list-item.marking-out.unmarking {
+    border-color: #f03737;
+    box-shadow: 0 8px 20px rgba(240, 55, 55, 0.35);
+    background: linear-gradient(0deg, rgba(240,55,55,0.10), transparent), var(--new-bg-secondary, var(--bg-secondary));
+    animation: playerMarkOut 0.38s ease forwards;
+}
+
+/* Removido: pseudo-elemento ::after com texto 'Marcado' */
+#players-page .player-list-item.marking-out::after { content: none; }
+
+@keyframes playerMarkOut {
+    0% { opacity: 1; transform: translateX(0); }
+    60% { opacity: 1; transform: translateX(6px); }
+    100% { opacity: 0; transform: translateX(16px); }
+}
+
+@keyframes tagPop {
+    0% { opacity: 0; transform: translateY(-50%) scale(0.8); }
+    100% { opacity: 1; transform: translateY(-50%) scale(1); }
 }

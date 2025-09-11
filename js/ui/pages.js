@@ -21,6 +21,8 @@ let hasGameBeenStartedExplicitly = false;
 let currentPageId = 'login-page';
 let selectingTeamPanelId = null;
 
+let isFloatingAddBtnSetup = false;
+
 // Controle de overlay de orientação (mostra em paisagem exceto na tela de pontuação)
 
 
@@ -1015,55 +1017,69 @@ async function addPlayerWithCategory(playerName, category, appId) {
 
 // Configura o botão flutuante de adicionar jogador
 function setupFloatingAddButton() {
+    if (isFloatingAddBtnSetup) return;
     const floatingBtn = document.getElementById('players-floating-add-btn');
     const modal = document.getElementById('new-player-modal');
     const nameInput = document.getElementById('new-player-name-input');
     const addBtn = document.getElementById('add-new-player-btn');
     const cancelBtn = document.getElementById('cancel-new-player-btn');
+
+    let isSubmitting = false;
     
     if (floatingBtn && modal) {
-        // Abrir modal ao clicar no botão flutuante
         floatingBtn.addEventListener('click', () => {
             modal.style.display = 'flex';
             setTimeout(() => nameInput?.focus(), 100);
         });
         
-        // Fechar modal ao cancelar
         cancelBtn?.addEventListener('click', () => {
             modal.style.display = 'none';
             nameInput.value = '';
         });
         
-        // Adicionar jogador
-        addBtn?.addEventListener('click', () => {
+        addBtn?.addEventListener('click', async () => {
+            if (isSubmitting) return;
             const name = nameInput.value.trim();
-            if (name) {
-                // Usar a função existente de adicionar jogador
+            if (!name) return;
+            
+            isSubmitting = true;
+            addBtn.disabled = true;
+            try {
                 if (window.playersManager && window.playersManager.addPlayer) {
-                    window.playersManager.addPlayer(name);
+                    await Promise.resolve(window.playersManager.addPlayer(name));
                 } else {
-                    // Fallback para função direta
-                    addPlayerWithCategory(name, 'principais', 'default');
+                    let appIdToUse = 'default';
+                    try {
+                        const { getAppId } = await import('../firebase/config.js');
+                        appIdToUse = getAppId() || localStorage.getItem('appId') || 'default';
+                    } catch (e) {
+                        appIdToUse = localStorage.getItem('appId') || 'default';
+                    }
+                    await addPlayerWithCategory(name, 'principais', appIdToUse);
                 }
                 modal.style.display = 'none';
                 nameInput.value = '';
+            } finally {
+                isSubmitting = false;
+                addBtn.disabled = false;
             }
         });
         
-        // Adicionar com Enter
         nameInput?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
+                e.preventDefault();
                 addBtn?.click();
             }
         });
         
-        // Fechar modal ao clicar fora
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
                 modal.style.display = 'none';
                 nameInput.value = '';
             }
         });
+
+        isFloatingAddBtnSetup = true;
     }
 }
 
