@@ -58,7 +58,10 @@ export async function getAllSchedules() {
     const colRef = collection(db, `artifacts/${appId}/public/data/schedules`);
     const snapshot = await getDocs(colRef);
     const result = [];
-    snapshot.forEach(docSnap => result.push(docSnap.data()));
+    snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        result.push((data && data.id) ? data : { ...data, id: docSnap.id });
+    });
     return result;
 }
 
@@ -74,7 +77,10 @@ export function subscribeSchedules(callback) {
     const colRef = collection(db, `artifacts/${appId}/public/data/schedules`);
     return onSnapshot(colRef, (snapshot) => {
         const arr = [];
-        snapshot.forEach(docSnap => arr.push(docSnap.data()));
+        snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+            arr.push((data && data.id) ? data : { ...data, id: docSnap.id });
+        });
         callback(arr);
     }, 
     // Removido: erro de // Log removido

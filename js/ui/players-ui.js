@@ -1435,6 +1435,49 @@ function getCategoryDisplayName(category) {
 
 
 /**
+ * Marca um jogador na lista (armazenamento) quando adicionado aos times, mesmo se a lista não estiver montada.
+ * @param {string} playerName - Nome completo do jogador (deve bater com players.name)
+ */
+export function selectPlayerInUI(playerName) {
+    try {
+        const allPlayers = JSON.parse(localStorage.getItem('volleyballPlayers') || '[]');
+        const playerData = allPlayers.find(p => p && p.name === playerName);
+        if (!playerData) return;
+
+        const playerCategory = playerData.category || 'principais';
+        const key = `selectedPlayers_${playerCategory}`;
+        let selectedIds = [];
+        try {
+            selectedIds = JSON.parse(localStorage.getItem(key) || '[]');
+        } catch (_) {
+            selectedIds = [];
+        }
+
+        if (!selectedIds.includes(playerData.id)) {
+            selectedIds.push(playerData.id);
+            localStorage.setItem(key, JSON.stringify(selectedIds));
+        }
+
+        // Garantir sincronização das seleções agregadas e contadores
+        updateGlobalSelections();
+        updateCategoryCounters();
+        updatePlayerCount();
+
+        // Atualiza UI se a página de jogadores estiver ativa
+        const playersPage = document.getElementById('players-page');
+        if (playersPage && playersPage.classList.contains('app-page--active')) {
+            renderPlayersList(allPlayers);
+        }
+
+        // Se existir checkbox no DOM, garantir estado visual
+        const cb = document.querySelector(`input[data-player-id="${playerData.id}"]`);
+        if (cb && !cb.checked) cb.checked = true;
+    } catch (_) {
+        // Silencioso
+    }
+}
+
+/**
  * Desmarca um jogador na tela de jogadores quando removido de um time.
  * @param {string} playerName - Nome do jogador a ser desmarcado.
  */

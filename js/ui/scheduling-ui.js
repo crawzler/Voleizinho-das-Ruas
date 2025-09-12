@@ -79,11 +79,110 @@ function closeScheduleModal() {
     disableTouchMoveBlocker();
 }
 
+// Remove duplicatas mantendo apenas um item por jogo.
+// Regras:
+// 1) Dedupe primário por id (ou por chave composta quando id ausente)
+// 2) Dedupe secundário por chave composta normalizada (mesmo jogo com ids diferentes)
+// 3) Em conflitos, mantém o mais recente (updatedAt > createdAt)
+// 4) Mescla RSVPs entre duplicatas para não perder respostas locais
+function dedupeSchedulesByKey(list) {
+    const arr = Array.isArray(list) ? list : [];
+    const score = (g) => new Date(g?.updatedAt || g?.createdAt || 0).getTime();
+
+    // Normalizadores para evitar falsos positivos de duplicidade
+    const normalizeDate = (d) => ((d || '').toString().slice(0, 10)); // YYYY-MM-DD
+    const normalizeTime = (t) => {
+        const raw = (t || '').toString().trim().toLowerCase();
+        if (!raw) return '';
+        // Normalize separators and remove spaces
+        let s = raw.replace(/\s+/g, '').replace(/[h.]/g, ':');
+        // Handle AM/PM formats like 7pm, 7:30pm
+        const ampm = s.match(/^(\d{1,2})(?::?(\d{2}))?(am|pm)$/i);
+        if (ampm) {
+            let hh = parseInt(ampm[1], 10);
+            const mm = ampm[2] || '00';
+            const mer = ampm[3].toLowerCase();
+            if (mer === 'pm' && hh < 12) hh += 12;
+            if (mer === 'am' && hh === 12) hh = 0;
+            const hhs = hh.toString().padStart(2, '0');
+            return `${hhs}:${mm}`;
+        }
+        // Formats like HHMM or HMM
+        const four = s.match(/^(\d{2})(\d{2})$/);
+        if (four) return `${four[1]}:${four[2]}`;
+        const three = s.match(/^(\d)(\d{2})$/);
+        if (three) return `0${three[1]}:${three[2]}`;
+        // Formats like H:MM or HH:MM
+        const colon = s.match(/^(\d{1,2}):(\d{2})$/);
+        if (colon) return `${colon[1].padStart(2,'0')}:${colon[2]}`;
+        // Fallback: extract first HH:MM found
+        const m = s.match(/(\d{1,2}):(\d{2})/);
+        if (m) return `${m[1].padStart(2,'0')}:${m[2]}`;
+        return s.slice(0,5);
+    };
+    const normalizeLocation = (loc) => {
+        // Remove diacritics, punctuation/symbols, collapse spaces
+        const s = (loc || '').toString()
+            .normalize('NFD')
+            .replace(/\p{Diacritic}/gu, '')
+            .toLowerCase()
+            .replace(/[\p{P}\p{S}]+/gu, ' ')
+            .trim()
+            .replace(/\s+/g, ' ');
+        return s;
+    };
+
+    // Chave composta mais permissiva: data + hora início + local normalizado
+    const composite = (g) => [
+        normalizeDate(g?.date),
+        normalizeTime(g?.startTime ?? g?.time),
+        normalizeLocation(g?.location),
+    ].join('|');
+
+    // Passo 1: Dedupe por id (ou por chave composta caso id ausente)
+    const byIdOrFallback = new Map();
+    for (const g of arr) {
+        if (!g) continue;
+        const key = (g.id && typeof g.id === 'string' && g.id.length) ? g.id : composite(g);
+        const prev = byIdOrFallback.get(key);
+        if (!prev) {
+            byIdOrFallback.set(key, g);
+        } else {
+            const winner = score(g) >= score(prev) ? g : prev;
+            // Mescla RSVPs das duas fontes no vencedor
+            const mergedRsvps = { ...(prev?.rsvps || {}), ...(g?.rsvps || {}) };
+            winner.rsvps = mergedRsvps;
+            byIdOrFallback.set(key, winner);
+        }
+    }
+
+    // Passo 2: Dedupe por chave composta normalizada (colapsa ids diferentes do mesmo jogo)
+    const byComposite = new Map();
+    for (const g of byIdOrFallback.values()) {
+        const cKey = composite(g);
+        const prev = byComposite.get(cKey);
+        if (!prev) {
+            byComposite.set(cKey, g);
+        } else {
+            const winner = score(g) >= score(prev) ? g : prev;
+            // Mescla RSVPs entre duplicatas
+            const mergedRsvps = { ...(prev?.rsvps || {}), ...(g?.rsvps || {}) };
+            winner.rsvps = mergedRsvps;
+            byComposite.set(cKey, winner);
+        }
+    }
+
+    return Array.from(byComposite.values());
+}
+
 function loadSchedulesFromLocalStorage() {
     const storedSchedules = localStorage.getItem(SCHEDULES_STORAGE_KEY);
     if (storedSchedules) {
         try {
-            scheduledGames = JSON.parse(storedSchedules);
+            const parsed = JSON.parse(storedSchedules);
+            scheduledGames = dedupeSchedulesByKey(parsed);
+            // Persist immediately to ensure future reloads see the deduped list
+            localStorage.setItem(SCHEDULES_STORAGE_KEY, JSON.stringify(scheduledGames));
         } catch (e) {
             scheduledGames = [];
         }
@@ -94,6 +193,8 @@ function loadSchedulesFromLocalStorage() {
 
 function saveSchedulesToLocalStorage() {
     try {
+        // Garante que salvamos apenas itens únicos
+        scheduledGames = dedupeSchedulesByKey(scheduledGames);
         localStorage.setItem(SCHEDULES_STORAGE_KEY, JSON.stringify(scheduledGames));
     } catch (e) {}
 }
@@ -108,7 +209,7 @@ function syncWithFirestoreAndLocalStorage() {
     
     // Carrega do localStorage primeiro
     loadSchedulesFromLocalStorage();
-    renderScheduledGames(); // Renderiza imediatamente
+    // REMOVIDO: renderScheduledGames(); // Não renderiza aqui para evitar duplicação
     
     let isFirstLoad = true;
     const previousSchedules = new Map(scheduledGames.map(game => [game.id, game.status]));
@@ -167,9 +268,9 @@ function syncWithFirestoreAndLocalStorage() {
         previousSchedules.clear();
         mergedSchedules.forEach(game => previousSchedules.set(game.id, game.status));
         
-        scheduledGames = mergedSchedules;
+        scheduledGames = dedupeSchedulesByKey(mergedSchedules);
         saveSchedulesToLocalStorage();
-        renderScheduledGames();
+        renderScheduledGames(); // Renderiza apenas uma vez aqui
         
         isFirstLoad = false;
     });
@@ -230,6 +331,9 @@ export async function renderScheduledGames() {
     if (!upcomingListContainer || !pastListContainer) {
         return;
     }
+
+    // Garante que não renderizaremos duplicatas
+    scheduledGames = dedupeSchedulesByKey(scheduledGames);
 
     upcomingListContainer.innerHTML = '';
     pastListContainer.innerHTML = '';
@@ -543,9 +647,9 @@ export function setupSchedulingPage() {
     portalFloatingButtonToBody(); // move button to body so fixed positioning works
     portalScheduleModalToBody(); // move modal to body to avoid scroll/container offset issues
     
-    // Inicializa animações do novo design
-    initSchedulingAnimations();
-    enhanceHoverEffects();
+    // Inicializa animações do novo design (evitar duplicar listeners)
+    // initSchedulingAnimations();
+    // enhanceHoverEffects();
     setupLoadingAnimations();
 
     const scheduleButton = Elements.scheduleGameButton();
@@ -632,8 +736,8 @@ export function setupSchedulingPage() {
                         createdAt: new Date().toISOString()
                     }, payload);
 
-                    // Adiciona ao array local imediatamente
-                    scheduledGames.push(newSchedule);
+                    // Adiciona ao array local imediatamente garantindo unicidade
+                    scheduledGames = dedupeSchedulesByKey([...scheduledGames, newSchedule]);
                     saveSchedulesToLocalStorage();
                     renderScheduledGames();
 

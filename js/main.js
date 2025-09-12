@@ -1465,7 +1465,7 @@ async function copySwLogsToClipboard() {
     setupTeamSelectionModal();
 
     setupHistoryPage();
-    setupSchedulingPage();
+    // setupSchedulingPage(); // Removido: inicializado via auth.js ao logar para evitar duplicatas
     setupQuickSettings();
     initTimerDrawer();
 

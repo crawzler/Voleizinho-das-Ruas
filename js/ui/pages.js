@@ -321,12 +321,12 @@ export async function showPage(pageIdToShow) {
             setGameStartedExplicitly(false);
         }
     } else if (pageIdToShow === 'scheduling-page') {
-        // Força renderização instantânea ao entrar na tela de agendamentos
-        if (typeof SchedulingUI.renderScheduledGames === 'function') {
-            SchedulingUI.renderScheduledGames();
-        }
-        // Garante que o listener esteja ativo ao entrar na tela
-        setupSchedulingPage();
+        // REMOVIDO: Força renderização instantânea - deixa o listener do Firestore gerenciar
+        // if (typeof SchedulingUI.renderScheduledGames === 'function') {
+        //     SchedulingUI.renderScheduledGames();
+        // }
+        // Listener já é gerenciado pelo ciclo de autenticação (auth.js) - evitar duplicatas
+        // setupSchedulingPage();
 
         // NOVO: Se clicou no corpo da notificação, abrir automaticamente o modal de presença
         const pendingScheduleId = sessionStorage.getItem('pendingOpenRsvpScheduleId');

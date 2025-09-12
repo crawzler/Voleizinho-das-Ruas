@@ -807,10 +807,21 @@ function autoSelectPlayerInUI(playerName) {
             if (checkbox && !checkbox.checked) {
                 checkbox.checked = true;
                 
-                // Salva o estado de seleção
+                // Salva o estado de seleção quando o checkbox está presente no DOM
                 import('../ui/players-ui.js').then(({ savePlayerSelectionState, updatePlayerCount }) => {
                     savePlayerSelectionState();
                     updatePlayerCount();
+                }).catch(() => {});
+                
+                import('./messages.js').then(({ displayMessage }) => {
+                    displayMessage(`${playerName} foi marcado automaticamente na lista de jogadores`, 'info');
+                }).catch(() => {});
+            }
+            
+            // Caso o checkbox não exista (ex: mobile/página não montada), marcar diretamente no storage
+            if (!checkbox) {
+                import('../ui/players-ui.js').then(({ selectPlayerInUI }) => {
+                    try { selectPlayerInUI(playerName); } catch (_) {}
                 }).catch(() => {});
                 
                 import('./messages.js').then(({ displayMessage }) => {

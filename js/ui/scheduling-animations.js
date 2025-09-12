@@ -99,33 +99,8 @@ function animateCardEntry(card) {
  * Configura animações do modal
  */
 function setupModalAnimations() {
-    const modal = document.getElementById('schedule-modal');
-    const modalContent = document.querySelector('.schedule-modal-content');
-    
-    if (modal && modalContent) {
-        // Animação de abertura
-        const originalShow = modal.classList.add;
-        modal.classList.add = function(className) {
-            if (className === 'active') {
-                originalShow.call(this, className);
-                animateModalOpen(modalContent);
-            } else {
-                originalShow.call(this, className);
-            }
-        };
-        
-        // Animação de fechamento
-        const originalHide = modal.classList.remove;
-        modal.classList.remove = function(className) {
-            if (className === 'active') {
-                animateModalClose(modalContent, () => {
-                    originalHide.call(this, className);
-                });
-            } else {
-                originalHide.call(this, className);
-            }
-        };
-    }
+    // Removido monkey patch de classList para evitar conflitos e manter compatibilidade com usos padrões
+    // de classList.add/remove em outros módulos.
 }
 
 /**
